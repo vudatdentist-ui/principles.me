@@ -368,7 +368,7 @@ export async function adoptProblemCandidate({
   });
 }
 
-export async function listAvailablePrinciples(userId: string) {
+export function listAvailablePrinciples(userId: string) {
   return db
     .select({
       id: principle.id,

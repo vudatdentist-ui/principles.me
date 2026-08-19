@@ -1,5 +1,7 @@
 "use client";
 
+// biome-ignore-all lint/performance/noJsxPropsBind: Interactive surface handlers are intentionally local.
+
 import { ArrowLeft } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import styles from "./decision-detail-v1.module.css";
@@ -256,7 +258,9 @@ export function DecisionDetailV1({ decisionId }: { decisionId: string }) {
                 type="number"
               />
             </label>
-            <button disabled={busy}>Save judgment</button>
+            <button disabled={busy} type="submit">
+              Save judgment
+            </button>
           </form>
         </section>
 
@@ -275,7 +279,7 @@ export function DecisionDetailV1({ decisionId }: { decisionId: string }) {
             <div className={styles.candidate}>
               <span>Candidate</span>
               <strong>{detail.decision.principleCandidate.statement}</strong>
-              <button disabled={busy} onClick={adoptCandidate}>
+              <button disabled={busy} onClick={adoptCandidate} type="button">
                 Adopt
               </button>
             </div>
@@ -283,7 +287,9 @@ export function DecisionDetailV1({ decisionId }: { decisionId: string }) {
           <form className={styles.form} onSubmit={submitPrinciple}>
             <input name="statement" placeholder="Principle" required />
             <textarea name="description" placeholder="Why it matters" />
-            <button disabled={busy}>Keep principle</button>
+            <button disabled={busy} type="submit">
+              Keep principle
+            </button>
           </form>
         </section>
 
@@ -308,7 +314,9 @@ export function DecisionDetailV1({ decisionId }: { decisionId: string }) {
               <option value="negative">Negative</option>
               <option value="too_early">Too early</option>
             </select>
-            <button disabled={busy}>Save outcome</button>
+            <button disabled={busy} type="submit">
+              Save outcome
+            </button>
           </form>
         </section>
       </div>

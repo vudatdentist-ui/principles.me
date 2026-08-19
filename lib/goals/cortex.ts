@@ -12,10 +12,10 @@ export type GoalsCortexSuggestion = {
   actions?: string[];
 };
 export interface GoalsCortexClient {
-  analyzeProblem(
+  analyzeProblem: (
     input: GoalsCortexInput,
     userId: string
-  ): Promise<GoalsCortexSuggestion>;
+  ) => Promise<GoalsCortexSuggestion>;
 }
 
 class LiveGoalsCortexClient implements GoalsCortexClient {

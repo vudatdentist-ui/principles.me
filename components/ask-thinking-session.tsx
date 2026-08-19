@@ -1,5 +1,7 @@
 "use client";
 
+// biome-ignore-all lint/performance/noJsxPropsBind: Interactive surface handlers are intentionally local.
+
 import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 import {
@@ -51,7 +53,7 @@ export function AskThinkingSession() {
   }
 
   async function continueRun(skip = false) {
-    if (!response || response.type !== "clarify" || busy) {
+    if (response?.type !== "clarify" || busy) {
       return;
     }
     setBusy(true);

@@ -36,7 +36,7 @@ function normalize(data: CortexResponse): AskResponse {
       type: "clarify",
     };
   }
-  const result = data.result;
+  const { result } = data;
   return {
     result: {
       confidence: result.confidence.level,
