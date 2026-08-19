@@ -307,8 +307,14 @@ export async function updatePrincipleCandidate({
 
   const next: PrincipleCandidate = {
     ...current,
-    rationale: action === "edit" ? rationale?.trim() || current.rationale : current.rationale,
-    statement: action === "edit" ? statement?.trim() || current.statement : current.statement,
+    rationale:
+      action === "edit"
+        ? rationale?.trim() || current.rationale
+        : current.rationale,
+    statement:
+      action === "edit"
+        ? statement?.trim() || current.statement
+        : current.statement,
     status: action === "reject" ? "rejected" : "pending",
     updatedAt: new Date().toISOString(),
   };
