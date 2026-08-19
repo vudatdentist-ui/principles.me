@@ -43,7 +43,7 @@ type WisdomBrainState = {
 const COUNT = 14_000;
 const SHARD_COUNT = 6200;
 const TRUNK_COUNT = 6;
-const TRUNK_SHARDS_PER_CLUSTER = 10;
+const TRUNK_SHARDS_PER_CLUSTER = 18;
 const TRUNK_LINKS = [
   [0, 1],
   [1, 2],
@@ -56,7 +56,7 @@ const TRUNK_LINKS = [
 const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aScale; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform vec3 uPointer; uniform float uPointerActive;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
 varying vec3 vColor; varying float vPulse; varying float vEdge;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 mat2 r2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
@@ -65,6 +65,7 @@ void main(){
  float floatWave=.5+.5*sin(uTime*(.32+aSeed*.38)+aSeed*26.0); float floatMask=smoothstep(.56,.98,aSeed);
  vec3 floatDirection=normalize(vec3(sin(aSeed*31.0+uTime*.17),cos(aSeed*23.0-uTime*.13),sin(aSeed*19.0+uTime*.11)));
  center+=floatDirection*floatMask*(.012+.04*floatWave);
+ center.z += uDepth;
  vec3 pointerDelta=vec3(center.xy-uPointer.xy,.12); float pointerInfluence=smoothstep(.58,0.0,length(pointerDelta.xy))*uPointerActive;
  center+=normalize(pointerDelta)*pointerInfluence*(.08+.055*aSeed);
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
@@ -79,7 +80,7 @@ const BASE_FRAGMENT =
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform vec3 uPointer; uniform float uPointerActive;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
 varying vec3 vColor; varying float vAlpha;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
@@ -88,6 +89,7 @@ void main(){
  float floatWave=.5+.5*sin(uTime*(.28+aSeed*.34)+aSeed*21.0); float floatMask=smoothstep(.52,.96,aSeed);
  vec3 floatDirection=normalize(vec3(cos(aSeed*27.0+uTime*.15),sin(aSeed*19.0-uTime*.12),cos(aSeed*17.0+uTime*.09)));
  p+=floatDirection*floatMask*(.008+.026*floatWave);
+ p.z += uDepth;
  vec3 pointerDelta=vec3(p.xy-uPointer.xy,.12); float pointerInfluence=smoothstep(.62,0.0,length(pointerDelta.xy))*uPointerActive;
  p+=normalize(pointerDelta)*pointerInfluence*(.05+.03*aSeed);
  float breathe=.004*sin(uTime*.8+aSeed*17.0);
@@ -104,7 +106,7 @@ const DUST_FRAGMENT =
 
 const TRUNK_LINE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform vec3 uPointer; uniform float uPointerActive;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
 varying float vStrength;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
@@ -113,9 +115,10 @@ void main(){
  float pulse=.5+.5*sin(uTime*.8+p.x*2.0+p.y*1.6);
  float influence=smoothstep(.9,0.0,length(p.xy-uPointer.xy))*uPointerActive;
  p += normalize(vec3(p.xy-uPointer.xy,.18))*influence*.035;
+ p.z += uDepth;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
  gl_Position=projectionMatrix*mv;
- vStrength=.055+.025*pulse+.48*influence;
+ vStrength=.15+.08*pulse+.72*influence;
 }`;
 
 const TRUNK_LINE_FRAGMENT =
@@ -150,6 +153,7 @@ function colorFor(point: THREE.Vector3) {
 
 function uniformSet() {
   return {
+    uDepth: { value: 0 },
     uFrom: { value: 0 },
     uMorph: { value: 1 },
     uPointer: { value: new THREE.Vector3() },
@@ -190,8 +194,14 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     [0.1, -1.0, 0],
     [-1.0, -0.62, -0.08],
   ];
-  const brainCenters = centers.map(() => [0, 0, 0]);
-  const brainCenterCounts = centers.map(() => 0);
+  const brainTrunkCenters = [
+    [-0.78, 0.46, 0.18],
+    [-0.38, 0.76, 0.2],
+    [0.08, 0.78, 0.22],
+    [0.5, 0.5, 0.2],
+    [0.58, 0.04, 0.22],
+    [0.2, -0.42, 0.2],
+  ];
   const thinkerCenters = [
     [-1.45, 0.45, 0.05],
     [-0.88, -0.35, 0.18],
@@ -207,10 +217,6 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     samplers[index % samplers.length].sample(sample, normal);
     sample.applyMatrix4(mesh.matrixWorld).multiplyScalar(1.3);
     brain.set([sample.x, sample.y, sample.z], index * 3);
-    brainCenters[cluster][0] += sample.x;
-    brainCenters[cluster][1] += sample.y;
-    brainCenters[cluster][2] += sample.z;
-    brainCenterCounts[cluster] += 1;
     colors.set(colorFor(sample).toArray(), index * 3);
     seeds[index] = seeded(index, 17);
     scales[index] = 0.0058 + 0.0124 * seeded(index, 31) ** 2;
@@ -250,14 +256,6 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
       ],
       index * 3
     );
-  }
-
-  for (let index = 0; index < brainCenters.length; index += 1) {
-    const center = brainCenters[index];
-    const count = brainCenterCounts[index];
-    center[0] /= count;
-    center[1] /= count;
-    center[2] /= count;
   }
 
   const dustGeometry = new THREE.BufferGeometry();
@@ -356,11 +354,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
         0.12 * Math.sin(cluster * 1.7),
       ];
       const positions = [
-        [
-          brainCenters[cluster][0],
-          brainCenters[cluster][1],
-          brainCenters[cluster][2],
-        ],
+        brainTrunkCenters[cluster],
         centers[cluster],
         thinkerCenters[cluster],
         councilCenter,
@@ -381,7 +375,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
       );
       trunkColors.set(colorFor(trunkCenter).toArray(), index * 3);
       trunkSeeds[index] = seeded(index, 229);
-      trunkScales[index] = 0.012 + seeded(index, 233) * 0.014;
+      trunkScales[index] = 0.022 + seeded(index, 233) * 0.026;
     }
   }
 
@@ -418,11 +412,16 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   trunkGeometry.instanceCount = trunkInstanceCount;
   const trunkMaterial = new THREE.ShaderMaterial({
     blending: THREE.AdditiveBlending,
+    depthTest: false,
     depthWrite: false,
     fragmentShader: BASE_FRAGMENT,
     side: THREE.DoubleSide,
     transparent: true,
-    uniforms: { ...uniformSet(), uOpacity: { value: 0.76 } },
+    uniforms: {
+      ...uniformSet(),
+      uDepth: { value: 0.14 },
+      uOpacity: { value: 0.94 },
+    },
     vertexShader: BASE_VERTEX,
   });
   const trunks = new THREE.Mesh(trunkGeometry, trunkMaterial);
@@ -441,7 +440,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
       offset += 6;
     }
   };
-  fillLineTargets(lineBrain, brainCenters);
+  fillLineTargets(lineBrain, brainTrunkCenters);
   fillLineTargets(lineGraph, centers);
   fillLineTargets(lineThinker, thinkerCenters);
   fillLineTargets(
@@ -469,10 +468,15 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   );
   const lineMaterial = new THREE.ShaderMaterial({
     blending: THREE.AdditiveBlending,
+    depthTest: false,
     depthWrite: false,
     fragmentShader: TRUNK_LINE_FRAGMENT,
     transparent: true,
-    uniforms: { ...uniformSet(), uOpacity: { value: 0.68 } },
+    uniforms: {
+      ...uniformSet(),
+      uDepth: { value: 0.18 },
+      uOpacity: { value: 0.9 },
+    },
     vertexShader: TRUNK_LINE_VERTEX,
   });
   const trunkLines = new THREE.LineSegments(lineGeometry, lineMaterial);
