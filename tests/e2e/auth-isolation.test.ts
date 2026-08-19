@@ -49,12 +49,15 @@ test.describe("Milestone 8 internal auth isolation", () => {
     const contextA = await browser.newContext();
     const pageA = await login(contextA, EMAIL_A, PASSWORD_A);
 
-    const createDecisionResponse = await contextA.request.post("/api/decisions", {
-      data: {
-        input:
-          "Should I run a reversible pricing experiment before a permanent rollout?",
-      },
-    });
+    const createDecisionResponse = await contextA.request.post(
+      "/api/decisions",
+      {
+        data: {
+          input:
+            "Should I run a reversible pricing experiment before a permanent rollout?",
+        },
+      }
+    );
     expect(createDecisionResponse.status()).toBe(201);
     const created = (await createDecisionResponse.json()) as {
       decision: { id: string };
@@ -100,7 +103,9 @@ test.describe("Milestone 8 internal auth isolation", () => {
     );
     expect(crossDelete.status()).toBe(404);
 
-    const cleanup = await contextA.request.delete(`/api/decisions/${decisionId}`);
+    const cleanup = await contextA.request.delete(
+      `/api/decisions/${decisionId}`
+    );
     expect(cleanup.status()).toBe(204);
 
     await pageA.close();
