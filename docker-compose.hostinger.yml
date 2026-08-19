@@ -1,0 +1,29 @@
+services:
+  principles:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: principles-web
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - coolify
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: coolify
+      traefik.http.routers.principles-http.rule: Host(`principles.me`) || Host(`www.principles.me`)
+      traefik.http.routers.principles-http.entrypoints: http
+      traefik.http.routers.principles-http.middlewares: principles-https-redirect
+      traefik.http.middlewares.principles-https-redirect.redirectscheme.scheme: https
+      traefik.http.routers.principles-https.rule: Host(`principles.me`) || Host(`www.principles.me`)
+      traefik.http.routers.principles-https.entrypoints: https
+      traefik.http.routers.principles-https.tls: "true"
+      traefik.http.routers.principles-https.tls.certresolver: letsencrypt
+      traefik.http.services.principles.loadbalancer.server.port: "3000"
+
+networks:
+  coolify:
+    external: true

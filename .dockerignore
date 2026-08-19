@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+output
+test-results
+playwright-report
+infra/ragflow/upstream
+.env*
+README.md
+*.log
