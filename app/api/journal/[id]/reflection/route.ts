@@ -60,7 +60,10 @@ export async function PUT(request: Request, context: RouteContext) {
     userId: workspaceUser.id,
   });
   if (!reflection) {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Journal entry not found." },
+      { status: 404 }
+    );
   }
   return NextResponse.json({ reflection });
 }
@@ -69,7 +72,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = await request.json().catch(() => null);
   const parsed = candidateActionSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid candidate action." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid candidate action." },
+      { status: 400 }
+    );
   }
 
   const [{ id }, workspaceUser] = await Promise.all([
@@ -98,8 +104,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     action: parsed.data.action,
     candidateId: parsed.data.candidateId,
     entryId: id,
-    rationale: parsed.data.action === "edit" ? parsed.data.rationale : undefined,
-    statement: parsed.data.action === "edit" ? parsed.data.statement : undefined,
+    rationale:
+      parsed.data.action === "edit" ? parsed.data.rationale : undefined,
+    statement:
+      parsed.data.action === "edit" ? parsed.data.statement : undefined,
     userId: workspaceUser.id,
   });
   if (!reflection) {
