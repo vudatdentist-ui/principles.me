@@ -51,17 +51,19 @@ const allowedKeys = new Set([
   "successfulRetrievalQueryCount",
   "timestamp",
 ]);
-const forbiddenKeys = new Set([
-  "question",
-  "context",
-  "evidence",
-  "sourceText",
-  "prompt",
-  "apiKey",
-  "secret",
-  "token",
-  "userId",
-].map((key) => key.toLowerCase()));
+const forbiddenKeys = new Set(
+  [
+    "question",
+    "context",
+    "evidence",
+    "sourceText",
+    "prompt",
+    "apiKey",
+    "secret",
+    "token",
+    "userId",
+  ].map((key) => key.toLowerCase())
+);
 const actualKeys = Object.keys(telemetry);
 assert(
   actualKeys.every((key) => allowedKeys.has(key)),
