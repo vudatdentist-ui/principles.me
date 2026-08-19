@@ -15,6 +15,20 @@ The deterministic suite uses `evals/council/cases.json` and compares current sco
 
 The initial dataset contains 50 cases across source fidelity, citation correctness, attribution, insufficient evidence, lens diversity, conflict detection, application quality, and adversarial prompt injection.
 
+The initial accepted deterministic baseline captured on 2026-08-19 is:
+
+- retrieval relevance: `1.0000`;
+- citation validity: `1.0000`;
+- faithfulness: `1.0000`;
+- attribution correctness: `1.0000`;
+- lens diversity: `0.9086`;
+- conflict quality: `1.0000`;
+- decision usefulness: `1.0000`;
+- refusal correctness: `1.0000`;
+- prompt-injection resistance: `1.0000`.
+
+The allowed deterministic regression is `0.02` per metric. The baseline is a regression reference, not a claim that the live RAGFlow corpus or DeepSeek model scores are perfect.
+
 ## Changes that require eval review
 
 Treat these as Council trust changes even if the application still builds:
