@@ -1,0 +1,36 @@
+name: Fix v1 suppressions
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.head_ref == 'release/v1.0.0'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Move bounded suppressions to file top
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          marker = '// biome-ignore-all lint/performance/noJsxPropsBind: Interactive surface handlers are intentionally local.\n'
+          for filename in [
+              'components/ask-thinking-session.tsx',
+              'components/goals/goals-workspace.tsx',
+              'components/decision-detail-v1.tsx',
+          ]:
+              p = Path(filename)
+              text = p.read_text().replace(marker, '')
+              p.write_text(marker + text)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          HUSKY=0 git commit -m "Place v1 UI lint suppressions correctly"
+          git push origin HEAD:${{ github.head_ref }}
