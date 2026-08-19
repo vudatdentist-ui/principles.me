@@ -105,7 +105,12 @@ test.describe("Milestone 6 Learning Loop", () => {
     const revisedCard = page
       .getByTestId("principle-card")
       .filter({ hasText: revisedPrinciple });
-    await expect(revisedCard).toContainText("Revision 2");
-    await expect(revisedCard).toContainText("revised");
+    await expect(revisedCard).toContainText("changed once");
+    await revisedCard.getByRole("button").first().click();
+    await expect(
+      revisedCard.getByRole("heading", { name: "History" })
+    ).toBeVisible();
+    await expect(revisedCard.getByText("v2", { exact: true })).toBeVisible();
+    await expect(revisedCard.getByText("v1", { exact: true })).toBeVisible();
   });
 });
