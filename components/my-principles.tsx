@@ -1,7 +1,7 @@
 "use client";
 
 import { Archive, Pencil, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useState } from "react";
 import baseStyles from "./decision-workspace.module.css";
 import styles from "./judgment-loop.module.css";
 import { WorkspaceShell } from "./workspace-shell";
@@ -49,36 +49,49 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function MyPrinciplesWorkspace() {
-  const [principles, setPrinciples] = useState<PrincipleRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+function PrincipleCard({
+  item,
+  onRefresh,
+}: {
+  item: PrincipleRecord;
+  onRefresh: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editStatement, setEditStatement] = useState(item.statement);
+  const [editDescription, setEditDescription] = useState(
+    item.description || ""
+  );
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState("");
-  const [editingId, setEditingId] = useState("");
-  const [editStatement, setEditStatement] = useState("");
-  const [editDescription, setEditDescription] = useState("");
 
-  async function loadPrinciples() {
-    const payload = await fetchJson<{ principles: PrincipleRecord[] }>(
-      "/api/principles"
-    );
-    setPrinciples(payload.principles);
-  }
+  const handleStatementChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setEditStatement(event.target.value);
+    },
+    []
+  );
 
-  useEffect(() => {
-    loadPrinciples()
-      .catch((caught: unknown) =>
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : "Could not load principles."
-        )
-      )
-      .finally(() => setLoading(false));
+  const handleDescriptionChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setEditDescription(event.target.value);
+    },
+    []
+  );
+
+  const startEditing = useCallback(() => {
+    setEditStatement(item.statement);
+    setEditDescription(item.description || "");
+    setEditing(true);
+    setError("");
+  }, [item.description, item.statement]);
+
+  const cancelEditing = useCallback(() => {
+    setEditing(false);
+    setError("");
   }, []);
 
-  async function revise(item: PrincipleRecord) {
-    setSaving(item.id);
+  const saveRevision = useCallback(async () => {
+    setSaving(true);
     setError("");
     try {
       await fetchJson(`/api/principles/${item.id}`, {
@@ -90,27 +103,27 @@ export function MyPrinciplesWorkspace() {
         headers: { "content-type": "application/json" },
         method: "PATCH",
       });
-      setEditingId("");
-      await loadPrinciples();
+      setEditing(false);
+      await onRefresh();
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Could not revise principle."
       );
     } finally {
-      setSaving("");
+      setSaving(false);
     }
-  }
+  }, [editDescription, editStatement, item.id, onRefresh]);
 
-  async function setStatus(item: PrincipleRecord, action: "retire" | "activate") {
-    setSaving(item.id);
+  const retire = useCallback(async () => {
+    setSaving(true);
     setError("");
     try {
       await fetchJson(`/api/principles/${item.id}`, {
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action: "retire" }),
         headers: { "content-type": "application/json" },
         method: "PATCH",
       });
-      await loadPrinciples();
+      await onRefresh();
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -118,9 +131,174 @@ export function MyPrinciplesWorkspace() {
           : "Could not update principle status."
       );
     } finally {
-      setSaving("");
+      setSaving(false);
     }
-  }
+  }, [item.id, onRefresh]);
+
+  const activate = useCallback(async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await fetchJson(`/api/principles/${item.id}`, {
+        body: JSON.stringify({ action: "activate" }),
+        headers: { "content-type": "application/json" },
+        method: "PATCH",
+      });
+      await onRefresh();
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not update principle status."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [item.id, onRefresh]);
+
+  return (
+    <article
+      className={`${baseStyles.card} ${styles.principleCard}`}
+      data-testid="principle-card"
+    >
+      <div className={styles.principleTopline}>
+        <span className={`${styles.lifecycle} ${styles[item.status]}`}>
+          {item.status}
+        </span>
+        <span>Revision {item.revision}</span>
+      </div>
+
+      {editing ? (
+        <div className={baseStyles.form}>
+          <div className={baseStyles.field}>
+            <label htmlFor={`edit-statement-${item.id}`}>
+              Edit principle statement
+            </label>
+            <textarea
+              id={`edit-statement-${item.id}`}
+              onChange={handleStatementChange}
+              value={editStatement}
+            />
+          </div>
+          <div className={baseStyles.field}>
+            <label htmlFor={`edit-description-${item.id}`}>
+              Edit principle nuance
+            </label>
+            <textarea
+              id={`edit-description-${item.id}`}
+              onChange={handleDescriptionChange}
+              value={editDescription}
+            />
+          </div>
+          <div className={styles.cardActions}>
+            <button
+              className={baseStyles.primaryButton}
+              disabled={saving || !editStatement.trim()}
+              onClick={saveRevision}
+              type="button"
+            >
+              Save revision
+            </button>
+            <button
+              className={baseStyles.secondaryButton}
+              onClick={cancelEditing}
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <strong className={styles.principleStatement}>{item.statement}</strong>
+          {item.description ? <p>{item.description}</p> : null}
+        </>
+      )}
+
+      {error ? <div className={baseStyles.error}>{error}</div> : null}
+
+      <div className={styles.principleMeta}>
+        <span>Created {formatDate(item.createdAt)}</span>
+        <span>Times applied: {item.timesApplied}</span>
+        {item.originDecision ? (
+          <a href={`/decisions/${item.originDecision.id}`}>
+            Origin: {item.originDecision.question}
+          </a>
+        ) : (
+          <span>Origin decision unavailable</span>
+        )}
+      </div>
+
+      <details className={styles.revisionHistory}>
+        <summary>Revision history</summary>
+        <div className={styles.revisionList}>
+          {item.revisions.map((revision) => (
+            <div key={revision.id}>
+              <strong>v{revision.revision}</strong>
+              <p>{revision.statement}</p>
+              <span>{formatDate(revision.createdAt)}</span>
+            </div>
+          ))}
+        </div>
+      </details>
+
+      {editing ? null : (
+        <div className={styles.cardActions}>
+          <button
+            className={baseStyles.secondaryButton}
+            onClick={startEditing}
+            type="button"
+          >
+            <Pencil size={14} /> Edit
+          </button>
+          {item.status === "retired" ? (
+            <button
+              className={baseStyles.secondaryButton}
+              disabled={saving}
+              onClick={activate}
+              type="button"
+            >
+              <RotateCcw size={14} /> Reactivate
+            </button>
+          ) : (
+            <button
+              className={baseStyles.secondaryButton}
+              disabled={saving}
+              onClick={retire}
+              type="button"
+            >
+              <Archive size={14} /> Retire
+            </button>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+export function MyPrinciplesWorkspace() {
+  const [principles, setPrinciples] = useState<PrincipleRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadPrinciples = useCallback(async () => {
+    const payload = await fetchJson<{ principles: PrincipleRecord[] }>(
+      "/api/principles"
+    );
+    setPrinciples(payload.principles);
+  }, []);
+
+  useEffect(() => {
+    loadPrinciples()
+      .catch((caught: unknown) =>
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Could not load principles."
+        )
+      )
+      .finally(() => setLoading(false));
+  }, [loadPrinciples]);
 
   return (
     <WorkspaceShell active="principles" title="My Principles">
@@ -150,133 +328,7 @@ export function MyPrinciplesWorkspace() {
 
         <div className={styles.principlesGrid}>
           {principles.map((item) => (
-            <article
-              className={`${baseStyles.card} ${styles.principleCard}`}
-              data-testid="principle-card"
-              key={item.id}
-            >
-              <div className={styles.principleTopline}>
-                <span className={`${styles.lifecycle} ${styles[item.status]}`}>
-                  {item.status}
-                </span>
-                <span>Revision {item.revision}</span>
-              </div>
-
-              {editingId === item.id ? (
-                <div className={baseStyles.form}>
-                  <div className={baseStyles.field}>
-                    <label htmlFor={`edit-statement-${item.id}`}>
-                      Edit principle statement
-                    </label>
-                    <textarea
-                      id={`edit-statement-${item.id}`}
-                      onChange={(event) => setEditStatement(event.target.value)}
-                      value={editStatement}
-                    />
-                  </div>
-                  <div className={baseStyles.field}>
-                    <label htmlFor={`edit-description-${item.id}`}>
-                      Edit principle nuance
-                    </label>
-                    <textarea
-                      id={`edit-description-${item.id}`}
-                      onChange={(event) =>
-                        setEditDescription(event.target.value)
-                      }
-                      value={editDescription}
-                    />
-                  </div>
-                  <div className={styles.cardActions}>
-                    <button
-                      className={baseStyles.primaryButton}
-                      disabled={saving === item.id || !editStatement.trim()}
-                      onClick={() => revise(item).catch(() => undefined)}
-                      type="button"
-                    >
-                      Save revision
-                    </button>
-                    <button
-                      className={baseStyles.secondaryButton}
-                      onClick={() => setEditingId("")}
-                      type="button"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <strong className={styles.principleStatement}>
-                    {item.statement}
-                  </strong>
-                  {item.description ? <p>{item.description}</p> : null}
-                </>
-              )}
-
-              <div className={styles.principleMeta}>
-                <span>Created {formatDate(item.createdAt)}</span>
-                <span>Times applied: {item.timesApplied}</span>
-                {item.originDecision ? (
-                  <a href={`/decisions/${item.originDecision.id}`}>
-                    Origin: {item.originDecision.question}
-                  </a>
-                ) : (
-                  <span>Origin decision unavailable</span>
-                )}
-              </div>
-
-              <details className={styles.revisionHistory}>
-                <summary>Revision history</summary>
-                <div className={styles.revisionList}>
-                  {item.revisions.map((revision) => (
-                    <div key={revision.id}>
-                      <strong>v{revision.revision}</strong>
-                      <p>{revision.statement}</p>
-                      <span>{formatDate(revision.createdAt)}</span>
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-              {editingId !== item.id ? (
-                <div className={styles.cardActions}>
-                  <button
-                    className={baseStyles.secondaryButton}
-                    onClick={() => {
-                      setEditStatement(item.statement);
-                      setEditDescription(item.description || "");
-                      setEditingId(item.id);
-                    }}
-                    type="button"
-                  >
-                    <Pencil size={14} /> Edit
-                  </button>
-                  {item.status === "retired" ? (
-                    <button
-                      className={baseStyles.secondaryButton}
-                      disabled={saving === item.id}
-                      onClick={() =>
-                        setStatus(item, "activate").catch(() => undefined)
-                      }
-                      type="button"
-                    >
-                      <RotateCcw size={14} /> Reactivate
-                    </button>
-                  ) : (
-                    <button
-                      className={baseStyles.secondaryButton}
-                      disabled={saving === item.id}
-                      onClick={() =>
-                        setStatus(item, "retire").catch(() => undefined)
-                      }
-                      type="button"
-                    >
-                      <Archive size={14} /> Retire
-                    </button>
-                  )}
-                </div>
-              ) : null}
-            </article>
+            <PrincipleCard item={item} key={item.id} onRefresh={loadPrinciples} />
           ))}
         </div>
       </section>
