@@ -34,7 +34,9 @@ export function sanitizePrincipleCandidateDraft(value: unknown) {
     personaAttribution.test(parsed.data.statement) ||
     personaAttribution.test(parsed.data.rationale)
   ) {
-    throw new Error("Candidate principle contained unsupported persona attribution.");
+    throw new Error(
+      "Candidate principle contained unsupported persona attribution."
+    );
   }
   return parsed.data;
 }
