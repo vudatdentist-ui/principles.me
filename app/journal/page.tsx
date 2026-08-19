@@ -1,5 +1,5 @@
-import { JournalList } from "@/components/journal/journal-list";
 import styles from "@/components/journal/journal.module.css";
+import { JournalList } from "@/components/journal/journal-list";
 import { listJournalEntries } from "@/lib/journal/queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
