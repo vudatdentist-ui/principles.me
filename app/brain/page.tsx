@@ -4,8 +4,6 @@ import { getPersonalBrainSummary } from "@/lib/db/personal-brain-queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 import styles from "./personal-brain.module.css";
 
-export const dynamic = "force-dynamic";
-
 export default async function PersonalBrainPage() {
   const workspaceUser = await getWorkspaceUser();
   const summary = await getPersonalBrainSummary(workspaceUser.id);
