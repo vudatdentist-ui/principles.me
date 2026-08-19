@@ -191,21 +191,22 @@ export async function saveJournalReflection({
 
   const existing = detail.reflection;
   const shouldSetCandidate = Boolean(candidateStatement?.trim());
-  const candidateId = shouldSetCandidate
-    ? existing?.candidateStatus === "pending" && existing.candidateId
-      ? existing.candidateId
-      : crypto.randomUUID()
+  const canWriteCandidate =
+    shouldSetCandidate &&
+    (!existing?.candidateStatus || existing.candidateStatus === "pending");
+  const candidateId = canWriteCandidate
+    ? existing?.candidateId ?? crypto.randomUUID()
     : existing?.candidateId ?? null;
-  const candidateStatus = shouldSetCandidate
+  const candidateStatus = canWriteCandidate
     ? "pending"
     : existing?.candidateStatus ?? null;
 
   const values = {
     candidateId,
-    candidateRationale: shouldSetCandidate
+    candidateRationale: canWriteCandidate
       ? candidateRationale?.trim() || null
       : existing?.candidateRationale ?? null,
-    candidateStatement: shouldSetCandidate
+    candidateStatement: canWriteCandidate
       ? candidateStatement?.trim() || null
       : existing?.candidateStatement ?? null,
     candidateStatus,
@@ -273,7 +274,9 @@ export async function updateJournalCandidate({
     .where(
       and(
         eq(journalReflection.id, reflection.id),
-        eq(journalReflection.userId, userId)
+        eq(journalReflection.userId, userId),
+        eq(journalReflection.candidateId, candidateId),
+        eq(journalReflection.candidateStatus, "pending")
       )
     )
     .returning();
@@ -347,13 +350,15 @@ export async function adoptJournalCandidate({
       .where(
         and(
           eq(journalReflection.id, reflection.id),
-          eq(journalReflection.userId, userId)
+          eq(journalReflection.userId, userId),
+          eq(journalReflection.candidateId, candidateId),
+          eq(journalReflection.candidateStatus, "pending")
         )
       )
       .returning();
 
     if (!updatedReflection) {
-      throw new Error("JOURNAL_REFLECTION_OWNERSHIP_CHANGED");
+      throw new Error("JOURNAL_CANDIDATE_ALREADY_RESOLVED");
     }
     return createdPrinciple;
   });
