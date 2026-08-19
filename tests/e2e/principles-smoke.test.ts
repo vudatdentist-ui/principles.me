@@ -4,7 +4,7 @@ const decisionContext =
   "Cofounder của tôi rất giỏi nhưng né conflict. Tôi đang cân nhắc có nên tiếp tục partnership không.";
 
 async function createDecision(page: import("@playwright/test").Page) {
-  await page.goto("/");
+  await page.goto("/ask");
   await page.getByLabel("What are you deciding?").fill(decisionContext);
   await page.getByRole("button", { name: "Create decision" }).click();
   await expect(page).toHaveURL(/\/decisions\/[0-9a-f-]{36}$/);
@@ -22,25 +22,23 @@ function ndjsonEvents(value: string) {
 }
 
 test.describe("Decision workspace", () => {
-  test("uses the decision-first v1 navigation", async ({ page }) => {
+  test("uses the Personal OS shell navigation", async ({ page }) => {
     await page.goto("/");
 
+    const navigation = page
+      .getByRole("navigation", { name: "Personal OS" })
+      .first();
+    await expect(navigation.getByText("Today", { exact: true })).toBeVisible();
+    await expect(navigation.getByText("Goals", { exact: true })).toBeVisible();
+    await expect(navigation.getByText("Journal", { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "What are you deciding?" })
-    ).toBeVisible();
-    const navigation = page.getByRole("navigation", {
-      name: "Main navigation",
-    });
-    await expect(navigation.getByText("Ask", { exact: true })).toBeVisible();
-    await expect(
-      navigation.getByText("Decisions", { exact: true })
-    ).toBeVisible();
-    await expect(
-      navigation.getByText("My Principles", { exact: true })
+      navigation.getByText("Principles", { exact: true })
     ).toBeVisible();
     await expect(
-      navigation.getByText("Explore", { exact: true })
-    ).toBeVisible();
+      page.getByRole("navigation", { name: "Personal records" })
+    ).toContainText("Decisions");
+    await expect(page.getByRole("link", { name: "Ask" })).toBeVisible();
+    await expect(page.getByText("PostgreSQL workspace")).toHaveCount(0);
     await expect(page.getByText("Team Brain", { exact: true })).toHaveCount(0);
   });
 
