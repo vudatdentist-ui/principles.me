@@ -1,0 +1,35 @@
+name: Preview Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    if: vars.STAGING_DEPLOY_ENABLED == 'true'
+    environment: staging
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+      - name: Remove preview stack and database volume
+        env:
+          DEPLOY_PATH: ${{ vars.STAGING_DEPLOY_PATH }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" \
+            "cd '$DEPLOY_PATH' && docker compose -p 'principles-pr-$PR_NUMBER' -f docker-compose.preview.yml down -v --remove-orphans || true"
