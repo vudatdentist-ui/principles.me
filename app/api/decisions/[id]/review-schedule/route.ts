@@ -22,7 +22,7 @@ function resolveReviewAt(input: z.infer<typeof requestSchema>) {
   if (input.preset === "custom") {
     const parsed = new Date(input.customDate);
     if (Number.isNaN(parsed.getTime())) {
-      return undefined;
+      return "invalid" as const;
     }
     return parsed;
   }
@@ -33,14 +33,22 @@ function resolveReviewAt(input: z.infer<typeof requestSchema>) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  const parsed = requestSchema.safeParse(await request.json().catch(() => null));
+  const parsed = requestSchema.safeParse(
+    await request.json().catch(() => null)
+  );
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid review schedule." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid review schedule." },
+      { status: 400 }
+    );
   }
 
   const reviewAt = resolveReviewAt(parsed.data);
-  if (reviewAt === undefined) {
-    return NextResponse.json({ error: "Invalid custom review date." }, { status: 400 });
+  if (reviewAt === "invalid") {
+    return NextResponse.json(
+      { error: "Invalid custom review date." },
+      { status: 400 }
+    );
   }
   if (reviewAt && reviewAt <= new Date()) {
     return NextResponse.json(
