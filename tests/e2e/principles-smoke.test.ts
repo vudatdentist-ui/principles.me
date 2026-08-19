@@ -193,9 +193,9 @@ test.describe("Decision workspace", () => {
       )
     ).toBeVisible();
     await expect(
-      page.getByText(
-        "Do not normalize repeated avoidance of hard conversations."
-      ).first()
+      page
+        .getByText("Do not normalize repeated avoidance of hard conversations.")
+        .first()
     ).toBeVisible();
     await expect(
       page.getByText(
@@ -212,9 +212,13 @@ test.describe("Decision workspace", () => {
       .first();
     await expect(adoptedPrinciple).toBeVisible();
     await adoptedPrinciple.getByRole("button").first().click();
-    await expect(adoptedPrinciple.getByRole("heading", { name: "Origin" })).toBeVisible();
+    await expect(
+      adoptedPrinciple.getByRole("heading", { name: "Origin" })
+    ).toBeVisible();
     await expect(adoptedPrinciple.getByText("Decision ·")).toBeVisible();
-    await expect(adoptedPrinciple.getByText("Tiếp tục partnership?")).toBeVisible();
+    await expect(
+      adoptedPrinciple.getByText("Tiếp tục partnership?")
+    ).toBeVisible();
     await expect(
       adoptedPrinciple.getByRole("heading", { name: "Usage & outcomes" })
     ).toBeVisible();
@@ -229,16 +233,22 @@ test.describe("Decision workspace", () => {
     await page.goto("/principles");
     await page.getByRole("button", { name: "Add principle" }).click();
     await page.getByLabel("Principle", { exact: true }).fill(original);
-    await page.getByLabel("Notes", { exact: true }).fill("Ownership prevents silent drift.");
-    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page
+      .getByLabel("Notes", { exact: true })
+      .fill("Ownership prevents silent drift.");
+    await page.getByRole("button", { exact: true, name: "Add" }).click();
 
     let principleCard = page
       .getByTestId("principle-card")
       .filter({ hasText: original })
       .first();
     await expect(principleCard).toBeVisible();
-    await expect(principleCard.getByText("Manual", { exact: true })).toBeVisible();
-    await expect(principleCard.getByText("Used 0 times", { exact: true })).toBeVisible();
+    await expect(
+      principleCard.getByText("Manual", { exact: true })
+    ).toBeVisible();
+    await expect(
+      principleCard.getByText("Used 0 times", { exact: true })
+    ).toBeVisible();
 
     await principleCard.getByRole("button", { name: "Edit" }).click();
     await principleCard.getByLabel("Statement").fill(revised);
@@ -248,9 +258,13 @@ test.describe("Decision workspace", () => {
       .getByTestId("principle-card")
       .filter({ hasText: revised })
       .first();
-    await expect(principleCard.getByText("changed once", { exact: true })).toBeVisible();
+    await expect(
+      principleCard.getByText("changed once", { exact: true })
+    ).toBeVisible();
     await expect(principleCard.getByText("v2", { exact: true })).toBeVisible();
     await expect(principleCard.getByText("v1", { exact: true })).toBeVisible();
-    await expect(principleCard.getByText(original, { exact: true })).toBeVisible();
+    await expect(
+      principleCard.getByText(original, { exact: true })
+    ).toBeVisible();
   });
 });
