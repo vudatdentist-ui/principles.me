@@ -83,11 +83,21 @@ export function relevanceScore(query: string, candidate: string) {
   const queryCoverage = intersection / queryTokens.size;
   const candidateCoverage = intersection / candidateTokens.size;
   return Number(
-    Math.min(1, jaccard * 0.45 + queryCoverage * 0.35 + candidateCoverage * 0.2).toFixed(4)
+    Math.min(
+      1,
+      jaccard * 0.45 + queryCoverage * 0.35 + candidateCoverage * 0.2
+    ).toFixed(4)
   );
 }
 
-const NEGATIVE_DIRECTIVES = ["avoid", "do not", "dont", "never", "khong", "tranh"];
+const NEGATIVE_DIRECTIVES = [
+  "avoid",
+  "do not",
+  "dont",
+  "never",
+  "khong",
+  "tranh",
+];
 const CONTRARY_MARKERS = [
   "ignore",
   "without",
