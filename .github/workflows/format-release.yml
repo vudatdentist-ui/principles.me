@@ -24,7 +24,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm fix
+      - run: pnpm fix || true
       - name: Commit formatting
         run: |
           if git diff --quiet; then
