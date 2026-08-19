@@ -134,3 +134,101 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const decision = pgTable("Decision", {
+  context: text("context"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  objective: text("objective"),
+  question: text("question").notNull(),
+  status: varchar("status", {
+    enum: ["open", "decided", "review_due", "reviewed", "archived"],
+  })
+    .notNull()
+    .default("open"),
+  title: text("title").notNull(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+});
+
+export type Decision = InferSelectModel<typeof decision>;
+
+export const judgment = pgTable("Judgment", {
+  confidence: varchar("confidence", {
+    enum: ["low", "medium", "high"],
+  }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  decisionId: uuid("decisionId")
+    .notNull()
+    .references(() => decision.id),
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  rationale: text("rationale"),
+  selectedOption: text("selectedOption"),
+  summary: text("summary").notNull(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+});
+
+export type Judgment = InferSelectModel<typeof judgment>;
+
+export const principle = pgTable("Principle", {
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  description: text("description"),
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  sourceDecisionId: uuid("sourceDecisionId").references(() => decision.id),
+  statement: text("statement").notNull(),
+  status: varchar("status", { enum: ["active", "retired"] })
+    .notNull()
+    .default("active"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+});
+
+export type Principle = InferSelectModel<typeof principle>;
+
+export const decisionPrinciple = pgTable(
+  "DecisionPrinciple",
+  {
+    decisionId: uuid("decisionId")
+      .notNull()
+      .references(() => decision.id),
+    principleId: uuid("principleId")
+      .notNull()
+      .references(() => principle.id),
+    relation: varchar("relation", {
+      enum: ["applied", "challenged", "created"],
+    })
+      .notNull()
+      .default("applied"),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.decisionId, table.principleId] }),
+  })
+);
+
+export type DecisionPrinciple = InferSelectModel<typeof decisionPrinciple>;
+
+export const decisionOutcome = pgTable("DecisionOutcome", {
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  decisionId: uuid("decisionId")
+    .notNull()
+    .references(() => decision.id),
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  lessons: text("lessons"),
+  result: text("result").notNull(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  verdict: varchar("verdict", {
+    enum: ["good_decision", "bad_decision", "mixed", "too_early"],
+  })
+    .notNull()
+    .default("too_early"),
+});
+
+export type DecisionOutcome = InferSelectModel<typeof decisionOutcome>;
