@@ -6,6 +6,54 @@ import type {
   RetrievedReference,
 } from "./types";
 
+const THINKER_ALIASES = [
+  "dalio",
+  "munger",
+  "buffett",
+  "marx",
+  "ho chi minh",
+  "hcm",
+  "marcus aurelius",
+  "aurelius",
+];
+
+const ATTRIBUTION_CUES = [
+  "says",
+  "said",
+  "argues",
+  "argued",
+  "believes",
+  "believed",
+  "writes",
+  "wrote",
+  "according to",
+  "theo",
+  "cho rang",
+  "noi",
+  "viet",
+];
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/đ/g, "d")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasPersonaAttribution(value: string) {
+  const normalized = normalizeText(value);
+  const namesThinker = THINKER_ALIASES.some((alias) =>
+    normalized.includes(alias)
+  );
+  const attributesClaim = ATTRIBUTION_CUES.some((cue) =>
+    normalized.includes(cue)
+  );
+  return namesThinker && attributesClaim;
+}
+
 function normalizeCitation(value: string) {
   return value.trim().replace(/^\[/, "").replace(/\]$/, "").toUpperCase();
 }
@@ -22,7 +70,7 @@ function sanitizeClaim(
     ),
   ];
   const text = claim.text?.trim();
-  if (!text) {
+  if (!text || hasPersonaAttribution(text)) {
     return null;
   }
   if (claim.layer !== "application" && citations.length === 0) {
