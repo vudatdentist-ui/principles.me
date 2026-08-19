@@ -23,24 +23,17 @@ async function login(
   email: string,
   password: string
 ) {
-  const page = await context.newPage();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-
-  const loginResponsePromise = page.waitForResponse(
-    (response) =>
-      new URL(response.url()).pathname === "/api/auth/login" &&
-      response.request().method() === "POST"
-  );
-  await page.getByRole("button", { name: "Sign in" }).click();
-  const loginResponse = await loginResponsePromise;
-  expect(loginResponse.status()).toBe(200);
+  const loginResponse = await context.request.post("/api/auth/login", {
+    data: { email, password },
+  });
+  const loginBody = await loginResponse.text();
+  expect(loginResponse.status(), loginBody).toBe(200);
 
   const sessionResponse = await context.request.get("/api/auth/session");
   const sessionBody = await sessionResponse.text();
   expect(sessionResponse.status(), sessionBody).toBe(200);
 
+  const page = await context.newPage();
   await page.goto("/decisions");
   await expect(page).toHaveURL(/\/decisions$/);
   return page;
