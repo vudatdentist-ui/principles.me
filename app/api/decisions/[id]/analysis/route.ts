@@ -15,7 +15,8 @@ const analysisSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, context: RouteContext) {
-  const parsed = analysisSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = analysisSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid analysis." }, { status: 400 });
   }
