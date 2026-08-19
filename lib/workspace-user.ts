@@ -6,10 +6,10 @@ import {
   getWorkspaceUserById,
 } from "@/lib/db/decision-queries";
 import {
-  internalAuthRequired,
   readInternalSession,
   WorkspaceAuthenticationError,
 } from "@/lib/internal-auth";
+import { internalAuthRequired } from "@/lib/session-token";
 
 const WORKSPACE_COOKIE = "principles-workspace";
 const ONE_YEAR = 60 * 60 * 24 * 365;
