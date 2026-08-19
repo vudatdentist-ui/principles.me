@@ -5,7 +5,7 @@
 
 "use client";
 
-import { OrbitControls, Sparkles } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo } from "react";
 // biome-ignore lint/performance/noNamespaceImport: Three.js is used as a cohesive renderer namespace.
@@ -498,18 +498,11 @@ function GraphLine({
   );
 }
 
-function KnowledgeGraph({
-  mode,
-  selectedThinkerIds,
-  onSelectThinker,
-}: BrainSceneProps) {
+function KnowledgeGraph({ mode, selectedThinkerIds }: BrainSceneProps) {
   const visibleThinkers = new Set(
     selectedThinkerIds.length
       ? selectedThinkerIds
       : THINKERS.map((thinker) => thinker.id)
-  );
-  const nodes = PRINCIPLES_NODES.filter(
-    (node) => !node.thinkerId || visibleThinkers.has(node.thinkerId)
   );
   const nodeMap = new Map(PRINCIPLES_NODES.map((node) => [node.id, node]));
   return (
@@ -535,38 +528,6 @@ function KnowledgeGraph({
             source={source}
             target={target}
           />
-        );
-      })}
-      {nodes.map((node) => {
-        const thinker = node.thinkerId
-          ? THINKERS.find((item) => item.id === node.thinkerId)
-          : undefined;
-        const isThinker = node.type === "thinker";
-        return (
-          <mesh
-            key={node.id}
-            // biome-ignore lint/performance/noJsxPropsBind: R3F interaction is intentionally bound to graph nodes.
-            onClick={(event) => {
-              event.stopPropagation();
-              if (thinker && isThinker) {
-                onSelectThinker?.(thinker.id);
-              }
-            }}
-            position={[node.x, node.y, node.z]}
-          >
-            <sphereGeometry
-              args={[
-                isThinker ? 0.1 : 0.035,
-                isThinker ? 18 : 10,
-                isThinker ? 18 : 10,
-              ]}
-            />
-            <meshBasicMaterial
-              color={node.accent}
-              opacity={isThinker ? 0.94 : 0.7}
-              transparent
-            />
-          </mesh>
         );
       })}
     </group>
@@ -608,13 +569,6 @@ function SceneContents(props: BrainSceneProps) {
       <fog args={["#02060b", 3.7, 7.5]} attach="fog" />
       <WisdomBrain mode={props.mode} />
       {props.mode === "brain" ? null : <KnowledgeGraph {...props} />}
-      <Sparkles
-        color="#8b7dff"
-        count={props.mode === "brain" ? 70 : 35}
-        scale={4.8}
-        size={1}
-        speed={0.16}
-      />
       <OrbitControls
         autoRotate={props.mode === "brain"}
         autoRotateSpeed={0.28}
