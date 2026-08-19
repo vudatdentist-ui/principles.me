@@ -36,6 +36,13 @@
       "when": 1787131560000,
       "tag": "0004_judgment_loop",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787142300000,
+      "tag": "0005_learning_loop",
+      "breakpoints": true
     }
   ]
 }

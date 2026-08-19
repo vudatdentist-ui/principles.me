@@ -176,6 +176,30 @@ export const decisionOutcomeVerdict = pgEnum("decision_outcome_verdict", [
   "too_early",
 ]);
 
+export const decisionReviewQuality = pgEnum("decision_review_quality", [
+  "yes",
+  "no",
+  "unclear",
+]);
+
+export const reasoningReviewQuality = pgEnum("reasoning_review_quality", [
+  "yes",
+  "no",
+  "partially",
+]);
+
+export const assumptionReviewVerdict = pgEnum("assumption_review_verdict", [
+  "correct",
+  "incorrect",
+  "unclear",
+]);
+
+export const principleReviewAction = pgEnum("principle_review_action", [
+  "keep",
+  "revise",
+  "retire",
+]);
+
 export const decision = pgTable(
   "Decision",
   {
@@ -201,6 +225,10 @@ export const decision = pgTable(
   },
   (table) => ({
     userIdx: index("Decision_user_idx").on(table.userId),
+    userReviewIdx: index("Decision_user_review_idx").on(
+      table.userId,
+      table.reviewAt
+    ),
     userStatusIdx: index("Decision_user_status_idx").on(
       table.userId,
       table.status
@@ -333,8 +361,14 @@ export const decisionOutcome = pgTable(
     decisionId: uuid("decisionId")
       .notNull()
       .references(() => decision.id, { onDelete: "cascade" }),
+    decisionQuality: decisionReviewQuality("decisionQuality")
+      .notNull()
+      .default("unclear"),
     id: uuid("id").primaryKey().notNull().defaultRandom(),
     lessons: text("lessons"),
+    reasoningQuality: reasoningReviewQuality("reasoningQuality")
+      .notNull()
+      .default("partially"),
     result: text("result").notNull(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
     userId: uuid("userId")
@@ -349,3 +383,78 @@ export const decisionOutcome = pgTable(
 );
 
 export type DecisionOutcome = InferSelectModel<typeof decisionOutcome>;
+
+export const decisionAssumptionReview = pgTable(
+  "DecisionAssumptionReview",
+  {
+    assumptionText: text("assumptionText").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    decisionId: uuid("decisionId")
+      .notNull()
+      .references(() => decision.id, { onDelete: "cascade" }),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    note: text("note"),
+    outcomeId: uuid("outcomeId")
+      .notNull()
+      .references(() => decisionOutcome.id, { onDelete: "cascade" }),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    verdict: assumptionReviewVerdict("verdict").notNull().default("unclear"),
+  },
+  (table) => ({
+    decisionIdx: index("DecisionAssumptionReview_decision_idx").on(
+      table.decisionId
+    ),
+    outcomeIdx: index("DecisionAssumptionReview_outcome_idx").on(
+      table.outcomeId
+    ),
+    userIdx: index("DecisionAssumptionReview_user_idx").on(table.userId),
+  })
+);
+
+export type DecisionAssumptionReview = InferSelectModel<
+  typeof decisionAssumptionReview
+>;
+
+export const decisionPrincipleReview = pgTable(
+  "DecisionPrincipleReview",
+  {
+    action: principleReviewAction("action").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    decisionId: uuid("decisionId")
+      .notNull()
+      .references(() => decision.id, { onDelete: "cascade" }),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    outcomeId: uuid("outcomeId")
+      .notNull()
+      .references(() => decisionOutcome.id, { onDelete: "cascade" }),
+    previousRevision: integer("previousRevision").notNull(),
+    previousStatement: text("previousStatement").notNull(),
+    principleId: uuid("principleId")
+      .notNull()
+      .references(() => principle.id, { onDelete: "cascade" }),
+    resultingRevision: integer("resultingRevision").notNull(),
+    resultingStatement: text("resultingStatement").notNull(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    decisionIdx: index("DecisionPrincipleReview_decision_idx").on(
+      table.decisionId
+    ),
+    outcomeIdx: index("DecisionPrincipleReview_outcome_idx").on(
+      table.outcomeId
+    ),
+    principleIdx: index("DecisionPrincipleReview_principle_idx").on(
+      table.principleId
+    ),
+    userIdx: index("DecisionPrincipleReview_user_idx").on(table.userId),
+  })
+);
+
+export type DecisionPrincipleReview = InferSelectModel<
+  typeof decisionPrincipleReview
+>;
