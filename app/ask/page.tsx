@@ -4,11 +4,11 @@ import {
   WorkspaceShell,
 } from "@/components/workspace-shell";
 
-export default function ExplorePage() {
+export default function AskPage() {
   return (
-    <WorkspaceShell active="none" title="Explore">
+    <WorkspaceShell active="ask" title="Ask">
       <LegacyWorkspaceBoundary>
-        <DecisionWorkspace initialView="explore" />
+        <DecisionWorkspace initialView="ask" />
       </LegacyWorkspaceBoundary>
     </WorkspaceShell>
   );

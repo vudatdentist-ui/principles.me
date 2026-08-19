@@ -6,7 +6,7 @@ const revisedPrinciple =
   "Avoid irreversible partnerships when conflict repair remains unproven after a time-bounded behavioral test.";
 
 async function createDecision(page: import("@playwright/test").Page) {
-  await page.goto("/");
+  await page.goto("/ask");
   await page
     .getByLabel("What are you deciding?")
     .fill(
