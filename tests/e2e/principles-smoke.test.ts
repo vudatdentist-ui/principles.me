@@ -105,7 +105,9 @@ test.describe("Decision workspace", () => {
     );
 
     // Council is only complete when the persisted Decision has been reloaded.
-    await expect(page.getByRole("button", { name: "Run Council" })).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: "Run Council" })
+    ).toBeEnabled();
     await page.reload();
     await expect(page.getByTestId("council-plan")).toContainText(
       "Auto Council"
