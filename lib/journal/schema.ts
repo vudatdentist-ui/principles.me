@@ -1,4 +1,14 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  check,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { principle, user } from "@/lib/db/schema";
 
 export const journalEntry = pgTable(
@@ -50,6 +60,10 @@ export const journalReflection = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
   },
   (table) => ({
+    candidateStatusCheck: check(
+      "JournalReflection_candidate_status_check",
+      sql`${table.candidateStatus} IS NULL OR ${table.candidateStatus} IN ('pending', 'adopted', 'rejected')`
+    ),
     entryUnique: uniqueIndex("JournalReflection_entry_unique").on(table.entryId),
     userIdx: index("JournalReflection_user_idx").on(table.userId),
   })
@@ -88,6 +102,10 @@ export const journalPrincipleLink = pgTable(
     reflectionPrincipleUnique: uniqueIndex(
       "JournalPrincipleLink_reflection_principle_unique"
     ).on(table.reflectionId, table.principleId),
+    relationCheck: check(
+      "JournalPrincipleLink_relation_check",
+      sql`${table.relation} IN ('origin', 'supports')`
+    ),
     userIdx: index("JournalPrincipleLink_user_idx").on(table.userId),
   })
 );
