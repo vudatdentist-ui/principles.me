@@ -78,7 +78,10 @@ try {
     VALUES (${createdDecision.id}, ${owner.id}, 'Proceed conditionally.', 65)
     RETURNING "confidencePercent"
   `;
-  assert(createdJudgment.confidencePercent === 65, "Confidence percent mismatch");
+  assert(
+    createdJudgment.confidencePercent === 65,
+    "Confidence percent mismatch"
+  );
 
   let rejectedOutOfRange = false;
   try {
@@ -114,7 +117,10 @@ try {
     FROM "PrincipleRevision"
     WHERE "userId" = ${owner.id}
   `;
-  assert(Number(remaining[0]?.count ?? 0) === 0, "Revision ownership cascade failed");
+  assert(
+    Number(remaining[0]?.count ?? 0) === 0,
+    "Revision ownership cascade failed"
+  );
 
   console.log("Judgment Loop schema verification passed.");
 } finally {
