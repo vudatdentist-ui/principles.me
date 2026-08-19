@@ -64,7 +64,9 @@ export const journalReflection = pgTable(
       "JournalReflection_candidate_status_check",
       sql`${table.candidateStatus} IS NULL OR ${table.candidateStatus} IN ('pending', 'adopted', 'rejected')`
     ),
-    entryUnique: uniqueIndex("JournalReflection_entry_unique").on(table.entryId),
+    entryUnique: uniqueIndex("JournalReflection_entry_unique").on(
+      table.entryId
+    ),
     userIdx: index("JournalReflection_user_idx").on(table.userId),
   })
 );
