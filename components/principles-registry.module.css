@@ -5,9 +5,9 @@
 
 .header {
   display: flex;
+  gap: 24px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
   padding: 24px 0 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -35,6 +35,7 @@
 
 .addButton {
   display: grid;
+  place-items: center;
   width: 36px;
   height: 36px;
   padding: 0;
@@ -44,7 +45,6 @@
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  place-items: center;
 }
 
 .addButton:hover {
@@ -80,10 +80,10 @@
   line-height: 1.5;
   color: #eceef3;
   resize: vertical;
+  outline: 0;
   background: transparent;
   border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  outline: 0;
 }
 
 .field textarea:focus {
@@ -144,8 +144,8 @@
 
 .rowButton {
   display: grid;
-  width: 100%;
   gap: 8px;
+  width: 100%;
   padding: 22px 0;
   color: inherit;
   text-align: left;
@@ -172,8 +172,8 @@
 }
 
 .dot::before {
-  content: "·";
   margin-right: 5px;
+  content: "·";
 }
 
 .detail {
