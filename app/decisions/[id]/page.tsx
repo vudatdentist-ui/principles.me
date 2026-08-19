@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { JudgmentDecisionWorkspace } from "@/components/judgment-decision";
+import { LearningLoop } from "@/components/learning-loop";
 import { PersonalMemory } from "@/components/personal-memory";
 
 type Props = {
@@ -11,6 +12,7 @@ async function DecisionRoute({ params }: Props) {
   return (
     <>
       <JudgmentDecisionWorkspace decisionId={id} />
+      <LearningLoop decisionId={id} />
       <PersonalMemory decisionId={id} />
     </>
   );
