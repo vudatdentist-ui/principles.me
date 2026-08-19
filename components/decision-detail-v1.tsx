@@ -1,7 +1,6 @@
 // biome-ignore-all lint/performance/noJsxPropsBind: Interactive surface handlers are intentionally local.
 "use client";
 
-
 import { ArrowLeft } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import styles from "./decision-detail-v1.module.css";

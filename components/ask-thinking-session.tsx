@@ -1,7 +1,6 @@
 // biome-ignore-all lint/performance/noJsxPropsBind: Interactive surface handlers are intentionally local.
 "use client";
 
-
 import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 import {

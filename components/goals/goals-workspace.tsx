@@ -1,7 +1,6 @@
 // biome-ignore-all lint/performance/noJsxPropsBind: Interactive surface handlers are intentionally local.
 "use client";
 
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type GoalRow = {
