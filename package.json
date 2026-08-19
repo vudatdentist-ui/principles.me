@@ -11,6 +11,7 @@
     "ragflow:bootstrap": "powershell -ExecutionPolicy Bypass -File scripts/bootstrap-ragflow.ps1",
     "ragflow:seed": "node scripts/seed-ragflow.mjs",
     "brain:extract": "node scripts/extract-brain-asset.mjs",
+    "council:verify": "pnpm exec tsx scripts/verify-council-v1.ts",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "husky",
@@ -24,7 +25,7 @@
     "db:up": "drizzle-kit up",
     "test": "pnpm exec playwright test",
     "test:e2e": "pnpm exec playwright test tests/e2e/principles-smoke.test.ts",
-    "verify": "pnpm check && pnpm typecheck && pnpm db:check && pnpm build"
+    "verify": "pnpm check && pnpm typecheck && pnpm council:verify && pnpm db:check && pnpm build"
   },
   "dependencies": {
     "@ai-sdk/otel": "^1.0.15",

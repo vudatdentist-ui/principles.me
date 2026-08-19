@@ -13,6 +13,14 @@ async function createDecision(page: import("@playwright/test").Page) {
   ).toBeVisible();
 }
 
+function ndjsonEvents(value: string) {
+  return value
+    .split("\n")
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row) => JSON.parse(row) as Record<string, unknown>);
+}
+
 test.describe("Decision workspace", () => {
   test("uses the decision-first v1 navigation", async ({ page }) => {
     await page.goto("/");
@@ -53,6 +61,80 @@ test.describe("Decision workspace", () => {
       page.getByText("Tiếp tục partnership?", { exact: true })
     ).toBeVisible();
     await expect(page.getByText("Draft", { exact: true })).toBeVisible();
+  });
+
+  test("runs Auto Council, links claims to evidence, and persists the brief", async ({
+    page,
+  }) => {
+    await createDecision(page);
+
+    await expect(
+      page.getByText("Customize Council", { exact: true })
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Run Council" }).click();
+
+    const plan = page.getByTestId("council-plan");
+    await expect(plan).toBeVisible();
+    await expect(plan).toContainText("Auto Council");
+    await expect(plan).toContainText("Trust & integrity");
+    await expect(plan).toContainText("Conflict & candor");
+
+    const brief = page.getByTestId("council-brief");
+    await expect(brief).toBeVisible();
+    await expect(
+      brief.getByRole("heading", { name: "Where the council agrees" })
+    ).toBeVisible();
+    await expect(
+      brief.getByRole("heading", { name: "The crux" })
+    ).toBeVisible();
+    await expect(
+      brief.getByText("interpretation", { exact: true }).first()
+    ).toBeVisible();
+    await expect(
+      brief.getByText("application", { exact: true }).first()
+    ).toBeVisible();
+
+    const citation = brief
+      .getByRole("link", { exact: true, name: "R1" })
+      .first();
+    await citation.click();
+    await expect(page).toHaveURL(/#evidence-R1$/);
+    await expect(page.getByTestId("evidence-R1")).toBeVisible();
+    await expect(page.getByTestId("evidence-R1")).toContainText(
+      "Principles — Radical Truth"
+    );
+
+    // Council is only complete when the persisted Decision has been reloaded.
+    await expect(
+      page.getByRole("button", { name: "Run Council" })
+    ).toBeEnabled();
+    await page.reload();
+    await expect(page.getByTestId("council-plan")).toContainText(
+      "Auto Council"
+    );
+    await expect(page.getByTestId("council-brief")).toBeVisible();
+    await expect(page.getByTestId("evidence-R1")).toBeVisible();
+  });
+
+  test("Council fails closed when multi-query retrieval has no evidence", async ({
+    request,
+  }) => {
+    const response = await request.post("/api/council", {
+      data: {
+        context: "NO_EVIDENCE_FIXTURE",
+        question: "NO_EVIDENCE_FIXTURE?",
+        thinkerIds: [],
+      },
+    });
+    expect(response.ok()).toBeTruthy();
+    const events = ndjsonEvents(await response.text());
+    const plan = events.find((event) => event.type === "plan");
+    const answer = events.find((event) => event.type === "answer");
+
+    expect(plan).toBeTruthy();
+    expect(answer?.grounded).toBe(false);
+    expect(answer?.brief).toBeNull();
+    expect(answer?.citations).toEqual([]);
   });
 
   test("persists judgment, principle, and outcome on the decision", async ({

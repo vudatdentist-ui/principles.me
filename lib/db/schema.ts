@@ -179,6 +179,8 @@ export const decision = pgTable(
   {
     context: text("context"),
     councilAnalysis: text("councilAnalysis"),
+    councilBrief: json("councilBrief"),
+    councilPlan: json("councilPlan"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     decidedAt: timestamp("decidedAt"),
     evidence: json("evidence"),
