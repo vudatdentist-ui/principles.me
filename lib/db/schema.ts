@@ -178,8 +178,10 @@ export const decision = pgTable(
   "Decision",
   {
     context: text("context"),
+    councilAnalysis: text("councilAnalysis"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     decidedAt: timestamp("decidedAt"),
+    evidence: json("evidence"),
     id: uuid("id").primaryKey().notNull().defaultRandom(),
     objective: text("objective"),
     question: text("question").notNull(),

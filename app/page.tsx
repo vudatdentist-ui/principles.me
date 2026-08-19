@@ -1,5 +1,5 @@
-import { PrinciplesCouncil } from "@/components/principles-council";
+import { DecisionWorkspace } from "@/components/decision-workspace";
 
 export default function HomePage() {
-  return <PrinciplesCouncil />;
+  return <DecisionWorkspace initialView="ask" />;
 }

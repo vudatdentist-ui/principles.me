@@ -15,6 +15,13 @@
       "when": 1787115600000,
       "tag": "0001_decision_domain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787126400000,
+      "tag": "0002_decision_workspace",
+      "breakpoints": true
     }
   ]
 }

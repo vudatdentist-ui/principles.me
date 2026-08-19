@@ -1,57 +1,132 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Principles foundation smoke", () => {
-  test("renders the current Principles product shell", async ({ page }) => {
+const decisionContext =
+  "Cofounder của tôi rất giỏi nhưng né conflict. Tôi đang cân nhắc có nên tiếp tục partnership không.";
+
+async function createDecision(page: import("@playwright/test").Page) {
+  await page.goto("/");
+  await page.getByLabel("What are you deciding?").fill(decisionContext);
+  await page.getByRole("button", { name: "Create decision" }).click();
+  await expect(page).toHaveURL(/\/decisions\/[0-9a-f-]{36}$/);
+  await expect(
+    page.getByRole("heading", { name: "Tiếp tục partnership?" })
+  ).toBeVisible();
+}
+
+test.describe("Decision workspace", () => {
+  test("uses the decision-first v1 navigation", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Think with"
-    );
-    await expect(page.getByLabel("Ask your council")).toBeVisible();
     await expect(
-      page.getByRole("navigation", { name: "Main navigation" })
+      page.getByRole("heading", { name: "What are you deciding?" })
     ).toBeVisible();
+    const navigation = page.getByRole("navigation", {
+      name: "Main navigation",
+    });
+    await expect(navigation.getByText("Ask", { exact: true })).toBeVisible();
+    await expect(
+      navigation.getByText("Decisions", { exact: true })
+    ).toBeVisible();
+    await expect(
+      navigation.getByText("My Principles", { exact: true })
+    ).toBeVisible();
+    await expect(
+      navigation.getByText("Explore", { exact: true })
+    ).toBeVisible();
+    await expect(page.getByText("Team Brain", { exact: true })).toHaveCount(0);
   });
 
-  test("carries a real question into the Council workspace", async ({
+  test("persists a created decision across reload and the Decisions list", async ({
     page,
   }) => {
-    const question =
-      "Should I keep working with a capable cofounder who avoids difficult conversations?";
+    await createDecision(page);
+    await expect(page.getByText(decisionContext)).toBeVisible();
 
-    await page.goto("/");
-    await page.getByLabel("Ask your council").fill(question);
-    await page.getByLabel("Ask your council").press("Enter");
-
+    await page.reload();
     await expect(
-      page.getByRole("heading", { name: "Ask the council." })
+      page.getByRole("heading", { name: "Tiếp tục partnership?" })
     ).toBeVisible();
-    await expect(page.locator("#council-question")).toHaveValue(question);
+    await expect(page.getByText(decisionContext)).toBeVisible();
+
+    await page.goto("/decisions");
+    await expect(
+      page.getByText("Tiếp tục partnership?", { exact: true })
+    ).toBeVisible();
+    await expect(page.getByText("Draft", { exact: true })).toBeVisible();
   });
 
-  test("fails closed when no RAG evidence is configured", async ({ page }) => {
-    const question = "What should I consider before making this decision?";
+  test("persists judgment, principle, and outcome on the decision", async ({
+    page,
+  }) => {
+    await createDecision(page);
 
-    await page.goto("/");
-    await page.getByLabel("Ask your council").fill(question);
-    await page.getByLabel("Ask your council").press("Enter");
     await page
-      .locator(".council-form")
-      .getByRole("button", { name: "Ask Council" })
-      .click();
-
-    await expect(page.getByText("No evidence retrieved yet.")).toBeVisible();
+      .getByLabel("What did you decide?")
+      .fill("Continue the partnership with a 60-day conflict protocol test.");
+    await page.getByLabel("Selected option").fill("Continue with conditions");
+    await page
+      .getByLabel("Rationale")
+      .fill(
+        "Capability matters, but conflict avoidance needs a measurable correction window."
+      );
+    await page.getByRole("button", { name: "Save judgment" }).click();
     await expect(
-      page.getByText(/Chưa có evidence đủ liên quan từ RAGFlow/)
+      page.getByText("Decided", { exact: true }).first()
     ).toBeVisible();
 
     await page
-      .getByRole("button", { name: /Sources/ })
-      .first()
-      .click();
+      .getByLabel("Keep a principle")
+      .fill("Do not normalize repeated avoidance of hard conversations.");
+    await page
+      .getByLabel("Why it matters")
+      .fill(
+        "Partnership quality depends on resolving tension before it compounds."
+      );
+    await page.getByRole("button", { name: "Adopt principle" }).click();
     await expect(
-      page.getByRole("heading", { name: "Sources for this question." })
+      page.getByText(
+        "Do not normalize repeated avoidance of hard conversations."
+      )
     ).toBeVisible();
-    await expect(page.getByText("No evidence retrieved.")).toBeVisible();
+
+    await page
+      .getByLabel("What happened?")
+      .fill(
+        "The protocol exposed the issue quickly and made the partnership workable."
+      );
+    await page.getByLabel("Verdict").selectOption("positive");
+    await page
+      .getByLabel("What did you learn?")
+      .fill(
+        "Behavioral tests are more useful than vague promises to communicate better."
+      );
+    await page.getByRole("button", { name: "Save outcome" }).click();
+    await expect(
+      page.getByText("Reviewed", { exact: true }).first()
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(
+      page.getByText(
+        "Continue the partnership with a 60-day conflict protocol test."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "Do not normalize repeated avoidance of hard conversations."
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "The protocol exposed the issue quickly and made the partnership workable."
+      )
+    ).toBeVisible();
+
+    await page.goto("/principles");
+    await expect(
+      page.getByText(
+        "Do not normalize repeated avoidance of hard conversations."
+      )
+    ).toBeVisible();
   });
 });
