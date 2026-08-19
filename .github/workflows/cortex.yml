@@ -27,8 +27,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Show exact repo formatter diff
         run: |
-          pnpm fix -- app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
+          pnpm exec biome check --write --unsafe app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts || true
           git diff -- app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
+          pnpm exec biome check --max-diagnostics=100 app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts || true
       - name: Verify Cortex contract and trust invariants
         run: pnpm exec tsx scripts/verify-cortex-core.mts
       - name: Verify existing Council trust baseline
