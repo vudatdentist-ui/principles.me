@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { checkDatabaseReady } from "@/lib/db/release-queries";
-import {
-  assertInternalAuthConfigured,
-  internalAuthRequired,
-} from "@/lib/internal-auth";
+import { assertInternalAuthConfigured } from "@/lib/internal-auth";
 import { logAppError } from "@/lib/observability/app-error";
+import { internalAuthRequired } from "@/lib/session-token";
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 
