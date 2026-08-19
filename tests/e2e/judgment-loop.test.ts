@@ -54,12 +54,16 @@ test.describe("Milestone 4 Judgment Loop", () => {
     await candidate.getByRole("button", { name: "Edit" }).click();
     const adoptedStatement =
       "Before ending a high-value partnership, test whether trust can be repaired through explicit, observable commitments.";
-    await page.getByLabel("Candidate principle statement").fill(adoptedStatement);
+    await page
+      .getByLabel("Candidate principle statement")
+      .fill(adoptedStatement);
     await page.getByRole("button", { name: "Save edit" }).click();
     await expect(candidate).toContainText(adoptedStatement);
     await candidate.getByRole("button", { name: "Adopt" }).click();
     await expect(candidate).toContainText("adopted");
-    await expect(page.getByText(adoptedStatement, { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(adoptedStatement, { exact: true })
+    ).toBeVisible();
 
     await page.goto("/principles");
     const card = page.getByTestId("principle-card").filter({
