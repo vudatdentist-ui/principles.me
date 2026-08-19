@@ -38,7 +38,7 @@ export async function POST(_request: Request, context: RouteContext) {
       { status: 409 }
     );
   }
-  const latestJudgment = detail.judgments[0];
+  const [latestJudgment] = detail.judgments;
   if (!latestJudgment) {
     return NextResponse.json(
       { error: "Make your judgment before extracting a principle." },
