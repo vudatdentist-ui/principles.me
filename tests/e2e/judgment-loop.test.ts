@@ -16,7 +16,9 @@ async function createDecision(page: import("@playwright/test").Page) {
 async function runCouncil(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Run Council" }).click();
   await expect(page.getByTestId("council-brief")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Make your judgment" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Make your judgment" })
+  ).toBeVisible();
 }
 
 test.describe("Milestone 4 Judgment Loop", () => {
@@ -35,11 +37,15 @@ test.describe("Milestone 4 Judgment Loop", () => {
     await page.getByLabel("Selected option").fill("Continue with conditions");
     await page
       .getByLabel("Rationale")
-      .fill("The relationship is valuable, but trust repair must become observable.");
+      .fill(
+        "The relationship is valuable, but trust repair must become observable."
+      );
     await page.getByLabel("Confidence (%)").fill("65");
     await page.getByRole("button", { name: "Save judgment" }).click();
 
-    await expect(page.getByText("65% confidence", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("65% confidence", { exact: true })
+    ).toBeVisible();
     const candidate = page.getByTestId("candidate-principle");
     await expect(candidate).toContainText(
       "Do not dissolve a high-value partnership before testing"
@@ -84,7 +90,9 @@ test.describe("Milestone 4 Judgment Loop", () => {
     await expect(revisedCard).toContainText("retired");
   });
 
-  test("rejecting a candidate does not add it to My Principles", async ({ page }) => {
+  test("rejecting a candidate does not add it to My Principles", async ({
+    page,
+  }) => {
     await createDecision(page);
     await runCouncil(page);
     await page
