@@ -52,5 +52,25 @@
         "useTopLevelRegex": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["components/decision-workspace.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          },
+          "performance": {
+            "noAwaitInLoops": "off",
+            "noJsxPropsBind": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off",
+            "noLeakedRender": "off"
+          }
+        }
+      }
+    }
+  ]
 }

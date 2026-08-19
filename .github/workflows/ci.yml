@@ -63,6 +63,14 @@ jobs:
         run: pnpm db:verify
       - name: Production build
         run: pnpm build
+      - name: Build production Docker image
+        run: docker build -t principles-ci .
+      - name: Verify migrations from production image
+        run: >-
+          docker run --rm
+          --add-host host.docker.internal:host-gateway
+          -e POSTGRES_URL=postgresql://postgres:postgres@host.docker.internal:5432/principles_ci
+          principles-ci pnpm db:migrate
 
   playwright:
     name: Playwright product smoke
