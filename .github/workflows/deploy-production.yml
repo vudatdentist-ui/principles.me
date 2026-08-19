@@ -64,7 +64,7 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-      - name: Deploy exact commit to VPS
+      - name: Upload and deploy exact commit to VPS
         shell: bash
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -80,26 +80,34 @@ jobs:
           VPS_PORT="${VPS_PORT:-22}"
           APP_DIR="${APP_DIR:-/opt/principles-council}"
 
+          STAGE_DIR="/tmp/principles-council-${DEPLOY_SHA}"
+
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
             -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "APP_DIR='$APP_DIR' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
+            "APP_DIR='$APP_DIR' STAGE_DIR='$STAGE_DIR' bash -s" <<'REMOTE'
           set -Eeuo pipefail
           : "${APP_DIR:?APP_DIR is required}"
-          : "${DEPLOY_SHA:?DEPLOY_SHA is required}"
-          REPO_URL="https://github.com/vudatdentist-ui/principles-council.git"
+          : "${STAGE_DIR:?STAGE_DIR is required}"
+          install -d "$(dirname "$APP_DIR")" "$STAGE_DIR"
+          REMOTE
 
-          install -d "$(dirname "$APP_DIR")"
-          if [ ! -d "$APP_DIR/.git" ]; then
-            git clone --branch main --single-branch "$REPO_URL" "$APP_DIR"
-          fi
+          # The runner already checked out and built this exact commit. Upload
+          # only that source archive; no GitHub token is needed on the VPS.
+          git archive --format=tar "$DEPLOY_SHA" | gzip -1 | \
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+              -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+              "tar -xzf - -C '$STAGE_DIR'"
 
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' STAGE_DIR='$STAGE_DIR' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          : "${APP_DIR:?APP_DIR is required}"
+          : "${STAGE_DIR:?STAGE_DIR is required}"
+          test -f "$STAGE_DIR/.github/workflows/deploy-production.yml"
+          cp -a "$STAGE_DIR/." "$APP_DIR/"
+          rm -rf "$STAGE_DIR"
           cd "$APP_DIR"
-          # Fetch directly from GitHub so the existing local bare remote on
-          # the VPS does not have to be updated separately.
-          git fetch --prune "$REPO_URL" main
-          git checkout --detach "$DEPLOY_SHA"
-          test "$(git rev-parse HEAD)" = "$DEPLOY_SHA"
-
           test -f .env.production
           test -f docker-compose.hostinger.yml
           docker network inspect coolify >/dev/null

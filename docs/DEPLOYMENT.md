@@ -1,6 +1,6 @@
 # Production deployment
 
-Every push to `main` (including a merged pull request) runs the verification job and, if it passes, deploys the exact commit to the Hostinger VPS. The workflow is `.github/workflows/deploy-production.yml`.
+Every push to `main` (including a merged pull request) runs the verification job and, if it passes, uploads and deploys the exact commit to the Hostinger VPS. The workflow is `.github/workflows/deploy-production.yml`.
 
 ## GitHub configuration
 
@@ -16,7 +16,7 @@ Add this environment variable if the app should use another checkout path:
 
 - `VPS_APP_DIR`: defaults to `/opt/principles-council` (the current Hostinger checkout).
 
-The VPS must have Git, Docker Engine, and the Docker Compose plugin installed. The `coolify` Docker network must exist because the production compose file attaches the web container to it.
+The VPS must have Docker Engine and the Docker Compose plugin installed. Git is only needed for the optional manual helper. The `coolify` Docker network must exist because the production compose file attaches the web container to it.
 
 ## One-time VPS preparation
 
@@ -35,7 +35,7 @@ After the first successful run, the container is updated with:
 docker compose -f docker-compose.hostinger.yml ps
 ```
 
-The workflow then checks `https://principles.me/`. RAGFlow remains a separate service and is not rebuilt or merged into the Next.js container.
+The workflow then checks `https://principles.me/`. RAGFlow remains a separate service and is not rebuilt or merged into the Next.js container. The GitHub token is never sent to the VPS.
 
 For a manual deployment from the VPS, run:
 

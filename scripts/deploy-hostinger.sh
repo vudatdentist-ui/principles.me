@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Manual equivalent of the GitHub Actions production deploy.
-# The server must keep .env.production outside Git.
+# Manual deployment helper for a checkout that already has a reachable Git
+# remote. The GitHub Actions workflow uploads the verified commit archive and
+# does not require a GitHub credential on the VPS.
 
 APP_DIR="${1:-/opt/principles-council}"
 DEPLOY_REF="${DEPLOY_REF:-main}"
