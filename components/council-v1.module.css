@@ -1,0 +1,180 @@
+.planBlock {
+  display: grid;
+  gap: 14px;
+}
+
+.modeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.modeBadge,
+.layerBadge,
+.factBadge,
+.citation,
+.lensChip,
+.contextChip {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.modeBadge {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.lensList,
+.contextList,
+.citationList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.lensChip,
+.contextChip {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.memberGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.memberCard {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.memberCard strong {
+  font-size: 13px;
+}
+
+.memberCard p,
+.memberCard span {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.72;
+}
+
+.customize {
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  padding-top: 10px;
+}
+
+.customize summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.customizeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.customizeOption {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+}
+
+.customizeOption input {
+  margin-top: 2px;
+}
+
+.brief {
+  display: grid;
+  gap: 18px;
+}
+
+.briefSection {
+  display: grid;
+  gap: 9px;
+}
+
+.briefSection h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.claimList {
+  display: grid;
+  gap: 8px;
+}
+
+.claim {
+  border-left: 2px solid rgba(148, 163, 184, 0.3);
+  padding: 8px 0 8px 11px;
+  display: grid;
+  gap: 7px;
+}
+
+.claim p {
+  margin: 0;
+  line-height: 1.62;
+}
+
+.claimMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.layerBadge {
+  text-transform: capitalize;
+}
+
+.factBadge {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.citation {
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.citation:hover,
+.citation:focus-visible {
+  text-decoration: underline;
+}
+
+.evidenceKey {
+  display: inline-flex;
+  margin-right: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.sourceNote {
+  font-size: 12px;
+  line-height: 1.55;
+  opacity: 0.72;
+}
+
+.statusText {
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.emptySection {
+  font-size: 12px;
+  opacity: 0.62;
+}
