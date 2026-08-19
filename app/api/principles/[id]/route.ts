@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  revisePrinciple,
-  setPrincipleStatus,
-} from "@/lib/db/decision-queries";
+import { revisePrinciple, setPrincipleStatus } from "@/lib/db/decision-queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
 const updateSchema = z.discriminatedUnion("action", [
@@ -22,7 +19,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = await request.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid principle update." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid principle update." },
+      { status: 400 }
+    );
   }
 
   const [{ id }, workspaceUser] = await Promise.all([
@@ -44,7 +44,10 @@ export async function PATCH(request: Request, context: RouteContext) {
         });
 
   if (!updated) {
-    return NextResponse.json({ error: "Principle not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Principle not found." },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json({ principle: updated });
