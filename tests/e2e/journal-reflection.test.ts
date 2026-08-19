@@ -120,7 +120,9 @@ test.describe("Journal + reflection", () => {
         text: "This is too specific to become a rule.",
       },
     });
-    const detailResponse = await request.get(`/api/journal/${created.entry.id}`);
+    const detailResponse = await request.get(
+      `/api/journal/${created.entry.id}`
+    );
     const detail = (await detailResponse.json()) as {
       candidate: { id: string };
     };
