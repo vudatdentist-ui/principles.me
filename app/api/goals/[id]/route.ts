@@ -29,10 +29,17 @@ export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const parsed = updateGoalSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid goal update." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid goal update." },
+      { status: 400 }
+    );
   }
   const workspaceUser = await getWorkspaceUser();
-  const goal = await updateGoal({ id, userId: workspaceUser.id, ...parsed.data });
+  const goal = await updateGoal({
+    id,
+    userId: workspaceUser.id,
+    ...parsed.data,
+  });
   if (!goal) {
     return NextResponse.json({ error: "Goal not found." }, { status: 404 });
   }

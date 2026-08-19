@@ -1,10 +1,35 @@
-import { index, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  index,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { principle, user } from "@/lib/db/schema";
 
-export const goalStatus = pgEnum("goal_status", ["active", "completed", "archived"]);
-export const problemStatus = pgEnum("problem_status", ["open", "resolved", "archived"]);
-export const actionStatus = pgEnum("goal_action_status", ["todo", "doing", "done", "cancelled"]);
-export const problemPrincipleRelation = pgEnum("problem_principle_relation", ["applied", "created"]);
+export const goalStatus = pgEnum("goal_status", [
+  "active",
+  "completed",
+  "archived",
+]);
+export const problemStatus = pgEnum("problem_status", [
+  "open",
+  "resolved",
+  "archived",
+]);
+export const actionStatus = pgEnum("goal_action_status", [
+  "todo",
+  "doing",
+  "done",
+  "cancelled",
+]);
+export const problemPrincipleRelation = pgEnum("problem_principle_relation", [
+  "applied",
+  "created",
+]);
 
 export const goal = pgTable(
   "Goal",
@@ -82,7 +107,10 @@ export const goalAction = pgTable(
   },
   (table) => ({
     problemIdx: index("GoalAction_problem_idx").on(table.problemId),
-    userProblemIdx: index("GoalAction_user_problem_idx").on(table.userId, table.problemId),
+    userProblemIdx: index("GoalAction_user_problem_idx").on(
+      table.userId,
+      table.problemId
+    ),
   })
 );
 

@@ -3,14 +3,20 @@
 import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 import {
-  cortexAskClient,
-  type AskComplete,
   type AskClarify,
+  type AskComplete,
   type AskResponse,
+  cortexAskClient,
 } from "@/lib/cortex/ask-client";
 import styles from "./ask-thinking-session.module.css";
 
-function ResultSection({ label, children }: { label: string; children: React.ReactNode }) {
+function ResultSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className={styles.section}>
       <div className={styles.label}>{label}</div>
@@ -28,7 +34,9 @@ export function AskThinkingSession() {
   const [saving, setSaving] = useState(false);
 
   async function run() {
-    if (busy || input.trim().length < 3) return;
+    if (busy || input.trim().length < 3) {
+      return;
+    }
     setBusy(true);
     setError("");
     setResponse(null);
@@ -43,7 +51,9 @@ export function AskThinkingSession() {
   }
 
   async function continueRun(skip = false) {
-    if (!response || response.type !== "clarify" || busy) return;
+    if (!response || response.type !== "clarify" || busy) {
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -57,14 +67,16 @@ export function AskThinkingSession() {
   }
 
   async function saveDecision() {
-    if (saving) return;
+    if (saving) {
+      return;
+    }
     setSaving(true);
     setError("");
     try {
       const request = await fetch("/api/decisions", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
         body: JSON.stringify({ input }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
       });
       const payload = (await request.json()) as {
         error?: string;
@@ -75,7 +87,9 @@ export function AskThinkingSession() {
       }
       window.location.assign(`/decisions/${payload.decision.id}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not save decision.");
+      setError(
+        caught instanceof Error ? caught.message : "Could not save decision."
+      );
       setSaving(false);
     }
   }
@@ -85,7 +99,9 @@ export function AskThinkingSession() {
       <div className={styles.shell}>
         <header className={styles.header}>
           <h1 className={styles.title}>Ask your Principles</h1>
-          <a className={styles.link} href="/decisions">Decisions</a>
+          <a className={styles.link} href="/decisions">
+            Decisions
+          </a>
         </header>
 
         <div className={styles.composer}>
@@ -127,9 +143,9 @@ export function AskThinkingSession() {
 
         {response?.type === "complete" ? (
           <Result
+            onSave={() => saveDecision().catch(() => undefined)}
             response={response}
             saving={saving}
-            onSave={() => saveDecision().catch(() => undefined)}
           />
         ) : null}
       </div>
@@ -163,7 +179,9 @@ function Clarification({
                 <button
                   className={`${styles.option} ${answers[question.id] === option ? styles.optionSelected : ""}`}
                   key={option}
-                  onClick={() => onAnswers({ ...answers, [question.id]: option })}
+                  onClick={() =>
+                    onAnswers({ ...answers, [question.id]: option })
+                  }
                   type="button"
                 >
                   {option}
@@ -174,17 +192,29 @@ function Clarification({
           <input
             aria-label="Other context"
             className={styles.answer}
-            onChange={(event) => onAnswers({ ...answers, [question.id]: event.target.value })}
+            onChange={(event) =>
+              onAnswers({ ...answers, [question.id]: event.target.value })
+            }
             placeholder="Something else"
             value={answers[question.id] ?? ""}
           />
         </div>
       ))}
       <div className={styles.actions}>
-        <button className={styles.primary} disabled={busy} onClick={onContinue} type="button">
+        <button
+          className={styles.primary}
+          disabled={busy}
+          onClick={onContinue}
+          type="button"
+        >
           Continue
         </button>
-        <button className={styles.secondary} disabled={busy} onClick={onSkip} type="button">
+        <button
+          className={styles.secondary}
+          disabled={busy}
+          onClick={onSkip}
+          type="button"
+        >
           Continue with available information
         </button>
       </div>
@@ -204,13 +234,49 @@ function Result({
   const { result } = response;
   return (
     <section className={styles.result}>
-      {result.framing ? <ResultSection label="Framing"><p className={styles.value}>{result.framing}</p></ResultSection> : null}
-      {result.crux ? <ResultSection label="Crux"><p className={styles.value}>{result.crux}</p></ResultSection> : null}
-      {result.evidence?.length ? <ResultSection label="Evidence"><ul className={styles.list}>{result.evidence.map((item) => <li key={item}>{item}</li>)}</ul></ResultSection> : null}
-      {result.conflicts?.length ? <ResultSection label="Conflicts"><ul className={styles.list}>{result.conflicts.map((item) => <li key={item}>{item}</li>)}</ul></ResultSection> : null}
-      {result.read ? <ResultSection label="My read"><p className={styles.value}>{result.read}</p></ResultSection> : null}
-      {result.confidence ? <ResultSection label="Confidence"><p className={styles.value}>{result.confidence}</p></ResultSection> : null}
-      {result.wouldChange ? <ResultSection label="Would change this"><p className={styles.value}>{result.wouldChange}</p></ResultSection> : null}
+      {result.framing ? (
+        <ResultSection label="Framing">
+          <p className={styles.value}>{result.framing}</p>
+        </ResultSection>
+      ) : null}
+      {result.crux ? (
+        <ResultSection label="Crux">
+          <p className={styles.value}>{result.crux}</p>
+        </ResultSection>
+      ) : null}
+      {result.evidence?.length ? (
+        <ResultSection label="Evidence">
+          <ul className={styles.list}>
+            {result.evidence.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </ResultSection>
+      ) : null}
+      {result.conflicts?.length ? (
+        <ResultSection label="Conflicts">
+          <ul className={styles.list}>
+            {result.conflicts.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </ResultSection>
+      ) : null}
+      {result.read ? (
+        <ResultSection label="My read">
+          <p className={styles.value}>{result.read}</p>
+        </ResultSection>
+      ) : null}
+      {result.confidence ? (
+        <ResultSection label="Confidence">
+          <p className={styles.value}>{result.confidence}</p>
+        </ResultSection>
+      ) : null}
+      {result.wouldChange ? (
+        <ResultSection label="Would change this">
+          <p className={styles.value}>{result.wouldChange}</p>
+        </ResultSection>
+      ) : null}
 
       {result.sources?.length ? (
         <div className={styles.sources}>
@@ -224,7 +290,12 @@ function Result({
       ) : null}
 
       <div className={styles.actions}>
-        <button className={styles.primary} disabled={saving} onClick={onSave} type="button">
+        <button
+          className={styles.primary}
+          disabled={saving}
+          onClick={onSave}
+          type="button"
+        >
           {saving ? "Saving…" : "Save as Decision"}
         </button>
       </div>

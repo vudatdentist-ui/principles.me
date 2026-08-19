@@ -1,16 +1,21 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Goals execution loop", () => {
-  test("persists goal, problem, diagnosis, principle and action", async ({ request }) => {
+  test("persists goal, problem, diagnosis, principle and action", async ({
+    request,
+  }) => {
     const goalResponse = await request.post("/api/goals", {
       data: { title: "Build a profitable Principles" },
     });
     expect(goalResponse.ok()).toBeTruthy();
     const { goal } = await goalResponse.json();
 
-    const problemResponse = await request.post(`/api/goals/${goal.id}/problems`, {
-      data: { title: "Users don't return after first session" },
-    });
+    const problemResponse = await request.post(
+      `/api/goals/${goal.id}/problems`,
+      {
+        data: { title: "Users don't return after first session" },
+      }
+    );
     expect(problemResponse.ok()).toBeTruthy();
     const { problem } = await problemResponse.json();
 
@@ -20,7 +25,8 @@ test.describe("Goals execution loop", () => {
         await request.patch(commandUrl, {
           data: {
             command: "save_diagnosis",
-            rootCause: "The first session does not create a reusable operating rule.",
+            rootCause:
+              "The first session does not create a reusable operating rule.",
           },
         })
       ).ok()
@@ -46,7 +52,10 @@ test.describe("Goals execution loop", () => {
     expect(
       (
         await request.patch(commandUrl, {
-          data: { command: "add_action", title: "Test the principle capture flow" },
+          data: {
+            command: "add_action",
+            title: "Test the principle capture flow",
+          },
         })
       ).ok()
     ).toBeTruthy();
@@ -56,13 +65,21 @@ test.describe("Goals execution loop", () => {
     const detail = await detailResponse.json();
     expect(detail.goal.title).toBe("Build a profitable Principles");
     expect(detail.problems).toHaveLength(1);
-    expect(detail.problems[0].diagnosis.rootCause).toContain("reusable operating rule");
-    expect(detail.problems[0].principles[0].statement).toContain("repeated obstacle");
+    expect(detail.problems[0].diagnosis.rootCause).toContain(
+      "reusable operating rule"
+    );
+    expect(detail.problems[0].principles[0].statement).toContain(
+      "repeated obstacle"
+    );
     expect(detail.problems[0].principles[0].revision).toBe(1);
-    expect(detail.problems[0].actions[0].title).toBe("Test the principle capture flow");
+    expect(detail.problems[0].actions[0].title).toBe(
+      "Test the principle capture flow"
+    );
   });
 
-  test("isolates goal ownership between workspace users", async ({ browser }) => {
+  test("isolates goal ownership between workspace users", async ({
+    browser,
+  }) => {
     const ownerContext = await browser.newContext();
     const otherContext = await browser.newContext();
 
@@ -80,7 +97,9 @@ test.describe("Goals execution loop", () => {
       expect(problemResponse.ok()).toBeTruthy();
       const { problem } = await problemResponse.json();
 
-      const hiddenGoal = await otherContext.request.get(`/api/goals/${goal.id}`);
+      const hiddenGoal = await otherContext.request.get(
+        `/api/goals/${goal.id}`
+      );
       expect(hiddenGoal.status()).toBe(404);
 
       const crossUserMutation = await otherContext.request.patch(
@@ -94,16 +113,24 @@ test.describe("Goals execution loop", () => {
     }
   });
 
-  test("keeps the UI focused on the execution progression", async ({ page }) => {
+  test("keeps the UI focused on the execution progression", async ({
+    page,
+  }) => {
     await page.goto("/goals");
     await page.getByLabel("New goal").fill("Ship Goals loop");
-    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("button", { exact: true, name: "Add" }).click();
     await page.getByLabel("Add problem").fill("No focused problem flow");
-    await page.getByRole("button", { name: "+ Add", exact: true }).click();
+    await page.getByRole("button", { exact: true, name: "+ Add" }).click();
 
-    await expect(page.getByRole("heading", { name: "1 Problem" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "2 Diagnosis" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "3 Principle" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "1 Problem" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "2 Diagnosis" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "3 Principle" })
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "4 Action" })).toBeVisible();
   });
 });

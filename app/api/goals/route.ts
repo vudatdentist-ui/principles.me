@@ -20,6 +20,9 @@ export async function POST(request: Request) {
   }
 
   const workspaceUser = await getWorkspaceUser();
-  const goal = await createGoal({ title: parsed.data.title, userId: workspaceUser.id });
+  const goal = await createGoal({
+    title: parsed.data.title,
+    userId: workspaceUser.id,
+  });
   return NextResponse.json({ goal }, { status: 201 });
 }

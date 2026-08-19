@@ -6,11 +6,11 @@ import postgres from "postgres";
 import { principle, principleRevision } from "@/lib/db/schema";
 import {
   diagnosis,
+  type Goal,
   goal,
   goalAction,
   problem,
   problemPrinciple,
-  type Goal,
 } from "./schema";
 
 const client = postgres(process.env.POSTGRES_URL ?? "");
@@ -48,7 +48,13 @@ export function listGoals(userId: string) {
     .orderBy(desc(goal.updatedAt));
 }
 
-export async function createGoal({ userId, title }: { userId: string; title: string }) {
+export async function createGoal({
+  userId,
+  title,
+}: {
+  userId: string;
+  title: string;
+}) {
   const [created] = await db.insert(goal).values({ title, userId }).returning();
   return created;
 }
@@ -78,7 +84,9 @@ export async function updateGoal({
 
 export async function getGoalDetail(id: string, userId: string) {
   const selectedGoal = await ownedGoal(id, userId);
-  if (!selectedGoal) return null;
+  if (!selectedGoal) {
+    return null;
+  }
 
   const problems = await db
     .select()
@@ -100,7 +108,10 @@ export async function getGoalDetail(id: string, userId: string) {
           .select()
           .from(goalAction)
           .where(
-            and(eq(goalAction.problemId, item.id), eq(goalAction.userId, userId))
+            and(
+              eq(goalAction.problemId, item.id),
+              eq(goalAction.userId, userId)
+            )
           )
           .orderBy(desc(goalAction.createdAt)),
         db
@@ -144,7 +155,9 @@ export async function createProblem({
   userId: string;
   title: string;
 }) {
-  if (!(await ownedGoal(goalId, userId))) return null;
+  if (!(await ownedGoal(goalId, userId))) {
+    return null;
+  }
   const [created] = await db
     .insert(problem)
     .values({ goalId, title, userId })
@@ -176,7 +189,7 @@ export async function updateProblem({
     .set({
       ...(title ? { title } : {}),
       ...(status ? { status } : {}),
-      ...(principleCandidate !== undefined ? { principleCandidate } : {}),
+      ...(principleCandidate === undefined ? {} : { principleCandidate }),
       updatedAt: new Date(),
     })
     .where(
@@ -201,13 +214,15 @@ export async function saveDiagnosis({
   userId: string;
   rootCause: string;
 }) {
-  if (!(await ownedProblem(problemId, goalId, userId))) return null;
+  if (!(await ownedProblem(problemId, goalId, userId))) {
+    return null;
+  }
   const [saved] = await db
     .insert(diagnosis)
     .values({ problemId, rootCause, userId })
     .onConflictDoUpdate({
-      target: diagnosis.problemId,
       set: { rootCause, updatedAt: new Date() },
+      target: diagnosis.problemId,
     })
     .returning();
   return saved;
@@ -224,7 +239,9 @@ export async function createAction({
   userId: string;
   title: string;
 }) {
-  if (!(await ownedProblem(problemId, goalId, userId))) return null;
+  if (!(await ownedProblem(problemId, goalId, userId))) {
+    return null;
+  }
   const [created] = await db
     .insert(goalAction)
     .values({ problemId, title, userId })
@@ -247,7 +264,9 @@ export async function updateAction({
   title?: string;
   status?: "todo" | "doing" | "done" | "cancelled";
 }) {
-  if (!(await ownedProblem(problemId, goalId, userId))) return null;
+  if (!(await ownedProblem(problemId, goalId, userId))) {
+    return null;
+  }
   const [updated] = await db
     .update(goalAction)
     .set({
@@ -277,20 +296,26 @@ export async function linkPrinciple({
   principleId: string;
   userId: string;
 }) {
-  if (!(await ownedProblem(problemId, goalId, userId))) return null;
+  if (!(await ownedProblem(problemId, goalId, userId))) {
+    return null;
+  }
   const [ownedPrinciple] = await db
     .select({ id: principle.id })
     .from(principle)
     .where(and(eq(principle.id, principleId), eq(principle.userId, userId)))
     .limit(1);
-  if (!ownedPrinciple) return null;
+  if (!ownedPrinciple) {
+    return null;
+  }
 
   const [linked] = await db
     .insert(problemPrinciple)
     .values({ principleId, problemId, relation: "applied", userId })
     .onConflictDoNothing()
     .returning();
-  return linked ?? { principleId, problemId, relation: "applied" as const, userId };
+  return (
+    linked ?? { principleId, problemId, relation: "applied" as const, userId }
+  );
 }
 
 export async function adoptProblemCandidate({
@@ -304,7 +329,9 @@ export async function adoptProblemCandidate({
 }) {
   const selectedProblem = await ownedProblem(problemId, goalId, userId);
   const statement = selectedProblem?.principleCandidate?.trim();
-  if (!selectedProblem || !statement) return null;
+  if (!selectedProblem || !statement) {
+    return null;
+  }
 
   return db.transaction(async (tx) => {
     const [createdPrinciple] = await tx

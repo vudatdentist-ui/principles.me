@@ -39,14 +39,18 @@ type GoalDetail = {
 async function jsonRequest(url: string, init?: RequestInit) {
   const response = await fetch(url, init);
   const body = await response.json();
-  if (!response.ok) throw new Error(body.error ?? "Request failed");
+  if (!response.ok) {
+    throw new Error(body.error ?? "Request failed");
+  }
   return body;
 }
 
 export function GoalsWorkspace() {
   const [goals, setGoals] = useState<GoalRow[]>([]);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
-  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
+  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(
+    null
+  );
   const [detail, setDetail] = useState<GoalDetail | null>(null);
   const [goalTitle, setGoalTitle] = useState("");
   const [problemTitle, setProblemTitle] = useState("");
@@ -67,7 +71,10 @@ export function GoalsWorkspace() {
     const body = await jsonRequest(`/api/goals/${goalId}`);
     setDetail(body);
     setSelectedProblemId((current) => {
-      if (current && body.problems.some((item: ProblemRow) => item.id === current)) {
+      if (
+        current &&
+        body.problems.some((item: ProblemRow) => item.id === current)
+      ) {
         return current;
       }
       return body.problems[0]?.id ?? null;
@@ -83,11 +90,14 @@ export function GoalsWorkspace() {
       setDetail(null);
       return;
     }
-    loadDetail(selectedGoalId).catch((cause) => setError(String(cause.message ?? cause)));
+    loadDetail(selectedGoalId).catch((cause) =>
+      setError(String(cause.message ?? cause))
+    );
   }, [loadDetail, selectedGoalId]);
 
   const selectedProblem = useMemo(
-    () => detail?.problems.find((item) => item.id === selectedProblemId) ?? null,
+    () =>
+      detail?.problems.find((item) => item.id === selectedProblemId) ?? null,
     [detail, selectedProblemId]
   );
 
@@ -99,7 +109,9 @@ export function GoalsWorkspace() {
 
   async function createGoal(event: React.FormEvent) {
     event.preventDefault();
-    if (!goalTitle.trim()) return;
+    if (!goalTitle.trim()) {
+      return;
+    }
     setError(null);
     const body = await jsonRequest("/api/goals", {
       body: JSON.stringify({ title: goalTitle }),
@@ -113,7 +125,9 @@ export function GoalsWorkspace() {
 
   async function addProblem(event: React.FormEvent) {
     event.preventDefault();
-    if (!selectedGoalId || !problemTitle.trim()) return;
+    if (!selectedGoalId || !problemTitle.trim()) {
+      return;
+    }
     const body = await jsonRequest(`/api/goals/${selectedGoalId}/problems`, {
       body: JSON.stringify({ title: problemTitle }),
       headers: { "content-type": "application/json" },
@@ -125,7 +139,9 @@ export function GoalsWorkspace() {
   }
 
   async function problemCommand(payload: Record<string, unknown>) {
-    if (!selectedGoalId || !selectedProblemId) return null;
+    if (!selectedGoalId || !selectedProblemId) {
+      return null;
+    }
     setError(null);
     const body = await jsonRequest(
       `/api/goals/${selectedGoalId}/problems/${selectedProblemId}`,
@@ -155,7 +171,10 @@ export function GoalsWorkspace() {
               placeholder="Goal"
               value={goalTitle}
             />
-            <button className="rounded-md border border-zinc-200 px-3 text-sm dark:border-zinc-800" type="submit">
+            <button
+              className="rounded-md border border-zinc-200 px-3 text-sm dark:border-zinc-800"
+              type="submit"
+            >
               Add
             </button>
           </form>
@@ -173,7 +192,9 @@ export function GoalsWorkspace() {
                 type="button"
               >
                 <span className="block truncate">{item.title}</span>
-                <span className="text-xs font-normal text-zinc-400">{item.status}</span>
+                <span className="text-xs font-normal text-zinc-400">
+                  {item.status}
+                </span>
               </button>
             ))}
           </div>
@@ -186,14 +207,16 @@ export function GoalsWorkspace() {
             </div>
           ) : null}
 
-          {!detail ? (
-            <div className="py-20 text-sm text-zinc-400">No goal selected.</div>
-          ) : (
+          {detail ? (
             <div className="space-y-8">
               <header className="flex items-start justify-between gap-4 border-b border-zinc-200 pb-5 dark:border-zinc-800">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight">{detail.goal.title}</h2>
-                  <span className="text-sm text-zinc-400">{detail.goal.status}</span>
+                  <h2 className="text-2xl font-semibold tracking-tight">
+                    {detail.goal.title}
+                  </h2>
+                  <span className="text-sm text-zinc-400">
+                    {detail.goal.status}
+                  </span>
                 </div>
                 <select
                   aria-label="Goal status"
@@ -204,7 +227,10 @@ export function GoalsWorkspace() {
                       headers: { "content-type": "application/json" },
                       method: "PATCH",
                     });
-                    await Promise.all([loadGoals(), loadDetail(detail.goal.id)]);
+                    await Promise.all([
+                      loadGoals(),
+                      loadDetail(detail.goal.id),
+                    ]);
                   }}
                   value={detail.goal.status}
                 >
@@ -216,7 +242,9 @@ export function GoalsWorkspace() {
 
               <div className="grid gap-8 md:grid-cols-[260px_1fr]">
                 <div className="space-y-4">
-                  <div className="text-xs font-medium uppercase tracking-wider text-zinc-400">Problems</div>
+                  <div className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                    Problems
+                  </div>
                   <div className="space-y-1">
                     {detail.problems.map((item) => (
                       <button
@@ -230,7 +258,9 @@ export function GoalsWorkspace() {
                         type="button"
                       >
                         <span className="block">{item.title}</span>
-                        <span className="text-xs text-zinc-400">{item.status}</span>
+                        <span className="text-xs text-zinc-400">
+                          {item.status}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -242,7 +272,9 @@ export function GoalsWorkspace() {
                       placeholder="Problem"
                       value={problemTitle}
                     />
-                    <button className="text-sm" type="submit">+ Add</button>
+                    <button className="text-sm" type="submit">
+                      + Add
+                    </button>
                   </form>
                 </div>
 
@@ -255,7 +287,10 @@ export function GoalsWorkspace() {
                           aria-label="Problem status"
                           className="bg-transparent text-sm text-zinc-500"
                           onChange={(event) =>
-                            problemCommand({ command: "update_problem", status: event.target.value })
+                            problemCommand({
+                              command: "update_problem",
+                              status: event.target.value,
+                            })
                           }
                           value={selectedProblem.status}
                         >
@@ -274,7 +309,9 @@ export function GoalsWorkspace() {
                       <textarea
                         aria-label="Diagnosis"
                         className="min-h-28 w-full resize-y rounded-md border border-zinc-200 bg-transparent px-4 py-3 text-sm outline-none focus:border-zinc-500 dark:border-zinc-800"
-                        onChange={(event) => setDiagnosisText(event.target.value)}
+                        onChange={(event) =>
+                          setDiagnosisText(event.target.value)
+                        }
                         placeholder="Root cause"
                         value={diagnosisText}
                       />
@@ -282,7 +319,10 @@ export function GoalsWorkspace() {
                         <button
                           className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-800"
                           onClick={() =>
-                            problemCommand({ command: "save_diagnosis", rootCause: diagnosisText })
+                            problemCommand({
+                              command: "save_diagnosis",
+                              rootCause: diagnosisText,
+                            })
                           }
                           type="button"
                         >
@@ -292,7 +332,9 @@ export function GoalsWorkspace() {
                           className="text-sm text-zinc-500"
                           onClick={async () => {
                             try {
-                              const body = await problemCommand({ command: "cortex" });
+                              const body = await problemCommand({
+                                command: "cortex",
+                              });
                               const suggestion = body?.suggestion;
                               setCortexSuggestion(
                                 [
@@ -322,14 +364,19 @@ export function GoalsWorkspace() {
                     <section className="space-y-3">
                       <h3 className="text-lg font-medium">3 Principle</h3>
                       {selectedProblem.principles.map((item) => (
-                        <div className="rounded-md border border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800" key={item.id}>
+                        <div
+                          className="rounded-md border border-zinc-200 px-4 py-3 text-sm dark:border-zinc-800"
+                          key={item.id}
+                        >
                           {item.statement}
                         </div>
                       ))}
                       <textarea
                         aria-label="Candidate principle"
                         className="min-h-20 w-full resize-y rounded-md border border-zinc-200 bg-transparent px-4 py-3 text-sm dark:border-zinc-800"
-                        onChange={(event) => setCandidateText(event.target.value)}
+                        onChange={(event) =>
+                          setCandidateText(event.target.value)
+                        }
                         placeholder="Candidate principle"
                         value={candidateText}
                       />
@@ -349,7 +396,9 @@ export function GoalsWorkspace() {
                         <button
                           className="text-sm disabled:text-zinc-300"
                           disabled={!candidateText.trim()}
-                          onClick={() => problemCommand({ command: "adopt_candidate" })}
+                          onClick={() =>
+                            problemCommand({ command: "adopt_candidate" })
+                          }
                           type="button"
                         >
                           Adopt
@@ -360,18 +409,27 @@ export function GoalsWorkspace() {
                           <select
                             aria-label="Existing principle"
                             className="min-w-0 flex-1 rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm dark:border-zinc-800"
-                            onChange={(event) => setPrincipleId(event.target.value)}
+                            onChange={(event) =>
+                              setPrincipleId(event.target.value)
+                            }
                             value={principleId}
                           >
                             <option value="">Existing principle</option>
                             {detail.availablePrinciples.map((item) => (
-                              <option key={item.id} value={item.id}>{item.statement}</option>
+                              <option key={item.id} value={item.id}>
+                                {item.statement}
+                              </option>
                             ))}
                           </select>
                           <button
                             className="text-sm disabled:text-zinc-300"
                             disabled={!principleId}
-                            onClick={() => problemCommand({ command: "link_principle", principleId })}
+                            onClick={() =>
+                              problemCommand({
+                                command: "link_principle",
+                                principleId,
+                              })
+                            }
                             type="button"
                           >
                             Link
@@ -384,7 +442,10 @@ export function GoalsWorkspace() {
                       <h3 className="text-lg font-medium">4 Action</h3>
                       <div className="space-y-2">
                         {selectedProblem.actions.map((item) => (
-                          <div className="flex items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800" key={item.id}>
+                          <div
+                            className="flex items-center gap-3 rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+                            key={item.id}
+                          >
                             <input
                               aria-label={`Complete ${item.title}`}
                               checked={item.status === "done"}
@@ -392,15 +453,21 @@ export function GoalsWorkspace() {
                                 problemCommand({
                                   actionId: item.id,
                                   command: "update_action",
-                                  status: event.target.checked ? "done" : "todo",
+                                  status: event.target.checked
+                                    ? "done"
+                                    : "todo",
                                 })
                               }
                               type="checkbox"
                             />
-                            <span className={`flex-1 text-sm ${item.status === "done" ? "text-zinc-400 line-through" : ""}`}>
+                            <span
+                              className={`flex-1 text-sm ${item.status === "done" ? "text-zinc-400 line-through" : ""}`}
+                            >
                               {item.title}
                             </span>
-                            <span className="text-xs text-zinc-400">{item.status}</span>
+                            <span className="text-xs text-zinc-400">
+                              {item.status}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -408,27 +475,40 @@ export function GoalsWorkspace() {
                         className="flex gap-2"
                         onSubmit={async (event) => {
                           event.preventDefault();
-                          if (!actionTitle.trim()) return;
-                          await problemCommand({ command: "add_action", title: actionTitle });
+                          if (!actionTitle.trim()) {
+                            return;
+                          }
+                          await problemCommand({
+                            command: "add_action",
+                            title: actionTitle,
+                          });
                           setActionTitle("");
                         }}
                       >
                         <input
                           aria-label="Add action"
                           className="min-w-0 flex-1 rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm dark:border-zinc-800"
-                          onChange={(event) => setActionTitle(event.target.value)}
+                          onChange={(event) =>
+                            setActionTitle(event.target.value)
+                          }
                           placeholder="Action"
                           value={actionTitle}
                         />
-                        <button className="text-sm" type="submit">+ Add</button>
+                        <button className="text-sm" type="submit">
+                          + Add
+                        </button>
                       </form>
                     </section>
                   </div>
                 ) : (
-                  <div className="py-20 text-sm text-zinc-400">Add a problem.</div>
+                  <div className="py-20 text-sm text-zinc-400">
+                    Add a problem.
+                  </div>
                 )}
               </div>
             </div>
+          ) : (
+            <div className="py-20 text-sm text-zinc-400">No goal selected.</div>
           )}
         </section>
       </div>

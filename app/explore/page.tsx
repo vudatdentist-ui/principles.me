@@ -1,2 +1,4 @@
 import { redirect } from "next/navigation";
-export default function ExplorePage() { redirect("/"); }
+export default function ExplorePage() {
+  redirect("/");
+}

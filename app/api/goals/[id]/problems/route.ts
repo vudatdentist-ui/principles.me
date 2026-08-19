@@ -13,7 +13,10 @@ export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const parsed = createProblemSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Problem is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Problem is required." },
+      { status: 400 }
+    );
   }
   const workspaceUser = await getWorkspaceUser();
   const problem = await createProblem({
