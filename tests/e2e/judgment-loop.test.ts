@@ -61,9 +61,9 @@ test.describe("Milestone 4 Judgment Loop", () => {
     await expect(candidate).toContainText(adoptedStatement);
     await candidate.getByRole("button", { name: "Adopt" }).click();
     await expect(page.getByText("adopted", { exact: true })).toBeVisible();
-    await expect(
-      candidate.getByRole("button", { name: "Adopt" })
-    ).toHaveCount(0);
+    await expect(candidate.getByRole("button", { name: "Adopt" })).toHaveCount(
+      0
+    );
 
     await page.goto("/principles");
     const card = page.getByTestId("principle-card").filter({
