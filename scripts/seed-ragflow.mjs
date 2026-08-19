@@ -42,7 +42,6 @@ for (const filePath of files) {
   const file = await fs.readFile(filePath);
   const form = new FormData();
   form.append("file", new Blob([file]), path.basename(filePath));
-  // biome-ignore lint/performance/noAwaitInLoops: Preserve deterministic upload order and backpressure.
   const response = await fetch(
     `${apiBase}/datasets/${encodeURIComponent(datasetId)}/documents`,
     {
@@ -51,9 +50,11 @@ for (const filePath of files) {
       method: "POST",
     }
   );
-  // biome-ignore lint/performance/noAwaitInLoops: Response parsing belongs to the sequential upload transaction.
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok || (payload.code !== undefined && Number(payload.code) !== 0)) {
+  if (
+    !response.ok ||
+    (payload.code !== undefined && Number(payload.code) !== 0)
+  ) {
     throw new Error(
       `RAGFlow document upload failed for ${path.basename(filePath)}: HTTP ${response.status} ${JSON.stringify(payload)}`
     );
