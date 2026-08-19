@@ -32,14 +32,26 @@ type WisdomBrainState = {
   anchors: THREE.Points;
   dustMaterial: THREE.ShaderMaterial;
   group: THREE.Group;
+  lineMaterial: THREE.ShaderMaterial;
   morph: number;
   shardMaterial: THREE.ShaderMaterial;
   from: number;
   to: number;
+  trunkMaterial: THREE.ShaderMaterial;
 };
 
 const COUNT = 14_000;
 const SHARD_COUNT = 6200;
+const TRUNK_COUNT = 6;
+const TRUNK_SHARDS_PER_CLUSTER = 10;
+const TRUNK_LINKS = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+  [4, 5],
+  [5, 0],
+] as const;
 
 const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
@@ -89,6 +101,25 @@ void main(){
 
 const DUST_FRAGMENT =
   "precision highp float; varying vec3 vColor; varying float vAlpha; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha; if(a<.015) discard; gl_FragColor=vec4(vColor*.86,a); }";
+
+const TRUNK_LINE_VERTEX = `
+attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform vec3 uPointer; uniform float uPointerActive;
+varying float vStrength;
+vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
+void main(){
+ float e=uMorph*uMorph*(3.0-2.0*uMorph);
+ vec3 p=mix(pick(uFrom),pick(uTo),e);
+ float pulse=.5+.5*sin(uTime*.8+p.x*2.0+p.y*1.6);
+ float influence=smoothstep(.9,0.0,length(p.xy-uPointer.xy))*uPointerActive;
+ p += normalize(vec3(p.xy-uPointer.xy,.18))*influence*.035;
+ vec4 mv=modelViewMatrix*vec4(p,1.0);
+ gl_Position=projectionMatrix*mv;
+ vStrength=.055+.025*pulse+.48*influence;
+}`;
+
+const TRUNK_LINE_FRAGMENT =
+  "precision highp float; varying float vStrength; uniform float uOpacity; void main(){ gl_FragColor=vec4(.56,.36,1.0,vStrength*uOpacity); }";
 
 function seeded(index: number, salt = 12.9898) {
   return Math.abs(Math.sin(index * salt) * 43_758.5453) % 1;
@@ -159,6 +190,8 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     [0.1, -1.0, 0],
     [-1.0, -0.62, -0.08],
   ];
+  const brainCenters = centers.map(() => [0, 0, 0]);
+  const brainCenterCounts = centers.map(() => 0);
   const thinkerCenters = [
     [-1.45, 0.45, 0.05],
     [-0.88, -0.35, 0.18],
@@ -169,15 +202,19 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   ];
 
   for (let index = 0; index < COUNT; index += 1) {
+    const cluster = index % 6;
     const mesh = meshes[index % meshes.length];
     samplers[index % samplers.length].sample(sample, normal);
     sample.applyMatrix4(mesh.matrixWorld).multiplyScalar(1.3);
     brain.set([sample.x, sample.y, sample.z], index * 3);
+    brainCenters[cluster][0] += sample.x;
+    brainCenters[cluster][1] += sample.y;
+    brainCenters[cluster][2] += sample.z;
+    brainCenterCounts[cluster] += 1;
     colors.set(colorFor(sample).toArray(), index * 3);
     seeds[index] = seeded(index, 17);
     scales[index] = 0.0058 + 0.0124 * seeded(index, 31) ** 2;
 
-    const cluster = index % 6;
     const center = centers[cluster];
     const spread = 0.29 + 0.18 * seeded(index, 21);
     graph.set(
@@ -213,6 +250,14 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
       ],
       index * 3
     );
+  }
+
+  for (let index = 0; index < brainCenters.length; index += 1) {
+    const center = brainCenters[index];
+    const count = brainCenterCounts[index];
+    center[0] /= count;
+    center[1] /= count;
+    center[2] /= count;
   }
 
   const dustGeometry = new THREE.BufferGeometry();
@@ -285,6 +330,155 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   shards.frustumCulled = false;
   group.add(shards);
 
+  const trunkInstanceCount = TRUNK_COUNT * TRUNK_SHARDS_PER_CLUSTER;
+  const trunkBrain = new Float32Array(trunkInstanceCount * 3);
+  const trunkGraph = new Float32Array(trunkInstanceCount * 3);
+  const trunkThinker = new Float32Array(trunkInstanceCount * 3);
+  const trunkCouncil = new Float32Array(trunkInstanceCount * 3);
+  const trunkColors = new Float32Array(trunkInstanceCount * 3);
+  const trunkScales = new Float32Array(trunkInstanceCount);
+  const trunkSeeds = new Float32Array(trunkInstanceCount);
+  const trunkCenter = new THREE.Vector3();
+
+  for (let cluster = 0; cluster < TRUNK_COUNT; cluster += 1) {
+    for (let local = 0; local < TRUNK_SHARDS_PER_CLUSTER; local += 1) {
+      const index = cluster * TRUNK_SHARDS_PER_CLUSTER + local;
+      const angle = seeded(index, 211) * Math.PI * 2;
+      const radius = 0.025 + seeded(index, 223) * 0.075;
+      const offset = new THREE.Vector3(
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius * 0.72,
+        (seeded(index, 227) - 0.5) * 0.12
+      );
+      const councilCenter = [
+        (cluster - 2.5) * 0.52,
+        0,
+        0.12 * Math.sin(cluster * 1.7),
+      ];
+      const positions = [
+        [
+          brainCenters[cluster][0],
+          brainCenters[cluster][1],
+          brainCenters[cluster][2],
+        ],
+        centers[cluster],
+        thinkerCenters[cluster],
+        councilCenter,
+      ];
+      const targets = [trunkBrain, trunkGraph, trunkThinker, trunkCouncil];
+      for (let mode = 0; mode < positions.length; mode += 1) {
+        const target = positions[mode];
+        const targetArray = targets[mode];
+        const modeOffset = mode === 0 ? 0.45 : mode === 2 ? 0.82 : 1;
+        targetArray[index * 3] = target[0] + offset.x * modeOffset;
+        targetArray[index * 3 + 1] = target[1] + offset.y * modeOffset;
+        targetArray[index * 3 + 2] = target[2] + offset.z * modeOffset;
+      }
+      trunkCenter.set(
+        centers[cluster][0],
+        centers[cluster][1],
+        centers[cluster][2]
+      );
+      trunkColors.set(colorFor(trunkCenter).toArray(), index * 3);
+      trunkSeeds[index] = seeded(index, 229);
+      trunkScales[index] = 0.012 + seeded(index, 233) * 0.014;
+    }
+  }
+
+  const trunkGeometry = new THREE.InstancedBufferGeometry();
+  trunkGeometry.setAttribute("position", octahedron.getAttribute("position"));
+  trunkGeometry.setAttribute(
+    "aBrain",
+    new THREE.InstancedBufferAttribute(trunkBrain, 3)
+  );
+  trunkGeometry.setAttribute(
+    "aGraph",
+    new THREE.InstancedBufferAttribute(trunkGraph, 3)
+  );
+  trunkGeometry.setAttribute(
+    "aThinker",
+    new THREE.InstancedBufferAttribute(trunkThinker, 3)
+  );
+  trunkGeometry.setAttribute(
+    "aCouncil",
+    new THREE.InstancedBufferAttribute(trunkCouncil, 3)
+  );
+  trunkGeometry.setAttribute(
+    "aColor",
+    new THREE.InstancedBufferAttribute(trunkColors, 3)
+  );
+  trunkGeometry.setAttribute(
+    "aScale",
+    new THREE.InstancedBufferAttribute(trunkScales, 1)
+  );
+  trunkGeometry.setAttribute(
+    "aSeed",
+    new THREE.InstancedBufferAttribute(trunkSeeds, 1)
+  );
+  trunkGeometry.instanceCount = trunkInstanceCount;
+  const trunkMaterial = new THREE.ShaderMaterial({
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    fragmentShader: BASE_FRAGMENT,
+    side: THREE.DoubleSide,
+    transparent: true,
+    uniforms: { ...uniformSet(), uOpacity: { value: 0.76 } },
+    vertexShader: BASE_VERTEX,
+  });
+  const trunks = new THREE.Mesh(trunkGeometry, trunkMaterial);
+  trunks.frustumCulled = false;
+  group.add(trunks);
+
+  const lineBrain = new Float32Array(TRUNK_LINKS.length * 2 * 3);
+  const lineGraph = new Float32Array(TRUNK_LINKS.length * 2 * 3);
+  const lineThinker = new Float32Array(TRUNK_LINKS.length * 2 * 3);
+  const lineCouncil = new Float32Array(TRUNK_LINKS.length * 2 * 3);
+  const fillLineTargets = (target: Float32Array, positions: number[][]) => {
+    let offset = 0;
+    for (const [from, to] of TRUNK_LINKS) {
+      target.set(positions[from], offset);
+      target.set(positions[to], offset + 3);
+      offset += 6;
+    }
+  };
+  fillLineTargets(lineBrain, brainCenters);
+  fillLineTargets(lineGraph, centers);
+  fillLineTargets(lineThinker, thinkerCenters);
+  fillLineTargets(
+    lineCouncil,
+    Array.from({ length: TRUNK_COUNT }, (_, index) => [
+      (index - 2.5) * 0.52,
+      0,
+      0.12 * Math.sin(index * 1.7),
+    ])
+  );
+  const lineGeometry = new THREE.BufferGeometry();
+  lineGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(lineBrain, 3)
+  );
+  lineGeometry.setAttribute("aBrain", new THREE.BufferAttribute(lineBrain, 3));
+  lineGeometry.setAttribute("aGraph", new THREE.BufferAttribute(lineGraph, 3));
+  lineGeometry.setAttribute(
+    "aThinker",
+    new THREE.BufferAttribute(lineThinker, 3)
+  );
+  lineGeometry.setAttribute(
+    "aCouncil",
+    new THREE.BufferAttribute(lineCouncil, 3)
+  );
+  const lineMaterial = new THREE.ShaderMaterial({
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    fragmentShader: TRUNK_LINE_FRAGMENT,
+    transparent: true,
+    uniforms: { ...uniformSet(), uOpacity: { value: 0.68 } },
+    vertexShader: TRUNK_LINE_VERTEX,
+  });
+  const trunkLines = new THREE.LineSegments(lineGeometry, lineMaterial);
+  trunkLines.frustumCulled = false;
+  group.add(trunkLines);
+
   const anchorPositions = new Float32Array(96 * 3);
   const anchorColors = new Float32Array(96 * 3);
   for (let index = 0; index < 96; index += 1) {
@@ -327,9 +521,11 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     dustMaterial,
     from: 0,
     group,
+    lineMaterial,
     morph: 1,
     shardMaterial,
     to: 0,
+    trunkMaterial,
   };
 }
 
@@ -390,6 +586,12 @@ function WisdomBrain({
     state.dustMaterial.uniforms.uFrom.value = state.from;
     state.dustMaterial.uniforms.uTo.value = state.to;
     state.dustMaterial.uniforms.uMorph.value = 0;
+    state.trunkMaterial.uniforms.uFrom.value = state.from;
+    state.trunkMaterial.uniforms.uTo.value = state.to;
+    state.trunkMaterial.uniforms.uMorph.value = 0;
+    state.lineMaterial.uniforms.uFrom.value = state.from;
+    state.lineMaterial.uniforms.uTo.value = state.to;
+    state.lineMaterial.uniforms.uMorph.value = 0;
     state.anchorMaterial.opacity = target === 0 ? 0.68 : 0;
   }, [state, target]);
 
@@ -409,16 +611,24 @@ function WisdomBrain({
     }
     state.shardMaterial.uniforms.uPointerActive.value = pointerActive;
     state.dustMaterial.uniforms.uPointerActive.value = pointerActive;
+    state.trunkMaterial.uniforms.uPointerActive.value = pointerActive;
+    state.lineMaterial.uniforms.uPointerActive.value = pointerActive;
     if (pointer.active) {
       state.shardMaterial.uniforms.uPointer.value.copy(pointerLocal);
       state.dustMaterial.uniforms.uPointer.value.copy(pointerLocal);
+      state.trunkMaterial.uniforms.uPointer.value.copy(pointerLocal);
+      state.lineMaterial.uniforms.uPointer.value.copy(pointerLocal);
     }
     state.shardMaterial.uniforms.uTime.value = time;
     state.dustMaterial.uniforms.uTime.value = time;
+    state.trunkMaterial.uniforms.uTime.value = time;
+    state.lineMaterial.uniforms.uTime.value = time;
     if (state.morph < 1) {
       state.morph = Math.min(1, state.morph + Math.min(0.05, delta) / 0.95);
       state.shardMaterial.uniforms.uMorph.value = state.morph;
       state.dustMaterial.uniforms.uMorph.value = state.morph;
+      state.trunkMaterial.uniforms.uMorph.value = state.morph;
+      state.lineMaterial.uniforms.uMorph.value = state.morph;
       if (state.morph >= 1) {
         state.from = state.to;
       }
