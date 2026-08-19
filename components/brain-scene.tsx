@@ -43,7 +43,7 @@ type WisdomBrainState = {
 const COUNT = 14_000;
 const SHARD_COUNT = 6200;
 const TRUNK_COUNT = 6;
-const TRUNK_SHARDS_PER_CLUSTER = 18;
+const TRUNK_SHARDS_PER_CLUSTER = 12;
 const TRUNK_LINKS = [
   [0, 1],
   [1, 2],
@@ -118,7 +118,7 @@ void main(){
  p.z += uDepth;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
  gl_Position=projectionMatrix*mv;
- vStrength=.15+.08*pulse+.72*influence;
+ vStrength=.07+.035*pulse+.45*influence;
 }`;
 
 const TRUNK_LINE_FRAGMENT =
@@ -195,12 +195,12 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     [-1.0, -0.62, -0.08],
   ];
   const brainTrunkCenters = [
-    [-0.78, 0.46, 0.18],
-    [-0.38, 0.76, 0.2],
-    [0.08, 0.78, 0.22],
-    [0.5, 0.5, 0.2],
-    [0.58, 0.04, 0.22],
-    [0.2, -0.42, 0.2],
+    [-1.02, 0.55, 0.16],
+    [-0.58, 0.98, 0.18],
+    [0.08, 1.02, 0.2],
+    [0.72, 0.62, 0.18],
+    [0.86, -0.02, 0.2],
+    [0.34, -0.72, 0.18],
   ];
   const thinkerCenters = [
     [-1.45, 0.45, 0.05],
@@ -375,7 +375,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
       );
       trunkColors.set(colorFor(trunkCenter).toArray(), index * 3);
       trunkSeeds[index] = seeded(index, 229);
-      trunkScales[index] = 0.022 + seeded(index, 233) * 0.026;
+      trunkScales[index] = 0.014 + seeded(index, 233) * 0.014;
     }
   }
 
@@ -411,16 +411,15 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   );
   trunkGeometry.instanceCount = trunkInstanceCount;
   const trunkMaterial = new THREE.ShaderMaterial({
-    blending: THREE.AdditiveBlending,
-    depthTest: false,
+    blending: THREE.NormalBlending,
     depthWrite: false,
     fragmentShader: BASE_FRAGMENT,
     side: THREE.DoubleSide,
     transparent: true,
     uniforms: {
       ...uniformSet(),
-      uDepth: { value: 0.14 },
-      uOpacity: { value: 0.94 },
+      uDepth: { value: 0.08 },
+      uOpacity: { value: 0.7 },
     },
     vertexShader: BASE_VERTEX,
   });
@@ -467,15 +466,14 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     new THREE.BufferAttribute(lineCouncil, 3)
   );
   const lineMaterial = new THREE.ShaderMaterial({
-    blending: THREE.AdditiveBlending,
-    depthTest: false,
+    blending: THREE.NormalBlending,
     depthWrite: false,
     fragmentShader: TRUNK_LINE_FRAGMENT,
     transparent: true,
     uniforms: {
       ...uniformSet(),
-      uDepth: { value: 0.18 },
-      uOpacity: { value: 0.9 },
+      uDepth: { value: 0.1 },
+      uOpacity: { value: 0.55 },
     },
     vertexShader: TRUNK_LINE_VERTEX,
   });
