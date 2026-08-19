@@ -69,7 +69,7 @@ jobs:
           TARGET_SHA: ${{ inputs.target_sha }}
         run: |
           ssh "$SSH_USER@$SSH_HOST" \
-            "cd '$DEPLOY_PATH' && chmod +x ops/deploy-release.sh 2>/dev/null || chmod +x deploy-release.sh; \
+            "cd '$DEPLOY_PATH' && chmod +x deploy-release.sh && \
             COMPOSE_FILE=docker-compose.release.yml \
             COMPOSE_PROJECT=principles-production \
             PRINCIPLES_IMAGE='$IMAGE_REPOSITORY:$TARGET_SHA' \
