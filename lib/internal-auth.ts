@@ -11,6 +11,12 @@ import {
 
 const TWO_WEEKS = 60 * 60 * 24 * 14;
 
+function secureSessionCookie() {
+  return ["staging", "production"].includes(
+    process.env.APP_ENV?.trim().toLowerCase() ?? ""
+  );
+}
+
 export class WorkspaceAuthenticationError extends Error {
   constructor() {
     super("Internal authentication required.");
@@ -64,7 +70,7 @@ export async function createInternalSession({
     maxAge: TWO_WEEKS,
     path: "/",
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: secureSessionCookie(),
   });
 }
 
@@ -75,6 +81,6 @@ export async function clearInternalSession() {
     maxAge: 0,
     path: "/",
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: secureSessionCookie(),
   });
 }
