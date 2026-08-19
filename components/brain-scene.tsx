@@ -6,12 +6,15 @@
 "use client";
 
 import { OrbitControls, Sparkles } from "@react-three/drei";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo } from "react";
 // biome-ignore lint/performance/noNamespaceImport: Three.js is used as a cohesive renderer namespace.
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import {
   type BrainMode,
   PRINCIPLES_LINKS,
@@ -57,7 +60,7 @@ void main(){
 }`;
 
 const BASE_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; uniform float uOpacity; void main(){ vec3 c=vColor*(1.02+vPulse*.44); gl_FragColor=vec4(c,uOpacity); }";
+  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; uniform float uOpacity; void main(){ vec3 c=vColor*(.80+vPulse*.34); gl_FragColor=vec4(c,uOpacity); }";
 
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
@@ -78,7 +81,7 @@ void main(){
 }`;
 
 const DUST_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vAlpha; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha; if(a<.015) discard; gl_FragColor=vec4(vColor*1.04,a); }";
+  "precision highp float; varying vec3 vColor; varying float vAlpha; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha; if(a<.015) discard; gl_FragColor=vec4(vColor*.94,a); }";
 
 const LINE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil; attribute vec3 aColor;
@@ -87,7 +90,7 @@ vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return
 void main(){float e=uMorph*uMorph*(3.0-2.0*uMorph);vec3 p=mix(pick(uFrom),pick(uTo),e);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);vColor=aColor;}`;
 
 const LINE_FRAGMENT =
-  "precision highp float; varying vec3 vColor; uniform float uLineOpacity; void main(){gl_FragColor=vec4(vColor*1.66,uLineOpacity);}";
+  "precision highp float; varying vec3 vColor; uniform float uLineOpacity; void main(){gl_FragColor=vec4(vColor*1.58,uLineOpacity);}";
 
 function seeded(index: number, salt = 12.9898) {
   return Math.abs(Math.sin(index * salt) * 43_758.5453) % 1;
@@ -268,7 +271,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     new THREE.InstancedBufferAttribute(seeds, 1)
   );
   shardGeometry.instanceCount = SHARD_COUNT;
-  const shardUniforms = { ...uniformSet(), uOpacity: { value: 0.71 } };
+  const shardUniforms = { ...uniformSet(), uOpacity: { value: 0.6 } };
   const shardMaterial = new THREE.ShaderMaterial({
     blending: THREE.AdditiveBlending,
     depthWrite: false,
@@ -363,7 +366,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   const anchorMaterial = new THREE.PointsMaterial({
     blending: THREE.AdditiveBlending,
     depthWrite: false,
-    opacity: 0.76,
+    opacity: 0.82,
     size: 0.042,
     transparent: true,
     vertexColors: true,
@@ -432,8 +435,8 @@ function WisdomBrain({ mode }: { mode: BrainMode }) {
     state.dustMaterial.uniforms.uTo.value = state.to;
     state.dustMaterial.uniforms.uMorph.value = 0;
     state.lineMaterial.uniforms.uLineOpacity.value =
-      target === 1 ? 0.2 : target === 0 ? 0.12 : 0.06;
-    state.anchorMaterial.opacity = target === 0 ? 0.76 : 0;
+      target === 1 ? 0.19 : target === 0 ? 0.1 : 0.055;
+    state.anchorMaterial.opacity = target === 0 ? 0.78 : 0;
   }, [state, target]);
 
   useFrame(({ clock }, delta) => {
@@ -451,7 +454,7 @@ function WisdomBrain({ mode }: { mode: BrainMode }) {
     if (state.to === 0 && state.morph >= 1) {
       state.group.rotation.y += delta * 0.035;
       state.anchorMaterial.size = 0.04 + 0.006 * Math.sin(time * 1.92);
-      state.anchorMaterial.opacity = 0.71 + 0.07 * Math.sin(time * 1.22);
+      state.anchorMaterial.opacity = 0.72 + 0.08 * Math.sin(time * 1.22);
     }
   });
 
@@ -570,6 +573,34 @@ function KnowledgeGraph({
   );
 }
 
+function BrainPostProcessing() {
+  const { camera, gl, scene, size } = useThree();
+  const composer = useMemo(() => {
+    const next = new EffectComposer(gl);
+    next.addPass(new RenderPass(scene, camera));
+    next.addPass(
+      new UnrealBloomPass(
+        new THREE.Vector2(size.width, size.height),
+        0.82,
+        0.38,
+        0.26
+      )
+    );
+    return next;
+  }, [camera, gl, scene, size.height, size.width]);
+
+  useEffect(() => {
+    composer.setSize(size.width, size.height);
+    return () => composer.dispose();
+  }, [composer, size.height, size.width]);
+
+  useFrame(() => {
+    composer.render();
+  }, 1);
+
+  return null;
+}
+
 function SceneContents(props: BrainSceneProps) {
   return (
     <>
@@ -590,6 +621,7 @@ function SceneContents(props: BrainSceneProps) {
         enablePan={false}
         enableZoom={false}
       />
+      <BrainPostProcessing />
     </>
   );
 }
@@ -601,6 +633,9 @@ export function BrainScene(props: BrainSceneProps) {
       setSize: (width: number, height: number) => void;
     }) => {
       const parent = state.gl.domElement.parentElement;
+      state.gl.outputColorSpace = THREE.SRGBColorSpace;
+      state.gl.toneMapping = THREE.ACESFilmicToneMapping;
+      state.gl.toneMappingExposure = 0.93;
       const rect = parent?.getBoundingClientRect();
       if (rect && rect.width > 0 && rect.height > 0) {
         state.setSize(rect.width, rect.height);
@@ -615,8 +650,8 @@ export function BrainScene(props: BrainSceneProps) {
       className={`brain-canvas${props.mode === "graph" ? " brain-canvas-interactive" : ""}`}
     >
       <Canvas
-        camera={{ fov: 42, position: [0, 0, 4.05] }}
-        dpr={[1, 1]}
+        camera={{ fov: 42, position: [0.08, 0.02, 4.04] }}
+        dpr={[1, 2]}
         gl={{ alpha: true, antialias: true }}
         onCreated={handleCanvasCreated}
         style={{ height: "100%", width: "100%" }}
