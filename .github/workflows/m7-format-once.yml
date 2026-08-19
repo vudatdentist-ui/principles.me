@@ -1,0 +1,39 @@
+name: M7 Format Once
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  format:
+    if: github.head_ref == 'agent/milestone-7-trust-layer'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Apply repository formatter
+        run: pnpm fix
+      - name: Remove formatter workflow and commit
+        run: |
+          git rm .github/workflows/m7-format-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 1
+          git commit -m "Format Milestone 7 trust layer"
+          git push origin HEAD:${{ github.head_ref }}
