@@ -69,7 +69,7 @@ async function getDecisionOrigin({
       ];
 }
 
-async function getRelatedDecisions({
+function getRelatedDecisions({
   principleId,
   userId,
 }: {
@@ -149,7 +149,7 @@ export async function listPrinciplesForRegistry(
   );
 }
 
-export async function createManualPrinciple({
+export function createManualPrinciple({
   description,
   statement,
   userId,
