@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { briefToText } from "@/lib/council/grounding";
 import { buildCouncilPlan } from "@/lib/council/lenses";
+import { buildNoEvidenceCouncilAnswer } from "@/lib/council/no-evidence";
 import { retrieveCouncilEvidence } from "@/lib/council/retrieval";
 import { countPromptInjectionSignals } from "@/lib/council/security";
 import { synthesizeCouncilBrief } from "@/lib/council/synthesize";
@@ -25,6 +26,27 @@ function line(event: Record<string, unknown>): string {
   return `${JSON.stringify(event)}\n`;
 }
 
+function resolveDecisionId(request: Request, explicitId?: string) {
+  if (explicitId) {
+    return explicitId;
+  }
+  const referer = request.headers.get("referer");
+  if (!referer) {
+    return null;
+  }
+  try {
+    const match = new URL(referer).pathname.match(
+      /\/decisions\/([0-9a-f-]{36})(?:\/|$)/i
+    );
+    const candidate = match?.[1];
+    return candidate && z.string().uuid().safeParse(candidate).success
+      ? candidate
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(
     await request.json().catch(() => null)
@@ -32,7 +54,8 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return Response.json({ error: "Decision không hợp lệ." }, { status: 400 });
   }
-  const { context, decisionId = null, question, thinkerIds } = parsed.data;
+  const { context, question, thinkerIds } = parsed.data;
+  const decisionId = resolveDecisionId(request, parsed.data.decisionId);
   const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 
   const stream = new ReadableStream<Uint8Array>({
@@ -142,28 +165,18 @@ export async function POST(request: Request) {
         write({ references: retrieval.references, type: "references" });
 
         if (!retrieval.references.length) {
-          const caveat =
-            retrieval.reason === "NOT_CONFIGURED"
-              ? "RAGFlow chưa được cấu hình dataset/API key."
-              : retrieval.reason === "UNAVAILABLE"
-                ? "Các retrieval query đều không hoàn thành."
-                : "RAGFlow không trả về chunk phù hợp cho các decision lenses.";
           write({
             message:
               "Không có external evidence đủ liên quan; personal memory không được dùng để giả thành sourced recommendation.",
             stage: "NO_EVIDENCE",
             type: "status",
           });
-          write({
-            answer:
-              "Chưa có external evidence đủ liên quan từ RAGFlow để tạo một Council brief có căn cứ.",
-            brief: null,
-            caveats: [caveat],
-            citations: [],
-            grounded: false,
-            plan,
-            type: "answer",
-          });
+          write(
+            buildNoEvidenceCouncilAnswer({
+              plan,
+              reason: retrieval.reason ?? "EMPTY",
+            })
+          );
           errorStage = null;
           emitTelemetry();
           write({ type: "done" });
