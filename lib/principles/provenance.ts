@@ -15,10 +15,10 @@ export type PrincipleOrigin = {
 
 export type PrincipleProvenanceProvider = {
   kind: Exclude<PrincipleOriginKind, "decision" | "manual">;
-  listOrigins(args: {
+  listOrigins: (args: {
     principleIds: string[];
     userId: string;
-  }): Promise<Map<string, PrincipleOrigin[]>>;
+  }) => Promise<Map<string, PrincipleOrigin[]>>;
 };
 
 /**
@@ -36,9 +36,11 @@ export async function collectExtendedPrincipleOrigins({
   userId: string;
 }) {
   const collected = new Map<string, PrincipleOrigin[]>();
+  const providerResults = await Promise.all(
+    providers.map((provider) => provider.listOrigins({ principleIds, userId }))
+  );
 
-  for (const provider of providers) {
-    const providerOrigins = await provider.listOrigins({ principleIds, userId });
+  for (const providerOrigins of providerResults) {
     for (const [principleId, origins] of providerOrigins) {
       collected.set(principleId, [
         ...(collected.get(principleId) ?? []),
