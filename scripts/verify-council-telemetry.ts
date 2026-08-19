@@ -51,6 +51,17 @@ const allowedKeys = new Set([
   "successfulRetrievalQueryCount",
   "timestamp",
 ]);
+const forbiddenKeys = new Set([
+  "question",
+  "context",
+  "evidence",
+  "sourceText",
+  "prompt",
+  "apiKey",
+  "secret",
+  "token",
+  "userId",
+].map((key) => key.toLowerCase()));
 const actualKeys = Object.keys(telemetry);
 assert(
   actualKeys.every((key) => allowedKeys.has(key)),
@@ -62,22 +73,25 @@ assert(
   actualKeys.length === allowedKeys.size,
   "Council telemetry allowlist and emitted shape differ."
 );
+assert(
+  actualKeys.every((key) => !forbiddenKeys.has(key.toLowerCase())),
+  `Council telemetry leaked a forbidden field: ${actualKeys
+    .filter((key) => forbiddenKeys.has(key.toLowerCase()))
+    .join(", ")}`
+);
 
-const serialized = JSON.stringify(telemetry).toLowerCase();
-for (const sensitiveKey of [
-  "question",
-  "context",
-  "evidence",
-  "sourceText",
-  "prompt",
-  "apiKey",
-  "secret",
-  "token",
-  "userId",
+const serialized = JSON.stringify(telemetry);
+for (const sentinel of [
+  "raw-user-question",
+  "raw-user-context",
+  "raw-evidence-text",
+  "raw-prompt-text",
+  "super-secret-api-key",
+  "bearer-token-value",
 ]) {
   assert(
-    !serialized.includes(sensitiveKey.toLowerCase()),
-    `Council telemetry leaked sensitive field name: ${sensitiveKey}`
+    !serialized.includes(sentinel),
+    `Council telemetry leaked sensitive value: ${sentinel}`
   );
 }
 
