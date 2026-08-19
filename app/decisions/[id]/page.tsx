@@ -1,27 +1,6 @@
 import { Suspense } from "react";
-import { JudgmentDecisionWorkspace } from "@/components/judgment-decision";
-import { LearningLoop } from "@/components/learning-loop";
-import { PersonalMemory } from "@/components/personal-memory";
+import { DecisionDetailV1 } from "@/components/decision-detail-v1";
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
-
-async function DecisionRoute({ params }: Props) {
-  const { id } = await params;
-  return (
-    <>
-      <JudgmentDecisionWorkspace decisionId={id} />
-      <LearningLoop decisionId={id} />
-      <PersonalMemory decisionId={id} />
-    </>
-  );
-}
-
-export default function Page({ params }: Props) {
-  return (
-    <Suspense fallback={null}>
-      <DecisionRoute params={params} />
-    </Suspense>
-  );
-}
+type Props = { params: Promise<{ id: string }> };
+async function DecisionRoute({ params }: Props) { const { id } = await params; return <DecisionDetailV1 decisionId={id} />; }
+export default function Page({ params }: Props) { return <Suspense fallback={null}><DecisionRoute params={params}/></Suspense>; }

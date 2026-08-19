@@ -1,15 +1,2 @@
-import { DecisionWorkspace } from "@/components/decision-workspace";
-import {
-  LegacyWorkspaceBoundary,
-  WorkspaceShell,
-} from "@/components/workspace-shell";
-
-export default function ExplorePage() {
-  return (
-    <WorkspaceShell active="none" title="Explore">
-      <LegacyWorkspaceBoundary>
-        <DecisionWorkspace initialView="explore" />
-      </LegacyWorkspaceBoundary>
-    </WorkspaceShell>
-  );
-}
+import { redirect } from "next/navigation";
+export default function ExplorePage() { redirect("/"); }
