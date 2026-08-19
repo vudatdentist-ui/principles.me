@@ -94,7 +94,9 @@ test.describe("Milestone 6 Learning Loop", () => {
     const reloadedLoop = page.getByTestId("learning-loop");
     await expect(
       reloadedLoop.getByTestId("latest-learning-review")
-    ).toContainText("The trust-repair test surfaced the same avoidance pattern");
+    ).toContainText(
+      "The trust-repair test surfaced the same avoidance pattern"
+    );
     await expect(reloadedLoop).toContainText(revisedPrinciple);
     await expect(reloadedLoop).toContainText("resulting revision 2");
 
