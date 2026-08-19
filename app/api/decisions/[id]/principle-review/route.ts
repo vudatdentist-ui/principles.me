@@ -25,9 +25,14 @@ const requestSchema = z.discriminatedUnion("action", [
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, context: RouteContext) {
-  const parsed = requestSchema.safeParse(await request.json().catch(() => null));
+  const parsed = requestSchema.safeParse(
+    await request.json().catch(() => null)
+  );
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid principle review." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid principle review." },
+      { status: 400 }
+    );
   }
 
   const [{ id }, workspaceUser] = await Promise.all([
