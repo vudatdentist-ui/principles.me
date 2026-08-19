@@ -70,7 +70,8 @@ export async function scheduleDecisionReview({
     return null;
   }
 
-  let status = current.status;
+  const { status: currentStatus } = current;
+  let status = currentStatus;
   if (status !== "reviewed" && status !== "archived") {
     if (reviewAt && reviewAt <= new Date()) {
       status = "review_due";
@@ -124,8 +125,8 @@ export async function getLearningReviewContext({
   ]);
 
   return {
-    assumptions: assumptionsFromBrief(detail.decision.councilBrief),
     assumptionReviews,
+    assumptions: assumptionsFromBrief(detail.decision.councilBrief),
     decision: detail.decision,
     outcomes: detail.outcomes,
     principleReviews,
@@ -296,12 +297,16 @@ export async function reviewDecisionPrinciple({
           status: "revised",
           updatedAt: new Date(),
         })
-        .where(and(eq(principle.id, principleId), eq(principle.userId, userId)));
+        .where(
+          and(eq(principle.id, principleId), eq(principle.userId, userId))
+        );
     } else if (action === "retire") {
       await tx
         .update(principle)
         .set({ status: "retired", updatedAt: new Date() })
-        .where(and(eq(principle.id, principleId), eq(principle.userId, userId)));
+        .where(
+          and(eq(principle.id, principleId), eq(principle.userId, userId))
+        );
     }
 
     const [createdReview] = await tx
