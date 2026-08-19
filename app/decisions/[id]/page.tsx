@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { JudgmentDecisionWorkspace } from "@/components/judgment-decision";
+import { PersonalMemory } from "@/components/personal-memory";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -7,7 +8,12 @@ type Props = {
 
 async function DecisionRoute({ params }: Props) {
   const { id } = await params;
-  return <JudgmentDecisionWorkspace decisionId={id} />;
+  return (
+    <>
+      <JudgmentDecisionWorkspace decisionId={id} />
+      <PersonalMemory decisionId={id} />
+    </>
+  );
 }
 
 export default function Page({ params }: Props) {
