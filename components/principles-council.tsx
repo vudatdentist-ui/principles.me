@@ -279,11 +279,7 @@ export function PrinciplesCouncil() {
       </aside>
 
       <section className="workspace" data-route={route}>
-        <BrainScene
-          mode={mode}
-          onSelectThinker={chooseThinker}
-          selectedThinkerIds={selectedThinkerIds}
-        />
+        <BrainScene mode={mode} />
         <div className="workspace-shade" />
         <header className="topbar">
           <div className="topbar-route">

@@ -15,18 +15,10 @@ import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.j
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import {
-  type BrainMode,
-  PRINCIPLES_LINKS,
-  PRINCIPLES_NODES,
-  type PrinciplesNode,
-  THINKERS,
-} from "@/lib/principles-graph";
+import type { BrainMode } from "@/lib/principles-graph";
 
 type BrainSceneProps = {
   mode: BrainMode;
-  selectedThinkerIds: string[];
-  onSelectThinker?: (id: string) => void;
 };
 
 type WisdomBrainState = {
@@ -467,73 +459,6 @@ function WisdomBrain({ mode }: { mode: BrainMode }) {
   );
 }
 
-function GraphLine({
-  source,
-  target,
-  accent,
-}: {
-  source: PrinciplesNode;
-  target: PrinciplesNode;
-  accent: string;
-}) {
-  const points = useMemo(
-    () =>
-      new Float32Array([
-        source.x,
-        source.y,
-        source.z,
-        target.x,
-        target.y,
-        target.z,
-      ]),
-    [source, target]
-  );
-  return (
-    <line>
-      <bufferGeometry attach="geometry">
-        <bufferAttribute args={[points, 3]} attach="attributes-position" />
-      </bufferGeometry>
-      <lineBasicMaterial color={accent} opacity={0.3} transparent />
-    </line>
-  );
-}
-
-function KnowledgeGraph({ mode, selectedThinkerIds }: BrainSceneProps) {
-  const visibleThinkers = new Set(
-    selectedThinkerIds.length
-      ? selectedThinkerIds
-      : THINKERS.map((thinker) => thinker.id)
-  );
-  const nodeMap = new Map(PRINCIPLES_NODES.map((node) => [node.id, node]));
-  return (
-    <group
-      scale={mode === "graph" ? 1.05 : mode === "constellation" ? 1.12 : 0.82}
-    >
-      {PRINCIPLES_LINKS.map((link) => {
-        const source = nodeMap.get(link.source);
-        const target = nodeMap.get(link.target);
-        if (
-          !source ||
-          !target ||
-          mode === "constellation" ||
-          !visibleThinkers.has(source.thinkerId ?? "") ||
-          !visibleThinkers.has(target.thinkerId ?? "")
-        ) {
-          return null;
-        }
-        return (
-          <GraphLine
-            accent={link.relation === "contrasts" ? "#ff708d" : source.accent}
-            key={`${link.source}-${link.target}`}
-            source={source}
-            target={target}
-          />
-        );
-      })}
-    </group>
-  );
-}
-
 function BrainPostProcessing() {
   const { camera, gl, scene, size } = useThree();
   const composer = useMemo(() => {
@@ -568,7 +493,6 @@ function SceneContents(props: BrainSceneProps) {
       <color args={["#02060b"]} attach="background" />
       <fog args={["#02060b", 3.7, 7.5]} attach="fog" />
       <WisdomBrain mode={props.mode} />
-      {props.mode === "brain" ? null : <KnowledgeGraph {...props} />}
       <OrbitControls
         autoRotate={props.mode === "brain"}
         autoRotateSpeed={0.28}
