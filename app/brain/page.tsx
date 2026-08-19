@@ -18,7 +18,8 @@ export default async function PersonalBrainPage() {
             <span className={styles.eyebrow}>Your judgment memory</span>
             <h1>Personal Brain</h1>
             <p>
-              A data-backed view of what you have decided, kept, reused, and reviewed.
+              A data-backed view of what you have decided, kept, reused, and
+              reviewed.
             </p>
           </div>
           <Brain size={30} />
@@ -67,13 +68,17 @@ export default async function PersonalBrainPage() {
                 {summary.reusedPrinciples.map((item) => (
                   <div key={item.id}>
                     <strong>“{item.statement}”</strong>
-                    <span>Applied in {item.timesApplied} later decision{item.timesApplied === 1 ? "" : "s"}</span>
+                    <span>
+                      Applied in {item.timesApplied} later decision
+                      {item.timesApplied === 1 ? "" : "s"}
+                    </span>
                   </div>
                 ))}
               </div>
             ) : (
               <p className={styles.empty}>
-                No principle has been reused yet. Apply a prior principle from a new Decision to start compounding your memory.
+                No principle has been reused yet. Apply a prior principle from a
+                new Decision to start compounding your memory.
               </p>
             )}
           </article>
