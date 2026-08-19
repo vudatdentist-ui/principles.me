@@ -38,7 +38,9 @@ test.describe("Milestone 5 Personal Brain", () => {
     const candidate = page.getByTestId("candidate-principle");
     await expect(candidate).toContainText(principleStatement);
     await candidate.getByRole("button", { name: "Adopt" }).click();
-    await expect(page.getByText(principleStatement, { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(principleStatement, { exact: true })
+    ).toBeVisible();
 
     await createDecision(
       page,
@@ -57,7 +59,9 @@ test.describe("Milestone 5 Personal Brain", () => {
     await rememberedPrinciple
       .getByRole("button", { name: "Apply to this decision" })
       .click();
-    await expect(rememberedPrinciple.getByTestId("principle-applied")).toBeVisible();
+    await expect(
+      rememberedPrinciple.getByTestId("principle-applied")
+    ).toBeVisible();
 
     await page.goto("/principles");
     const principleCard = page
