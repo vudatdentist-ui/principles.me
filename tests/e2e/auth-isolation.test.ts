@@ -35,8 +35,7 @@ async function login(
   );
   await page.getByRole("button", { name: "Sign in" }).click();
   const loginResponse = await loginResponsePromise;
-  const loginBody = await loginResponse.text();
-  expect(loginResponse.status(), loginBody).toBe(200);
+  expect(loginResponse.status()).toBe(200);
 
   const sessionResponse = await context.request.get("/api/auth/session");
   const sessionBody = await sessionResponse.text();
