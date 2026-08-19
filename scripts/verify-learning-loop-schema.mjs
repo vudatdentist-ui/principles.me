@@ -30,7 +30,10 @@ try {
       AND table_name = 'DecisionOutcome'
       AND column_name IN ('decisionQuality', 'reasoningQuality')
   `;
-  assert(columns.length === 2, "Missing DecisionOutcome review quality columns");
+  assert(
+    columns.length === 2,
+    "Missing DecisionOutcome review quality columns"
+  );
 
   const indexes = await sql`
     SELECT indexname
@@ -116,8 +119,14 @@ try {
       (SELECT count(*)::int FROM "DecisionAssumptionReview" WHERE "userId" = ${owner.id}) AS assumptions,
       (SELECT count(*)::int FROM "DecisionPrincipleReview" WHERE "userId" = ${owner.id}) AS principles
   `;
-  assert(Number(remaining.assumptions) === 0, "Assumption review cascade failed");
-  assert(Number(remaining.principles) === 0, "Principle review cascade failed");
+  assert(
+    Number(remaining.assumptions) === 0,
+    "Assumption review cascade failed"
+  );
+  assert(
+    Number(remaining.principles) === 0,
+    "Principle review cascade failed"
+  );
 
   console.log("Learning Loop schema verification passed.");
 } finally {
