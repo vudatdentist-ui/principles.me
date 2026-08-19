@@ -1,5 +1,5 @@
-import { DecisionWorkspace } from "@/components/decision-workspace";
+import { MyPrinciplesWorkspace } from "@/components/my-principles";
 
 export default function PrinciplesPage() {
-  return <DecisionWorkspace initialView="principles" />;
+  return <MyPrinciplesWorkspace />;
 }
