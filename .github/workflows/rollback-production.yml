@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.target_sha }}
+          ref: main
       - name: Validate rollback target
         env:
           GH_TOKEN: ${{ github.token }}
