@@ -1,29 +1,37 @@
 # Principles — Human Wisdom OS
 
-Principles is a new application built from the Vercel `chatbot` Next.js base, with a visual language based on the supplied `C:\Users\Admin\Desktop\index.html`. It is intentionally not a ChatGPT clone: the Brain, graph, thinker constellation and Council are the primary surface.
+Principles is a Next.js application for evidence-grounded Council reasoning. It is built from the Vercel `chatbot` base, but the active product surface is Principles-specific: Brain, graph, thinker constellation, Council, and the emerging Decision/Principle domain.
 
 ## Architecture
 
-- `Next.js App Router` owns the UI and the server-side Council endpoint.
+- `Next.js App Router` owns the UI and server-side Council endpoint.
 - `React Three Fiber + Three.js` renders the interactive Brain/Graph/Constellation/Council modes.
 - `RAGFlow` remains a separate service. The app only calls its `/api/v1/retrieval` HTTP API.
-- `DeepSeek` is the reasoning/synthesis model. It receives only retrieved RAGFlow chunks.
-- `lib/principles-graph.ts` is the Principles graph model. It does not reuse GraphRAG Workbench's entity/relationship schema.
-- `public/brain.glb` is the brain mesh extracted from the supplied UI reference; the R3F renderer samples it into morphing particles and shards.
-- GraphRAG Workbench was researched for its renderer approach and interaction patterns; its application source is not included here.
+- `DeepSeek` is the reasoning/synthesis model and receives only retrieved RAGFlow chunks.
+- `lib/principles-graph.ts` is the current Principles knowledge-graph model.
+- `lib/db/schema.ts` owns persistence, including Decision, Judgment, Principle, DecisionPrinciple, and DecisionOutcome.
+- `public/brain.glb` is the active brain mesh used by the R3F renderer.
+
+See `docs/repo-inventory.md` for the boundary between active Principles code and retained Vercel-chatbot legacy code.
 
 ## Local run
 
-Requirements: Node 20+, pnpm, and Docker Desktop for RAGFlow.
+Requirements: Node 20+, pnpm 10.32.1, PostgreSQL, and Docker Desktop when running RAGFlow locally.
 
 ```powershell
-pnpm install
+pnpm install --frozen-lockfile
 Copy-Item .env.example .env.local
-# Fill DEEPSEEK_API_KEY, then configure RAGFlow values in .env.local.
+# Set POSTGRES_URL. Add provider credentials only for workflows that need them.
+pnpm db:migrate
+pnpm db:verify
 pnpm dev
 ```
 
 Open `http://localhost:3000`.
+
+The migration command fails when `POSTGRES_URL` is missing. Silent migration skipping is intentionally not supported.
+
+For environment separation and secret handling, see `docs/environment-policy.md`.
 
 If the supplied reference asset changes, regenerate the mesh with `pnpm brain:extract`.
 
@@ -35,36 +43,42 @@ RAGFlow is intentionally not merged into this Next.js project. To bootstrap the 
 pnpm ragflow:bootstrap
 ```
 
-The script clones the official RAGFlow repository at `v0.26.4` into `infra/ragflow/upstream` and runs its own Docker Compose stack. RAGFlow requires a Docker host with at least 4 CPU cores, 16 GB RAM and 50 GB disk; initialization can take several minutes.
+The script clones the official RAGFlow repository at `v0.26.4` into `infra/ragflow/upstream` and runs its Docker Compose stack.
 
 After the RAGFlow UI is ready:
 
 1. Create a dataset and an API key in RAGFlow.
 2. Set `RAGFLOW_API_KEY` and `RAGFLOW_DATASET_IDS` in `.env.local`.
-3. Upload a corpus (the seeder accepts one file or a directory):
+3. Seed licensed or user-owned source material with `pnpm ragflow:seed`.
 
-```powershell
-$env:RAGFLOW_API_KEY='your-ragflow-key'
-$env:RAGFLOW_DATASET_ID='your-dataset-id'
-$env:RAGFLOW_DOCUMENT_DIR='C:\Users\Admin\Desktop\Source'
-pnpm ragflow:seed
-```
-
-`RAGFLOW_DOCUMENT_DIR` accepts PDF, Markdown, text, Word, PowerPoint, Excel and CSV files. The seeder uploads each file with its original filename, so RAGFlow keeps provenance per document. Use licensed or user-owned primary sources for production research.
+RAGFlow credentials and provider API keys are server-only secrets.
 
 ## Verification
 
-```powershell
-pnpm lint
-pnpm exec tsc --noEmit
+The canonical pull-request gate is `.github/workflows/ci.yml`. It starts from a fresh checkout and runs:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check
+pnpm typecheck
+pnpm db:check
+pnpm db:migrate
+pnpm db:verify
 pnpm build
+pnpm test:e2e
 ```
 
-For a browser smoke test, start the app and verify:
+CI provides a disposable PostgreSQL 16 database. `pnpm db:verify` performs real inserts/deletes against the migrated database to verify the Decision-domain tables, enums, indexes, ownership columns, and delete behavior.
 
-`Home → Ask Council → retrieval status → DeepSeek stream → Council Response → Sources → Brain mode morph`
+Playwright runs the current Principles product smoke suite rather than the inherited chatbot selectors. The safety smoke test deliberately leaves RAGFlow unconfigured and verifies that Council fails closed instead of fabricating evidence.
 
-When RAGFlow is not configured or returns no chunks, the UI explicitly shows “No evidence retrieved” and the API will not invent citations. When DeepSeek is unavailable, the stream shows an error instead of presenting a fabricated answer.
+## Decision domain lifecycle
+
+The foundation schema supports:
+
+`draft → exploring → decided → review_due → reviewed → archived`
+
+Principles support `active → revised → retired` plus an explicit revision number. Domain records are user-owned, and domain child records use explicit cascade/set-null behavior so deletion semantics are deterministic.
 
 ## Deploy
 
@@ -74,28 +88,8 @@ For the current Hostinger VPS deployment, the Next.js app and RAGFlow remain sep
 docker compose -f docker-compose.hostinger.yml up -d --build
 ```
 
-Create these Cloudflare DNS records before requesting the TLS certificate:
+RAGFlow is managed independently under `infra/ragflow/upstream/docker`.
 
-- `A @` → `187.127.116.53` (proxied)
-- `A www` → `187.127.116.53` (proxied)
+For Vercel or another managed deployment, inject runtime secrets through the deployment platform rather than committed env files. At minimum, production workflows that use Council need the DeepSeek and RAGFlow variables documented in `.env.example`; persistence workflows also require `POSTGRES_URL`.
 
-RAGFlow is managed independently under `infra/ragflow/upstream/docker`; its API is not merged into Next.js. For a fresh VPS, bootstrap it with `pnpm ragflow:bootstrap`, enable a TEI embedding profile, create a dataset/API key, then seed with `pnpm ragflow:seed`.
-
-For Vercel deployments, configure the following project environment variables:
-
-- `DEEPSEEK_API_KEY`
-- `DEEPSEEK_MODEL` (default `deepseek-chat`)
-- `DEEPSEEK_BASE_URL` (default `https://api.deepseek.com`)
-- `RAGFLOW_BASE_URL`
-- `RAGFLOW_API_KEY`
-- `RAGFLOW_DATASET_IDS`
-
-Then:
-
-```powershell
-npx vercel --prod
-```
-
-On Windows, if the CLI reports an `EPERM` symlink error while creating `.vercel/output`, enable Windows Developer Mode (or deploy from a Linux CI runner). The local app itself does not require symlink privileges.
-
-Do not commit `.env.local` or API keys. A Vercel deployment without reachable RAGFlow will still load the visual app, but the Council will correctly report that no evidence is available.
+Do not commit `.env.local`, API keys, database URLs, provider tokens, or production data. A deployment without reachable RAGFlow may load the visual app, but Council must report insufficient evidence rather than invent citations.
