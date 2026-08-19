@@ -1,0 +1,31 @@
+name: Cortex Core
+
+on:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  cortex-contract:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify Cortex contract and trust invariants
+        run: pnpm exec tsx scripts/verify-cortex-core.mts
+      - name: Verify existing Council trust baseline
+        run: pnpm exec tsx scripts/run-council-evals.ts
