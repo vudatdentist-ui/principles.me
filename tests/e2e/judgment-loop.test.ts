@@ -60,10 +60,10 @@ test.describe("Milestone 4 Judgment Loop", () => {
     await page.getByRole("button", { name: "Save edit" }).click();
     await expect(candidate).toContainText(adoptedStatement);
     await candidate.getByRole("button", { name: "Adopt" }).click();
-    await expect(candidate).toContainText("adopted");
+    await expect(page.getByText("adopted", { exact: true })).toBeVisible();
     await expect(
-      page.getByText(adoptedStatement, { exact: true })
-    ).toBeVisible();
+      candidate.getByRole("button", { name: "Adopt" })
+    ).toHaveCount(0);
 
     await page.goto("/principles");
     const card = page.getByTestId("principle-card").filter({
@@ -110,7 +110,10 @@ test.describe("Milestone 4 Judgment Loop", () => {
       "Do not dissolve a high-value partnership before testing whether the trust problem can be corrected through explicit behavioral commitments.";
     await expect(candidate).toContainText(statement);
     await candidate.getByRole("button", { name: "Reject" }).click();
-    await expect(candidate).toContainText("rejected");
+    await expect(page.getByText("rejected", { exact: true })).toBeVisible();
+    await expect(
+      candidate.getByRole("button", { name: "Generate another candidate" })
+    ).toBeVisible();
 
     await page.goto("/principles");
     await expect(page.getByText(statement, { exact: true })).toHaveCount(0);
