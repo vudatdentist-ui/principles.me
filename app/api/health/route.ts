@@ -11,18 +11,27 @@ export async function GET() {
     await checkDatabaseReady();
     database = true;
   } catch {
-    logAppError({ code: "DB_HEALTH_FAILED", kind: "database", route: "/api/health" });
+    logAppError({
+      code: "DB_HEALTH_FAILED",
+      kind: "database",
+      route: "/api/health",
+    });
   }
 
   try {
     assertInternalAuthConfigured();
     auth = true;
   } catch {
-    logAppError({ code: "AUTH_CONFIG_INVALID", kind: "api", route: "/api/health" });
+    logAppError({
+      code: "AUTH_CONFIG_INVALID",
+      kind: "api",
+      route: "/api/health",
+    });
   }
 
   const ragflowConfigured = Boolean(
-    process.env.RAGFLOW_API_KEY?.trim() && process.env.RAGFLOW_DATASET_IDS?.trim()
+    process.env.RAGFLOW_API_KEY?.trim() &&
+      process.env.RAGFLOW_DATASET_IDS?.trim()
   );
   const deepseekConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
   const ready = database && auth && ragflowConfigured && deepseekConfigured;
