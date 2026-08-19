@@ -13,7 +13,7 @@ export default defineConfig({
   projects: [
     {
       name: "principles-chromium",
-      testMatch: /e2e\/principles-smoke\.test\.ts/,
+      testMatch: /e2e\/(principles-smoke|judgment-loop)\.test\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
   ],
