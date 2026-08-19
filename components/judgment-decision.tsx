@@ -151,7 +151,8 @@ function readNdjson(
   buffer = ""
 ): Promise<void> {
   return reader.read().then(({ done, value }) => {
-    const next = buffer + (value ? decoder.decode(value, { stream: !done }) : "");
+    const next =
+      buffer + (value ? decoder.decode(value, { stream: !done }) : "");
     const rows = next.split("\n");
     const remainder = rows.pop() ?? "";
     for (const row of rows) {
@@ -441,7 +442,9 @@ function JudgmentStage({
           {judgments.map((item) => (
             <div className={styles.judgmentRecord} key={item.id}>
               <strong>{item.summary}</strong>
-              {item.selectedOption ? <p>Choice: {item.selectedOption}</p> : null}
+              {item.selectedOption ? (
+                <p>Choice: {item.selectedOption}</p>
+              ) : null}
               {item.rationale ? <p>{item.rationale}</p> : null}
               <span>
                 {item.confidencePercent === null
@@ -515,7 +518,11 @@ function JudgmentStage({
             value={confidence}
           />
         </div>
-        <button className={baseStyles.primaryButton} disabled={saving} type="submit">
+        <button
+          className={baseStyles.primaryButton}
+          disabled={saving}
+          type="submit"
+        >
           Save judgment
         </button>
       </form>
@@ -646,12 +653,16 @@ function CandidateStage({
     <article className={`${baseStyles.card} ${styles.candidateStage}`}>
       <div className={styles.stageHeader}>
         <div>
-          <span className={styles.step}>AI proposal · requires your consent</span>
+          <span className={styles.step}>
+            AI proposal · requires your consent
+          </span>
           <h2>Candidate principle</h2>
           <p>It is not part of My Principles until you adopt it.</p>
         </div>
         {candidate ? (
-          <span className={`${styles.candidateStatus} ${styles[candidate.status]}`}>
+          <span
+            className={`${styles.candidateStatus} ${styles[candidate.status]}`}
+          >
             {candidate.status}
           </span>
         ) : null}
@@ -817,7 +828,9 @@ function ManualPrinciples({
         <div className={baseStyles.principleItem} key={item.id}>
           <strong>{item.statement}</strong>
           {item.description ? <p>{item.description}</p> : null}
-          <p>Revision {item.revision} · {item.relation}</p>
+          <p>
+            Revision {item.revision} · {item.relation}
+          </p>
         </div>
       ))}
       {error ? <div className={baseStyles.error}>{error}</div> : null}
@@ -928,7 +941,11 @@ function OutcomePanel({
   );
 }
 
-export function JudgmentDecisionWorkspace({ decisionId }: { decisionId: string }) {
+export function JudgmentDecisionWorkspace({
+  decisionId,
+}: {
+  decisionId: string;
+}) {
   const [detail, setDetail] = useState<DecisionDetailPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1005,7 +1022,10 @@ export function JudgmentDecisionWorkspace({ decisionId }: { decisionId: string }
           finalPlan = asPlan(event.plan) || finalPlan;
           setLiveBrief(finalBrief);
           setLivePlan(finalPlan);
-        } else if (event.type === "error" && typeof event.message === "string") {
+        } else if (
+          event.type === "error" &&
+          typeof event.message === "string"
+        ) {
           streamError = event.message;
         }
       });
@@ -1018,7 +1038,8 @@ export function JudgmentDecisionWorkspace({ decisionId }: { decisionId: string }
       await fetchJson(`/api/decisions/${decisionId}/analysis`, {
         body: JSON.stringify({
           councilAnalysis:
-            finalAnswer || "No evidence retrieved for a grounded Council brief.",
+            finalAnswer ||
+            "No evidence retrieved for a grounded Council brief.",
           councilBrief: finalBrief,
           councilPlan: finalPlan,
           evidence: finalEvidence,
@@ -1086,7 +1107,11 @@ export function JudgmentDecisionWorkspace({ decisionId }: { decisionId: string }
               </a>
             ) : null}
             <button
-              className={hasCouncil ? baseStyles.secondaryButton : baseStyles.primaryButton}
+              className={
+                hasCouncil
+                  ? baseStyles.secondaryButton
+                  : baseStyles.primaryButton
+              }
               disabled={busy}
               onClick={runCouncil}
               type="button"
@@ -1131,7 +1156,9 @@ export function JudgmentDecisionWorkspace({ decisionId }: { decisionId: string }
                     key={item.key}
                   >
                     <strong>
-                      <span className={councilStyles.evidenceKey}>{item.key}</span>
+                      <span className={councilStyles.evidenceKey}>
+                        {item.key}
+                      </span>
                       {item.title}
                     </strong>
                     {item.text ? <p>{item.text.slice(0, 900)}</p> : null}
