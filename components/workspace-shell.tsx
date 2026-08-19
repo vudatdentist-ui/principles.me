@@ -16,6 +16,7 @@ export type WorkspaceSection =
   | "principles"
   | "decisions"
   | "ask"
+  | "explore"
   | "none";
 
 type NavItem = {
