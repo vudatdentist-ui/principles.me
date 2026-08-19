@@ -30,7 +30,9 @@ test.describe("Decision workspace", () => {
       .first();
     await expect(navigation.getByText("Today", { exact: true })).toBeVisible();
     await expect(navigation.getByText("Goals", { exact: true })).toBeVisible();
-    await expect(navigation.getByText("Journal", { exact: true })).toBeVisible();
+    await expect(
+      navigation.getByText("Journal", { exact: true })
+    ).toBeVisible();
     await expect(
       navigation.getByText("Principles", { exact: true })
     ).toBeVisible();

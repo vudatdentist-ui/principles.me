@@ -101,10 +101,10 @@
 
 .title {
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 650;
   color: var(--shell-muted);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
