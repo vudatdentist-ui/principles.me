@@ -14,8 +14,17 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import type { FormEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
+import type {
+  CouncilBrief,
+  CouncilClaim,
+  CouncilPlan,
+  FactAssumption,
+  RetrievedReference,
+} from "@/lib/council/types";
 import { THINKERS } from "@/lib/principles-graph";
+import councilStyles from "./council-v1.module.css";
 import styles from "./decision-workspace.module.css";
 
 type WorkspaceView =
@@ -38,6 +47,8 @@ type DecisionRecord = {
   question: string;
   context: string | null;
   councilAnalysis: string | null;
+  councilBrief: CouncilBrief | null;
+  councilPlan: CouncilPlan | null;
   evidence: unknown;
   status: DecisionStatus;
   createdAt: string;
@@ -109,24 +120,43 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
   return payload;
 }
 
-function asEvidence(value: unknown): Record<string, unknown>[] {
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function asPlan(value: unknown): CouncilPlan | null {
+  if (!isObject(value) || !Array.isArray(value.lenses) || !Array.isArray(value.members)) {
+    return null;
+  }
+  return value as unknown as CouncilPlan;
+}
+
+function asBrief(value: unknown): CouncilBrief | null {
+  if (!isObject(value) || !isObject(value.situation)) {
+    return null;
+  }
+  return value as unknown as CouncilBrief;
+}
+
+function asEvidence(value: unknown): RetrievedReference[] {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value.filter(
-    (item): item is Record<string, unknown> =>
-      typeof item === "object" && item !== null
-  );
-}
-
-function firstText(item: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = item[key];
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-  return "";
+  return value
+    .filter(isObject)
+    .map((item, index) => ({
+      chunkId: typeof item.chunkId === "string" ? item.chunkId : null,
+      datasetId: typeof item.datasetId === "string" ? item.datasetId : null,
+      documentId: typeof item.documentId === "string" ? item.documentId : null,
+      key: typeof item.key === "string" ? item.key : `R${index + 1}`,
+      positions: Array.isArray(item.positions) ? item.positions : [],
+      retrievalContexts: Array.isArray(item.retrievalContexts)
+        ? (item.retrievalContexts.filter(isObject) as RetrievedReference["retrievalContexts"])
+        : [],
+      score: typeof item.score === "number" ? item.score : null,
+      text: typeof item.text === "string" ? item.text : "",
+      title: typeof item.title === "string" ? item.title : "RAGFlow document",
+    }));
 }
 
 function relativeTime(value: string) {
@@ -171,7 +201,7 @@ function NavLink({
 }: {
   href: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   active: boolean;
 }) {
   return (
@@ -372,9 +402,7 @@ function DecisionsView() {
           <Plus size={15} /> New decision
         </a>
       </div>
-      {loading ? (
-        <div className={styles.loading}>Loading decisions…</div>
-      ) : null}
+      {loading ? <div className={styles.loading}>Loading decisions…</div> : null}
       {error ? <div className={styles.error}>{error}</div> : null}
       {!loading && !error && decisions.length === 0 ? (
         <div className={styles.empty}>
@@ -426,15 +454,10 @@ function PrinciplesView() {
         <div>
           <span className={styles.eyebrow}>What you chose to keep</span>
           <h1>My Principles</h1>
-          <p>
-            Principles adopted from your own decisions — not a fake library
-            count.
-          </p>
+          <p>Principles adopted from your own decisions.</p>
         </div>
       </div>
-      {loading ? (
-        <div className={styles.loading}>Loading principles…</div>
-      ) : null}
+      {loading ? <div className={styles.loading}>Loading principles…</div> : null}
       {error ? <div className={styles.error}>{error}</div> : null}
       {!loading && !error && principles.length === 0 ? (
         <div className={styles.empty}>
@@ -473,33 +496,24 @@ function ExploreView() {
         <div>
           <span className={styles.eyebrow}>Knowledge and lenses</span>
           <h1>Explore</h1>
-          <p>Brain, Graph, Thinkers, Concepts, and Library now live here.</p>
+          <p>Brain, Graph, Thinkers, Concepts, and Library live here.</p>
         </div>
       </div>
       <div className={styles.exploreGrid}>
         <article className={styles.exploreCard}>
           <Brain size={20} />
           <h2>Brain</h2>
-          <p>
-            Browse the knowledge system without making it the primary product
-            mental model.
-          </p>
+          <p>Browse the knowledge system without making it the primary object.</p>
         </article>
         <article className={styles.exploreCard}>
           <Network size={20} />
           <h2>Graph</h2>
-          <p>
-            See relationships among thinkers, principles, concepts, and
-            questions.
-          </p>
+          <p>See relationships among thinkers, principles, and concepts.</p>
         </article>
         <article className={`${styles.exploreCard} ${styles.exploreWide}`}>
           <Users size={20} />
           <h2>Thinkers</h2>
-          <p>
-            The existing thinker lenses remain available as supporting context
-            for decisions.
-          </p>
+          <p>Thinkers are reasoning lenses. Evidence remains source-backed.</p>
           <div className={styles.thinkerGrid}>
             {THINKERS.map((thinker) => (
               <div className={styles.thinker} key={thinker.id}>
@@ -517,13 +531,173 @@ function ExploreView() {
         <article className={styles.exploreCard}>
           <BookOpen size={20} />
           <h2>Library</h2>
-          <p>
-            Evidence is attached to decisions. Source exploration remains
-            secondary to the decision itself.
-          </p>
+          <p>Original evidence remains inspectable from each Decision.</p>
         </article>
       </div>
     </section>
+  );
+}
+
+function CitationLinks({ citations }: { citations: string[] }) {
+  if (!citations.length) {
+    return null;
+  }
+  return (
+    <span className={councilStyles.citationList}>
+      {citations.map((citation) => (
+        <a
+          className={councilStyles.citation}
+          href={`#evidence-${citation}`}
+          key={citation}
+        >
+          {citation}
+        </a>
+      ))}
+    </span>
+  );
+}
+
+function ClaimView({
+  claim,
+  status,
+}: {
+  claim: CouncilClaim;
+  status?: FactAssumption["status"];
+}) {
+  return (
+    <div className={councilStyles.claim}>
+      <p>{claim.text}</p>
+      <div className={councilStyles.claimMeta}>
+        {status ? <span className={councilStyles.factBadge}>{status}</span> : null}
+        <span className={councilStyles.layerBadge}>{claim.layer}</span>
+        <CitationLinks citations={claim.citations} />
+      </div>
+    </div>
+  );
+}
+
+function ClaimSection({
+  title,
+  claims,
+}: {
+  title: string;
+  claims: CouncilClaim[];
+}) {
+  return (
+    <section className={councilStyles.briefSection}>
+      <h3>{title}</h3>
+      {claims.length ? (
+        <div className={councilStyles.claimList}>
+          {claims.map((claim, index) => (
+            <ClaimView claim={claim} key={`${title}-${index}-${claim.text}`} />
+          ))}
+        </div>
+      ) : (
+        <span className={councilStyles.emptySection}>No grounded claim.</span>
+      )}
+    </section>
+  );
+}
+
+function CouncilBriefView({ brief }: { brief: CouncilBrief }) {
+  return (
+    <div className={councilStyles.brief} data-testid="council-brief">
+      <section className={councilStyles.briefSection}>
+        <h3>The situation</h3>
+        <ClaimView claim={brief.situation} />
+      </section>
+      <section className={councilStyles.briefSection}>
+        <h3>Facts vs assumptions</h3>
+        {brief.factsVsAssumptions.length ? (
+          <div className={councilStyles.claimList}>
+            {brief.factsVsAssumptions.map((item, index) => (
+              <ClaimView
+                claim={item}
+                key={`${item.status}-${index}-${item.text}`}
+                status={item.status}
+              />
+            ))}
+          </div>
+        ) : (
+          <span className={councilStyles.emptySection}>Not classified.</span>
+        )}
+      </section>
+      <ClaimSection claims={brief.agreement} title="Where the council agrees" />
+      <ClaimSection claims={brief.disagreement} title="Where it disagrees" />
+      <ClaimSection claims={brief.crux} title="The crux" />
+      <ClaimSection claims={brief.unknowns} title="What you still don't know" />
+      <ClaimSection
+        claims={brief.reversibilityDownside}
+        title="Reversibility & downside"
+      />
+      <ClaimSection claims={brief.nextMoves} title="Suggested next move" />
+    </div>
+  );
+}
+
+function CouncilPlanView({ plan }: { plan: CouncilPlan }) {
+  return (
+    <div className={councilStyles.planBlock} data-testid="council-plan">
+      <div className={councilStyles.modeRow}>
+        <strong>Relevant lenses</strong>
+        <span className={councilStyles.modeBadge}>
+          {plan.mode === "auto" ? "Auto Council" : "Customized Council"}
+        </span>
+      </div>
+      <div className={councilStyles.lensList}>
+        {plan.lenses.map((lens) => (
+          <span className={councilStyles.lensChip} key={lens.id}>
+            {lens.label}
+          </span>
+        ))}
+      </div>
+      <div className={councilStyles.memberGrid}>
+        {plan.members.map((member) => (
+          <div className={councilStyles.memberCard} key={member.id}>
+            <strong>{member.name}</strong>
+            <span>{member.lens}</span>
+            <p>{member.reason}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CustomizeCouncil({
+  selected,
+  onToggle,
+  disabled,
+}: {
+  selected: string[];
+  onToggle: (id: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <details className={councilStyles.customize}>
+      <summary>Customize Council</summary>
+      <p className={councilStyles.sourceNote}>
+        Auto-select is the default. Select one or more thinkers only when you
+        want to override the automatic council.
+      </p>
+      <div className={councilStyles.customizeGrid}>
+        {THINKERS.map((thinker) => (
+          <label className={councilStyles.customizeOption} key={thinker.id}>
+            <input
+              checked={selected.includes(thinker.id)}
+              disabled={disabled}
+              onChange={() => onToggle(thinker.id)}
+              type="checkbox"
+            />
+            <span>
+              <strong>{thinker.name}</strong>
+              <br />
+              {thinker.lens}
+            </span>
+          </label>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -532,7 +706,11 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [councilBusy, setCouncilBusy] = useState(false);
-  const [liveAnalysis, setLiveAnalysis] = useState("");
+  const [councilStatus, setCouncilStatus] = useState("");
+  const [livePlan, setLivePlan] = useState<CouncilPlan | null>(null);
+  const [liveBrief, setLiveBrief] = useState<CouncilBrief | null>(null);
+  const [liveEvidence, setLiveEvidence] = useState<RetrievedReference[]>([]);
+  const [customThinkerIds, setCustomThinkerIds] = useState<string[]>([]);
   const [judgmentSummary, setJudgmentSummary] = useState("");
   const [selectedOption, setSelectedOption] = useState("");
   const [rationale, setRationale] = useState("");
@@ -565,22 +743,37 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
       .finally(() => setLoading(false));
   }, [decisionId]);
 
+  function toggleThinker(id: string) {
+    setCustomThinkerIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  }
+
   async function runCouncil() {
     if (!detail || councilBusy) {
       return;
     }
     setCouncilBusy(true);
     setError("");
-    setLiveAnalysis("");
-    let tokens = "";
+    setCouncilStatus("Starting Council…");
+    setLivePlan(null);
+    setLiveBrief(null);
+    setLiveEvidence([]);
+
+    let finalPlan: CouncilPlan | null = null;
+    let finalBrief: CouncilBrief | null = null;
+    let finalEvidence: RetrievedReference[] = [];
+    let finalAnswer = "";
     let streamError = "";
-    let references: Record<string, unknown>[] = [];
 
     try {
       const response = await fetch("/api/council", {
         body: JSON.stringify({
+          context: detail.decision.context || "",
           question: detail.decision.question,
-          thinkerIds: ["dalio", "munger", "buffett"],
+          thinkerIds: customThinkerIds,
         }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -593,6 +786,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
       const decoder = new TextDecoder();
       let buffer = "";
       while (true) {
+        // biome-ignore lint/performance/noAwaitInLoops: NDJSON stream must be consumed sequentially.
         const chunk = await reader.read();
         if (chunk.done) {
           break;
@@ -605,32 +799,64 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
             continue;
           }
           const event = JSON.parse(row) as FeedEvent;
-          if (event.type === "token" && typeof event.token === "string") {
-            tokens += event.token;
-            setLiveAnalysis(tokens);
+          if (event.type === "status" && typeof event.message === "string") {
+            setCouncilStatus(event.message);
           }
-          if (event.type === "references" && Array.isArray(event.references)) {
-            references = event.references.filter(
-              (item): item is Record<string, unknown> =>
-                typeof item === "object" && item !== null
-            );
+          if (event.type === "plan") {
+            const parsedPlan = asPlan(event.plan);
+            if (parsedPlan) {
+              finalPlan = parsedPlan;
+              setLivePlan(parsedPlan);
+            }
+          }
+          if (event.type === "references") {
+            finalEvidence = asEvidence(event.references);
+            setLiveEvidence(finalEvidence);
+          }
+          if (event.type === "answer") {
+            if (typeof event.answer === "string") {
+              finalAnswer = event.answer;
+            }
+            const parsedBrief = asBrief(event.brief);
+            if (parsedBrief) {
+              finalBrief = parsedBrief;
+              setLiveBrief(parsedBrief);
+            }
+            const answerPlan = asPlan(event.plan);
+            if (answerPlan) {
+              finalPlan = answerPlan;
+              setLivePlan(answerPlan);
+            }
           }
           if (event.type === "error" && typeof event.message === "string") {
             streamError = event.message;
-            setLiveAnalysis(streamError);
           }
         }
       }
 
-      const councilAnalysis =
-        tokens.trim() || streamError || "No evidence retrieved.";
+      if (streamError && !finalAnswer) {
+        throw new Error(streamError);
+      }
+      if (!finalPlan) {
+        throw new Error("Council could not produce a reasoning plan.");
+      }
+
       await fetchJson(`/api/decisions/${decisionId}/analysis`, {
-        body: JSON.stringify({ councilAnalysis, evidence: references }),
+        body: JSON.stringify({
+          councilAnalysis:
+            finalAnswer || "No evidence retrieved for a grounded Council brief.",
+          councilBrief: finalBrief,
+          councilPlan: finalPlan,
+          evidence: finalEvidence,
+        }),
         headers: { "content-type": "application/json" },
         method: "POST",
       });
       await loadDetail();
-      setLiveAnalysis("");
+      setCouncilStatus("");
+      setLivePlan(null);
+      setLiveBrief(null);
+      setLiveEvidence([]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Council failed.");
     } finally {
@@ -638,7 +864,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
     }
   }
 
-  async function submitJudgment(event: React.FormEvent<HTMLFormElement>) {
+  async function submitJudgment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving("judgment");
     setError("");
@@ -666,7 +892,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
     }
   }
 
-  async function submitPrinciple(event: React.FormEvent<HTMLFormElement>) {
+  async function submitPrinciple(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving("principle");
     setError("");
@@ -691,7 +917,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
     }
   }
 
-  async function submitOutcome(event: React.FormEvent<HTMLFormElement>) {
+  async function submitOutcome(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving("outcome");
     setError("");
@@ -724,8 +950,12 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
     return <div className={styles.error}>{error || "Decision not found."}</div>;
   }
 
-  const evidence = asEvidence(detail.decision.evidence);
-  const analysis = liveAnalysis || detail.decision.councilAnalysis;
+  const persistedPlan = asPlan(detail.decision.councilPlan);
+  const persistedBrief = asBrief(detail.decision.councilBrief);
+  const plan = livePlan || persistedPlan;
+  const brief = liveBrief || persistedBrief;
+  const persistedEvidence = asEvidence(detail.decision.evidence);
+  const evidence = liveEvidence.length ? liveEvidence : persistedEvidence;
 
   return (
     <section>
@@ -751,11 +981,14 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
           onClick={() => runCouncil().catch(() => undefined)}
           type="button"
         >
-          <Sparkles size={15} />{" "}
-          {councilBusy ? "Council thinking…" : "Think with Council"}
+          <Sparkles size={15} />
+          {councilBusy ? "Council thinking…" : "Run Council"}
         </button>
       </div>
       {error ? <div className={styles.error}>{error}</div> : null}
+      {councilStatus ? (
+        <p className={councilStyles.statusText}>{councilStatus}</p>
+      ) : null}
 
       <div className={styles.detailGrid}>
         <div className={styles.stack}>
@@ -771,53 +1004,83 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
 
           <article className={styles.card}>
             <div className={styles.cardHeader}>
-              <h2>Council analysis</h2>
-              <span>
-                {councilBusy ? "Running" : analysis ? "Saved" : "Not run"}
-              </span>
+              <h2>Council setup</h2>
+              <span>{plan ? `${plan.lenses.length} lenses` : "Auto by default"}</span>
             </div>
-            {analysis ? (
-              <div className={styles.analysis}>{analysis}</div>
+            {plan ? (
+              <CouncilPlanView plan={plan} />
             ) : (
               <p className={styles.muted}>
-                Run Council when you want evidence-grounded lenses. The result
-                is saved on this decision.
+                Council will classify this decision, select relevant lenses, and
+                explain why each member is in the room before retrieval starts.
               </p>
             )}
+            <CustomizeCouncil
+              disabled={councilBusy}
+              onToggle={toggleThinker}
+              selected={customThinkerIds}
+            />
+          </article>
+
+          <article className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2>Council brief</h2>
+              <span>{councilBusy ? "Running" : brief ? "Grounded" : "Not run"}</span>
+            </div>
+            {brief ? <CouncilBriefView brief={brief} /> : null}
+            {!brief && detail.decision.councilAnalysis ? (
+              <div className={styles.analysis}>{detail.decision.councilAnalysis}</div>
+            ) : null}
+            {!brief && !detail.decision.councilAnalysis ? (
+              <p className={styles.muted}>
+                Run Council to produce a structured decision brief. Evidence and
+                interpretation will be separated from application to your case.
+              </p>
+            ) : null}
           </article>
 
           <article className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Evidence</h2>
-              <span>{evidence.length} sources</span>
+              <span>{evidence.length} chunks</span>
             </div>
+            <p className={councilStyles.sourceNote}>
+              Thinkers are reasoning lenses, not source attribution. Each R-key
+              below is original retrieval evidence; Council claims link back here.
+            </p>
             {evidence.length === 0 ? (
               <p className={styles.muted}>No evidence retrieved yet.</p>
             ) : (
               <div className={styles.evidenceList}>
-                {evidence.map((item, index) => {
-                  const title = firstText(item, [
-                    "title",
-                    "document_name",
-                    "source",
-                    "name",
-                  ]);
-                  const excerpt = firstText(item, [
-                    "content",
-                    "text",
-                    "chunk",
-                    "excerpt",
-                  ]);
-                  return (
-                    <div
-                      className={styles.evidenceItem}
-                      key={`${title}-${index}`}
-                    >
-                      <strong>{title || `Evidence ${index + 1}`}</strong>
-                      {excerpt ? <p>{excerpt.slice(0, 500)}</p> : null}
-                    </div>
-                  );
-                })}
+                {evidence.map((item) => (
+                  <div
+                    className={styles.evidenceItem}
+                    data-testid={`evidence-${item.key}`}
+                    id={`evidence-${item.key}`}
+                    key={item.key}
+                  >
+                    <strong>
+                      <span className={councilStyles.evidenceKey}>{item.key}</span>
+                      {item.title}
+                    </strong>
+                    {item.score !== null ? (
+                      <p>Retrieval score: {item.score.toFixed(3)}</p>
+                    ) : null}
+                    {item.retrievalContexts.length ? (
+                      <div className={councilStyles.contextList}>
+                        {item.retrievalContexts.map((context) => (
+                          <span
+                            className={councilStyles.contextChip}
+                            key={`${item.key}-${context.kind}-${context.id}`}
+                          >
+                            {context.label}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {item.text ? <p>{item.text.slice(0, 900)}</p> : null}
+                  </div>
+                ))}
               </div>
             )}
           </article>
@@ -833,9 +1096,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
               {detail.judgments.map((item) => (
                 <div className={styles.judgmentItem} key={item.id}>
                   <strong>{item.summary}</strong>
-                  {item.selectedOption ? (
-                    <p>Choice: {item.selectedOption}</p>
-                  ) : null}
+                  {item.selectedOption ? <p>Choice: {item.selectedOption}</p> : null}
                   {item.rationale ? <p>{item.rationale}</p> : null}
                   <p>
                     {item.confidence
@@ -910,9 +1171,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
                 <div className={styles.principleItem} key={item.id}>
                   <strong>{item.statement}</strong>
                   {item.description ? <p>{item.description}</p> : null}
-                  <p>
-                    Revision {item.revision} · {item.relation || "adopted"}
-                  </p>
+                  <p>Revision {item.revision} · {item.relation || "adopted"}</p>
                 </div>
               ))}
             </div>
@@ -921,9 +1180,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
                 <label htmlFor="principle-statement">Keep a principle</label>
                 <input
                   id="principle-statement"
-                  onChange={(event) =>
-                    setPrincipleStatement(event.target.value)
-                  }
+                  onChange={(event) => setPrincipleStatement(event.target.value)}
                   placeholder="Avoid partners who consistently evade hard conversations."
                   required
                   value={principleStatement}
@@ -933,9 +1190,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
                 <label htmlFor="principle-description">Why it matters</label>
                 <textarea
                   id="principle-description"
-                  onChange={(event) =>
-                    setPrincipleDescription(event.target.value)
-                  }
+                  onChange={(event) => setPrincipleDescription(event.target.value)}
                   placeholder="Optional nuance, boundary conditions, exceptions…"
                   value={principleDescription}
                 />
@@ -953,9 +1208,7 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
           <article className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Outcome</h2>
-              <span>
-                {detail.outcomes.length ? "Reviewed" : "Not reviewed"}
-              </span>
+              <span>{detail.outcomes.length ? "Reviewed" : "Not reviewed"}</span>
             </div>
             <div className={styles.outcomeList}>
               {detail.outcomes.map((item) => (
