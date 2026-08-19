@@ -6,6 +6,9 @@ on:
   push:
     branches: [main, master]
 
+permissions:
+  contents: read
+
 concurrency:
   group: foundation-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -17,7 +20,6 @@ env:
   POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/principles_ci
   BLOB_READ_WRITE_TOKEN: ci-placeholder
   REDIS_URL: redis://localhost:6379
-  IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
 
 jobs:
   quality:
@@ -197,15 +199,12 @@ jobs:
         run: pnpm exec playwright test tests/e2e/auth-isolation.test.ts
 
   staging:
-    name: Preview deploy + live gates
-    if: github.event_name == 'pull_request' && vars.STAGING_DEPLOY_ENABLED == 'true'
+    name: Coolify preview smoke + RAG subset
+    if: github.event_name == 'pull_request' && vars.STAGING_VERIFY_ENABLED == 'true'
     needs: [quality, playwright, auth-isolation]
     environment: staging
-    permissions:
-      contents: read
-      packages: write
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Install pnpm
@@ -220,118 +219,45 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build immutable image
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker build -t "$IMAGE_REPOSITORY:$GITHUB_SHA" .
-          docker push "$IMAGE_REPOSITORY:$GITHUB_SHA"
-      - name: Configure preview coordinates
+      - name: Configure Coolify preview coordinates
         env:
           BASE_DOMAIN: ${{ vars.STAGING_BASE_DOMAIN }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           : "${BASE_DOMAIN:?STAGING_BASE_DOMAIN is required}"
-          echo "PREVIEW_HOST=pr-$PR_NUMBER.$BASE_DOMAIN" >> "$GITHUB_ENV"
-          echo "PREVIEW_PROJECT=principles-pr-$PR_NUMBER" >> "$GITHUB_ENV"
-          echo "PREVIEW_ROUTER=principles-pr-$PR_NUMBER" >> "$GITHUB_ENV"
-      - name: Configure SSH
+          echo "RELEASE_BASE_URL=https://pr-$PR_NUMBER.$BASE_DOMAIN" >> "$GITHUB_ENV"
+          echo "EXPECTED_COMMIT=$EXPECTED_HEAD_SHA" >> "$GITHUB_ENV"
+      - name: Wait for Coolify preview deployment
         env:
-          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
-          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
-      - name: Copy preview release assets
-        env:
-          DEPLOY_PATH: ${{ vars.STAGING_DEPLOY_PATH }}
-          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
-          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
-        run: |
-          ssh "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_PATH'"
-          scp docker-compose.preview.yml ops/deploy-release.sh "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
-      - name: Authenticate staging VPS to GHCR
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
-          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
-        run: |
-          printf '%s' "$GH_TOKEN" | ssh "$SSH_USER@$SSH_HOST" \
-            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
-      - name: Deploy isolated preview
-        env:
-          DEPLOY_PATH: ${{ vars.STAGING_DEPLOY_PATH }}
-          ENV_FILE: ${{ vars.STAGING_ENV_FILE }}
-          PREVIEW_DB_PASSWORD: ${{ secrets.PREVIEW_DB_PASSWORD }}
-          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
-          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
-        run: |
-          ssh "$SSH_USER@$SSH_HOST" \
-            "cd '$DEPLOY_PATH' && chmod +x deploy-release.sh && \
-            PREVIEW_DB_PASSWORD='$PREVIEW_DB_PASSWORD' \
-            COMPOSE_FILE=docker-compose.preview.yml \
-            COMPOSE_PROJECT='$PREVIEW_PROJECT' \
-            PRINCIPLES_IMAGE='$IMAGE_REPOSITORY:$GITHUB_SHA' \
-            PRINCIPLES_IMAGE_TAG='$GITHUB_SHA' \
-            PRINCIPLES_ENV_FILE='$ENV_FILE' \
-            PRINCIPLES_HOST='$PREVIEW_HOST' \
-            TRAEFIK_ROUTER='$PREVIEW_ROUTER' \
-            ./deploy-release.sh"
-      - name: Provision preview smoke account
-        env:
-          DEPLOY_PATH: ${{ vars.STAGING_DEPLOY_PATH }}
-          ENV_FILE: ${{ vars.STAGING_ENV_FILE }}
-          PREVIEW_DB_PASSWORD: ${{ secrets.PREVIEW_DB_PASSWORD }}
-          SMOKE_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
-          SMOKE_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
-          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
-          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
-        run: |
-          ssh "$SSH_USER@$SSH_HOST" \
-            "cd '$DEPLOY_PATH' && \
-            PREVIEW_DB_PASSWORD='$PREVIEW_DB_PASSWORD' \
-            PRINCIPLES_IMAGE='$IMAGE_REPOSITORY:$GITHUB_SHA' \
-            PRINCIPLES_IMAGE_TAG='$GITHUB_SHA' \
-            PRINCIPLES_ENV_FILE='$ENV_FILE' \
-            PRINCIPLES_HOST='$PREVIEW_HOST' \
-            TRAEFIK_ROUTER='$PREVIEW_ROUTER' \
-            docker compose -p '$PREVIEW_PROJECT' -f docker-compose.preview.yml run --rm \
-            -e INTERNAL_USER_EMAIL='$SMOKE_EMAIL' \
-            -e INTERNAL_USER_PASSWORD='$SMOKE_PASSWORD' \
-            -e INTERNAL_USER_NAME='Staging smoke' \
-            principles pnpm exec tsx scripts/provision-internal-user.ts"
-      - name: Install Chromium for deployed smoke
+          RELEASE_WAIT_SECONDS: "600"
+        run: pnpm release:wait
+      - name: Install Chromium for preview smoke
         run: pnpm exec playwright install chromium
       - name: Playwright preview smoke
         env:
           SMOKE_USER_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
           SMOKE_USER_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
           SMOKE_COUNCIL_QUESTION: ${{ vars.STAGING_SMOKE_COUNCIL_QUESTION }}
-        run: PLAYWRIGHT_BASE_URL="https://$PREVIEW_HOST" pnpm exec playwright test tests/e2e/release-smoke.test.ts
+        run: PLAYWRIGHT_BASE_URL="$RELEASE_BASE_URL" pnpm exec playwright test tests/e2e/release-smoke.test.ts
       - name: Live RAG eval subset
         env:
           EVAL_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
           EVAL_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
           EVAL_CASE_IDS: ${{ vars.STAGING_RAG_EVAL_CASE_IDS }}
-          EVAL_REQUIRE_BASELINE: "0"
           EVAL_MIN_SCORE: ${{ vars.STAGING_RAG_MIN_SCORE }}
+          EVAL_REQUIRE_BASELINE: "0"
         run: |
           : "${EVAL_CASE_IDS:?STAGING_RAG_EVAL_CASE_IDS is required}"
-          EVAL_BASE_URL="https://$PREVIEW_HOST" pnpm exec tsx scripts/run-council-live-evals.ts
+          EVAL_BASE_URL="$RELEASE_BASE_URL" pnpm exec tsx scripts/run-council-live-evals.ts
 
   production:
-    name: Production deploy + smoke
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    name: Coolify production deployment verification
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PRODUCTION_VERIFY_ENABLED == 'true'
     needs: [quality, playwright, auth-isolation]
     environment: production
-    permissions:
-      contents: read
-      packages: write
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Install pnpm
@@ -346,62 +272,22 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build immutable production image
+      - name: Configure production coordinates
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker build -t "$IMAGE_REPOSITORY:$GITHUB_SHA" .
-          docker push "$IMAGE_REPOSITORY:$GITHUB_SHA"
-      - name: Configure SSH
-        env:
-          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
-          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
-      - name: Copy production release assets
-        env:
-          DEPLOY_PATH: ${{ vars.PRODUCTION_DEPLOY_PATH }}
-          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
-          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
-        run: |
-          ssh "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_PATH'"
-          scp docker-compose.release.yml ops/deploy-release.sh "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
-      - name: Authenticate production VPS to GHCR
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
-          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
-        run: |
-          printf '%s' "$GH_TOKEN" | ssh "$SSH_USER@$SSH_HOST" \
-            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
-      - name: Deploy exact main SHA
-        env:
-          DEPLOY_PATH: ${{ vars.PRODUCTION_DEPLOY_PATH }}
-          ENV_FILE: ${{ vars.PRODUCTION_ENV_FILE }}
           PRODUCTION_HOST: ${{ vars.PRODUCTION_HOST }}
-          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
-          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
         run: |
-          ssh "$SSH_USER@$SSH_HOST" \
-            "cd '$DEPLOY_PATH' && chmod +x deploy-release.sh && \
-            COMPOSE_FILE=docker-compose.release.yml \
-            COMPOSE_PROJECT=principles-production \
-            PRINCIPLES_IMAGE='$IMAGE_REPOSITORY:$GITHUB_SHA' \
-            PRINCIPLES_IMAGE_TAG='$GITHUB_SHA' \
-            PRINCIPLES_ENV_FILE='$ENV_FILE' \
-            PRINCIPLES_HOST='$PRODUCTION_HOST' \
-            TRAEFIK_ROUTER=principles-production \
-            ./deploy-release.sh"
+          : "${PRODUCTION_HOST:?PRODUCTION_HOST is required}"
+          echo "RELEASE_BASE_URL=https://$PRODUCTION_HOST" >> "$GITHUB_ENV"
+          echo "EXPECTED_COMMIT=$GITHUB_SHA" >> "$GITHUB_ENV"
+      - name: Wait for Coolify auto-deployment
+        env:
+          RELEASE_WAIT_SECONDS: "900"
+        run: pnpm release:wait
       - name: Install Chromium for production smoke
         run: pnpm exec playwright install chromium
       - name: Production smoke
         env:
-          PLAYWRIGHT_BASE_URL: https://${{ vars.PRODUCTION_HOST }}
           SMOKE_USER_EMAIL: ${{ secrets.PRODUCTION_SMOKE_EMAIL }}
           SMOKE_USER_PASSWORD: ${{ secrets.PRODUCTION_SMOKE_PASSWORD }}
           SMOKE_COUNCIL_QUESTION: ${{ vars.PRODUCTION_SMOKE_COUNCIL_QUESTION }}
-        run: pnpm exec playwright test tests/e2e/release-smoke.test.ts
+        run: PLAYWRIGHT_BASE_URL="$RELEASE_BASE_URL" pnpm exec playwright test tests/e2e/release-smoke.test.ts
