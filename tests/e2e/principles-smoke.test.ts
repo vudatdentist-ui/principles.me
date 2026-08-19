@@ -194,9 +194,12 @@ test.describe("Decision workspace", () => {
       )
     ).toBeVisible();
     await expect(
-      page.getByText(
-        "Do not normalize repeated avoidance of hard conversations."
-      )
+      page
+        .locator("strong")
+        .filter({
+          hasText: "Do not normalize repeated avoidance of hard conversations.",
+        })
+        .first()
     ).toBeVisible();
     await expect(
       page.getByText(
