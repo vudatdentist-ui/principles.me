@@ -51,11 +51,8 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Static formatter diagnostics
-        run: |
-          pnpm fix || true
-          git diff -- app/api/decisions/[id]/principle-candidate/route.ts app/api/principles/[id]/route.ts components/judgment-decision.tsx components/judgment-loop.module.css components/my-principles.tsx lib/db/decision-queries.ts lib/db/schema.ts lib/judgment/principle-candidate.ts scripts/verify-judgment-loop-schema.mjs tests/e2e/judgment-loop.test.ts
-          exit 1
+      - name: Static check
+        run: pnpm check
       - name: Typecheck
         run: pnpm typecheck
       - name: Verify Council v1 contracts
