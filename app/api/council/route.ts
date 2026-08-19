@@ -6,8 +6,8 @@ import {
   type NoEvidenceReason,
 } from "@/lib/council/no-evidence";
 import {
-  retrieveCouncilEvidence,
   type RetrievalReason,
+  retrieveCouncilEvidence,
 } from "@/lib/council/retrieval";
 import { countPromptInjectionSignals } from "@/lib/council/security";
 import { synthesizeCouncilBrief } from "@/lib/council/synthesize";
