@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createDecision, listDecisions } from "@/lib/db/decision-queries";
+import { refreshReviewDueStatuses } from "@/lib/db/learning-loop-queries";
 import { deriveDecisionDraft } from "@/lib/decision-draft";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
@@ -10,6 +11,7 @@ const createDecisionSchema = z.object({
 
 export async function GET() {
   const workspaceUser = await getWorkspaceUser();
+  await refreshReviewDueStatuses(workspaceUser.id);
   const decisions = await listDecisions(workspaceUser.id);
   return NextResponse.json({ decisions });
 }
