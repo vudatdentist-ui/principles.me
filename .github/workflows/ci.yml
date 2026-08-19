@@ -307,14 +307,12 @@ jobs:
         run: pnpm exec playwright install chromium
       - name: Playwright preview smoke
         env:
-          PLAYWRIGHT_BASE_URL: https://${{ env.PREVIEW_HOST }}
           SMOKE_USER_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
           SMOKE_USER_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
           SMOKE_COUNCIL_QUESTION: ${{ vars.STAGING_SMOKE_COUNCIL_QUESTION }}
-        run: pnpm exec playwright test tests/e2e/release-smoke.test.ts
+        run: PLAYWRIGHT_BASE_URL="https://$PREVIEW_HOST" pnpm exec playwright test tests/e2e/release-smoke.test.ts
       - name: Live RAG eval subset
         env:
-          EVAL_BASE_URL: https://${{ env.PREVIEW_HOST }}
           EVAL_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
           EVAL_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
           EVAL_CASE_IDS: ${{ vars.STAGING_RAG_EVAL_CASE_IDS }}
@@ -322,7 +320,7 @@ jobs:
           EVAL_MIN_SCORE: ${{ vars.STAGING_RAG_MIN_SCORE }}
         run: |
           : "${EVAL_CASE_IDS:?STAGING_RAG_EVAL_CASE_IDS is required}"
-          pnpm exec tsx scripts/run-council-live-evals.ts
+          EVAL_BASE_URL="https://$PREVIEW_HOST" pnpm exec tsx scripts/run-council-live-evals.ts
 
   production:
     name: Production deploy + smoke
