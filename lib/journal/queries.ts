@@ -32,7 +32,7 @@ function candidateFromReflection(
   };
 }
 
-export async function listJournalEntries(userId: string) {
+export function listJournalEntries(userId: string) {
   return db
     .select({
       body: journalEntry.body,
@@ -195,20 +195,20 @@ export async function saveJournalReflection({
     shouldSetCandidate &&
     (!existing?.candidateStatus || existing.candidateStatus === "pending");
   const candidateId = canWriteCandidate
-    ? existing?.candidateId ?? crypto.randomUUID()
-    : existing?.candidateId ?? null;
+    ? (existing?.candidateId ?? crypto.randomUUID())
+    : (existing?.candidateId ?? null);
   const candidateStatus = canWriteCandidate
     ? "pending"
-    : existing?.candidateStatus ?? null;
+    : (existing?.candidateStatus ?? null);
 
   const values = {
     candidateId,
     candidateRationale: canWriteCandidate
       ? candidateRationale?.trim() || null
-      : existing?.candidateRationale ?? null,
+      : (existing?.candidateRationale ?? null),
     candidateStatement: canWriteCandidate
       ? candidateStatement?.trim() || null
-      : existing?.candidateStatement ?? null,
+      : (existing?.candidateStatement ?? null),
     candidateStatus,
     entryId,
     observation: observation?.trim() || null,
@@ -231,7 +231,10 @@ export async function saveJournalReflection({
     return updated ?? null;
   }
 
-  const [created] = await db.insert(journalReflection).values(values).returning();
+  const [created] = await db
+    .insert(journalReflection)
+    .values(values)
+    .returning();
   return created;
 }
 
