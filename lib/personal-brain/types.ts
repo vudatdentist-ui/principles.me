@@ -11,7 +11,7 @@ export type PersonalPrincipleMemory = {
   relevance: number;
   revision: number;
   statement: string;
-  status: "active" | "revised";
+  status: "active" | "revised" | "retired";
 };
 
 export type SimilarDecisionMemory = {
