@@ -68,13 +68,15 @@ test("release smoke: auth → Decision → Council → sources → cleanup", asy
     expect(references.length).toBeGreaterThan(0);
     expect(citations.length).toBeGreaterThan(0);
     const referenceKeys = new Set(references.map((reference) => reference.key));
-    expect(citations.every((citation) => referenceKeys.has(citation))).toBe(true);
+    expect(citations.every((citation) => referenceKeys.has(citation))).toBe(
+      true
+    );
     expect(references.every((reference) => Boolean(reference.text))).toBe(true);
   } finally {
     if (decisionId) {
-      const cleanup = await page.context().request.delete(
-        `/api/decisions/${decisionId}`
-      );
+      const cleanup = await page
+        .context()
+        .request.delete(`/api/decisions/${decisionId}`);
       expect(cleanup.status()).toBe(204);
     }
   }
