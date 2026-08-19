@@ -54,4 +54,4 @@ Ask, Goals, and Journal should depend only on the public response union, not RAG
 
 ## Tests
 
-`scripts/verify-cortex-core.ts` covers strict anti-forgery request schemas, no thinker selection, grounded source keys, Personal Memory vs external provenance, hostile instruction/persona filtering, clarify, complete, reretrieval on continuation, single-round clarification behavior, user isolation, and fail-closed no-evidence behavior. The dedicated PR workflow also reruns the existing Council trust baseline.
+`scripts/verify-cortex-core.mts` covers strict anti-forgery request schemas, no thinker selection, grounded source keys, Personal Memory vs external provenance, hostile instruction/persona filtering, clarify, complete, reretrieval on continuation, single-round clarification behavior, user isolation, and fail-closed no-evidence behavior. The dedicated PR workflow also reruns the existing Council trust baseline.
