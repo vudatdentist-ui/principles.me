@@ -13,12 +13,18 @@ const loginSchema = z.object({
 export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Invalid credentials." },
+      { status: 401 }
+    );
   }
 
   const email = parsed.data.email.toLowerCase();
   if (!isInternalEmailAllowed(email)) {
-    return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Invalid credentials." },
+      { status: 401 }
+    );
   }
 
   const users = await getInternalUsersByEmail(email);
@@ -29,7 +35,10 @@ export async function POST(request: Request) {
     !selectedUser.password ||
     !compareSync(parsed.data.password, selectedUser.password)
   ) {
-    return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Invalid credentials." },
+      { status: 401 }
+    );
   }
 
   await createInternalSession({ email, userId: selectedUser.id });
