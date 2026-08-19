@@ -60,7 +60,13 @@ async function getDecisionOrigin({
           sourceId: source.id,
         },
       ]
-    : [{ kind: "decision", label: "Decision unavailable", sourceId: sourceDecisionId }];
+    : [
+        {
+          kind: "decision",
+          label: "Decision unavailable",
+          sourceId: sourceDecisionId,
+        },
+      ];
 }
 
 async function getRelatedDecisions({
@@ -83,7 +89,13 @@ async function getRelatedDecisions({
     })
     .from(decisionPrinciple)
     .innerJoin(decision, eq(decisionPrinciple.decisionId, decision.id))
-    .leftJoin(decisionOutcome, eq(decisionOutcome.decisionId, decision.id))
+    .leftJoin(
+      decisionOutcome,
+      and(
+        eq(decisionOutcome.decisionId, decision.id),
+        eq(decisionOutcome.userId, userId)
+      )
+    )
     .where(
       and(
         eq(decisionPrinciple.principleId, principleId),
@@ -119,6 +131,11 @@ export async function listPrinciplesForRegistry(
           )
           .orderBy(desc(principleRevision.revision)),
       ]);
+      const appliedDecisionIds = new Set(
+        relatedDecisions
+          .filter((row) => row.relation === "applied")
+          .map((row) => row.id)
+      );
 
       return {
         ...item,
@@ -126,7 +143,7 @@ export async function listPrinciplesForRegistry(
         origins,
         relatedDecisions,
         revisions,
-        timesUsed: relatedDecisions.filter((row) => row.relation === "applied").length,
+        timesUsed: appliedDecisionIds.size,
       };
     })
   );
