@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import type { PersonalContext } from "@/lib/personal-brain/types";
 import { sanitizeCouncilBrief } from "./grounding";
 import type {
   CouncilBrief,
@@ -42,14 +43,47 @@ function parseJsonObject(value: string) {
   return JSON.parse(stripped.slice(first, last + 1)) as unknown;
 }
 
+function personalMemoryText(personalContext: PersonalContext) {
+  const principles = personalContext.principles.length
+    ? personalContext.principles
+        .map((item) => {
+          const origin = item.originDecision
+            ? ` Adopted after decision ${item.originDecision.id}: ${item.originDecision.title}.`
+            : "";
+          return `- [P:${item.id}] ${item.statement}.${origin}`;
+        })
+        .join("\n")
+    : "- No relevant adopted principle was retrieved.";
+  const decisions = personalContext.similarDecisions.length
+    ? personalContext.similarDecisions
+        .map(
+          (item) =>
+            `- [D:${item.id}] ${item.question}${item.judgment ? ` Prior judgment: ${item.judgment}` : ""}`
+        )
+        .join("\n")
+    : "- No similar prior decision was retrieved.";
+  const tensions = personalContext.contradictions.length
+    ? personalContext.contradictions
+        .map(
+          (item) =>
+            `- Possible tension with [P:${item.principleId}] ${item.principleStatement}. ${item.prompt}`
+        )
+        .join("\n")
+    : "- No contradiction signal was detected.";
+
+  return `PERSONAL MEMORY — USER-OWNED CONTEXT, NOT EXTERNAL EVIDENCE\nMy Principles\n${principles}\n\nMy Decisions\n${decisions}\n\nPossible contradictions\n${tensions}`;
+}
+
 function promptForBrief({
   question,
   context,
+  personalContext,
   plan,
   references,
 }: {
   question: string;
   context: string;
+  personalContext: PersonalContext;
   plan: CouncilPlan;
   references: RetrievedReference[];
 }) {
@@ -65,17 +99,19 @@ function promptForBrief({
     )
     .join("\n\n");
 
-  return `DECISION\nQuestion: ${question}\nContext from the user: ${context || "No additional context."}\n\nRELEVANT LENSES\n${lenses}\n\nCOUNCIL MEMBERS AS REASONING LENSES\n${members}\n\nLOCKED EVIDENCE\n${evidence}`;
+  return `DECISION\nQuestion: ${question}\nContext from the user: ${context || "No additional context."}\n\n${personalMemoryText(personalContext)}\n\nRELEVANT LENSES\n${lenses}\n\nCOUNCIL MEMBERS AS REASONING LENSES\n${members}\n\nLOCKED EXTERNAL EVIDENCE\n${evidence}`;
 }
 
 export async function synthesizeCouncilBrief({
   question,
   context,
+  personalContext,
   plan,
   references,
 }: {
   question: string;
   context: string;
+  personalContext: PersonalContext;
   plan: CouncilPlan;
   references: RetrievedReference[];
 }): Promise<CouncilResult> {
@@ -86,16 +122,21 @@ export async function synthesizeCouncilBrief({
   const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
   const system = `You are the evidence-backed Council in Principles, a decision reasoning system.
 
-Use ONLY two inputs: (1) the user's decision/context and (2) LOCKED EVIDENCE. Do not use outside factual knowledge.
+You receive three context layers that MUST remain distinct:
+1. The user's current decision/context.
+2. PERSONAL MEMORY: the user's own previously adopted principles and prior decisions. This is user-owned context, not external evidence.
+3. LOCKED EXTERNAL EVIDENCE: source-backed RAG chunks identified by R1, R2, etc.
 
-The selected thinkers are reasoning lenses, NOT evidence sources. Never write "Munger says", "Dalio says", or attribute a view to any thinker unless the locked evidence itself explicitly supports that attribution.
+Do not use outside factual knowledge. The selected thinkers are reasoning lenses, NOT evidence sources. Never write "Munger says", "Dalio says", or attribute a view to any thinker unless LOCKED EXTERNAL EVIDENCE explicitly supports that attribution.
 
 Every claim must declare one layer:
-- evidence: a close summary of locked evidence. MUST include one or more citation keys such as R1.
-- interpretation: a synthesis or inference from locked evidence. MUST include one or more citation keys.
-- application: an application to the user's decision or a statement taken from user context. Citations are optional, but do not present it as sourced fact.
+- evidence: a close summary of LOCKED EXTERNAL EVIDENCE. MUST include one or more R citation keys.
+- interpretation: a synthesis or inference from LOCKED EXTERNAL EVIDENCE. MUST include one or more R citation keys.
+- application: an application to the user's current decision, current context, or PERSONAL MEMORY. R citations are optional. Never attach an R citation merely because a personal principle or prior decision exists.
 
-If evidence is weak or conflicting, expose the uncertainty. Do not force a recommendation. Prefer a reversible information-gathering next move when the crux is unresolved.
+Personal principles and prior decisions may make the application more specific, but never present them as universal facts. If a current judgment appears to conflict with prior personal memory, frame it neutrally as a question about changed principles or materially different circumstances.
+
+If external evidence is weak or conflicting, expose the uncertainty. Do not force a recommendation. Prefer a reversible information-gathering next move when the crux is unresolved.
 
 Return VALID JSON ONLY with exactly this shape:
 {
@@ -118,7 +159,13 @@ Use the same natural language as the user's decision when practical. Keep each i
         messages: [
           { content: system, role: "system" },
           {
-            content: promptForBrief({ context, plan, question, references }),
+            content: promptForBrief({
+              context,
+              personalContext,
+              plan,
+              question,
+              references,
+            }),
             role: "user",
           },
         ],
