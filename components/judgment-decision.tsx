@@ -378,9 +378,10 @@ function JudgmentStage({
   const submit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      const formElement = event.currentTarget;
       setSaving(true);
       setError("");
-      const form = new FormData(event.currentTarget);
+      const form = new FormData(formElement);
       const summary = String(form.get("summary") ?? "").trim();
       try {
         await fetchJson(`/api/decisions/${decisionId}/judgment`, {
@@ -394,7 +395,7 @@ function JudgmentStage({
           headers: { "content-type": "application/json" },
           method: "POST",
         });
-        event.currentTarget.reset();
+        formElement.reset();
         setConfidence(65);
         await onRefresh();
         if (hasCouncil) {
@@ -793,7 +794,8 @@ function ManualPrinciples({
   const submit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formElement = event.currentTarget;
+      const form = new FormData(formElement);
       setSaving(true);
       try {
         await fetchJson(`/api/decisions/${decisionId}/principles`, {
@@ -805,7 +807,7 @@ function ManualPrinciples({
           headers: { "content-type": "application/json" },
           method: "POST",
         });
-        event.currentTarget.reset();
+        formElement.reset();
         await onRefresh();
       } catch (caught) {
         setError(
@@ -872,7 +874,8 @@ function OutcomePanel({
   const submit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const form = new FormData(event.currentTarget);
+      const formElement = event.currentTarget;
+      const form = new FormData(formElement);
       setSaving(true);
       try {
         await fetchJson(`/api/decisions/${decisionId}/outcome`, {
@@ -884,7 +887,7 @@ function OutcomePanel({
           headers: { "content-type": "application/json" },
           method: "POST",
         });
-        event.currentTarget.reset();
+        formElement.reset();
         await onRefresh();
       } catch (caught) {
         setError(
