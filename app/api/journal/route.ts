@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  createJournalEntry,
-  listJournalEntries,
-} from "@/lib/journal/queries";
+import { createJournalEntry, listJournalEntries } from "@/lib/journal/queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
 const createSchema = z.object({
@@ -21,7 +18,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid journal entry." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid journal entry." },
+      { status: 400 }
+    );
   }
 
   const workspaceUser = await getWorkspaceUser();
