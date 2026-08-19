@@ -22,6 +22,7 @@ jobs:
   quality:
     name: Quality + fresh DB
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
@@ -67,6 +68,7 @@ jobs:
     name: Playwright product smoke
     needs: quality
     runs-on: ubuntu-22.04
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
@@ -97,8 +99,16 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Migrate test database
         run: pnpm db:migrate
+      - name: Cache Playwright browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 5
+        run: pnpm exec playwright install chromium
       - name: Run Principles smoke tests
         run: pnpm test:e2e
       - name: Upload Playwright report
