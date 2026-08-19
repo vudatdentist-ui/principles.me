@@ -7,15 +7,13 @@ import type {
 } from "./types";
 
 class JournalCortexFallback implements JournalCortexAdapter {
-  async reflect(
-    context: JournalCortexContext
-  ): Promise<JournalCortexSuggestion> {
+  reflect(context: JournalCortexContext): Promise<JournalCortexSuggestion> {
     const hasReflection = Boolean(context.reflection?.trim());
-    return {
+    return Promise.resolve({
       question: hasReflection
         ? "What would you do differently when this happens again?"
         : "What part of this experience was under your control?",
-    };
+    });
   }
 }
 
