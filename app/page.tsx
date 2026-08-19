@@ -1,5 +1,5 @@
-import { DecisionWorkspace } from "@/components/decision-workspace";
+import { AskThinkingSession } from "@/components/ask-thinking-session";
 
 export default function HomePage() {
-  return <DecisionWorkspace initialView="ask" />;
+  return <AskThinkingSession />;
 }
