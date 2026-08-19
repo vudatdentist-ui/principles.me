@@ -12,7 +12,9 @@ const updateSchema = z
     body: z.string().trim().min(1).max(20_000).optional(),
     occurredAt: z.string().datetime().optional(),
   })
-  .refine((value) => value.body !== undefined || value.occurredAt !== undefined);
+  .refine(
+    (value) => value.body !== undefined || value.occurredAt !== undefined
+  );
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -23,7 +25,10 @@ export async function GET(_request: Request, context: RouteContext) {
   ]);
   const detail = await getJournalEntryDetail({ id, userId: workspaceUser.id });
   if (!detail) {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Journal entry not found." },
+      { status: 404 }
+    );
   }
   return NextResponse.json(detail);
 }
@@ -32,7 +37,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = await request.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid journal update." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid journal update." },
+      { status: 400 }
+    );
   }
 
   const [{ id }, workspaceUser] = await Promise.all([
@@ -48,7 +56,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     userId: workspaceUser.id,
   });
   if (!entry) {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Journal entry not found." },
+      { status: 404 }
+    );
   }
   return NextResponse.json({ entry });
 }
@@ -60,7 +71,10 @@ export async function DELETE(_request: Request, context: RouteContext) {
   ]);
   const deleted = await deleteJournalEntry({ id, userId: workspaceUser.id });
   if (!deleted) {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Journal entry not found." },
+      { status: 404 }
+    );
   }
   return new Response(null, { status: 204 });
 }
