@@ -4,7 +4,7 @@ const decisionContext =
   "Cofounder của tôi rất giỏi nhưng né conflict. Tôi đang cân nhắc có nên tiếp tục partnership không.";
 
 async function createDecision(page: import("@playwright/test").Page) {
-  await page.goto("/");
+  await page.goto("/ask");
   await page.getByLabel("What are you deciding?").fill(decisionContext);
   await page.getByRole("button", { name: "Create decision" }).click();
   await expect(page).toHaveURL(/\/decisions\/[0-9a-f-]{36}$/);
