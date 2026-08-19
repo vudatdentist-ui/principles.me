@@ -1,32 +1,51 @@
 # Milestone 8 — Release Readiness
 
-This document is the operating contract for Principles v1. It turns the decision core into an internal product with authenticated users, isolated staging data, immutable deployments, smoke tests, backups, and a rollback path.
+This is the v1 operating contract for Principles. Coolify owns deployment lifecycle; GitHub Actions owns application quality gates and verifies the deployed release. Do not operate a second SSH/GHCR deployment path in parallel.
 
 ## Environment model
 
 ### Development
 
-- Runs locally with `APP_ENV=development`.
-- Internal auth is optional by default so local iteration can still use the anonymous workspace fallback.
+- `APP_ENV=development`.
 - Local PostgreSQL and local/mock providers are acceptable.
+- Internal authentication is optional so local development can retain the anonymous workspace fallback.
 
-### Staging / preview
+### Staging / PR previews
 
-- `APP_ENV=staging` and `INTERNAL_AUTH_REQUIRED=true`.
-- Every pull request deploys as a separate Compose project: `principles-pr-<number>`.
-- Every preview has its own PostgreSQL volume through `docker-compose.preview.yml`.
-- Every preview receives its own hostname such as `pr-42.staging.principles.me`.
-- `.env.staging` must point `RAGFLOW_DATASET_IDS` to a dedicated test dataset, not the production dataset.
-- Preview cleanup runs when the pull request closes and removes the preview PostgreSQL volume.
+Use Coolify Preview Deployments for pull requests.
 
-A wildcard DNS record for the configured staging base domain must point to the Hostinger VPS/Traefik endpoint before preview deployment is enabled.
+Required properties:
+
+- preview code runs separately from production;
+- preview environment variables are scoped separately from production;
+- preview DB is not the production DB;
+- `APP_ENV=staging`;
+- `APP_VERSION=$SOURCE_COMMIT`;
+- `INTERNAL_AUTH_REQUIRED=true`;
+- `RAGFLOW_DATASET_IDS` points to a dedicated test dataset;
+- the staging smoke user exists in the preview/staging identity store and is included in `INTERNAL_AUTH_EMAILS`;
+- preview domain follows `pr-{{pr_id}}.<STAGING_BASE_DOMAIN>` so GitHub can derive it deterministically.
+
+Create wildcard DNS for `*.<STAGING_BASE_DOMAIN>` before enabling the verification job. Keep public/fork preview deployments disabled unless running untrusted PR code on the deployment server is explicitly acceptable.
 
 ### Production
 
-- Host: `principles.me`.
-- `APP_ENV=production` and internal auth is required.
-- Internal users are explicitly whitelisted through `INTERNAL_AUTH_EMAILS` and must have a non-anonymous `User` row with a password.
-- Production uses `docker-compose.release.yml` and an immutable GHCR image tagged by the exact Git SHA.
+Production remains the existing Hostinger/Coolify application using `docker-compose.hostinger.yml` and `principles.me`.
+
+Required runtime configuration:
+
+- Coolify GitHub App connected to this repository;
+- configured branch: `main`;
+- Coolify Auto Deploy enabled;
+- `APP_ENV=production`;
+- `APP_VERSION=$SOURCE_COMMIT`;
+- `INTERNAL_AUTH_REQUIRED=true`;
+- `AUTH_SECRET` set to a strong server-only secret;
+- `INTERNAL_AUTH_EMAILS` contains only approved internal accounts;
+- production database/provider settings are present;
+- the production smoke account is a normal low-privilege whitelisted user.
+
+`GET /api/health` is the release truth endpoint. A release is ready only when it returns HTTP 200, `status: "ok"`, and the exact expected Git SHA in `version`.
 
 ## Internal user provisioning
 
@@ -40,26 +59,26 @@ INTERNAL_USER_NAME='Person' \
 pnpm exec tsx scripts/provision-internal-user.ts
 ```
 
-The email must also be present in `INTERNAL_AUTH_EMAILS` for that environment. The provisioning script is idempotent for a unique email and refuses ambiguous duplicate-email records.
+The email must also be included in `INTERNAL_AUTH_EMAILS`. The script is idempotent for a unique email and refuses ambiguous duplicate-email records.
 
-## Required GitHub Environments
+## GitHub release verification configuration
 
-Create two GitHub Environments before enabling external deploy jobs:
+Create GitHub Environments:
 
 - `staging`
 - `production`
 
-The repository keeps external deploy jobs disabled until their enable variable is explicitly set to `true`.
+Repository variables evaluated before Environment secrets are loaded:
+
+- `STAGING_VERIFY_ENABLED=true` after Coolify previews and wildcard DNS work;
+- `PRODUCTION_VERIFY_ENABLED=true` after production health/version reporting and smoke credentials work.
 
 ### Staging variables
 
-- `STAGING_DEPLOY_ENABLED=true`
-- `STAGING_BASE_DOMAIN=staging.principles.me` or the chosen wildcard domain
-- `STAGING_DEPLOY_PATH=/srv/principles/releases`
-- `STAGING_ENV_FILE=/srv/principles/.env.staging`
-- `STAGING_SMOKE_COUNCIL_QUESTION=<known question with evidence in the test RAG dataset>`
-- `STAGING_RAG_EVAL_CASE_IDS=<comma separated cases selected for the test dataset>`
-- `STAGING_RAG_MIN_SCORE=0.5` initially; raise after a real live baseline is accepted
+- `STAGING_BASE_DOMAIN=<preview base domain>`
+- `STAGING_SMOKE_COUNCIL_QUESTION=<stable question covered by the test RAG dataset>`
+- `STAGING_RAG_EVAL_CASE_IDS=<comma-separated eval case ids>`
+- `STAGING_RAG_MIN_SCORE=0.5` initially; tighten only after a real live baseline is accepted.
 
 Recommended initial subset should span multiple trust dimensions, for example:
 
@@ -67,211 +86,173 @@ Recommended initial subset should span multiple trust dimensions, for example:
 source-01-cofounder-candor,citation-01-valid-trust,attribution-01-munger,lens-01-cofounder,conflict-01-trust-performance,application-01-test-trust,adversarial-01-ignore-system
 ```
 
-Use only cases for which the staging RAG dataset intentionally contains relevant evidence.
+Staging secrets:
 
-### Staging secrets
-
-- `STAGING_SSH_HOST`
-- `STAGING_SSH_USER`
-- `STAGING_SSH_KEY`
-- `PREVIEW_DB_PASSWORD`
 - `STAGING_SMOKE_EMAIL`
 - `STAGING_SMOKE_PASSWORD`
 
-The staging smoke email must be included in `.env.staging` `INTERNAL_AUTH_EMAILS`.
-
 ### Production variables
 
-- `PRODUCTION_DEPLOY_ENABLED=true`
 - `PRODUCTION_HOST=principles.me`
-- `PRODUCTION_DEPLOY_PATH=/srv/principles/releases`
-- `PRODUCTION_ENV_FILE=/srv/principles/.env.production`
 - `PRODUCTION_SMOKE_COUNCIL_QUESTION=<stable source-backed smoke question>`
-- `PRODUCTION_BACKUP_ENABLED=true` after the backup secret is configured and the first manual backup is verified
 
-### Production secrets
+Production secrets:
 
-- `PRODUCTION_SSH_HOST`
-- `PRODUCTION_SSH_USER`
-- `PRODUCTION_SSH_KEY`
 - `PRODUCTION_SMOKE_EMAIL`
 - `PRODUCTION_SMOKE_PASSWORD`
-- `PRODUCTION_POSTGRES_URL`
 
-The production smoke account should be a normal low-privilege internal account. Its email must be whitelisted in `.env.production`.
+No production SSH key, deployment path, GHCR credential, or database URL is required by the release verification workflow.
 
-## Deployment pipeline
+## Canonical deployment pipeline
 
-The canonical `.github/workflows/ci.yml` implements the release sequence.
-
-For a pull request:
+### Pull request
 
 ```text
 PR
 → static/type/schema/trust gates
-→ local product E2E
-→ two-user auth isolation E2E
-→ build and push immutable GHCR image
-→ deploy isolated preview + test DB
-→ provision staging smoke user
+→ local product Playwright E2E
+→ two-user auth-isolation E2E
+→ Coolify PR preview deployment
+→ GitHub waits for /api/health.version == PR head SHA
 → deployed Playwright smoke
 → live RAG eval subset
 → eligible to merge
 ```
 
-External preview steps run only when `STAGING_DEPLOY_ENABLED=true`.
+The first three GitHub gates must pass independently of Coolify. When `STAGING_VERIFY_ENABLED=true`, the preview verification job turns the Coolify deployment into a required release signal. A skipped preview job is not evidence that staging passed.
 
-After merge to `main`:
+### Merge to main
 
 ```text
-main push
-→ same local quality/trust/browser/auth gates
-→ build and push exact main SHA
-→ production migration
-→ production container switch
-→ /api/health readiness check
+merge to main
+→ Coolify GitHub App auto-deploys the main commit
+→ Foundation CI runs the same local quality/browser/auth gates
+→ GitHub waits for /api/health.version == main GITHUB_SHA
 → production Playwright smoke
 ```
 
-Production deployment runs only when `PRODUCTION_DEPLOY_ENABLED=true`.
+GitHub does not deploy production. This preserves one deployment owner and prevents two systems from racing to mutate the same container.
+
+`Verify Production Release` can be run manually with an expected full SHA after a rollback, DNS repair, or other recovery event.
 
 ## Production smoke contract
 
-`tests/e2e/release-smoke.test.ts` intentionally mutates very little data:
+`tests/e2e/release-smoke.test.ts` deliberately mutates only one temporary Decision:
 
-1. load the public homepage;
+1. load the public site;
 2. sign in through the real internal login flow;
 3. verify the authenticated session;
 4. create one smoke Decision;
 5. call the real Council endpoint;
 6. require a grounded answer;
-7. require returned evidence and citations;
-8. verify every citation resolves to a returned reference;
+7. require evidence and citations;
+8. verify each citation resolves to a returned reference;
 9. verify no fatal browser error occurred;
 10. delete the smoke Decision in a `finally` block.
 
-The smoke test therefore exercises the production app, authentication, database, RAGFlow, DeepSeek, provenance, and cleanup path without accumulating normal test Decisions.
+This simultaneously exercises routing, authentication, DB persistence, RAGFlow, DeepSeek, provenance and cleanup without accumulating ordinary test data.
 
-## Authentication and isolation
+## Authentication and data isolation
 
 Staging and production never silently create anonymous workspace users.
 
-The internal auth flow uses:
+The internal auth boundary uses:
 
 - email/password against a non-anonymous `User` row;
-- an environment email whitelist;
-- an HTTP-only SameSite session cookie;
+- explicit environment email whitelist;
+- HTTP-only SameSite session cookie;
 - HMAC-signed session payload with expiry;
 - proxy-level route protection;
-- a second identity check inside `getWorkspaceUser()` before owner-scoped queries run.
+- a second identity check inside `getWorkspaceUser()`;
+- owner-scoped Decision and Principle queries.
 
-`tests/e2e/auth-isolation.test.ts` creates two real authenticated users in separate browser contexts and proves that User B cannot read, mutate, attach a Principle to, or delete User A's Decision and cannot see User A's Principle in `/api/principles`.
+`tests/e2e/auth-isolation.test.ts` creates two authenticated users in separate browser contexts and proves User B cannot read, mutate, attach a Principle to, or delete User A's Decision, and cannot see User A's Principle in `/api/principles`.
 
 ## Error monitoring
 
-Application and Council logs are structured JSON on stdout/stderr so the Hostinger/Coolify container log collector can route them to the chosen log destination later without changing the application contract.
+Application and Council events are structured JSON on stdout/stderr so Coolify/container logs can collect them without exposing prompts or secrets.
 
-Signals available in v1:
+Signals include:
 
-- `app_error kind=client` — fatal client render error;
-- `app_error kind=api status=500` — Next server/request failure;
-- `app_error kind=database code=DB_HEALTH_FAILED` — database readiness failure;
-- `app_error kind=migration` — migration command failed;
-- `council_run errorCode=RAGFLOW_UNAVAILABLE` — all retrieval queries unavailable;
-- `council_run errorCode=RAGFLOW_FAILED` — retrieval stage threw;
-- `council_run errorCode=RAGFLOW_NOT_CONFIGURED` — missing retrieval configuration;
-- `council_run errorCode=DEEPSEEK_FAILED` — synthesis provider failed;
-- `council_run grounded=false` — Council did not produce grounded evidence-backed reasoning.
+- `app_error kind=client` — fatal client render;
+- `app_error kind=api status=500` — server/request failure;
+- `app_error kind=database code=DB_HEALTH_FAILED` — DB readiness failure;
+- `app_error kind=migration` — migration failure;
+- `council_run errorCode=RAGFLOW_UNAVAILABLE` — retrieval provider unavailable;
+- `council_run errorCode=RAGFLOW_FAILED` — retrieval threw;
+- `council_run errorCode=RAGFLOW_NOT_CONFIGURED` — retrieval configuration missing;
+- `council_run errorCode=DEEPSEEK_FAILED` — synthesis provider failure;
+- `council_run grounded=false` — no grounded evidence-backed answer.
 
-These records intentionally avoid question/context/evidence text, prompts, credentials, user IDs, tokens, and raw exception messages.
+These records intentionally omit decision/question/context/evidence text, prompts, credentials, tokens, user IDs and raw exception messages.
 
-`GET /api/health` is public for the load balancer and release smoke. It verifies database access, internal-auth configuration, and provider configuration and exposes the deployed `APP_VERSION`/Git SHA.
+Configure Coolify notifications for deployment failure and container health. Backup success/failure notifications should also be enabled once scheduled backups are configured.
 
 ## Database backups
 
-`.github/workflows/backup-production.yml` creates a PostgreSQL custom-format dump every day when `PRODUCTION_BACKUP_ENABLED=true`.
+Use Coolify scheduled PostgreSQL backups rather than giving a GitHub runner direct production DB access.
 
-Each backup run:
+Recommended v1 policy:
 
-1. runs `pg_dump --format=custom --no-owner --no-acl`;
-2. verifies that `pg_restore --list` can parse the dump;
-3. stores a SHA-256 checksum;
-4. uploads the dump/list/checksum as the workflow artifact `production-db-backup-<run-id>` with 30-day retention.
+- create a scheduled PostgreSQL backup at least daily;
+- use PostgreSQL custom-format dumps;
+- keep a short local retention window on the VPS, for example 7 days;
+- strongly prefer an S3-compatible copy with a longer retention window, for example 30 days;
+- enable backup success/failure notifications.
 
-**Backup location:** GitHub Actions → `Production DB Backup` workflow run → Artifacts.
+**Where is the backup?** The primary operational location is the scheduled backup configured on the production PostgreSQL resource in Coolify. For disaster recovery, an S3-compatible copy should be treated as the safer authoritative off-server copy once configured.
 
-Before enabling the schedule, run the workflow manually once and confirm the artifact can be downloaded and listed with `pg_restore --list`.
+A successful backup is not a restore test. Before declaring M8 complete, restore one recent backup into a disposable non-production database and prove the application can use it.
 
-## Restore procedure
+`ops/restore-backup.sh` remains as a guarded helper for restore drills. It requires `ALLOW_RESTORE=YES` before performing a write.
 
-Do not restore directly over the only production database as the first step.
+Restore drill:
 
-1. Download the chosen backup artifact from the `Production DB Backup` workflow.
-2. Verify its `.sha256` file.
-3. Create a fresh PostgreSQL database or restore target.
-4. Set `RESTORE_DATABASE_URL` to that fresh target.
-5. Verify only:
+1. choose a recent Coolify backup;
+2. verify the backup file is readable by `pg_restore --list`;
+3. restore into a disposable database, never directly over the only production DB;
+4. run current migrations against the restored DB;
+5. point a staging instance at the restored DB;
+6. run the deployed smoke test;
+7. record the date, backup identifier and result.
 
-```bash
-BACKUP_FILE=./principles-YYYYMMDDTHHMMSSZ.dump \
-RESTORE_DATABASE_URL='postgresql://...' \
-./ops/restore-backup.sh
-```
-
-The helper exits before writing unless `ALLOW_RESTORE=YES` is present.
-
-6. Perform the restore:
-
-```bash
-ALLOW_RESTORE=YES \
-BACKUP_FILE=./principles-YYYYMMDDTHHMMSSZ.dump \
-RESTORE_DATABASE_URL='postgresql://...' \
-./ops/restore-backup.sh
-```
-
-7. Run `pnpm db:migrate` against the restored database.
-8. Point a staging instance at the restored database and run the deployed smoke test.
-9. Only after verification should traffic/config be switched to the restored database.
-
-## Rollback procedure
+## Rollback
 
 Application rollback must not require exploratory SSH work.
 
-Use Actions → `Rollback Production` → Run workflow and provide the exact 40-character SHA from a previously successful production release.
+Primary path:
 
-The workflow:
+1. Coolify → application → Deployments;
+2. select a known-good previous deployment/local image and use Coolify Rollback;
+3. run GitHub Actions → `Verify Production Release`, passing the expected full SHA;
+4. require exact-SHA health + production smoke to pass;
+5. restore repository consistency by reverting the bad merge/commit on `main`; Coolify then auto-deploys that revert through the normal path.
 
-1. verifies the immutable GHCR image exists;
-2. connects to the production Hostinger VPS;
-3. pulls the exact image;
-4. runs migrations through the same release script;
-5. switches the production service to the target SHA;
-6. waits for `/api/health`;
-7. runs the production smoke test.
+Coolify rollback depends on the previous local image still being available. Keep at least one known-good prior release locally until the next release has passed production verification.
 
-For v1, database migrations should remain backward-compatible/additive whenever possible. A code rollback does not automatically reverse destructive schema changes. If a release requires a destructive migration, treat database rollback as a separate restore operation and document it in that release PR.
+Database rollback is separate. M8 migrations should remain additive/backward-compatible whenever possible. A destructive migration requires an explicit database restore plan in its release PR.
 
 ## v1.0.0-rc.1 gate
 
-Do not create the release candidate tag merely because code has reached `main`. `v1.0.0-rc.1` is ready only after all of these are true:
+Do not tag `v1.0.0-rc.1` merely because M8 code reaches `main`. The release candidate is ready only when all are true:
 
 - canonical local CI is green;
-- 50-case deterministic Council trust suite is green;
+- deterministic 50-case Council trust suite is green;
 - two-user auth isolation is green;
-- a real PR preview deploy succeeds;
-- deployed staging Playwright smoke succeeds;
-- staging live RAG subset succeeds;
-- production deploy succeeds;
-- production smoke succeeds and cleans up its Decision;
-- a production backup artifact has been created and verified;
-- one rollback drill to a known prior image succeeds;
+- a real Coolify PR preview is deployed and reports the expected PR SHA;
+- deployed staging Playwright smoke is green;
+- staging live RAG subset is green;
+- production DNS resolves to the Principles application, not a parked/other site;
+- Coolify auto-deploy of a `main` commit is verified by exact SHA;
+- production smoke is green and cleans up its Decision;
+- a scheduled production PostgreSQL backup has been created and verified;
+- one restore drill into a disposable DB succeeds;
+- one application rollback drill succeeds and is re-verified by SHA + smoke;
 - no known Critical release issue remains.
-
-Then give `v1.0.0-rc.1` to the internal group for real Decisions.
 
 ## Dogfood → v1.0.0
 
-Collect feedback in these buckets:
+Give `v1.0.0-rc.1` to the internal group for real Decisions and collect:
 
 - bugs;
 - confusing UX;
@@ -279,10 +260,10 @@ Collect feedback in these buckets:
 - bad retrieval;
 - missing workflow.
 
-Severity for release triage:
+Release severity:
 
-- **Critical:** data loss/cross-user data exposure/auth bypass, unsafe grounding failure presented as sourced, production unavailable with no rollback.
-- **High:** core Decision → Council → Judgment → Principle → Review flow broken, persistent incorrect provenance/citations, repeated provider failure without a useful fallback.
-- **Medium/Low:** non-blocking UX, wording, visual, or workflow improvements.
+- **Critical:** data loss, cross-user exposure/auth bypass, unsafe grounding presented as sourced, or production unavailable without a validated recovery path;
+- **High:** core Decision → Council → Judgment → Principle → Review path broken, persistent incorrect provenance/citations, or repeated provider failure without a usable failure state;
+- **Medium/Low:** non-blocking UX, wording, visual or workflow issues.
 
-Before `v1.0.0`, Critical and High issues discovered during RC dogfooding must be fixed or explicitly removed from the v1 supported workflow. Run the same staging and production release gates again on the final candidate before tagging `v1.0.0`.
+Before `v1.0.0`, fix all Critical and High issues or remove the affected workflow from v1 support, then rerun the staging and production release gates on the final candidate.
