@@ -32,4 +32,11 @@ jobs:
           SSH_USER: ${{ secrets.STAGING_SSH_USER }}
         run: |
           ssh "$SSH_USER@$SSH_HOST" \
-            "cd '$DEPLOY_PATH' && docker compose -p 'principles-pr-$PR_NUMBER' -f docker-compose.preview.yml down -v --remove-orphans || true"
+            "cd '$DEPLOY_PATH' && \
+            PREVIEW_DB_PASSWORD=cleanup \
+            PRINCIPLES_IMAGE=cleanup \
+            PRINCIPLES_IMAGE_TAG=cleanup \
+            PRINCIPLES_ENV_FILE=/dev/null \
+            PRINCIPLES_HOST=cleanup.invalid \
+            TRAEFIK_ROUTER=cleanup \
+            docker compose -p 'principles-pr-$PR_NUMBER' -f docker-compose.preview.yml down -v --remove-orphans"
