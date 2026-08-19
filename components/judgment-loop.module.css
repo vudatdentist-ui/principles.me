@@ -333,8 +333,8 @@
 @media (max-width: 760px) {
   .headerActions,
   .stageHeader {
-    align-items: stretch;
     flex-direction: column;
+    align-items: stretch;
   }
 
   .headerActions {
