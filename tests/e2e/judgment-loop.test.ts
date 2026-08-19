@@ -70,28 +70,35 @@ test.describe("Milestone 4 Judgment Loop", () => {
       hasText: adoptedStatement,
     });
     await expect(card).toBeVisible();
-    await expect(card).toContainText("Revision 1");
-    await expect(card).toContainText("active");
-    await expect(card).toContainText("Times applied: 0");
-    await expect(card).toContainText("Origin: Tiếp tục partnership?");
+    await expect(card).toContainText("Used 0 times");
+    await card.getByRole("button").first().click();
+    await expect(card.getByRole("heading", { name: "Origin" })).toBeVisible();
+    await expect(card.getByRole("link").first()).toHaveAttribute(
+      "href",
+      /\/decisions\//
+    );
+    await expect(card.getByText("v1", { exact: true })).toBeVisible();
 
     await card.getByRole("button", { name: "Edit" }).click();
     const revisedStatement =
       "Before ending a high-value partnership, run a time-bounded trust-repair test with observable commitments.";
-    await card.getByLabel("Edit principle statement").fill(revisedStatement);
+    await card.getByLabel("Statement").fill(revisedStatement);
     await card.getByRole("button", { name: "Save revision" }).click();
 
     const revisedCard = page.getByTestId("principle-card").filter({
       hasText: revisedStatement,
     });
-    await expect(revisedCard).toContainText("Revision 2");
-    await expect(revisedCard).toContainText("revised");
-    await revisedCard.getByText("Revision history", { exact: true }).click();
+    await expect(revisedCard).toContainText("changed once");
+    await expect(
+      revisedCard.getByRole("heading", { name: "History" })
+    ).toBeVisible();
+    await expect(revisedCard.getByText("v2", { exact: true })).toBeVisible();
+    await expect(revisedCard.getByText("v1", { exact: true })).toBeVisible();
     await expect(revisedCard).toContainText(adoptedStatement);
     await expect(revisedCard).toContainText(revisedStatement);
 
     await revisedCard.getByRole("button", { name: "Retire" }).click();
-    await expect(revisedCard).toContainText("retired");
+    await expect(revisedCard).toContainText("Retired");
   });
 
   test("rejecting a candidate does not add it to My Principles", async ({

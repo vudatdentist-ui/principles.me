@@ -67,7 +67,7 @@ test.describe("Milestone 5 Personal Brain", () => {
     const principleCard = page
       .getByTestId("principle-card")
       .filter({ hasText: principleStatement });
-    await expect(principleCard).toContainText("Times applied: 1");
+    await expect(principleCard).toContainText("Used 1 times");
 
     await page.goto("/brain");
     await expect(page.getByTestId("personal-brain-dashboard")).toBeVisible();
