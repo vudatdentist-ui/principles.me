@@ -27,7 +27,7 @@ sudo install -d -m 0700 -o <deploy-user> -g <deploy-user> /home/<deploy-user>/.s
 sudo docker network inspect coolify
 ```
 
-The current server checkout is `/opt/principles-council`. Keep its `.env.production` server-only. It must contain the production app and RAGFlow connection settings; it is never copied from GitHub by the workflow.
+The current server checkout is `/opt/principles-council`. Keep its `.env.production` server-only. It must contain the production app, `POSTGRES_URL`, and RAGFlow connection settings; it is never copied from GitHub by the workflow. The Hostinger compose file attaches the web container to the existing `pryvin-goglos_goglos-internal` PostgreSQL network.
 
 After the first successful run, the container is updated with:
 

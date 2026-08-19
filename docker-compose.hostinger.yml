@@ -11,6 +11,7 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - coolify
+      - principles-db
     labels:
       traefik.enable: "true"
       traefik.docker.network: coolify
@@ -27,3 +28,6 @@ services:
 networks:
   coolify:
     external: true
+  principles-db:
+    external: true
+    name: pryvin-goglos_goglos-internal
