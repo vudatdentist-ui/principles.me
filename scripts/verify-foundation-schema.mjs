@@ -14,6 +14,14 @@ const requiredTables = [
   "DecisionOutcome",
 ];
 const requiredEnums = {
+  decision_outcome_verdict: ["positive", "mixed", "negative", "too_early"],
+  decision_principle_relation: [
+    "suggested",
+    "applied",
+    "challenged",
+    "created",
+    "adopted",
+  ],
   decision_status: [
     "draft",
     "exploring",
@@ -24,14 +32,6 @@ const requiredEnums = {
   ],
   judgment_confidence: ["low", "medium", "high"],
   principle_status: ["active", "revised", "retired"],
-  decision_principle_relation: [
-    "suggested",
-    "applied",
-    "challenged",
-    "created",
-    "adopted",
-  ],
-  decision_outcome_verdict: ["positive", "mixed", "negative", "too_early"],
 };
 const requiredIndexes = [
   "Decision_user_idx",
@@ -130,15 +130,30 @@ try {
   `;
 
   await sql`DELETE FROM "Decision" WHERE "id" = ${decision.id}`;
-  assert((await count("Judgment", "id", judgment.id)) === 0, "Judgment did not cascade with Decision deletion");
-  assert((await count("DecisionOutcome", "id", outcome.id)) === 0, "DecisionOutcome did not cascade with Decision deletion");
-  assert((await count("DecisionPrinciple", "decisionId", decision.id)) === 0, "DecisionPrinciple did not cascade with Decision deletion");
+  assert(
+    (await count("Judgment", "id", judgment.id)) === 0,
+    "Judgment did not cascade with Decision deletion"
+  );
+  assert(
+    (await count("DecisionOutcome", "id", outcome.id)) === 0,
+    "DecisionOutcome did not cascade with Decision deletion"
+  );
+  assert(
+    (await count("DecisionPrinciple", "decisionId", decision.id)) === 0,
+    "DecisionPrinciple did not cascade with Decision deletion"
+  );
 
   const [principleAfterDecisionDelete] = await sql`
     SELECT "sourceDecisionId" FROM "Principle" WHERE "id" = ${principle.id}
   `;
-  assert(Boolean(principleAfterDecisionDelete), "Principle should survive deletion of its source Decision");
-  assert(principleAfterDecisionDelete.sourceDecisionId === null, "Principle sourceDecisionId should be set to null");
+  assert(
+    Boolean(principleAfterDecisionDelete),
+    "Principle should survive deletion of its source Decision"
+  );
+  assert(
+    principleAfterDecisionDelete.sourceDecisionId === null,
+    "Principle sourceDecisionId should be set to null"
+  );
 
   const [secondDecision] = await sql`
     INSERT INTO "Decision" ("userId", "title", "question")
@@ -160,16 +175,33 @@ try {
 
   await sql`DELETE FROM "User" WHERE "id" = ${owner.id}`;
   cleanupUserId = null;
-  assert((await count("Decision", "userId", owner.id)) === 0, "Decision ownership cascade failed");
-  assert((await count("Judgment", "userId", owner.id)) === 0, "Judgment ownership cascade failed");
-  assert((await count("Principle", "userId", owner.id)) === 0, "Principle ownership cascade failed");
-  assert((await count("DecisionPrinciple", "userId", owner.id)) === 0, "DecisionPrinciple ownership cascade failed");
-  assert((await count("DecisionOutcome", "userId", owner.id)) === 0, "DecisionOutcome ownership cascade failed");
+  assert(
+    (await count("Decision", "userId", owner.id)) === 0,
+    "Decision ownership cascade failed"
+  );
+  assert(
+    (await count("Judgment", "userId", owner.id)) === 0,
+    "Judgment ownership cascade failed"
+  );
+  assert(
+    (await count("Principle", "userId", owner.id)) === 0,
+    "Principle ownership cascade failed"
+  );
+  assert(
+    (await count("DecisionPrinciple", "userId", owner.id)) === 0,
+    "DecisionPrinciple ownership cascade failed"
+  );
+  assert(
+    (await count("DecisionOutcome", "userId", owner.id)) === 0,
+    "DecisionOutcome ownership cascade failed"
+  );
 
   console.log("Foundation schema verification passed.");
 } finally {
   if (cleanupUserId) {
-    await sql`DELETE FROM "User" WHERE "id" = ${cleanupUserId}`.catch(() => undefined);
+    await sql`DELETE FROM "User" WHERE "id" = ${cleanupUserId}`.catch(
+      () => undefined
+    );
   }
   await sql.end({ timeout: 5 });
 }
