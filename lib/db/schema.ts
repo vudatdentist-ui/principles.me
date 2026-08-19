@@ -407,7 +407,9 @@ export const decisionAssumptionReview = pgTable(
     decisionIdx: index("DecisionAssumptionReview_decision_idx").on(
       table.decisionId
     ),
-    outcomeIdx: index("DecisionAssumptionReview_outcome_idx").on(table.outcomeId),
+    outcomeIdx: index("DecisionAssumptionReview_outcome_idx").on(
+      table.outcomeId
+    ),
     userIdx: index("DecisionAssumptionReview_user_idx").on(table.userId),
   })
 );
@@ -443,7 +445,9 @@ export const decisionPrincipleReview = pgTable(
     decisionIdx: index("DecisionPrincipleReview_decision_idx").on(
       table.decisionId
     ),
-    outcomeIdx: index("DecisionPrincipleReview_outcome_idx").on(table.outcomeId),
+    outcomeIdx: index("DecisionPrincipleReview_outcome_idx").on(
+      table.outcomeId
+    ),
     principleIdx: index("DecisionPrincipleReview_principle_idx").on(
       table.principleId
     ),
