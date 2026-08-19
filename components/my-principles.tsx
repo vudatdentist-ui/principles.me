@@ -1,6 +1,12 @@
 "use client";
 
-import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import styles from "./principles-registry.module.css";
 import { WorkspaceShell } from "./workspace-shell";
 
@@ -8,7 +14,6 @@ type PrincipleOrigin = {
   href?: string;
   kind: "decision" | "journal" | "problem" | "manual" | "team";
   label: string;
-  relation?: "created" | "adopted" | "applied" | "challenged";
   sourceId?: string;
 };
 
@@ -64,19 +69,25 @@ function changeLabel(count: number) {
 }
 
 function originKindLabel(kind: PrincipleOrigin["kind"]) {
-  if (kind === "decision") {
-    return "Decision";
-  }
-  if (kind === "journal") {
-    return "Journal";
-  }
-  if (kind === "problem") {
-    return "Problem";
-  }
-  if (kind === "team") {
-    return "Team";
-  }
-  return "Manual";
+  const labels: Record<PrincipleOrigin["kind"], string> = {
+    decision: "Decision",
+    journal: "Journal",
+    manual: "Manual",
+    problem: "Problem",
+    team: "Team",
+  };
+  return labels[kind];
+}
+
+function uniqueDecisions(rows: RelatedDecision[]) {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    if (seen.has(row.id)) {
+      return false;
+    }
+    seen.add(row.id);
+    return true;
+  });
 }
 
 function PrincipleItem({
@@ -88,7 +99,7 @@ function PrincipleItem({
   item: PrincipleRecord;
   isOpen: boolean;
   onRefresh: () => Promise<void>;
-  onToggle: () => void;
+  onToggle: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editStatement, setEditStatement] = useState(item.statement);
@@ -96,13 +107,36 @@ function PrincipleItem({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const changed = changeLabel(item.changedCount);
-  const supporting = item.relatedDecisions.filter(
-    (row) => row.relation === "applied" || row.relation === "adopted" || row.relation === "created"
+  const supporting = uniqueDecisions(
+    item.relatedDecisions.filter(
+      (row) =>
+        row.relation === "applied" ||
+        row.relation === "adopted" ||
+        row.relation === "created"
+    )
   );
-  const challenges = item.relatedDecisions.filter(
-    (row) => row.relation === "challenged"
+  const challenges = uniqueDecisions(
+    item.relatedDecisions.filter((row) => row.relation === "challenged")
   );
   const outcomes = item.relatedDecisions.filter((row) => row.outcomeId);
+
+  const handleToggle = useCallback(() => {
+    onToggle(item.id);
+  }, [item.id, onToggle]);
+
+  const handleEditStatementChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setEditStatement(event.target.value);
+    },
+    []
+  );
+
+  const handleEditDescriptionChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setEditDescription(event.target.value);
+    },
+    []
+  );
 
   const startEditing = useCallback(() => {
     setEditStatement(item.statement);
@@ -110,6 +144,11 @@ function PrincipleItem({
     setEditing(true);
     setError("");
   }, [item.description, item.statement]);
+
+  const cancelEditing = useCallback(() => {
+    setEditing(false);
+    setError("");
+  }, []);
 
   const saveRevision = useCallback(async () => {
     setSaving(true);
@@ -159,15 +198,18 @@ function PrincipleItem({
     [item.id, onRefresh]
   );
 
+  const activate = useCallback(() => updateStatus("activate"), [updateStatus]);
+  const retire = useCallback(() => updateStatus("retire"), [updateStatus]);
+
   return (
     <article className={styles.item} data-testid="principle-card">
       <button
         aria-expanded={isOpen}
         className={styles.rowButton}
-        onClick={onToggle}
+        onClick={handleToggle}
         type="button"
       >
-        <span className={styles.statement}>{item.statement}</span>
+        <strong className={styles.statement}>{item.statement}</strong>
         <span className={styles.meta}>
           <span>Used {item.timesUsed} times</span>
           {changed ? <span className={styles.dot}>{changed}</span> : null}
@@ -185,9 +227,7 @@ function PrincipleItem({
                 <label htmlFor={`edit-statement-${item.id}`}>Statement</label>
                 <textarea
                   id={`edit-statement-${item.id}`}
-                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                    setEditStatement(event.target.value)
-                  }
+                  onChange={handleEditStatementChange}
                   value={editStatement}
                 />
               </div>
@@ -195,9 +235,7 @@ function PrincipleItem({
                 <label htmlFor={`edit-description-${item.id}`}>Notes</label>
                 <textarea
                   id={`edit-description-${item.id}`}
-                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                    setEditDescription(event.target.value)
-                  }
+                  onChange={handleEditDescriptionChange}
                   value={editDescription}
                 />
               </div>
@@ -212,7 +250,7 @@ function PrincipleItem({
                 </button>
                 <button
                   className={styles.textButton}
-                  onClick={() => setEditing(false)}
+                  onClick={cancelEditing}
                   type="button"
                 >
                   Cancel
@@ -234,21 +272,22 @@ function PrincipleItem({
                   key={`${origin.kind}-${origin.sourceId ?? index}`}
                 >
                   <span>{originKindLabel(origin.kind)} · </span>
-                  {origin.href ? <a href={origin.href}>{origin.label}</a> : origin.label}
+                  {origin.href ? (
+                    <a href={origin.href}>{origin.label}</a>
+                  ) : (
+                    origin.label
+                  )}
                 </div>
               ))}
             </div>
           </section>
 
-          {supporting.length ? (
+          {supporting.length > 0 ? (
             <section className={styles.section}>
               <h2>Supporting decisions</h2>
               <div className={styles.relatedList}>
                 {supporting.map((related) => (
-                  <div
-                    className={styles.related}
-                    key={`${related.id}-${related.outcomeId ?? related.relation}`}
-                  >
+                  <div className={styles.related} key={related.id}>
                     <a href={`/decisions/${related.id}`}>{related.title}</a>
                     <span className={styles.relation}>{related.relation}</span>
                   </div>
@@ -257,12 +296,12 @@ function PrincipleItem({
             </section>
           ) : null}
 
-          {challenges.length ? (
+          {challenges.length > 0 ? (
             <section className={styles.section}>
               <h2>Challenges</h2>
               <div className={styles.relatedList}>
                 {challenges.map((related) => (
-                  <div className={styles.related} key={`${related.id}-challenge`}>
+                  <div className={styles.related} key={related.id}>
                     <a href={`/decisions/${related.id}`}>{related.title}</a>
                   </div>
                 ))}
@@ -270,7 +309,7 @@ function PrincipleItem({
             </section>
           ) : null}
 
-          {outcomes.length ? (
+          {outcomes.length > 0 ? (
             <section className={styles.section}>
               <h2>Usage & outcomes</h2>
               <div className={styles.relatedList}>
@@ -281,10 +320,14 @@ function PrincipleItem({
                   >
                     <a href={`/decisions/${related.id}`}>{related.title}</a>
                     {related.outcomeVerdict ? (
-                      <span className={styles.relation}>{related.outcomeVerdict}</span>
+                      <span className={styles.relation}>
+                        {related.outcomeVerdict}
+                      </span>
                     ) : null}
                     {related.outcomeResult ? (
-                      <span className={styles.outcome}>{related.outcomeResult}</span>
+                      <span className={styles.outcome}>
+                        {related.outcomeResult}
+                      </span>
                     ) : null}
                   </div>
                 ))}
@@ -317,7 +360,7 @@ function PrincipleItem({
                 <button
                   className={styles.textButton}
                   disabled={saving}
-                  onClick={() => updateStatus("activate")}
+                  onClick={activate}
                   type="button"
                 >
                   Reactivate
@@ -326,7 +369,7 @@ function PrincipleItem({
                 <button
                   className={styles.textButton}
                   disabled={saving}
-                  onClick={() => updateStatus("retire")}
+                  onClick={retire}
                   type="button"
                 >
                   Retire
@@ -364,15 +407,42 @@ export function MyPrinciplesWorkspace() {
 
   useEffect(() => {
     loadPrinciples()
-      .catch((caught: unknown) =>
+      .catch((caught: unknown) => {
         setError(
           caught instanceof Error
             ? caught.message
             : "Could not load principles."
-        )
-      )
+        );
+      })
       .finally(() => setLoading(false));
   }, [loadPrinciples]);
+
+  const toggleCreating = useCallback(() => {
+    setCreating((current) => !current);
+  }, []);
+
+  const cancelCreating = useCallback(() => {
+    setCreating(false);
+    setError("");
+  }, []);
+
+  const handleStatementChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setStatement(event.target.value);
+    },
+    []
+  );
+
+  const handleDescriptionChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setDescription(event.target.value);
+    },
+    []
+  );
+
+  const handleToggle = useCallback((id: string) => {
+    setOpenId((current) => (current === id ? null : id));
+  }, []);
 
   const createPrinciple = useCallback(async () => {
     setSaving(true);
@@ -414,7 +484,7 @@ export function MyPrinciplesWorkspace() {
           <button
             aria-label="Add principle"
             className={styles.addButton}
-            onClick={() => setCreating((current) => !current)}
+            onClick={toggleCreating}
             type="button"
           >
             +
@@ -428,7 +498,7 @@ export function MyPrinciplesWorkspace() {
               <textarea
                 autoFocus
                 id="new-principle-statement"
-                onChange={(event) => setStatement(event.target.value)}
+                onChange={handleStatementChange}
                 value={statement}
               />
             </div>
@@ -436,7 +506,7 @@ export function MyPrinciplesWorkspace() {
               <label htmlFor="new-principle-description">Notes</label>
               <textarea
                 id="new-principle-description"
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={handleDescriptionChange}
                 value={description}
               />
             </div>
@@ -451,7 +521,7 @@ export function MyPrinciplesWorkspace() {
               </button>
               <button
                 className={styles.textButton}
-                onClick={() => setCreating(false)}
+                onClick={cancelCreating}
                 type="button"
               >
                 Cancel
@@ -473,9 +543,7 @@ export function MyPrinciplesWorkspace() {
               item={item}
               key={item.id}
               onRefresh={loadPrinciples}
-              onToggle={() =>
-                setOpenId((current) => (current === item.id ? null : item.id))
-              }
+              onToggle={handleToggle}
             />
           ))}
         </div>
