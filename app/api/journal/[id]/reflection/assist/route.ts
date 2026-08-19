@@ -12,7 +12,10 @@ export async function POST(_request: Request, context: RouteContext) {
   ]);
   const detail = await getJournalEntryDetail({ id, userId: workspaceUser.id });
   if (!detail) {
-    return NextResponse.json({ error: "Journal entry not found." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Journal entry not found." },
+      { status: 404 }
+    );
   }
 
   const suggestion = await journalCortex.reflect({
