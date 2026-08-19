@@ -79,7 +79,9 @@ test.describe("Milestone 6 Learning Loop", () => {
       .getByTestId("learning-principle-review")
       .filter({ hasText: originalPrinciple });
     await principleReview.getByRole("button", { name: "Revise" }).click();
-    await principleReview.getByLabel("Revised principle").fill(revisedPrinciple);
+    await principleReview
+      .getByLabel("Revised principle")
+      .fill(revisedPrinciple);
     await principleReview
       .getByRole("button", { name: "Save revision" })
       .click();
@@ -90,9 +92,9 @@ test.describe("Milestone 6 Learning Loop", () => {
     await page.reload();
     await page.getByTestId("learning-loop-launcher").click();
     const reloadedLoop = page.getByTestId("learning-loop");
-    await expect(reloadedLoop.getByTestId("latest-learning-review")).toContainText(
-      "The trust-repair test surfaced the same avoidance pattern"
-    );
+    await expect(
+      reloadedLoop.getByTestId("latest-learning-review")
+    ).toContainText("The trust-repair test surfaced the same avoidance pattern");
     await expect(reloadedLoop).toContainText(revisedPrinciple);
     await expect(reloadedLoop).toContainText("resulting revision 2");
 
