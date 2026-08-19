@@ -55,6 +55,8 @@ jobs:
         run: pnpm check
       - name: Typecheck
         run: pnpm typecheck
+      - name: Verify Council v1 contracts
+        run: pnpm council:verify
       - name: Validate migration metadata
         run: pnpm db:check
       - name: Migrate fresh PostgreSQL database
@@ -77,6 +79,14 @@ jobs:
     needs: quality
     runs-on: ubuntu-22.04
     timeout-minutes: 20
+    env:
+      RAGFLOW_BASE_URL: http://127.0.0.1:9399
+      RAGFLOW_API_KEY: mock-ragflow-key
+      RAGFLOW_DATASET_IDS: mock-dataset
+      RAGFLOW_TOP_K: "6"
+      DEEPSEEK_BASE_URL: http://127.0.0.1:9399
+      DEEPSEEK_API_KEY: mock-deepseek-key
+      DEEPSEEK_MODEL: mock-deepseek
     services:
       postgres:
         image: postgres:16-alpine
@@ -105,6 +115,17 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Start deterministic Council providers
+        run: |
+          node scripts/mock-council-providers.mjs > /tmp/council-mock.log 2>&1 &
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:9399/health >/dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/council-mock.log
+          exit 1
       - name: Migrate test database
         run: pnpm db:migrate
       - name: Cache Playwright browser
