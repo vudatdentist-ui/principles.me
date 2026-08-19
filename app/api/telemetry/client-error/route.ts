@@ -8,7 +8,9 @@ const payloadSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const parsed = payloadSchema.safeParse(await request.json().catch(() => null));
+  const parsed = payloadSchema.safeParse(
+    await request.json().catch(() => null)
+  );
   if (!parsed.success) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
