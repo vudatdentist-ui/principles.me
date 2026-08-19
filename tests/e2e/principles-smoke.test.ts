@@ -40,9 +40,15 @@ test.describe("Principles foundation smoke", () => {
       .getByRole("button", { name: "Ask Council" })
       .click();
 
-    await expect(page.getByText("No evidence retrieved.")).toBeVisible();
+    await expect(page.getByText("No evidence retrieved yet.")).toBeVisible();
     await expect(
       page.getByText(/Chưa có evidence đủ liên quan từ RAGFlow/)
     ).toBeVisible();
+
+    await page.getByRole("button", { name: /Sources/ }).first().click();
+    await expect(
+      page.getByRole("heading", { name: "Sources for this question." })
+    ).toBeVisible();
+    await expect(page.getByText("No evidence retrieved.")).toBeVisible();
   });
 });
