@@ -1,4 +1,4 @@
-import { sql, type InferSelectModel } from "drizzle-orm";
+import { type InferSelectModel, sql } from "drizzle-orm";
 import {
   boolean,
   check,
