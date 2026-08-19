@@ -120,6 +120,13 @@ const brief = {
   ],
 };
 
+const candidate = {
+  rationale:
+    "The judgment preserves a high-value relationship while making trust repair testable through explicit commitments; the boundary is that the test must be time-bounded and observable.",
+  statement:
+    "Do not dissolve a high-value partnership before testing whether the trust problem can be corrected through explicit behavioral commitments.",
+};
+
 const server = http.createServer(async (request, response) => {
   if (request.method === "GET" && request.url === "/health") {
     return json(response, 200, { ok: true });
@@ -138,8 +145,13 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === "POST" && request.url === "/chat/completions") {
+    const body = await readJson(request);
+    const system = String(body?.messages?.[0]?.content || "");
+    const content = system.includes("candidate principle")
+      ? JSON.stringify(candidate)
+      : JSON.stringify(brief);
     return json(response, 200, {
-      choices: [{ message: { content: JSON.stringify(brief) } }],
+      choices: [{ message: { content } }],
     });
   }
 

@@ -1,0 +1,352 @@
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.briefCard {
+  margin-top: 22px;
+}
+
+.judgmentStage,
+.candidateStage {
+  position: relative;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.judgmentStage {
+  background:
+    linear-gradient(135deg, rgba(122, 92, 255, 0.13), transparent 48%),
+    rgba(255, 255, 255, 0.055);
+  border-color: rgba(139, 109, 255, 0.28);
+  box-shadow: 0 24px 80px rgba(73, 54, 160, 0.13);
+}
+
+.candidateStage {
+  background:
+    linear-gradient(135deg, rgba(74, 207, 255, 0.08), transparent 52%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.stageHeader {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.stageHeader h2 {
+  margin: 7px 0 8px;
+  font-size: clamp(25px, 3vw, 36px);
+  letter-spacing: -0.035em;
+}
+
+.stageHeader p {
+  max-width: 680px;
+  margin: 0;
+  line-height: 1.6;
+  color: #9ba2b1;
+}
+
+.step {
+  font-size: 11px;
+  font-weight: 800;
+  color: #a797ff;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.ownershipBadge,
+.candidateStatus,
+.lifecycle {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.ownershipBadge {
+  color: #c7bfff;
+  background: rgba(122, 92, 255, 0.1);
+}
+
+.judgmentHistory {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.judgmentRecord {
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 13px;
+}
+
+.judgmentRecord strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 15px;
+}
+
+.judgmentRecord p {
+  margin: 4px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #9da4b3;
+}
+
+.judgmentRecord span {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 750;
+  color: #c8c2ff;
+}
+
+.startingPoints {
+  padding: 15px;
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+}
+
+.startingPoints > span {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 750;
+  color: #8f97a7;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.startingPointGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.startingPointGrid button {
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #cfd3de;
+  text-align: left;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+}
+
+.startingPointGrid button:hover {
+  color: #fff;
+  border-color: rgba(139, 109, 255, 0.35);
+}
+
+.confidenceField {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px;
+  gap: 10px 14px;
+  align-items: center;
+}
+
+.confidenceHeader {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #aab0bd;
+}
+
+.confidenceHeader strong {
+  color: #d8d4ff;
+}
+
+.confidenceField input[type="range"] {
+  width: 100%;
+  accent-color: #8b6dff;
+}
+
+.confidenceField input[type="number"] {
+  width: 82px;
+  min-height: 40px;
+  padding: 0 10px;
+  font: inherit;
+  color: #f4f5fa;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.candidateStatus.pending,
+.lifecycle.active {
+  color: #8ff0c4;
+  background: rgba(67, 201, 145, 0.09);
+}
+
+.candidateStatus.adopted,
+.lifecycle.revised {
+  color: #c9c1ff;
+  background: rgba(122, 92, 255, 0.1);
+}
+
+.candidateStatus.rejected,
+.lifecycle.retired {
+  color: #a1a7b2;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.candidateBody {
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.candidateStatement,
+.principleStatement {
+  display: block;
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+}
+
+.candidateBody > p,
+.principleCard > p {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #999fad;
+}
+
+.candidateActions,
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.manualPrinciple {
+  padding-top: 18px;
+  margin-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.manualPrinciple > span {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #858d9d;
+}
+
+.principlesGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.principleCard {
+  display: grid;
+  gap: 16px;
+}
+
+.principleTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #7f8796;
+}
+
+.principleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding-top: 13px;
+  font-size: 12px;
+  color: #858d9d;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.principleMeta a {
+  color: #b7b0f4;
+  text-decoration: none;
+}
+
+.principleMeta a:hover {
+  text-decoration: underline;
+}
+
+.revisionHistory {
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.revisionHistory summary {
+  font-size: 12px;
+  font-weight: 750;
+  color: #a4aab7;
+  cursor: pointer;
+}
+
+.revisionList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.revisionList > div {
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 10px;
+}
+
+.revisionList strong {
+  font-size: 11px;
+  color: #a99cff;
+}
+
+.revisionList p {
+  margin: 4px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.revisionList span {
+  font-size: 11px;
+  color: #737b89;
+}
+
+@media (max-width: 760px) {
+  .headerActions,
+  .stageHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    margin-top: 18px;
+  }
+
+  .ownershipBadge,
+  .candidateStatus {
+    align-self: flex-start;
+  }
+
+  .confidenceField {
+    grid-template-columns: minmax(0, 1fr) 72px;
+  }
+}

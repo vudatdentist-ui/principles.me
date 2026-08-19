@@ -1,6 +1,7 @@
-import type { InferSelectModel } from "drizzle-orm";
+import { type InferSelectModel, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   foreignKey,
   index,
   integer,
@@ -10,6 +11,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -186,6 +188,7 @@ export const decision = pgTable(
     evidence: json("evidence"),
     id: uuid("id").primaryKey().notNull().defaultRandom(),
     objective: text("objective"),
+    principleCandidate: json("principleCandidate"),
     question: text("question").notNull(),
     reviewAt: timestamp("reviewAt"),
     reviewedAt: timestamp("reviewedAt"),
@@ -211,6 +214,7 @@ export const judgment = pgTable(
   "Judgment",
   {
     confidence: judgmentConfidence("confidence"),
+    confidencePercent: integer("confidencePercent"),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     decisionId: uuid("decisionId")
       .notNull()
@@ -225,6 +229,10 @@ export const judgment = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
   },
   (table) => ({
+    confidencePercentCheck: check(
+      "Judgment_confidence_percent_check",
+      sql`${table.confidencePercent} IS NULL OR (${table.confidencePercent} >= 0 AND ${table.confidencePercent} <= 100)`
+    ),
     decisionIdx: index("Judgment_decision_idx").on(table.decisionId),
     userIdx: index("Judgment_user_idx").on(table.userId),
   })
@@ -261,6 +269,34 @@ export const principle = pgTable(
 );
 
 export type Principle = InferSelectModel<typeof principle>;
+
+export const principleRevision = pgTable(
+  "PrincipleRevision",
+  {
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    description: text("description"),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    principleId: uuid("principleId")
+      .notNull()
+      .references(() => principle.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull(),
+    statement: text("statement").notNull(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    principleIdx: index("PrincipleRevision_principle_idx").on(
+      table.principleId
+    ),
+    principleRevisionUnique: uniqueIndex(
+      "PrincipleRevision_principle_revision_unique"
+    ).on(table.principleId, table.revision),
+    userIdx: index("PrincipleRevision_user_idx").on(table.userId),
+  })
+);
+
+export type PrincipleRevision = InferSelectModel<typeof principleRevision>;
 
 export const decisionPrinciple = pgTable(
   "DecisionPrinciple",

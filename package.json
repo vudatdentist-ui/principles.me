@@ -17,14 +17,14 @@
     "prepare": "husky",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "pnpm exec tsx lib/db/migrate.ts",
-    "db:verify": "node scripts/verify-foundation-schema.mjs",
+    "db:verify": "node scripts/verify-foundation-schema.mjs && node scripts/verify-judgment-loop-schema.mjs",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
     "test": "pnpm exec playwright test",
-    "test:e2e": "pnpm exec playwright test tests/e2e/principles-smoke.test.ts",
+    "test:e2e": "pnpm exec playwright test tests/e2e/principles-smoke.test.ts tests/e2e/judgment-loop.test.ts",
     "verify": "pnpm check && pnpm typecheck && pnpm council:verify && pnpm db:check && pnpm build"
   },
   "dependencies": {
