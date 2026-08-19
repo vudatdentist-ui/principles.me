@@ -4,6 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import type { CouncilBrief, CouncilPlan } from "@/lib/council/types";
+import type { PrincipleCandidate } from "@/lib/judgment/types";
 import {
   type Decision,
   decision,
@@ -11,6 +12,7 @@ import {
   decisionPrinciple,
   judgment,
   principle,
+  principleRevision,
   type User,
   user,
 } from "./schema";
@@ -34,6 +36,25 @@ export type DecisionDetail = {
     createdAt: Date;
   }[];
 };
+
+function asPrincipleCandidate(value: unknown): PrincipleCandidate | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Partial<PrincipleCandidate>;
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.statement !== "string" ||
+    typeof candidate.rationale !== "string" ||
+    typeof candidate.basedOnJudgmentId !== "string" ||
+    typeof candidate.generatedAt !== "string" ||
+    typeof candidate.updatedAt !== "string" ||
+    !["pending", "adopted", "rejected"].includes(String(candidate.status))
+  ) {
+    return null;
+  }
+  return candidate as PrincipleCandidate;
+}
 
 export async function getWorkspaceUserById(id: string): Promise<User | null> {
   const [selectedUser] = await db
@@ -183,6 +204,7 @@ export async function saveJudgment({
   selectedOption,
   rationale,
   confidence,
+  confidencePercent,
 }: {
   decisionId: string;
   userId: string;
@@ -190,6 +212,7 @@ export async function saveJudgment({
   selectedOption?: string;
   rationale?: string;
   confidence?: "low" | "medium" | "high";
+  confidencePercent?: number;
 }) {
   const detail = await getDecisionDetail({ id: decisionId, userId });
   if (!detail) {
@@ -201,6 +224,7 @@ export async function saveJudgment({
       .insert(judgment)
       .values({
         confidence,
+        confidencePercent,
         decisionId,
         rationale,
         selectedOption,
@@ -218,19 +242,113 @@ export async function saveJudgment({
   });
 }
 
+export async function savePrincipleCandidate({
+  decisionId,
+  userId,
+  basedOnJudgmentId,
+  statement,
+  rationale,
+}: {
+  decisionId: string;
+  userId: string;
+  basedOnJudgmentId: string;
+  statement: string;
+  rationale: string;
+}) {
+  const detail = await getDecisionDetail({ id: decisionId, userId });
+  const latestJudgment = detail?.judgments[0];
+  if (!detail || !latestJudgment || latestJudgment.id !== basedOnJudgmentId) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const candidate: PrincipleCandidate = {
+    basedOnJudgmentId,
+    generatedAt: now,
+    id: crypto.randomUUID(),
+    rationale,
+    statement,
+    status: "pending",
+    updatedAt: now,
+  };
+
+  const [updatedDecision] = await db
+    .update(decision)
+    .set({ principleCandidate: candidate, updatedAt: new Date() })
+    .where(and(eq(decision.id, decisionId), eq(decision.userId, userId)))
+    .returning();
+
+  return updatedDecision ? candidate : null;
+}
+
+export async function updatePrincipleCandidate({
+  decisionId,
+  userId,
+  candidateId,
+  action,
+  statement,
+  rationale,
+}: {
+  decisionId: string;
+  userId: string;
+  candidateId: string;
+  action: "edit" | "reject";
+  statement?: string;
+  rationale?: string;
+}) {
+  const detail = await getDecisionDetail({ id: decisionId, userId });
+  if (!detail) {
+    return null;
+  }
+  const current = asPrincipleCandidate(detail.decision.principleCandidate);
+  if (!current || current.id !== candidateId || current.status !== "pending") {
+    return null;
+  }
+
+  const next: PrincipleCandidate = {
+    ...current,
+    rationale: action === "edit" ? rationale?.trim() || current.rationale : current.rationale,
+    statement: action === "edit" ? statement?.trim() || current.statement : current.statement,
+    status: action === "reject" ? "rejected" : "pending",
+    updatedAt: new Date().toISOString(),
+  };
+
+  const [updatedDecision] = await db
+    .update(decision)
+    .set({ principleCandidate: next, updatedAt: new Date() })
+    .where(and(eq(decision.id, decisionId), eq(decision.userId, userId)))
+    .returning();
+
+  return updatedDecision ? next : null;
+}
+
 export async function addDecisionPrinciple({
   decisionId,
   userId,
   statement,
   description,
+  candidateId,
 }: {
   decisionId: string;
   userId: string;
   statement: string;
   description?: string;
+  candidateId?: string;
 }) {
   const detail = await getDecisionDetail({ id: decisionId, userId });
   if (!detail) {
+    return null;
+  }
+
+  const currentCandidate = asPrincipleCandidate(
+    detail.decision.principleCandidate
+  );
+  if (
+    candidateId &&
+    (!currentCandidate ||
+      currentCandidate.id !== candidateId ||
+      currentCandidate.status !== "pending")
+  ) {
     return null;
   }
 
@@ -245,6 +363,14 @@ export async function addDecisionPrinciple({
       })
       .returning();
 
+    await tx.insert(principleRevision).values({
+      description: createdPrinciple.description,
+      principleId: createdPrinciple.id,
+      revision: 1,
+      statement: createdPrinciple.statement,
+      userId,
+    });
+
     await tx.insert(decisionPrinciple).values({
       decisionId,
       principleId: createdPrinciple.id,
@@ -252,13 +378,99 @@ export async function addDecisionPrinciple({
       userId,
     });
 
+    const adoptedCandidate =
+      candidateId && currentCandidate
+        ? {
+            ...currentCandidate,
+            status: "adopted" as const,
+            updatedAt: new Date().toISOString(),
+          }
+        : detail.decision.principleCandidate;
+
     await tx
       .update(decision)
-      .set({ updatedAt: new Date() })
+      .set({
+        principleCandidate: adoptedCandidate,
+        updatedAt: new Date(),
+      })
       .where(and(eq(decision.id, decisionId), eq(decision.userId, userId)));
 
     return createdPrinciple;
   });
+}
+
+export async function revisePrinciple({
+  id,
+  userId,
+  statement,
+  description,
+}: {
+  id: string;
+  userId: string;
+  statement: string;
+  description?: string;
+}) {
+  const [current] = await db
+    .select()
+    .from(principle)
+    .where(and(eq(principle.id, id), eq(principle.userId, userId)))
+    .limit(1);
+  if (!current) {
+    return null;
+  }
+
+  return db.transaction(async (tx) => {
+    await tx
+      .insert(principleRevision)
+      .values({
+        description: current.description,
+        principleId: current.id,
+        revision: current.revision,
+        statement: current.statement,
+        userId,
+      })
+      .onConflictDoNothing();
+
+    const nextRevision = current.revision + 1;
+    await tx.insert(principleRevision).values({
+      description,
+      principleId: current.id,
+      revision: nextRevision,
+      statement,
+      userId,
+    });
+
+    const [updated] = await tx
+      .update(principle)
+      .set({
+        description,
+        revision: nextRevision,
+        statement,
+        status: "revised",
+        updatedAt: new Date(),
+      })
+      .where(and(eq(principle.id, id), eq(principle.userId, userId)))
+      .returning();
+
+    return updated ?? null;
+  });
+}
+
+export async function setPrincipleStatus({
+  id,
+  userId,
+  status,
+}: {
+  id: string;
+  userId: string;
+  status: "active" | "retired";
+}) {
+  const [updated] = await db
+    .update(principle)
+    .set({ status, updatedAt: new Date() })
+    .where(and(eq(principle.id, id), eq(principle.userId, userId)))
+    .returning();
+  return updated ?? null;
 }
 
 export async function saveDecisionOutcome({
@@ -298,10 +510,60 @@ export async function saveDecisionOutcome({
   });
 }
 
-export function listPrinciples(userId: string) {
-  return db
+export async function listPrinciples(userId: string) {
+  const selectedPrinciples = await db
     .select()
     .from(principle)
     .where(eq(principle.userId, userId))
     .orderBy(desc(principle.updatedAt));
+
+  return Promise.all(
+    selectedPrinciples.map(async (item) => {
+      const [originRows, appliedRows, revisions] = await Promise.all([
+        item.sourceDecisionId
+          ? db
+              .select({
+                id: decision.id,
+                question: decision.question,
+                title: decision.title,
+              })
+              .from(decision)
+              .where(
+                and(
+                  eq(decision.id, item.sourceDecisionId),
+                  eq(decision.userId, userId)
+                )
+              )
+              .limit(1)
+          : Promise.resolve([]),
+        db
+          .select({ decisionId: decisionPrinciple.decisionId })
+          .from(decisionPrinciple)
+          .where(
+            and(
+              eq(decisionPrinciple.principleId, item.id),
+              eq(decisionPrinciple.userId, userId),
+              eq(decisionPrinciple.relation, "applied")
+            )
+          ),
+        db
+          .select()
+          .from(principleRevision)
+          .where(
+            and(
+              eq(principleRevision.principleId, item.id),
+              eq(principleRevision.userId, userId)
+            )
+          )
+          .orderBy(desc(principleRevision.revision)),
+      ]);
+
+      return {
+        ...item,
+        originDecision: originRows[0] ?? null,
+        revisions,
+        timesApplied: appliedRows.length,
+      };
+    })
+  );
 }

@@ -29,6 +29,13 @@
       "when": 1787129100000,
       "tag": "0003_council_v1",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787131560000,
+      "tag": "0004_judgment_loop",
+      "breakpoints": true
     }
   ]
 }

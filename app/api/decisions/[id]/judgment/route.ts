@@ -5,6 +5,7 @@ import { getWorkspaceUser } from "@/lib/workspace-user";
 
 const judgmentSchema = z.object({
   confidence: z.enum(["low", "medium", "high"]).optional(),
+  confidencePercent: z.number().int().min(0).max(100).optional(),
   rationale: z.string().trim().max(10_000).optional(),
   selectedOption: z.string().trim().max(500).optional(),
   summary: z.string().trim().min(1).max(5000),
@@ -13,7 +14,8 @@ const judgmentSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, context: RouteContext) {
-  const parsed = judgmentSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = judgmentSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid judgment." }, { status: 400 });
   }
