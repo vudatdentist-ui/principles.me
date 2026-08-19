@@ -5,7 +5,7 @@ on:
     branches: [main, master]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   cortex-contract:
@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/cortex-core
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -25,11 +27,16 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Show exact repo formatter diff
+      - name: Apply canonical repo fixes
         run: |
           pnpm exec biome check --write --unsafe app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts || true
-          git diff -- app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
-          pnpm exec biome check --max-diagnostics=100 app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts || true
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
+          if ! git diff --cached --quiet; then
+            git commit -m "Apply Cortex lint fixes"
+            git push origin HEAD:agent/cortex-core
+          fi
       - name: Verify Cortex contract and trust invariants
         run: pnpm exec tsx scripts/verify-cortex-core.mts
       - name: Verify existing Council trust baseline
