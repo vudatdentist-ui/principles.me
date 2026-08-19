@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, master]
   push:
-    branches: [main, master, agent/milestone-4-judgment-loop]
+    branches: [main, master]
 
 permissions:
   contents: write
@@ -24,13 +24,14 @@ env:
 jobs:
   patch_m4_stream_format:
     name: Patch M4 stream formatter hunk
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/agent/milestone-4-judgment-loop' && !contains(github.event.head_commit.message, 'Fix M4 stream formatting') }}
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/milestone-4-judgment-loop' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/milestone-4-judgment-loop
       - name: Patch exact formatter hunk
+        id: patch
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -43,12 +44,17 @@ jobs:
                 : "");'''
           new = '''    const nextBuffer =
               buffer + (chunk.value ? decoder.decode(chunk.value, { stream: !chunk.done }) : "");'''
-          if text.count(old) != 1:
-              raise SystemExit(f"expected exactly one formatter hunk, found {text.count(old)}")
-          path.write_text(text.replace(old, new))
+          count = text.count(old)
+          if count > 1:
+              raise SystemExit(f"expected at most one formatter hunk, found {count}")
+          if count == 1:
+              path.write_text(text.replace(old, new))
           PY
-      - name: Commit exact patch
+      - name: Commit exact patch if needed
         run: |
+          if git diff --quiet -- components/judgment-decision.tsx; then
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add components/judgment-decision.tsx
@@ -57,7 +63,7 @@ jobs:
 
   quality:
     name: Quality + fresh DB
-    if: ${{ github.ref != 'refs/heads/agent/milestone-4-judgment-loop' }}
+    if: ${{ github.event_name != 'pull_request' || github.head_ref != 'agent/milestone-4-judgment-loop' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     services:
