@@ -22,9 +22,15 @@ async function main() {
   const connection = postgres(databaseUrl, { max: 1 });
   try {
     const db = drizzle(connection);
-    const existing = await db.select().from(user).where(eq(user.email, email)).limit(2);
+    const existing = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, email))
+      .limit(2);
     if (existing.length > 1) {
-      throw new Error(`Multiple users exist for ${email}; resolve duplicates first.`);
+      throw new Error(
+        `Multiple users exist for ${email}; resolve duplicates first.`
+      );
     }
     const passwordHash = generateHashedPassword(password);
     if (existing[0]) {
@@ -55,6 +61,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : "Provisioning failed.");
+  console.error(
+    error instanceof Error ? error.message : "Provisioning failed."
+  );
   process.exitCode = 1;
 });
