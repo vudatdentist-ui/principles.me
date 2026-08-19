@@ -1,8 +1,14 @@
 import { z } from "zod";
 import { briefToText } from "@/lib/council/grounding";
 import { buildCouncilPlan } from "@/lib/council/lenses";
-import { buildNoEvidenceCouncilAnswer } from "@/lib/council/no-evidence";
-import { retrieveCouncilEvidence } from "@/lib/council/retrieval";
+import {
+  buildNoEvidenceCouncilAnswer,
+  type NoEvidenceReason,
+} from "@/lib/council/no-evidence";
+import {
+  retrieveCouncilEvidence,
+  type RetrievalReason,
+} from "@/lib/council/retrieval";
 import { countPromptInjectionSignals } from "@/lib/council/security";
 import { synthesizeCouncilBrief } from "@/lib/council/synthesize";
 import { getPersonalContext } from "@/lib/db/personal-brain-queries";
@@ -45,6 +51,13 @@ function resolveDecisionId(request: Request, explicitId?: string) {
   } catch {
     return null;
   }
+}
+
+function toNoEvidenceReason(reason: RetrievalReason): NoEvidenceReason {
+  if (reason === "NOT_CONFIGURED" || reason === "UNAVAILABLE") {
+    return reason;
+  }
+  return "EMPTY";
 }
 
 export async function POST(request: Request) {
@@ -174,7 +187,7 @@ export async function POST(request: Request) {
           write(
             buildNoEvidenceCouncilAnswer({
               plan,
-              reason: retrieval.reason ?? "EMPTY",
+              reason: toNoEvidenceReason(retrieval.reason),
             })
           );
           errorStage = null;
