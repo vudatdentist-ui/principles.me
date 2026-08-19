@@ -125,7 +125,11 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function asPlan(value: unknown): CouncilPlan | null {
-  if (!isObject(value) || !Array.isArray(value.lenses) || !Array.isArray(value.members)) {
+  if (
+    !isObject(value) ||
+    !Array.isArray(value.lenses) ||
+    !Array.isArray(value.members)
+  ) {
     return null;
   }
   return value as unknown as CouncilPlan;
@@ -142,21 +146,21 @@ function asEvidence(value: unknown): RetrievedReference[] {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value
-    .filter(isObject)
-    .map((item, index) => ({
-      chunkId: typeof item.chunkId === "string" ? item.chunkId : null,
-      datasetId: typeof item.datasetId === "string" ? item.datasetId : null,
-      documentId: typeof item.documentId === "string" ? item.documentId : null,
-      key: typeof item.key === "string" ? item.key : `R${index + 1}`,
-      positions: Array.isArray(item.positions) ? item.positions : [],
-      retrievalContexts: Array.isArray(item.retrievalContexts)
-        ? (item.retrievalContexts.filter(isObject) as RetrievedReference["retrievalContexts"])
-        : [],
-      score: typeof item.score === "number" ? item.score : null,
-      text: typeof item.text === "string" ? item.text : "",
-      title: typeof item.title === "string" ? item.title : "RAGFlow document",
-    }));
+  return value.filter(isObject).map((item, index) => ({
+    chunkId: typeof item.chunkId === "string" ? item.chunkId : null,
+    datasetId: typeof item.datasetId === "string" ? item.datasetId : null,
+    documentId: typeof item.documentId === "string" ? item.documentId : null,
+    key: typeof item.key === "string" ? item.key : `R${index + 1}`,
+    positions: Array.isArray(item.positions) ? item.positions : [],
+    retrievalContexts: Array.isArray(item.retrievalContexts)
+      ? (item.retrievalContexts.filter(
+          isObject
+        ) as RetrievedReference["retrievalContexts"])
+      : [],
+    score: typeof item.score === "number" ? item.score : null,
+    text: typeof item.text === "string" ? item.text : "",
+    title: typeof item.title === "string" ? item.title : "RAGFlow document",
+  }));
 }
 
 function relativeTime(value: string) {
@@ -402,7 +406,9 @@ function DecisionsView() {
           <Plus size={15} /> New decision
         </a>
       </div>
-      {loading ? <div className={styles.loading}>Loading decisions…</div> : null}
+      {loading ? (
+        <div className={styles.loading}>Loading decisions…</div>
+      ) : null}
       {error ? <div className={styles.error}>{error}</div> : null}
       {!loading && !error && decisions.length === 0 ? (
         <div className={styles.empty}>
@@ -457,7 +463,9 @@ function PrinciplesView() {
           <p>Principles adopted from your own decisions.</p>
         </div>
       </div>
-      {loading ? <div className={styles.loading}>Loading principles…</div> : null}
+      {loading ? (
+        <div className={styles.loading}>Loading principles…</div>
+      ) : null}
       {error ? <div className={styles.error}>{error}</div> : null}
       {!loading && !error && principles.length === 0 ? (
         <div className={styles.empty}>
@@ -503,7 +511,9 @@ function ExploreView() {
         <article className={styles.exploreCard}>
           <Brain size={20} />
           <h2>Brain</h2>
-          <p>Browse the knowledge system without making it the primary object.</p>
+          <p>
+            Browse the knowledge system without making it the primary object.
+          </p>
         </article>
         <article className={styles.exploreCard}>
           <Network size={20} />
@@ -568,7 +578,9 @@ function ClaimView({
     <div className={councilStyles.claim}>
       <p>{claim.text}</p>
       <div className={councilStyles.claimMeta}>
-        {status ? <span className={councilStyles.factBadge}>{status}</span> : null}
+        {status ? (
+          <span className={councilStyles.factBadge}>{status}</span>
+        ) : null}
         <span className={councilStyles.layerBadge}>{claim.layer}</span>
         <CitationLinks citations={claim.citations} />
       </div>
@@ -844,7 +856,8 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
       await fetchJson(`/api/decisions/${decisionId}/analysis`, {
         body: JSON.stringify({
           councilAnalysis:
-            finalAnswer || "No evidence retrieved for a grounded Council brief.",
+            finalAnswer ||
+            "No evidence retrieved for a grounded Council brief.",
           councilBrief: finalBrief,
           councilPlan: finalPlan,
           evidence: finalEvidence,
@@ -1005,7 +1018,9 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
           <article className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Council setup</h2>
-              <span>{plan ? `${plan.lenses.length} lenses` : "Auto by default"}</span>
+              <span>
+                {plan ? `${plan.lenses.length} lenses` : "Auto by default"}
+              </span>
             </div>
             {plan ? (
               <CouncilPlanView plan={plan} />
@@ -1025,11 +1040,15 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
           <article className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Council brief</h2>
-              <span>{councilBusy ? "Running" : brief ? "Grounded" : "Not run"}</span>
+              <span>
+                {councilBusy ? "Running" : brief ? "Grounded" : "Not run"}
+              </span>
             </div>
             {brief ? <CouncilBriefView brief={brief} /> : null}
             {!brief && detail.decision.councilAnalysis ? (
-              <div className={styles.analysis}>{detail.decision.councilAnalysis}</div>
+              <div className={styles.analysis}>
+                {detail.decision.councilAnalysis}
+              </div>
             ) : null}
             {!brief && !detail.decision.councilAnalysis ? (
               <p className={styles.muted}>
@@ -1046,7 +1065,8 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
             </div>
             <p className={councilStyles.sourceNote}>
               Thinkers are reasoning lenses, not source attribution. Each R-key
-              below is original retrieval evidence; Council claims link back here.
+              below is original retrieval evidence; Council claims link back
+              here.
             </p>
             {evidence.length === 0 ? (
               <p className={styles.muted}>No evidence retrieved yet.</p>
@@ -1060,12 +1080,14 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
                     key={item.key}
                   >
                     <strong>
-                      <span className={councilStyles.evidenceKey}>{item.key}</span>
+                      <span className={councilStyles.evidenceKey}>
+                        {item.key}
+                      </span>
                       {item.title}
                     </strong>
-                    {item.score !== null ? (
+                    {item.score === null ? null : (
                       <p>Retrieval score: {item.score.toFixed(3)}</p>
-                    ) : null}
+                    )}
                     {item.retrievalContexts.length ? (
                       <div className={councilStyles.contextList}>
                         {item.retrievalContexts.map((context) => (
@@ -1096,7 +1118,9 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
               {detail.judgments.map((item) => (
                 <div className={styles.judgmentItem} key={item.id}>
                   <strong>{item.summary}</strong>
-                  {item.selectedOption ? <p>Choice: {item.selectedOption}</p> : null}
+                  {item.selectedOption ? (
+                    <p>Choice: {item.selectedOption}</p>
+                  ) : null}
                   {item.rationale ? <p>{item.rationale}</p> : null}
                   <p>
                     {item.confidence
@@ -1171,7 +1195,9 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
                 <div className={styles.principleItem} key={item.id}>
                   <strong>{item.statement}</strong>
                   {item.description ? <p>{item.description}</p> : null}
-                  <p>Revision {item.revision} · {item.relation || "adopted"}</p>
+                  <p>
+                    Revision {item.revision} · {item.relation || "adopted"}
+                  </p>
                 </div>
               ))}
             </div>
@@ -1180,7 +1206,9 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
                 <label htmlFor="principle-statement">Keep a principle</label>
                 <input
                   id="principle-statement"
-                  onChange={(event) => setPrincipleStatement(event.target.value)}
+                  onChange={(event) =>
+                    setPrincipleStatement(event.target.value)
+                  }
                   placeholder="Avoid partners who consistently evade hard conversations."
                   required
                   value={principleStatement}
@@ -1190,7 +1218,9 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
                 <label htmlFor="principle-description">Why it matters</label>
                 <textarea
                   id="principle-description"
-                  onChange={(event) => setPrincipleDescription(event.target.value)}
+                  onChange={(event) =>
+                    setPrincipleDescription(event.target.value)
+                  }
                   placeholder="Optional nuance, boundary conditions, exceptions…"
                   value={principleDescription}
                 />
@@ -1208,7 +1238,9 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
           <article className={styles.card}>
             <div className={styles.cardHeader}>
               <h2>Outcome</h2>
-              <span>{detail.outcomes.length ? "Reviewed" : "Not reviewed"}</span>
+              <span>
+                {detail.outcomes.length ? "Reviewed" : "Not reviewed"}
+              </span>
             </div>
             <div className={styles.outcomeList}>
               {detail.outcomes.map((item) => (

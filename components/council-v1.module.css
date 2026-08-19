@@ -5,10 +5,10 @@
 
 .modeRow {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 .modeBadge,
@@ -17,11 +17,11 @@
 .citation,
 .lensChip,
 .contextChip {
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 999px;
   padding: 4px 8px;
   font-size: 11px;
   line-height: 1.2;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
 }
 
 .modeBadge {
@@ -44,16 +44,16 @@
 
 .memberGrid {
   display: grid;
-  gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
 }
 
 .memberCard {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 14px;
-  padding: 12px;
   display: grid;
   gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
 }
 
 .memberCard strong {
@@ -69,14 +69,14 @@
 }
 
 .customize {
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
   padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .customize summary {
-  cursor: pointer;
   font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .customizeGrid {
@@ -118,10 +118,10 @@
 }
 
 .claim {
-  border-left: 2px solid rgba(148, 163, 184, 0.3);
-  padding: 8px 0 8px 11px;
   display: grid;
   gap: 7px;
+  padding: 8px 0 8px 11px;
+  border-left: 2px solid rgba(148, 163, 184, 0.3);
 }
 
 .claim p {
@@ -131,9 +131,9 @@
 
 .claimMeta {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
 }
 
 .layerBadge {
@@ -146,8 +146,8 @@
 }
 
 .citation {
-  text-decoration: none;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .citation:hover,

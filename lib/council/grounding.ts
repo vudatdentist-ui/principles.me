@@ -57,7 +57,8 @@ function fallbackBrief(situation: string): CouncilBrief {
     situation: {
       citations: [],
       layer: "application",
-      text: situation.trim() || "Decision context could not be summarized safely.",
+      text:
+        situation.trim() || "Decision context could not be summarized safely.",
     },
     unknowns: [
       {
@@ -89,12 +90,11 @@ export function sanitizeCouncilBrief({
       brief.reversibilityDownside ?? [],
       allowed
     ),
-    situation:
-      sanitizeClaim(brief.situation, allowed) ?? {
-        citations: [],
-        layer: "application",
-        text: situation.trim(),
-      },
+    situation: sanitizeClaim(brief.situation, allowed) ?? {
+      citations: [],
+      layer: "application",
+      text: situation.trim(),
+    },
     unknowns: sanitizeClaims(brief.unknowns ?? [], allowed),
   };
 
@@ -133,9 +133,11 @@ export function briefToText(brief: CouncilBrief) {
 
   return [
     `The situation\n${formatClaim(brief.situation)}`,
-    `Facts vs assumptions\n${brief.factsVsAssumptions
-      .map((item) => `- ${item.status}: ${formatClaim(item)}`)
-      .join("\n") || "- Not classified."}`,
+    `Facts vs assumptions\n${
+      brief.factsVsAssumptions
+        .map((item) => `- ${item.status}: ${formatClaim(item)}`)
+        .join("\n") || "- Not classified."
+    }`,
     section("Where the council agrees", brief.agreement),
     section("Where it disagrees", brief.disagreement),
     section("The crux", brief.crux),

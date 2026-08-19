@@ -68,7 +68,9 @@ test.describe("Decision workspace", () => {
   }) => {
     await createDecision(page);
 
-    await expect(page.getByText("Customize Council", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Customize Council", { exact: true })
+    ).toBeVisible();
     await page.getByRole("button", { name: "Run Council" }).click();
 
     const plan = page.getByTestId("council-plan");
@@ -82,11 +84,19 @@ test.describe("Decision workspace", () => {
     await expect(
       brief.getByRole("heading", { name: "Where the council agrees" })
     ).toBeVisible();
-    await expect(brief.getByRole("heading", { name: "The crux" })).toBeVisible();
-    await expect(brief.getByText("interpretation", { exact: true }).first()).toBeVisible();
-    await expect(brief.getByText("application", { exact: true }).first()).toBeVisible();
+    await expect(
+      brief.getByRole("heading", { name: "The crux" })
+    ).toBeVisible();
+    await expect(
+      brief.getByText("interpretation", { exact: true }).first()
+    ).toBeVisible();
+    await expect(
+      brief.getByText("application", { exact: true }).first()
+    ).toBeVisible();
 
-    const citation = brief.getByRole("link", { name: "R1", exact: true }).first();
+    const citation = brief
+      .getByRole("link", { exact: true, name: "R1" })
+      .first();
     await citation.click();
     await expect(page).toHaveURL(/#evidence-R1$/);
     await expect(page.getByTestId("evidence-R1")).toBeVisible();
@@ -95,7 +105,9 @@ test.describe("Decision workspace", () => {
     );
 
     await page.reload();
-    await expect(page.getByTestId("council-plan")).toContainText("Auto Council");
+    await expect(page.getByTestId("council-plan")).toContainText(
+      "Auto Council"
+    );
     await expect(page.getByTestId("council-brief")).toBeVisible();
     await expect(page.getByTestId("evidence-R1")).toBeVisible();
   });

@@ -18,7 +18,8 @@ assert.ok(plan.lenses.some((lens) => lens.id === "conflict"));
 assert.ok(plan.members.every((member) => member.reason.length > 20));
 assert.ok(plan.retrievalQueries.length > plan.lenses.length);
 assert.equal(
-  new Set(plan.retrievalQueries.map((query) => `${query.kind}:${query.id}`)).size,
+  new Set(plan.retrievalQueries.map((query) => `${query.kind}:${query.id}`))
+    .size,
   plan.retrievalQueries.length
 );
 
@@ -37,12 +38,6 @@ const references: RetrievedReference[] = [
 ];
 
 const rawBrief: CouncilBrief = {
-  situation: {
-    citations: [],
-    layer: "application",
-    text: "User situation",
-  },
-  factsVsAssumptions: [],
   agreement: [
     {
       citations: ["R1"],
@@ -55,8 +50,16 @@ const rawBrief: CouncilBrief = {
       text: "Unsupported evidence claim",
     },
   ],
-  disagreement: [],
   crux: [],
+  disagreement: [],
+  factsVsAssumptions: [],
+  nextMoves: [],
+  reversibilityDownside: [],
+  situation: {
+    citations: [],
+    layer: "application",
+    text: "User situation",
+  },
   unknowns: [
     {
       citations: [],
@@ -64,8 +67,6 @@ const rawBrief: CouncilBrief = {
       text: "A user-context unknown",
     },
   ],
-  reversibilityDownside: [],
-  nextMoves: [],
 };
 
 const sanitized = sanitizeCouncilBrief({

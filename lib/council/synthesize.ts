@@ -61,8 +61,7 @@ function promptForBrief({
     .join("\n");
   const evidence = references
     .map(
-      (reference) =>
-        `[${reference.key}] ${reference.title}\n${reference.text}`
+      (reference) => `[${reference.key}] ${reference.title}\n${reference.text}`
     )
     .join("\n\n");
 

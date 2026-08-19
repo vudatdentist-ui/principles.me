@@ -1,7 +1,7 @@
 import "server-only";
 
-import type { CouncilPlan, RetrievedReference } from "./types";
 import { retrievalContextFromQuery } from "./lenses";
+import type { CouncilPlan, RetrievedReference } from "./types";
 
 type RawReference = Omit<RetrievedReference, "key" | "retrievalContexts">;
 
@@ -95,7 +95,9 @@ async function retrieveQuery(query: string): Promise<RawReference[]> {
       "content-type": "application/json",
     },
     method: "POST",
-    signal: AbortSignal.timeout(Number(process.env.RAGFLOW_TIMEOUT_MS || 10_000)),
+    signal: AbortSignal.timeout(
+      Number(process.env.RAGFLOW_TIMEOUT_MS || 10_000)
+    ),
   });
   const payload = await response.json().catch(() => ({}));
   if (
@@ -147,7 +149,9 @@ export async function retrieveCouncilEvidence(
   );
   const merged = new Map<
     string,
-    RawReference & { retrievalContexts: RetrievedReference["retrievalContexts"] }
+    RawReference & {
+      retrievalContexts: RetrievedReference["retrievalContexts"];
+    }
   >();
   let successfulQueryCount = 0;
 
@@ -190,8 +194,10 @@ export async function retrieveCouncilEvidence(
   );
   const references = [...merged.values()]
     .sort((a, b) => {
-      const aRank = (a.score ?? 0) + Math.min(3, a.retrievalContexts.length - 1) * 0.03;
-      const bRank = (b.score ?? 0) + Math.min(3, b.retrievalContexts.length - 1) * 0.03;
+      const aRank =
+        (a.score ?? 0) + Math.min(3, a.retrievalContexts.length - 1) * 0.03;
+      const bRank =
+        (b.score ?? 0) + Math.min(3, b.retrievalContexts.length - 1) * 0.03;
       return bRank - aRank;
     })
     .slice(0, maxReferences)

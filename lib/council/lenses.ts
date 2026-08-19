@@ -17,179 +17,424 @@ type LensDefinition = {
 
 const LENSES: LensDefinition[] = [
   {
-    id: "reality",
-    label: "Reality & evidence",
     description: "Separate what is observed from what is merely believed.",
+    id: "reality",
+    keywords: [
+      "fact",
+      "assumption",
+      "evidence",
+      "reality",
+      "thuc te",
+      "su that",
+      "du kien",
+    ],
+    label: "Reality & evidence",
     retrievalHint: "facts assumptions evidence reality diagnosis",
-    keywords: ["fact", "assumption", "evidence", "reality", "thuc te", "su that", "du kien"],
     thinkerIds: ["dalio", "aurelius"],
   },
   {
+    description:
+      "Look for rewards, penalties, ownership, and hidden motivations.",
     id: "incentives",
+    keywords: [
+      "incentive",
+      "reward",
+      "bonus",
+      "equity",
+      "ownership",
+      "motivation",
+      "dong luc",
+      "loi ich",
+    ],
     label: "Incentives",
-    description: "Look for rewards, penalties, ownership, and hidden motivations.",
     retrievalHint: "incentives rewards ownership motivation behavior",
-    keywords: ["incentive", "reward", "bonus", "equity", "ownership", "motivation", "dong luc", "loi ich"],
     thinkerIds: ["munger", "dalio", "marx"],
   },
   {
-    id: "trust",
-    label: "Trust & integrity",
     description: "Ask whether trust is earned, observable, and repairable.",
+    id: "trust",
+    keywords: [
+      "trust",
+      "integrity",
+      "honest",
+      "reliable",
+      "tin tuong",
+      "uy tin",
+      "cofounder",
+      "partner",
+      "partnership",
+    ],
+    label: "Trust & integrity",
     retrievalHint: "trust integrity honesty reliability partnership",
-    keywords: ["trust", "integrity", "honest", "reliable", "tin tuong", "uy tin", "cofounder", "partner", "partnership"],
     thinkerIds: ["buffett", "dalio", "aurelius"],
   },
   {
+    description:
+      "Examine avoidance, disagreement, truth-telling, and conflict repair.",
     id: "conflict",
+    keywords: [
+      "conflict",
+      "disagreement",
+      "difficult conversation",
+      "hard conversation",
+      "avoid",
+      "mau thuan",
+      "bat dong",
+      "tranh chap",
+      "ne conflict",
+    ],
     label: "Conflict & candor",
-    description: "Examine avoidance, disagreement, truth-telling, and conflict repair.",
-    retrievalHint: "conflict candor disagreement difficult conversation radical truth",
-    keywords: ["conflict", "disagreement", "difficult conversation", "hard conversation", "avoid", "mau thuan", "bat dong", "tranh chap", "ne conflict"],
+    retrievalHint:
+      "conflict candor disagreement difficult conversation radical truth",
     thinkerIds: ["dalio", "aurelius", "marx"],
   },
   {
+    description:
+      "Distinguish reversible experiments from irreversible commitments.",
     id: "reversibility",
+    keywords: [
+      "reversible",
+      "irreversible",
+      "undo",
+      "pilot",
+      "trial",
+      "experiment",
+      "test",
+      "quay lai",
+      "thu nghiem",
+    ],
     label: "Reversibility",
-    description: "Distinguish reversible experiments from irreversible commitments.",
-    retrievalHint: "reversible irreversible experiment pilot optionality commitment",
-    keywords: ["reversible", "irreversible", "undo", "pilot", "trial", "experiment", "test", "quay lai", "thu nghiem"],
+    retrievalHint:
+      "reversible irreversible experiment pilot optionality commitment",
     thinkerIds: ["munger", "buffett"],
   },
   {
+    description:
+      "Study failure modes, ruin, and margin for error before upside.",
     id: "downside",
+    keywords: [
+      "risk",
+      "downside",
+      "failure",
+      "fail",
+      "lose",
+      "loss",
+      "rui ro",
+      "that bai",
+      "mat",
+      "bankrupt",
+    ],
     label: "Downside risk",
-    description: "Study failure modes, ruin, and margin for error before upside.",
     retrievalHint: "downside risk margin of safety failure avoid ruin",
-    keywords: ["risk", "downside", "failure", "fail", "lose", "loss", "rui ro", "that bai", "mat", "bankrupt"],
     thinkerIds: ["buffett", "munger"],
   },
   {
+    description:
+      "Make unknowns and confidence explicit instead of hiding them.",
     id: "uncertainty",
+    keywords: [
+      "uncertain",
+      "unknown",
+      "confidence",
+      "khong chac",
+      "khong biet",
+      "mo ho",
+    ],
     label: "Uncertainty",
-    description: "Make unknowns and confidence explicit instead of hiding them.",
     retrievalHint: "uncertainty unknown confidence margin of safety judgment",
-    keywords: ["uncertain", "unknown", "confidence", "khong chac", "khong biet", "mo ho"],
     thinkerIds: ["buffett", "aurelius", "dalio"],
   },
   {
+    description:
+      "Separate short-term pressure from durable compounding effects.",
     id: "time_horizon",
+    keywords: [
+      "long term",
+      "short term",
+      "runway",
+      "compound",
+      "compounding",
+      "dai han",
+      "ngan han",
+      "6 months",
+      "12 months",
+    ],
     label: "Time horizon",
-    description: "Separate short-term pressure from durable compounding effects.",
     retrievalHint: "long term short term compounding runway durable",
-    keywords: ["long term", "short term", "runway", "compound", "compounding", "dai han", "ngan han", "6 months", "12 months"],
     thinkerIds: ["buffett", "dalio"],
   },
   {
+    description:
+      "Ask what is understood, demonstrated, and outside competence.",
     id: "competence",
+    keywords: [
+      "capable",
+      "capability",
+      "competence",
+      "experience",
+      "experienced",
+      "senior",
+      "skill",
+      "gioi",
+      "kinh nghiem",
+      "nang luc",
+    ],
     label: "Capability & competence",
-    description: "Ask what is understood, demonstrated, and outside competence.",
     retrievalHint: "capability competence experience skill track record",
-    keywords: ["capable", "capability", "competence", "experience", "experienced", "senior", "skill", "gioi", "kinh nghiem", "nang luc"],
     thinkerIds: ["buffett", "munger", "dalio"],
   },
   {
-    id: "integrity",
-    label: "Character & integrity",
     description: "Consider character, consistency, and values under pressure.",
+    id: "integrity",
+    keywords: [
+      "character",
+      "ethical",
+      "ethics",
+      "values",
+      "honesty",
+      "dao duc",
+      "gia tri",
+      "phẩm chat",
+      "pham chat",
+    ],
+    label: "Character & integrity",
     retrievalHint: "integrity character honesty values reputation",
-    keywords: ["character", "ethical", "ethics", "values", "honesty", "dao duc", "gia tri", "phẩm chat", "pham chat"],
     thinkerIds: ["buffett", "aurelius"],
   },
   {
+    description:
+      "Map control, authority, decision rights, and structural power.",
     id: "power",
+    keywords: [
+      "power",
+      "control",
+      "authority",
+      "governance",
+      "voting",
+      "board",
+      "quyen",
+      "kiem soat",
+      "quan tri",
+    ],
     label: "Power & governance",
-    description: "Map control, authority, decision rights, and structural power.",
-    retrievalHint: "power control authority governance decision rights institutions",
-    keywords: ["power", "control", "authority", "governance", "voting", "board", "quyen", "kiem soat", "quan tri"],
+    retrievalHint:
+      "power control authority governance decision rights institutions",
     thinkerIds: ["marx", "dalio"],
   },
   {
+    description:
+      "Examine cash, resources, economics, and concrete constraints.",
     id: "material_conditions",
+    keywords: [
+      "cash",
+      "capital",
+      "cost",
+      "salary",
+      "revenue",
+      "budget",
+      "economic",
+      "tien",
+      "chi phi",
+      "von",
+      "doanh thu",
+    ],
     label: "Material conditions",
-    description: "Examine cash, resources, economics, and concrete constraints.",
-    retrievalHint: "economic conditions cash capital cost resources material conditions",
-    keywords: ["cash", "capital", "cost", "salary", "revenue", "budget", "economic", "tien", "chi phi", "von", "doanh thu"],
+    retrievalHint:
+      "economic conditions cash capital cost resources material conditions",
     thinkerIds: ["marx", "buffett"],
   },
   {
+    description:
+      "Translate principles into observable action and operating cadence.",
     id: "execution",
+    keywords: [
+      "execute",
+      "execution",
+      "delivery",
+      "ship",
+      "implementation",
+      "operate",
+      "thuc thi",
+      "trien khai",
+      "ket qua",
+    ],
     label: "Execution",
-    description: "Translate principles into observable action and operating cadence.",
     retrievalHint: "execution practice implementation action results process",
-    keywords: ["execute", "execution", "delivery", "ship", "implementation", "operate", "thuc thi", "trien khai", "ket qua"],
     thinkerIds: ["hcm", "dalio"],
   },
   {
-    id: "people",
-    label: "People & leadership",
     description: "Consider the people affected, led, hired, or depended upon.",
+    id: "people",
+    keywords: [
+      "team",
+      "employee",
+      "hire",
+      "leader",
+      "leadership",
+      "cofounder",
+      "partner",
+      "people",
+      "nhan su",
+      "lanh dao",
+      "doi ngu",
+    ],
+    label: "People & leadership",
     retrievalHint: "people leadership team employee partner organization",
-    keywords: ["team", "employee", "hire", "leader", "leadership", "cofounder", "partner", "people", "nhan su", "lanh dao", "doi ngu"],
     thinkerIds: ["hcm", "dalio"],
   },
   {
+    description:
+      "Prefer feedback, adaptation, and tests that improve the next decision.",
     id: "learning",
+    keywords: [
+      "learn",
+      "learning",
+      "feedback",
+      "reflect",
+      "adapt",
+      "iterate",
+      "hoc",
+      "phan hoi",
+      "thich nghi",
+    ],
     label: "Learning loop",
-    description: "Prefer feedback, adaptation, and tests that improve the next decision.",
-    retrievalHint: "learning feedback reflection adaptation experiment practice",
-    keywords: ["learn", "learning", "feedback", "reflect", "adapt", "iterate", "hoc", "phan hoi", "thich nghi"],
+    retrievalHint:
+      "learning feedback reflection adaptation experiment practice",
     thinkerIds: ["hcm", "dalio"],
   },
   {
+    description:
+      "Separate controllable action from reactions to outside events.",
     id: "agency",
+    keywords: [
+      "emotion",
+      "fear",
+      "anger",
+      "stress",
+      "anxiety",
+      "control",
+      "cam xuc",
+      "so hai",
+      "cang thang",
+      "kiem soat",
+    ],
     label: "Agency & emotional judgment",
-    description: "Separate controllable action from reactions to outside events.",
     retrievalHint: "agency control judgment emotion stoicism reaction",
-    keywords: ["emotion", "fear", "anger", "stress", "anxiety", "control", "cam xuc", "so hai", "cang thang", "kiem soat"],
     thinkerIds: ["aurelius"],
   },
   {
-    id: "duty_values",
-    label: "Duty & values",
     description: "Ask what responsibility, role, and declared values require.",
+    id: "duty_values",
+    keywords: [
+      "duty",
+      "responsibility",
+      "mission",
+      "role",
+      "value",
+      "trach nhiem",
+      "su menh",
+      "vai tro",
+      "gia tri",
+    ],
+    label: "Duty & values",
     retrievalHint: "duty values responsibility role principles mission",
-    keywords: ["duty", "responsibility", "mission", "role", "value", "trach nhiem", "su menh", "vai tro", "gia tri"],
     thinkerIds: ["aurelius", "hcm"],
   },
   {
-    id: "diagnosis",
-    label: "Root-cause diagnosis",
     description: "Distinguish symptoms from the underlying mechanism.",
-    retrievalHint: "root cause diagnosis problem symptom mechanism five step process",
-    keywords: ["root cause", "diagnose", "diagnosis", "symptom", "why", "nguyen nhan", "chan doan", "tai sao"],
+    id: "diagnosis",
+    keywords: [
+      "root cause",
+      "diagnose",
+      "diagnosis",
+      "symptom",
+      "why",
+      "nguyen nhan",
+      "chan doan",
+      "tai sao",
+    ],
+    label: "Root-cause diagnosis",
+    retrievalHint:
+      "root cause diagnosis problem symptom mechanism five step process",
     thinkerIds: ["dalio", "munger"],
   },
   {
+    description:
+      "Ask what would make the choice fail before asking how it wins.",
     id: "inversion",
+    keywords: [
+      "what could go wrong",
+      "worst",
+      "prevent",
+      "avoid",
+      "failure",
+      "that bai",
+      "te nhat",
+      "tranh",
+    ],
     label: "Inversion & failure modes",
-    description: "Ask what would make the choice fail before asking how it wins.",
-    retrievalHint: "inversion avoid stupidity failure modes what could go wrong",
-    keywords: ["what could go wrong", "worst", "prevent", "avoid", "failure", "that bai", "te nhat", "tranh"],
+    retrievalHint:
+      "inversion avoid stupidity failure modes what could go wrong",
     thinkerIds: ["munger", "buffett"],
   },
   {
+    description:
+      "Make the competing objectives and opportunity costs explicit.",
     id: "tradeoffs",
+    keywords: [
+      "tradeoff",
+      "trade-off",
+      "versus",
+      " vs ",
+      "either",
+      "option",
+      "choose",
+      "nen",
+      "hay",
+      "lua chon",
+    ],
     label: "Trade-offs",
-    description: "Make the competing objectives and opportunity costs explicit.",
     retrievalHint: "tradeoff opportunity cost choose option versus decision",
-    keywords: ["tradeoff", "trade-off", "versus", " vs ", "either", "option", "choose", "nen", "hay", "lua chon"],
     thinkerIds: ["munger", "buffett", "dalio"],
   },
   {
+    description:
+      "Look beyond individuals to structures, rules, and institutions.",
     id: "institutions",
+    keywords: [
+      "system",
+      "structure",
+      "policy",
+      "institution",
+      "process",
+      "he thong",
+      "cau truc",
+      "quy trinh",
+      "chinh sach",
+    ],
     label: "Systems & institutions",
-    description: "Look beyond individuals to structures, rules, and institutions.",
-    retrievalHint: "systems institutions structure rules organization incentives",
-    keywords: ["system", "structure", "policy", "institution", "process", "he thong", "cau truc", "quy trinh", "chinh sach"],
+    retrievalHint:
+      "systems institutions structure rules organization incentives",
     thinkerIds: ["marx", "dalio"],
   },
   {
+    description:
+      "Map who bears the costs, gets the benefits, and must cooperate.",
     id: "stakeholders",
+    keywords: [
+      "customer",
+      "employee",
+      "investor",
+      "stakeholder",
+      "community",
+      "khach hang",
+      "nhan vien",
+      "nha dau tu",
+      "cong dong",
+    ],
     label: "Stakeholders",
-    description: "Map who bears the costs, gets the benefits, and must cooperate.",
-    retrievalHint: "stakeholders customers employees investors people interests",
-    keywords: ["customer", "employee", "investor", "stakeholder", "community", "khach hang", "nhan vien", "nha dau tu", "cong dong"],
+    retrievalHint:
+      "stakeholders customers employees investors people interests",
     thinkerIds: ["hcm", "marx", "buffett"],
   },
 ];
@@ -219,7 +464,9 @@ function scoreLens(input: string, lens: LensDefinition) {
 export function classifyDecision(input: string): CouncilLensSelection[] {
   const ranked = LENSES.map((lens) => ({ lens, score: scoreLens(input, lens) }))
     .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.lens.label.localeCompare(b.lens.label));
+    .sort(
+      (a, b) => b.score - a.score || a.lens.label.localeCompare(b.lens.label)
+    );
 
   const selected = ranked.slice(0, 6);
   const fallbacks = ["reality", "tradeoffs", "uncertainty", "reversibility"];
@@ -244,7 +491,9 @@ export function classifyDecision(input: string): CouncilLensSelection[] {
 
 function memberReason(thinkerId: string, lenses: CouncilLensSelection[]) {
   const matched = lenses
-    .filter((lens) => LENSES.find((item) => item.id === lens.id)?.thinkerIds.includes(thinkerId))
+    .filter((lens) =>
+      LENSES.find((item) => item.id === lens.id)?.thinkerIds.includes(thinkerId)
+    )
     .slice(0, 2)
     .map((lens) => lens.label);
   if (matched.length === 0) {
@@ -260,15 +509,18 @@ function selectAutoMembers(lenses: CouncilLensSelection[]): CouncilMember[] {
     definition?.thinkerIds.forEach((thinkerId, index) => {
       scores.set(
         thinkerId,
-        (scores.get(thinkerId) ?? 0) + Math.max(1, lens.score) * (3 - Math.min(index, 2))
+        (scores.get(thinkerId) ?? 0) +
+          Math.max(1, lens.score) * (3 - Math.min(index, 2))
       );
     });
   }
 
   const ranked = THINKERS.map((thinker) => ({
-    thinker,
     score: scores.get(thinker.id) ?? 0,
-  })).sort((a, b) => b.score - a.score || a.thinker.name.localeCompare(b.thinker.name));
+    thinker,
+  })).sort(
+    (a, b) => b.score - a.score || a.thinker.name.localeCompare(b.thinker.name)
+  );
 
   const selected = ranked.filter((item) => item.score > 0).slice(0, 4);
   for (const fallbackId of ["dalio", "munger", "buffett"]) {
@@ -339,7 +591,9 @@ export function buildCouncilPlan({
   const members = manualIds.length
     ? manualIds
         .map((id) => THINKERS.find((thinker) => thinker.id === id))
-        .filter((thinker): thinker is (typeof THINKERS)[number] => Boolean(thinker))
+        .filter((thinker): thinker is (typeof THINKERS)[number] =>
+          Boolean(thinker)
+        )
         .map((thinker) => ({
           id: thinker.id,
           lens: thinker.lens,
