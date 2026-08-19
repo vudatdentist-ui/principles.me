@@ -5,14 +5,34 @@ import {
   createWorkspaceUser,
   getWorkspaceUserById,
 } from "@/lib/db/decision-queries";
+import {
+  readInternalSession,
+  WorkspaceAuthenticationError,
+} from "@/lib/internal-auth";
+import { internalAuthRequired } from "@/lib/session-token";
 
 const WORKSPACE_COOKIE = "principles-workspace";
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 export async function getWorkspaceUser() {
+  const session = await readInternalSession();
+  if (session) {
+    const authenticatedUser = await getWorkspaceUserById(session.userId);
+    if (
+      authenticatedUser &&
+      !authenticatedUser.isAnonymous &&
+      authenticatedUser.email.toLowerCase() === session.email.toLowerCase()
+    ) {
+      return authenticatedUser;
+    }
+  }
+
+  if (internalAuthRequired()) {
+    throw new WorkspaceAuthenticationError();
+  }
+
   const cookieStore = await cookies();
   const existingId = cookieStore.get(WORKSPACE_COOKIE)?.value;
-
   if (existingId) {
     const existingUser = await getWorkspaceUserById(existingId);
     if (existingUser) {

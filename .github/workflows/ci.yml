@@ -6,6 +6,9 @@ on:
   push:
     branches: [main, master]
 
+permissions:
+  contents: read
+
 concurrency:
   group: foundation-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -57,6 +60,10 @@ jobs:
         run: pnpm typecheck
       - name: Verify Council v1 contracts
         run: pnpm council:verify
+      - name: Evaluate Council trust baseline
+        run: pnpm exec tsx scripts/run-council-evals.ts
+      - name: Verify safe Council telemetry
+        run: pnpm exec tsx scripts/verify-council-telemetry.ts
       - name: Validate migration metadata
         run: pnpm db:check
       - name: Migrate fresh PostgreSQL database
@@ -147,3 +154,140 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  auth-isolation:
+    name: Internal auth isolation
+    needs: quality
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      INTERNAL_AUTH_REQUIRED: "true"
+      INTERNAL_AUTH_EMAILS: release-a@principles.test,release-b@principles.test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: principles_ci
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d principles_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Migrate test database
+        run: pnpm db:migrate
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium
+      - name: Prove two-user data isolation
+        run: pnpm exec playwright test tests/e2e/auth-isolation.test.ts
+
+  staging:
+    name: Coolify preview smoke + RAG subset
+    if: github.event_name == 'pull_request' && vars.STAGING_VERIFY_ENABLED == 'true'
+    needs: [quality, playwright, auth-isolation]
+    environment: staging
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Configure Coolify preview coordinates
+        env:
+          BASE_DOMAIN: ${{ vars.STAGING_BASE_DOMAIN }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          : "${BASE_DOMAIN:?STAGING_BASE_DOMAIN is required}"
+          echo "RELEASE_BASE_URL=https://pr-$PR_NUMBER.$BASE_DOMAIN" >> "$GITHUB_ENV"
+          echo "EXPECTED_COMMIT=$EXPECTED_HEAD_SHA" >> "$GITHUB_ENV"
+      - name: Wait for Coolify preview deployment
+        env:
+          RELEASE_WAIT_SECONDS: "600"
+        run: pnpm release:wait
+      - name: Install Chromium for preview smoke
+        run: pnpm exec playwright install chromium
+      - name: Playwright preview smoke
+        env:
+          SMOKE_USER_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
+          SMOKE_USER_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
+          SMOKE_COUNCIL_QUESTION: ${{ vars.STAGING_SMOKE_COUNCIL_QUESTION }}
+        run: PLAYWRIGHT_BASE_URL="$RELEASE_BASE_URL" pnpm exec playwright test tests/e2e/release-smoke.test.ts
+      - name: Live RAG eval subset
+        env:
+          EVAL_EMAIL: ${{ secrets.STAGING_SMOKE_EMAIL }}
+          EVAL_PASSWORD: ${{ secrets.STAGING_SMOKE_PASSWORD }}
+          EVAL_CASE_IDS: ${{ vars.STAGING_RAG_EVAL_CASE_IDS }}
+          EVAL_MIN_SCORE: ${{ vars.STAGING_RAG_MIN_SCORE }}
+          EVAL_REQUIRE_BASELINE: "0"
+        run: |
+          : "${EVAL_CASE_IDS:?STAGING_RAG_EVAL_CASE_IDS is required}"
+          EVAL_BASE_URL="$RELEASE_BASE_URL" pnpm exec tsx scripts/run-council-live-evals.ts
+
+  production:
+    name: Coolify production deployment verification
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PRODUCTION_VERIFY_ENABLED == 'true'
+    needs: [quality, playwright, auth-isolation]
+    environment: production
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Configure production coordinates
+        env:
+          PRODUCTION_HOST: ${{ vars.PRODUCTION_HOST }}
+        run: |
+          : "${PRODUCTION_HOST:?PRODUCTION_HOST is required}"
+          echo "RELEASE_BASE_URL=https://$PRODUCTION_HOST" >> "$GITHUB_ENV"
+          echo "EXPECTED_COMMIT=$GITHUB_SHA" >> "$GITHUB_ENV"
+      - name: Wait for Coolify auto-deployment
+        env:
+          RELEASE_WAIT_SECONDS: "900"
+        run: pnpm release:wait
+      - name: Install Chromium for production smoke
+        run: pnpm exec playwright install chromium
+      - name: Production smoke
+        env:
+          SMOKE_USER_EMAIL: ${{ secrets.PRODUCTION_SMOKE_EMAIL }}
+          SMOKE_USER_PASSWORD: ${{ secrets.PRODUCTION_SMOKE_PASSWORD }}
+          SMOKE_COUNCIL_QUESTION: ${{ vars.PRODUCTION_SMOKE_COUNCIL_QUESTION }}
+        run: PLAYWRIGHT_BASE_URL="$RELEASE_BASE_URL" pnpm exec playwright test tests/e2e/release-smoke.test.ts

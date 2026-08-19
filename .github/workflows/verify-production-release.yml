@@ -1,0 +1,54 @@
+name: Verify Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Full Git SHA expected to be serving production
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: vars.PRODUCTION_VERIFY_ENABLED == 'true'
+    environment: production
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+          run_install: false
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Configure production coordinates
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          PRODUCTION_HOST: ${{ vars.PRODUCTION_HOST }}
+        run: |
+          : "${PRODUCTION_HOST:?PRODUCTION_HOST is required}"
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          echo "RELEASE_BASE_URL=https://$PRODUCTION_HOST" >> "$GITHUB_ENV"
+          echo "EXPECTED_COMMIT=$EXPECTED_SHA" >> "$GITHUB_ENV"
+      - name: Wait for expected production release
+        env:
+          RELEASE_WAIT_SECONDS: "900"
+        run: pnpm release:wait
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium
+      - name: Run production smoke
+        env:
+          SMOKE_USER_EMAIL: ${{ secrets.PRODUCTION_SMOKE_EMAIL }}
+          SMOKE_USER_PASSWORD: ${{ secrets.PRODUCTION_SMOKE_PASSWORD }}
+          SMOKE_COUNCIL_QUESTION: ${{ vars.PRODUCTION_SMOKE_COUNCIL_QUESTION }}
+        run: PLAYWRIGHT_BASE_URL="$RELEASE_BASE_URL" pnpm exec playwright test tests/e2e/release-smoke.test.ts

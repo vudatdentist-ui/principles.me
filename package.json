@@ -12,6 +12,7 @@
     "ragflow:seed": "node scripts/seed-ragflow.mjs",
     "brain:extract": "node scripts/extract-brain-asset.mjs",
     "council:verify": "pnpm exec tsx scripts/verify-council-v1.ts",
+    "release:wait": "pnpm exec tsx scripts/wait-release-health.ts",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "husky",

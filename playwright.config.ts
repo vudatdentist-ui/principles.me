@@ -4,7 +4,9 @@ import { config } from "dotenv";
 config({ path: process.env.ENV_FILE || ".env.local" });
 
 const port = Number(process.env.PORT || 3000);
-const baseURL = `http://127.0.0.1:${port}`;
+const localBaseURL = `http://127.0.0.1:${port}`;
+const externalBaseURL = process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "");
+const baseURL = externalBaseURL || localBaseURL;
 const webServerCommand = process.env.CI
   ? "pnpm build && pnpm start"
   : "pnpm dev";
@@ -17,7 +19,7 @@ export default defineConfig({
     {
       name: "principles-chromium",
       testMatch:
-        /e2e\/(principles-smoke|judgment-loop|personal-brain|learning-loop)\.test\.ts/,
+        /e2e\/(principles-smoke|judgment-loop|personal-brain|learning-loop|auth-isolation|release-smoke)\.test\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
   ],
@@ -30,11 +32,13 @@ export default defineConfig({
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
-  webServer: {
-    command: webServerCommand,
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    url: baseURL,
-  },
+  webServer: externalBaseURL
+    ? undefined
+    : {
+        command: webServerCommand,
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+        url: localBaseURL,
+      },
   workers: 1,
 });

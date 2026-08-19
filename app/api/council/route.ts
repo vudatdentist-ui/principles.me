@@ -60,6 +60,16 @@ function toNoEvidenceReason(reason: RetrievalReason): NoEvidenceReason {
   return "EMPTY";
 }
 
+function providerErrorCode(stage: string | null) {
+  if (stage === "RETRIEVING") {
+    return "RAGFLOW_FAILED";
+  }
+  if (stage === "SYNTHESIZING") {
+    return "DEEPSEEK_FAILED";
+  }
+  return "COUNCIL_FAILED";
+}
+
 export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(
     await request.json().catch(() => null)
@@ -190,8 +200,14 @@ export async function POST(request: Request) {
               reason: toNoEvidenceReason(retrieval.reason),
             })
           );
-          errorStage = null;
-          emitTelemetry();
+          if (retrieval.reason === "UNAVAILABLE") {
+            emitTelemetry("RAGFLOW_UNAVAILABLE");
+          } else if (retrieval.reason === "NOT_CONFIGURED") {
+            emitTelemetry("RAGFLOW_NOT_CONFIGURED");
+          } else {
+            errorStage = null;
+            emitTelemetry();
+          }
           write({ type: "done" });
           return;
         }
@@ -232,7 +248,7 @@ export async function POST(request: Request) {
         emitTelemetry();
         write({ type: "done" });
       } catch (error) {
-        emitTelemetry(error instanceof Error ? error.name : "UNKNOWN_ERROR");
+        emitTelemetry(providerErrorCode(errorStage));
         write({
           message:
             error instanceof Error ? error.message : "Council pipeline failed.",

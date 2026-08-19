@@ -1,0 +1,68 @@
+name: Verify Main Auto Deploy
+
+on:
+  workflow_run:
+    workflows: ["Foundation CI"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  production-health:
+    name: Exact-SHA production health
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 18
+    env:
+      EXPECTED_COMMIT: ${{ github.event.workflow_run.head_sha }}
+      RELEASE_BASE_URL: https://principles.me
+    steps:
+      - name: Wait for Coolify auto-deploy exact SHA
+        run: |
+          node <<'NODE'
+          const baseUrl = process.env.RELEASE_BASE_URL;
+          const expected = process.env.EXPECTED_COMMIT;
+          const deadline = Date.now() + 15 * 60 * 1000;
+          let lastState = "no response";
+
+          while (Date.now() < deadline) {
+            try {
+              const response = await fetch(`${baseUrl}/api/health`, {
+                cache: "no-store",
+                redirect: "manual",
+              });
+              const contentType = response.headers.get("content-type") ?? "";
+              const payload = contentType.includes("application/json")
+                ? await response.json()
+                : null;
+              const status = payload?.status ?? "unknown";
+              const version = payload?.version ?? "unknown";
+              lastState = `HTTP ${response.status}; status=${status}; version=${version}`;
+
+              if (response.ok && status === "ok" && version === expected) {
+                const homepage = await fetch(`${baseUrl}/`, {
+                  cache: "no-store",
+                  redirect: "manual",
+                });
+                if (!homepage.ok) {
+                  throw new Error(`Homepage returned HTTP ${homepage.status}.`);
+                }
+                console.log(`Production ready on exact SHA ${version}.`);
+                process.exit(0);
+              }
+            } catch (error) {
+              lastState = error instanceof Error ? error.message : "unknown network error";
+            }
+
+            console.log(`Production not ready yet: ${lastState}`);
+            await new Promise((resolve) => setTimeout(resolve, 10_000));
+          }
+
+          throw new Error(
+            `Timed out waiting for ${baseUrl} to serve ${expected}. Last state: ${lastState}`
+          );
+          NODE
