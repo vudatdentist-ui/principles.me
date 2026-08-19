@@ -1,0 +1,117 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck and build
+        run: pnpm check && pnpm build
+
+  deploy:
+    name: Deploy to Hostinger VPS
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - name: Checkout deployment script
+        uses: actions/checkout@v4
+
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Configure known hosts
+        shell: bash
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          test -n "$VPS_KNOWN_HOSTS"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Deploy exact commit to VPS
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$VPS_HOST"
+          test -n "$VPS_USER"
+          test -n "$DEPLOY_SHA"
+          VPS_PORT="${VPS_PORT:-22}"
+          APP_DIR="${APP_DIR:-/opt/principles-council}"
+
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          : "${APP_DIR:?APP_DIR is required}"
+          : "${DEPLOY_SHA:?DEPLOY_SHA is required}"
+          REPO_URL="https://github.com/vudatdentist-ui/principles-council.git"
+
+          install -d "$(dirname "$APP_DIR")"
+          if [ ! -d "$APP_DIR/.git" ]; then
+            git clone --branch main --single-branch "$REPO_URL" "$APP_DIR"
+          fi
+
+          cd "$APP_DIR"
+          # Fetch directly from GitHub so the existing local bare remote on
+          # the VPS does not have to be updated separately.
+          git fetch --prune "$REPO_URL" main
+          git checkout --detach "$DEPLOY_SHA"
+          test "$(git rev-parse HEAD)" = "$DEPLOY_SHA"
+
+          test -f .env.production
+          test -f docker-compose.hostinger.yml
+          docker network inspect coolify >/dev/null
+          docker compose -f docker-compose.hostinger.yml up -d --build --remove-orphans
+
+          test "$(docker inspect -f '{{.State.Running}}' principles-web)" = "true"
+          docker compose -f docker-compose.hostinger.yml ps
+          REMOTE
+
+      - name: Verify public endpoint
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location \
+            --retry 15 --retry-delay 4 --retry-connrefused \
+            --max-time 20 https://principles.me/ >/dev/null
