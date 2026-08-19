@@ -21,10 +21,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid principle." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid principle." }, { status: 400 });
   }
 
   const workspaceUser = await getWorkspaceUser();
