@@ -23,8 +23,8 @@ export default defineConfig({
   timeout: 60_000,
   use: {
     baseURL,
-    trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    trace: "retain-on-failure",
   },
   webServer: {
     command: "pnpm dev",
