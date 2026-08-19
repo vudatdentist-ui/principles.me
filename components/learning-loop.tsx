@@ -52,7 +52,13 @@ type LearningReviewPayload = {
     decision: {
       reviewAt: string | null;
       reviewedAt: string | null;
-      status: "draft" | "exploring" | "decided" | "review_due" | "reviewed" | "archived";
+      status:
+        | "draft"
+        | "exploring"
+        | "decided"
+        | "review_due"
+        | "reviewed"
+        | "archived";
     };
     outcomes: OutcomeRecord[];
     principleReviews: PrincipleReviewRecord[];
@@ -143,19 +149,27 @@ function PrincipleReviewCard({
   const startRevise = useCallback(() => setMode("revise"), []);
   const cancelRevise = useCallback(() => setMode("idle"), []);
   const changeStatement = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => setStatement(event.target.value),
+    (event: ChangeEvent<HTMLTextAreaElement>) =>
+      setStatement(event.target.value),
     []
   );
 
   return (
-    <div className={styles.principleReview} data-testid="learning-principle-review">
+    <div
+      className={styles.principleReview}
+      data-testid="learning-principle-review"
+    >
       <strong>“{principle.statement}”</strong>
       <span>
         Revision {principle.revision} · {principle.status}
       </span>
       {reviewed ? (
-        <div className={styles.savedAction} data-testid="principle-review-saved">
-          <Check size={13} /> {reviewed.action} · resulting revision {reviewed.resultingRevision}
+        <div
+          className={styles.savedAction}
+          data-testid="principle-review-saved"
+        >
+          <Check size={13} /> {reviewed.action} · resulting revision{" "}
+          {reviewed.resultingRevision}
         </div>
       ) : null}
       {!reviewed && mode === "idle" ? (
@@ -178,7 +192,11 @@ function PrincipleReviewCard({
             <textarea onChange={changeStatement} value={statement} />
           </label>
           <div className={styles.actions}>
-            <button disabled={busy || statement.trim().length < 3} onClick={revise} type="button">
+            <button
+              disabled={busy || statement.trim().length < 3}
+              onClick={revise}
+              type="button"
+            >
               Save revision
             </button>
             <button disabled={busy} onClick={cancelRevise} type="button">
@@ -194,7 +212,9 @@ function PrincipleReviewCard({
 
 export function LearningLoop({ decisionId }: { decisionId: string }) {
   const [open, setOpen] = useState(false);
-  const [review, setReview] = useState<LearningReviewPayload["review"] | null>(null);
+  const [review, setReview] = useState<LearningReviewPayload["review"] | null>(
+    null
+  );
   const [assumptions, setAssumptions] = useState<AssumptionDraft[]>([]);
   const [customDate, setCustomDate] = useState("");
   const [busy, setBusy] = useState(false);
@@ -226,9 +246,9 @@ export function LearningLoop({ decisionId }: { decisionId: string }) {
   const latestAssumptionReviews = useMemo(
     () =>
       latestOutcome
-        ? review?.assumptionReviews.filter(
+        ? (review?.assumptionReviews.filter(
             (item) => item.outcomeId === latestOutcome.id
-          ) ?? []
+          ) ?? [])
         : [],
     [latestOutcome, review?.assumptionReviews]
   );
@@ -281,13 +301,14 @@ export function LearningLoop({ decisionId }: { decisionId: string }) {
 
   const changeAssumption = useCallback(
     (event: ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-      const index = Number(event.target.dataset.index);
-      const field = event.target.dataset.field as "verdict" | "note";
-      const value = event.target.value;
-      setAssumptions((current) =>
-        current.map((item, itemIndex) =>
-          itemIndex === index ? { ...item, [field]: value } : item
-        ) as AssumptionDraft[]
+      const { dataset, value } = event.target;
+      const index = Number(dataset.index);
+      const field = dataset.field as "verdict" | "note";
+      setAssumptions(
+        (current) =>
+          current.map((item, itemIndex) =>
+            itemIndex === index ? { ...item, [field]: value } : item
+          ) as AssumptionDraft[]
       );
     },
     []
@@ -397,7 +418,8 @@ export function LearningLoop({ decisionId }: { decisionId: string }) {
       <section>
         <h3>Decision review</h3>
         <p className={styles.muted}>
-          Separate what happened from whether the decision and reasoning were good.
+          Separate what happened from whether the decision and reasoning were
+          good.
         </p>
         <form className={styles.reviewForm} onSubmit={saveReview}>
           <label>
@@ -436,7 +458,10 @@ export function LearningLoop({ decisionId }: { decisionId: string }) {
             <div className={styles.assumptions}>
               <h4>Assumption review</h4>
               {assumptions.map((item, index) => (
-                <div data-testid="assumption-review-input" key={item.assumptionText}>
+                <div
+                  data-testid="assumption-review-input"
+                  key={item.assumptionText}
+                >
                   <strong>{item.assumptionText}</strong>
                   <select
                     aria-label={`Was assumption ${index + 1} correct?`}
