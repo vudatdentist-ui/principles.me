@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ChangeEvent, useCallback, useState } from "react";
 import type { JournalCandidate } from "@/lib/journal/types";
 import styles from "./journal.module.css";
 
@@ -44,7 +44,7 @@ export function JournalEntryView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function saveReflection() {
+  const saveReflection = useCallback(async () => {
     const text = reflectionText.trim();
     if (!text || saving) {
       return;
@@ -72,9 +72,17 @@ export function JournalEntryView({
       return;
     }
     window.location.reload();
-  }
+  }, [
+    candidateRationale,
+    candidateStatement,
+    entry.id,
+    observation,
+    reflectionText,
+    saving,
+    showCandidate,
+  ]);
 
-  async function askQuestion() {
+  const askQuestion = useCallback(async () => {
     setError(null);
     const response = await fetch(`/api/journal/${entry.id}/reflection/assist`, {
       method: "POST",
@@ -87,47 +95,88 @@ export function JournalEntryView({
       suggestion: { question?: string };
     };
     setQuestion(payload.suggestion.question ?? null);
-  }
+  }, [entry.id]);
 
-  async function candidateAction(action: "edit" | "reject" | "adopt") {
-    if (!candidate || candidate.status !== "pending") {
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    const response = await fetch(`/api/journal/${entry.id}/reflection`, {
-      body: JSON.stringify({
-        action,
-        candidateId: candidate.id,
-        ...(action !== "reject"
-          ? {
-              rationale: candidateRationale.trim() || null,
-              statement: candidateStatement.trim(),
-            }
-          : {}),
-      }),
-      headers: { "content-type": "application/json" },
-      method: "PATCH",
-    });
-    setSaving(false);
-    if (!response.ok) {
-      setError("Could not update candidate.");
-      return;
-    }
-    if (action === "reject") {
-      setCandidate({ ...candidate, status: "rejected" });
-      return;
-    }
-    if (action === "edit") {
-      setCandidate({
-        ...candidate,
-        rationale: candidateRationale.trim() || null,
-        statement: candidateStatement.trim(),
+  const candidateAction = useCallback(
+    async (action: "edit" | "reject" | "adopt") => {
+      if (candidate?.status !== "pending") {
+        return;
+      }
+      setSaving(true);
+      setError(null);
+      const response = await fetch(`/api/journal/${entry.id}/reflection`, {
+        body: JSON.stringify({
+          action,
+          candidateId: candidate.id,
+          ...(action === "reject"
+            ? {}
+            : {
+                rationale: candidateRationale.trim() || null,
+                statement: candidateStatement.trim(),
+              }),
+        }),
+        headers: { "content-type": "application/json" },
+        method: "PATCH",
       });
-      return;
-    }
-    window.location.reload();
-  }
+      setSaving(false);
+      if (!response.ok) {
+        setError("Could not update candidate.");
+        return;
+      }
+      if (action === "reject") {
+        setCandidate({ ...candidate, status: "rejected" });
+        return;
+      }
+      if (action === "edit") {
+        setCandidate({
+          ...candidate,
+          rationale: candidateRationale.trim() || null,
+          statement: candidateStatement.trim(),
+        });
+        return;
+      }
+      window.location.reload();
+    },
+    [candidate, candidateRationale, candidateStatement, entry.id]
+  );
+
+  const editCandidate = useCallback(
+    () => candidateAction("edit"),
+    [candidateAction]
+  );
+  const rejectCandidate = useCallback(
+    () => candidateAction("reject"),
+    [candidateAction]
+  );
+  const adoptCandidate = useCallback(
+    () => candidateAction("adopt"),
+    [candidateAction]
+  );
+  const revealCandidate = useCallback(() => setShowCandidate(true), []);
+  const handleReflectionChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setReflectionText(event.target.value);
+    },
+    []
+  );
+  const handleObservationChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setObservation(event.target.value);
+    },
+    []
+  );
+  const handleCandidateStatementChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setCandidateStatement(event.target.value);
+    },
+    []
+  );
+  const handleCandidateRationaleChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setCandidateRationale(event.target.value);
+    },
+    []
+  );
 
   return (
     <>
@@ -138,7 +187,7 @@ export function JournalEntryView({
           <span className={styles.label}>Reflection</span>
           <button
             className={styles.quietAction}
-            onClick={() => void askQuestion()}
+            onClick={askQuestion}
             type="button"
           >
             Question
@@ -148,34 +197,26 @@ export function JournalEntryView({
         <textarea
           aria-label="Reflection"
           className={styles.reflectionArea}
-          onChange={(event) => setReflectionText(event.target.value)}
+          onChange={handleReflectionChange}
           placeholder="What did you learn?"
           value={reflectionText}
         />
         <textarea
           aria-label="Pattern or observation"
           className={styles.smallArea}
-          onChange={(event) => setObservation(event.target.value)}
+          onChange={handleObservationChange}
           placeholder="Pattern / observation"
           value={observation}
         />
 
-        {!showCandidate ? (
-          <button
-            className={styles.quietAction}
-            onClick={() => setShowCandidate(true)}
-            type="button"
-          >
-            + Candidate principle
-          </button>
-        ) : (
+        {showCandidate ? (
           <div className={styles.candidate}>
             <div className={styles.label}>Candidate principle</div>
             <textarea
               aria-label="Candidate principle"
               className={styles.candidateInput}
               disabled={candidate?.status === "adopted"}
-              onChange={(event) => setCandidateStatement(event.target.value)}
+              onChange={handleCandidateStatementChange}
               placeholder="IF context, THEN action."
               value={candidateStatement}
             />
@@ -183,7 +224,7 @@ export function JournalEntryView({
               aria-label="Candidate rationale"
               className={styles.smallArea}
               disabled={candidate?.status === "adopted"}
-              onChange={(event) => setCandidateRationale(event.target.value)}
+              onChange={handleCandidateRationaleChange}
               placeholder="Why this rule?"
               value={candidateRationale}
             />
@@ -195,7 +236,7 @@ export function JournalEntryView({
                     <button
                       className={styles.quietAction}
                       disabled={saving || !candidateStatement.trim()}
-                      onClick={() => void candidateAction("edit")}
+                      onClick={editCandidate}
                       type="button"
                     >
                       Save edit
@@ -203,7 +244,7 @@ export function JournalEntryView({
                     <button
                       className={styles.quietAction}
                       disabled={saving}
-                      onClick={() => void candidateAction("reject")}
+                      onClick={rejectCandidate}
                       type="button"
                     >
                       Reject
@@ -211,7 +252,7 @@ export function JournalEntryView({
                     <button
                       className={styles.action}
                       disabled={saving || !candidateStatement.trim()}
-                      onClick={() => void candidateAction("adopt")}
+                      onClick={adoptCandidate}
                       type="button"
                     >
                       Adopt
@@ -221,13 +262,21 @@ export function JournalEntryView({
               </div>
             ) : null}
           </div>
+        ) : (
+          <button
+            className={styles.quietAction}
+            onClick={revealCandidate}
+            type="button"
+          >
+            + Candidate principle
+          </button>
         )}
 
         <div className={styles.actions}>
           <button
             className={styles.action}
             disabled={saving || !reflectionText.trim()}
-            onClick={() => void saveReflection()}
+            onClick={saveReflection}
             type="button"
           >
             {saving ? "Saving" : "Save reflection"}
