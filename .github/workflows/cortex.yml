@@ -25,6 +25,10 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Show exact repo formatter diff
+        run: |
+          pnpm fix -- app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
+          git diff -- app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
       - name: Verify Cortex contract and trust invariants
         run: pnpm exec tsx scripts/verify-cortex-core.mts
       - name: Verify existing Council trust baseline
