@@ -123,10 +123,7 @@ try {
     Number(remaining.assumptions) === 0,
     "Assumption review cascade failed"
   );
-  assert(
-    Number(remaining.principles) === 0,
-    "Principle review cascade failed"
-  );
+  assert(Number(remaining.principles) === 0, "Principle review cascade failed");
 
   console.log("Learning Loop schema verification passed.");
 } finally {
