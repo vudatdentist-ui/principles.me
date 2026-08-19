@@ -103,7 +103,9 @@ function PrincipleItem({
 }) {
   const [editing, setEditing] = useState(false);
   const [editStatement, setEditStatement] = useState(item.statement);
-  const [editDescription, setEditDescription] = useState(item.description ?? "");
+  const [editDescription, setEditDescription] = useState(
+    item.description ?? ""
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const changed = changeLabel(item.changedCount);
