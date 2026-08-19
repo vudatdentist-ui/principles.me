@@ -78,5 +78,3 @@ export async function clearInternalSession() {
     secure: process.env.NODE_ENV === "production",
   });
 }
-
-export { internalAuthRequired };
