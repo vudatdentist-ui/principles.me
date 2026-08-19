@@ -21,7 +21,9 @@ const questionSchema = z.object({
 });
 const decisionSchema = z.discriminatedUnion("status", [
   z.object({
-    clarification: z.object({ questions: z.array(questionSchema).min(1).max(3) }),
+    clarification: z.object({
+      questions: z.array(questionSchema).min(1).max(3),
+    }),
     status: z.literal("clarify"),
   }),
   z.object({

@@ -21,7 +21,9 @@ function answerText(answers: CortexAnswers) {
 }
 
 function combinedContext(input: CortexRunInput, answers: CortexAnswers) {
-  return [input.context ?? "", answerText(answers)].filter(Boolean).join("\n\n");
+  return [input.context ?? "", answerText(answers)]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 export const cortexPersonalMemoryProvider: CortexMemoryProvider = {

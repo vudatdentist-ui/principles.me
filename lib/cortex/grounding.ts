@@ -29,7 +29,11 @@ function sanitizeClaim(
     return null;
   }
   const evidenceKeys = [
-    ...new Set(claim.evidenceKeys.map((key) => key.trim()).filter((key) => allowedKeys.has(key))),
+    ...new Set(
+      claim.evidenceKeys
+        .map((key) => key.trim())
+        .filter((key) => allowedKeys.has(key))
+    ),
   ];
   if (
     claim.layer !== "application" &&
@@ -72,22 +76,12 @@ export function buildNoEvidenceResult({
   reason: string;
 }): CortexResult {
   return {
-    framing: { evidenceKeys: [], text: input.input },
-    crux: [
+    changeConditions: [
       {
         evidenceKeys: [],
-        text: "External evidence is not available or not relevant enough to support a grounded recommendation.",
+        text: "Re-run when relevant external evidence is available or the material facts change.",
       },
     ],
-    evidence,
-    conflicts: [],
-    recommendation: {
-      summary: {
-        evidenceKeys: [],
-        text: "Do not treat the current analysis as source-backed until relevant external evidence is available.",
-      },
-      actions: [],
-    },
     confidence: {
       level: "low",
       rationale: {
@@ -95,13 +89,23 @@ export function buildNoEvidenceResult({
         text: `Cortex fail-closed because external retrieval ended with ${reason}. Personal memory remains user-owned context, not sourced evidence.`,
       },
     },
-    changeConditions: [
+    conflicts: [],
+    crux: [
       {
         evidenceKeys: [],
-        text: "Re-run when relevant external evidence is available or the material facts change.",
+        text: "External evidence is not available or not relevant enough to support a grounded recommendation.",
       },
     ],
+    evidence,
+    framing: { evidenceKeys: [], text: input.input },
     grounded: false,
+    recommendation: {
+      actions: [],
+      summary: {
+        evidenceKeys: [],
+        text: "Do not treat the current analysis as source-backed until relevant external evidence is available.",
+      },
+    },
   };
 }
 
@@ -116,38 +120,54 @@ export function sanitizeCortexResult({
 }): CortexResult {
   const allowedKeys = new Set(evidence.map((item) => item.key));
   const externalKeys = new Set(
-    evidence.filter((item) => item.kind === "external_evidence").map((item) => item.key)
+    evidence
+      .filter((item) => item.kind === "external_evidence")
+      .map((item) => item.key)
   );
   const framing = sanitizeClaim(draft.framing, allowedKeys, externalKeys) ?? {
     evidenceKeys: [],
     text: input.input,
   };
-  const recommendationSummary =
-    sanitizeClaim(draft.recommendation.summary, allowedKeys, externalKeys) ?? {
-      evidenceKeys: [],
-      text: "Cortex could not form a grounded recommendation safely.",
-    };
-  const confidenceRationale =
-    sanitizeClaim(draft.confidence.rationale, allowedKeys, externalKeys) ?? {
-      evidenceKeys: [],
-      text: "Confidence is limited because unsupported or unsafe claims were removed.",
-    };
+  const recommendationSummary = sanitizeClaim(
+    draft.recommendation.summary,
+    allowedKeys,
+    externalKeys
+  ) ?? {
+    evidenceKeys: [],
+    text: "Cortex could not form a grounded recommendation safely.",
+  };
+  const confidenceRationale = sanitizeClaim(
+    draft.confidence.rationale,
+    allowedKeys,
+    externalKeys
+  ) ?? {
+    evidenceKeys: [],
+    text: "Confidence is limited because unsupported or unsafe claims were removed.",
+  };
 
   const result: CortexResult = {
-    framing,
-    crux: sanitizeClaims(draft.crux, allowedKeys, externalKeys),
-    evidence,
-    conflicts: sanitizeClaims(draft.conflicts, allowedKeys, externalKeys),
-    recommendation: {
-      summary: recommendationSummary,
-      actions: sanitizeClaims(draft.recommendation.actions, allowedKeys, externalKeys),
-    },
+    changeConditions: sanitizeClaims(
+      draft.changeConditions,
+      allowedKeys,
+      externalKeys
+    ),
     confidence: {
       level: draft.confidence.level,
       rationale: confidenceRationale,
     },
-    changeConditions: sanitizeClaims(draft.changeConditions, allowedKeys, externalKeys),
+    conflicts: sanitizeClaims(draft.conflicts, allowedKeys, externalKeys),
+    crux: sanitizeClaims(draft.crux, allowedKeys, externalKeys),
+    evidence,
+    framing,
     grounded: false,
+    recommendation: {
+      actions: sanitizeClaims(
+        draft.recommendation.actions,
+        allowedKeys,
+        externalKeys
+      ),
+      summary: recommendationSummary,
+    },
   };
   result.grounded = allClaims(result).some((claim) =>
     claim.evidenceKeys.some((key) => externalKeys.has(key))
@@ -163,6 +183,8 @@ export function sanitizeCortexResult({
   return result;
 }
 
-export function sanitizeClarificationQuestions<T extends { question: string }>(questions: T[]) {
+export function sanitizeClarificationQuestions<T extends { question: string }>(
+  questions: T[]
+) {
   return questions.filter((question) => Boolean(safeText(question.question)));
 }

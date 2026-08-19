@@ -37,16 +37,18 @@ type CortexDependencies = {
 };
 
 export class CortexService {
+  private readonly dependencies: CortexDependencies;
   private readonly makeRunId: () => string;
 
-  constructor(private readonly dependencies: CortexDependencies) {
+  constructor(dependencies: CortexDependencies) {
+    this.dependencies = dependencies;
     this.makeRunId = dependencies.makeRunId ?? (() => crypto.randomUUID());
   }
 
-  async run(input: CortexRunInput, userId: string): Promise<CortexResponse> {
+  run(input: CortexRunInput, userId: string): Promise<CortexResponse> {
     return this.execute({
-      answers: {},
       allowClarification: true,
+      answers: {},
       input,
       runId: this.makeRunId(),
       userId,
@@ -67,8 +69,8 @@ export class CortexService {
       throw new CortexRunStateError();
     }
     return this.execute({
-      answers: { ...existing.answers, ...answers },
       allowClarification: false,
+      answers: { ...existing.answers, ...answers },
       input: existing.input,
       runId,
       userId,
@@ -99,13 +101,13 @@ export class CortexService {
 
     if (external.evidence.length === 0) {
       const response: CortexResponse = {
-        runId,
-        status: "complete",
         result: buildNoEvidenceResult({
           evidence,
           input,
           reason: external.reason,
         }),
+        runId,
+        status: "complete",
       };
       await this.persist({ answers, input, response, userId, writeMode });
       return response;

@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
-import { cortexContinueRequestSchema, cortexRunRequestSchema } from "../lib/cortex/http";
 import { sanitizeCortexResult } from "../lib/cortex/grounding";
+import {
+  cortexContinueRequestSchema,
+  cortexRunRequestSchema,
+} from "../lib/cortex/http";
 import { CortexRunNotFoundError, CortexService } from "../lib/cortex/service";
 import type {
   CortexExternalEvidenceProvider,
@@ -129,13 +132,16 @@ assert.deepEqual(sanitized.crux[0]?.evidenceKeys, ["R1"]);
 class MemoryStore implements CortexRunStore {
   records = new Map<string, CortexRunRecord>();
   async create(record: CortexRunRecord) {
+    await Promise.resolve();
     this.records.set(record.id, structuredClone(record));
   }
   async get({ runId, userId }: { runId: string; userId: string }) {
+    await Promise.resolve();
     const record = this.records.get(runId);
     return record?.userId === userId ? structuredClone(record) : null;
   }
   async update(record: CortexRunRecord) {
+    await Promise.resolve();
     const existing = this.records.get(record.id);
     if (!existing || existing.userId !== record.userId) {
       throw new Error("owner check failed");
@@ -146,12 +152,14 @@ class MemoryStore implements CortexRunStore {
 
 const memory: CortexMemoryProvider = {
   async retrieve() {
+    await Promise.resolve();
     return { contradictions: [], evidence: [personalMemory, principle] };
   },
 };
 let retrievalCalls = 0;
 const external: CortexExternalEvidenceProvider = {
   async retrieve() {
+    await Promise.resolve();
     retrievalCalls += 1;
     return {
       evidence: [externalEvidence],
@@ -171,6 +179,7 @@ const external: CortexExternalEvidenceProvider = {
 let reasonCalls = 0;
 const reasoner: CortexReasoner = {
   async reason({ allowClarification, answers }) {
+    await Promise.resolve();
     reasonCalls += 1;
     if (allowClarification && !answers.material_fact) {
       return {
@@ -261,6 +270,8 @@ let noEvidenceReasonCalls = 0;
 const noEvidenceCortex = new CortexService({
   external: {
     async retrieve() {
+      await Promise.resolve();
+      await Promise.resolve();
       return { evidence: [], lenses: [], reason: "NO_MATCHES" };
     },
   },
@@ -268,11 +279,16 @@ const noEvidenceCortex = new CortexService({
   memory,
   reasoner: {
     async reason() {
+      await Promise.resolve();
       noEvidenceReasonCalls += 1;
       return reasoner.reason({
         allowClarification: false,
         answers: {},
-        external: { evidence: [externalEvidence], lenses: [], reason: "RAGFLOW_RETRIEVED" },
+        external: {
+          evidence: [externalEvidence],
+          lenses: [],
+          reason: "RAGFLOW_RETRIEVED",
+        },
         input: { input: "unused" },
         memory: { contradictions: [], evidence: [] },
       });
@@ -285,7 +301,14 @@ const noEvidence = await noEvidenceCortex.run(
   "user-a"
 );
 assert.equal(noEvidence.status, "complete");
-assert.equal(noEvidence.status === "complete" && noEvidence.result.grounded, false);
-assert.equal(noEvidenceReasonCalls, 0, "Fail-closed path must not ask the model to invent evidence.");
+assert.equal(
+  noEvidence.status === "complete" && noEvidence.result.grounded,
+  false
+);
+assert.equal(
+  noEvidenceReasonCalls,
+  0,
+  "Fail-closed path must not ask the model to invent evidence."
+);
 
 console.log("Cortex core verification passed.");

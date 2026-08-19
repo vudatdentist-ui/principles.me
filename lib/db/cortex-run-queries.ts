@@ -70,7 +70,7 @@ export const cortexRunStore: CortexRunStore = {
       WHERE "id" = ${runId}::uuid AND "userId" = ${userId}::uuid
       LIMIT 1
     `;
-    const row = rows[0];
+    const [row] = rows;
     return row ? asRecord(row) : null;
   },
 
@@ -87,7 +87,8 @@ export const cortexRunStore: CortexRunStore = {
       WHERE "id" = ${record.id}::uuid AND "userId" = ${record.userId}::uuid
       RETURNING "id"
     `;
-    if (!rows[0]) {
+    const [updated] = rows;
+    if (!updated) {
       throw new Error("Cortex run update failed owner check.");
     }
   },

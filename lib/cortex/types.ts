@@ -160,32 +160,35 @@ export type CortexRunRecord = {
 };
 
 export interface CortexMemoryProvider {
-  retrieve(args: {
+  retrieve: (args: {
     userId: string;
     input: CortexRunInput;
     answers: CortexAnswers;
-  }): Promise<CortexMemoryBundle>;
+  }) => Promise<CortexMemoryBundle>;
 }
 
 export interface CortexExternalEvidenceProvider {
-  retrieve(args: {
+  retrieve: (args: {
     input: CortexRunInput;
     answers: CortexAnswers;
-  }): Promise<CortexExternalBundle>;
+  }) => Promise<CortexExternalBundle>;
 }
 
 export interface CortexReasoner {
-  reason(args: {
+  reason: (args: {
     input: CortexRunInput;
     answers: CortexAnswers;
     memory: CortexMemoryBundle;
     external: CortexExternalBundle;
     allowClarification: boolean;
-  }): Promise<CortexReasonerDecision>;
+  }) => Promise<CortexReasonerDecision>;
 }
 
 export interface CortexRunStore {
-  create(record: CortexRunRecord): Promise<void>;
-  get(args: { runId: string; userId: string }): Promise<CortexRunRecord | null>;
-  update(record: CortexRunRecord): Promise<void>;
+  create: (record: CortexRunRecord) => Promise<void>;
+  get: (args: {
+    runId: string;
+    userId: string;
+  }) => Promise<CortexRunRecord | null>;
+  update: (record: CortexRunRecord) => Promise<void>;
 }

@@ -13,7 +13,10 @@ export async function POST(request: Request, context: RouteContext) {
     await request.json().catch(() => null)
   );
   if (!parsed.success) {
-    return Response.json({ error: "Invalid clarification answers." }, { status: 400 });
+    return Response.json(
+      { error: "Invalid clarification answers." },
+      { status: 400 }
+    );
   }
 
   const [{ runId }, workspaceUser] = await Promise.all([
