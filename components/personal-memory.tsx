@@ -69,7 +69,8 @@ function PrincipleMemoryCard({
         </span>
         {item.originDecision ? (
           <a href={`/decisions/${item.originDecision.id}`}>
-            Adopted after “{item.originDecision.title}” — {formatDate(item.originDecision.createdAt)}
+            Adopted after “{item.originDecision.title}” —{" "}
+            {formatDate(item.originDecision.createdAt)}
             <ExternalLink size={12} />
           </a>
         ) : (
@@ -81,8 +82,14 @@ function PrincipleMemoryCard({
           <Check size={13} /> Applied to this decision
         </span>
       ) : (
-        <button className={styles.applyButton} disabled={busy} onClick={apply} type="button">
-          <RotateCcw size={13} /> {busy ? "Applying…" : "Apply to this decision"}
+        <button
+          className={styles.applyButton}
+          disabled={busy}
+          onClick={apply}
+          type="button"
+        >
+          <RotateCcw size={13} />{" "}
+          {busy ? "Applying…" : "Apply to this decision"}
         </button>
       )}
       {error ? <p className={styles.error}>{error}</p> : null}
@@ -105,7 +112,9 @@ export function PersonalMemory({ decisionId }: { decisionId: string }) {
       setContext(payload.personalContext);
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "Could not load personal memory."
+        caught instanceof Error
+          ? caught.message
+          : "Could not load personal memory."
       );
     } finally {
       setLoading(false);
@@ -143,10 +152,15 @@ export function PersonalMemory({ decisionId }: { decisionId: string }) {
         </a>
       </div>
       <p className={styles.boundary}>
-        Personal memory is user-owned context. External evidence remains separately sourced in Council Evidence.
+        Personal memory is user-owned context. External evidence remains
+        separately sourced in Council Evidence.
       </p>
 
-      {loading ? <p className={styles.muted}>Retrieving your prior decisions and principles…</p> : null}
+      {loading ? (
+        <p className={styles.muted}>
+          Retrieving your prior decisions and principles…
+        </p>
+      ) : null}
       {error ? <p className={styles.error}>{error}</p> : null}
 
       {context?.contradictions.map((item) => (
@@ -187,7 +201,8 @@ export function PersonalMemory({ decisionId }: { decisionId: string }) {
       !context?.principles.length &&
       !context?.similarDecisions.length ? (
         <p className={styles.muted}>
-          No relevant personal memory yet. Adopt principles and revisit decisions to make this layer compound.
+          No relevant personal memory yet. Adopt principles and revisit
+          decisions to make this layer compound.
         </p>
       ) : null}
     </aside>
