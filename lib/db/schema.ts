@@ -2,7 +2,10 @@ import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  index,
+  integer,
   json,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -134,3 +137,175 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const decisionStatus = pgEnum("decision_status", [
+  "draft",
+  "exploring",
+  "decided",
+  "review_due",
+  "reviewed",
+  "archived",
+]);
+
+export const judgmentConfidence = pgEnum("judgment_confidence", [
+  "low",
+  "medium",
+  "high",
+]);
+
+export const principleStatus = pgEnum("principle_status", [
+  "active",
+  "revised",
+  "retired",
+]);
+
+export const decisionPrincipleRelation = pgEnum("decision_principle_relation", [
+  "suggested",
+  "applied",
+  "challenged",
+  "created",
+  "adopted",
+]);
+
+export const decisionOutcomeVerdict = pgEnum("decision_outcome_verdict", [
+  "positive",
+  "mixed",
+  "negative",
+  "too_early",
+]);
+
+export const decision = pgTable(
+  "Decision",
+  {
+    context: text("context"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    decidedAt: timestamp("decidedAt"),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    objective: text("objective"),
+    question: text("question").notNull(),
+    reviewAt: timestamp("reviewAt"),
+    reviewedAt: timestamp("reviewedAt"),
+    status: decisionStatus("status").notNull().default("draft"),
+    title: text("title").notNull(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    userIdx: index("Decision_user_idx").on(table.userId),
+    userStatusIdx: index("Decision_user_status_idx").on(
+      table.userId,
+      table.status
+    ),
+  })
+);
+
+export type Decision = InferSelectModel<typeof decision>;
+
+export const judgment = pgTable(
+  "Judgment",
+  {
+    confidence: judgmentConfidence("confidence"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    decisionId: uuid("decisionId")
+      .notNull()
+      .references(() => decision.id, { onDelete: "cascade" }),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    rationale: text("rationale"),
+    selectedOption: text("selectedOption"),
+    summary: text("summary").notNull(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    decisionIdx: index("Judgment_decision_idx").on(table.decisionId),
+    userIdx: index("Judgment_user_idx").on(table.userId),
+  })
+);
+
+export type Judgment = InferSelectModel<typeof judgment>;
+
+export const principle = pgTable(
+  "Principle",
+  {
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    description: text("description"),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    revision: integer("revision").notNull().default(1),
+    sourceDecisionId: uuid("sourceDecisionId").references(() => decision.id, {
+      onDelete: "set null",
+    }),
+    statement: text("statement").notNull(),
+    status: principleStatus("status").notNull().default("active"),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    sourceDecisionIdx: index("Principle_source_decision_idx").on(
+      table.sourceDecisionId
+    ),
+    userStatusIdx: index("Principle_user_status_idx").on(
+      table.userId,
+      table.status
+    ),
+  })
+);
+
+export type Principle = InferSelectModel<typeof principle>;
+
+export const decisionPrinciple = pgTable(
+  "DecisionPrinciple",
+  {
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    decisionId: uuid("decisionId")
+      .notNull()
+      .references(() => decision.id, { onDelete: "cascade" }),
+    principleId: uuid("principleId")
+      .notNull()
+      .references(() => principle.id, { onDelete: "cascade" }),
+    relation: decisionPrincipleRelation("relation")
+      .notNull()
+      .default("applied"),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.decisionId, table.principleId] }),
+    principleIdx: index("DecisionPrinciple_principle_idx").on(
+      table.principleId
+    ),
+    userIdx: index("DecisionPrinciple_user_idx").on(table.userId),
+  })
+);
+
+export type DecisionPrinciple = InferSelectModel<typeof decisionPrinciple>;
+
+export const decisionOutcome = pgTable(
+  "DecisionOutcome",
+  {
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    decisionId: uuid("decisionId")
+      .notNull()
+      .references(() => decision.id, { onDelete: "cascade" }),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    lessons: text("lessons"),
+    result: text("result").notNull(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    verdict: decisionOutcomeVerdict("verdict").notNull().default("too_early"),
+  },
+  (table) => ({
+    decisionIdx: index("DecisionOutcome_decision_idx").on(table.decisionId),
+    userIdx: index("DecisionOutcome_user_idx").on(table.userId),
+  })
+);
+
+export type DecisionOutcome = InferSelectModel<typeof decisionOutcome>;

@@ -15,13 +15,16 @@
     "fix": "ultracite fix",
     "prepare": "husky",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx lib/db/migrate.ts",
+    "db:migrate": "pnpm exec tsx lib/db/migrate.ts",
+    "db:verify": "node scripts/verify-foundation-schema.mjs",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "test": "pnpm exec playwright test",
+    "test:e2e": "pnpm exec playwright test tests/e2e/principles-smoke.test.ts",
+    "verify": "pnpm check && pnpm typecheck && pnpm db:check && pnpm build"
   },
   "dependencies": {
     "@ai-sdk/otel": "^1.0.15",
