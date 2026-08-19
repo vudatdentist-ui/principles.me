@@ -49,6 +49,11 @@ const rawBrief: CouncilBrief = {
       layer: "evidence",
       text: "Unsupported evidence claim",
     },
+    {
+      citations: ["R1"],
+      layer: "interpretation",
+      text: "Munger says incentives determine this decision.",
+    },
   ],
   crux: [],
   disagreement: [],
