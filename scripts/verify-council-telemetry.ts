@@ -87,6 +87,9 @@ assert(
   telemetry.decisionId === "11111111-1111-4111-8111-111111111111",
   "Council telemetry decisionId is missing."
 );
-assert(telemetry.model === "deepseek-chat", "Council telemetry model is wrong.");
+assert(
+  telemetry.model === "deepseek-chat",
+  "Council telemetry model is wrong."
+);
 
 console.log("Council telemetry verification passed.");

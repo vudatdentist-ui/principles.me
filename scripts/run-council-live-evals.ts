@@ -1,10 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { hasPromptInjectionSignal } from "@/lib/council/security";
 import {
   type CouncilEvalCase,
   lexicalSupportScore,
 } from "@/lib/evals/council-eval";
-import { hasPromptInjectionSignal } from "@/lib/council/security";
 
 type Dataset = { cases: CouncilEvalCase[]; version: number };
 type LiveMetric =
@@ -168,7 +168,9 @@ function scoreCase(evalCase: CouncilEvalCase, response: EvalResponse) {
   }
 
   const claims = allClaims(response.answer?.brief);
-  const allowedKeys = new Set(response.references.map((reference) => reference.key));
+  const allowedKeys = new Set(
+    response.references.map((reference) => reference.key)
+  );
   const citations = claims.flatMap((claim) => claim.citations ?? []);
   if (response.references.length || citations.length) {
     scores.citationValidity = citations.every((citation) =>
@@ -206,10 +208,7 @@ function scoreCase(evalCase: CouncilEvalCase, response: EvalResponse) {
     ]
       .map((claim) => claim.text ?? "")
       .join(" ");
-    scores.conflictQuality = termCoverage(
-      conflictText,
-      evalCase.conflictTerms
-    );
+    scores.conflictQuality = termCoverage(conflictText, evalCase.conflictTerms);
   }
 
   if (evalCase.applicationTerms?.length) {
@@ -253,7 +252,9 @@ if (!baseUrl) {
 }
 
 const dataset = await readDataset();
-const requestedLimit = Number(process.env.EVAL_CASE_LIMIT || dataset.cases.length);
+const requestedLimit = Number(
+  process.env.EVAL_CASE_LIMIT || dataset.cases.length
+);
 const cases = dataset.cases.slice(0, Math.max(1, requestedLimit));
 const metricValues = new Map<LiveMetric, number[]>(
   METRICS.map((metric) => [metric, []])
@@ -261,6 +262,7 @@ const metricValues = new Map<LiveMetric, number[]>(
 let cookie = process.env.EVAL_COOKIE?.trim() ?? "";
 
 for (const evalCase of cases) {
+  // biome-ignore lint/performance/noAwaitInLoops: Live evals intentionally run sequentially to preserve auth cookie state and avoid bursting model traffic.
   const response = await fetch(`${baseUrl}/api/council`, {
     body: JSON.stringify({
       context: evalCase.context,
@@ -278,12 +280,14 @@ for (const evalCase of cases) {
   }
   const setCookie = response.headers.get("set-cookie");
   if (!cookie && setCookie) {
-    cookie = setCookie.split(";", 1)[0];
+    const [nextCookie] = setCookie.split(";", 1);
+    cookie = nextCookie;
   }
   const scored = scoreCase(evalCase, parseEvents(await response.text()));
-  for (const [metric, score] of Object.entries(scored) as Array<
-    [LiveMetric, number]
-  >) {
+  for (const [metric, score] of Object.entries(scored) as [
+    LiveMetric,
+    number,
+  ][]) {
     metricValues.get(metric)?.push(score);
   }
 }
@@ -313,15 +317,20 @@ if (process.env.EVAL_UPDATE_BASELINE === "1") {
     scores,
     version: 1,
   };
-  await writeFile(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`, "utf8");
+  await writeFile(
+    baselinePath,
+    `${JSON.stringify(baseline, null, 2)}\n`,
+    "utf8"
+  );
   console.log(`Updated live baseline: ${baselinePath}`);
 } else {
   let baseline: LiveBaseline;
   try {
     baseline = JSON.parse(await readFile(baselinePath, "utf8")) as LiveBaseline;
-  } catch {
+  } catch (error) {
     throw new Error(
-      `Live baseline not found. Capture one with EVAL_UPDATE_BASELINE=1 pnpm eval:council:live.`
+      "Live baseline not found. Capture one with EVAL_UPDATE_BASELINE=1 pnpm eval:council:live.",
+      { cause: error }
     );
   }
   const maxRegression = Number(process.env.EVAL_MAX_REGRESSION || "0.05");

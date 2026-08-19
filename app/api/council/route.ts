@@ -200,7 +200,7 @@ export async function POST(request: Request) {
         });
         modelLatencyMs = Math.round(performance.now() - modelStartedAt);
         citationCount = result.citations.length;
-        grounded = result.grounded;
+        ({ grounded } = result);
         const answer = briefToText(result.brief);
         write({
           answer,

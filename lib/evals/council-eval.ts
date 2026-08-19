@@ -8,7 +8,6 @@ import {
 import type {
   CouncilBrief,
   CouncilClaim,
-  FactAssumption,
   RetrievedReference,
 } from "@/lib/council/types";
 
@@ -79,7 +78,9 @@ function termCoverage(value: string, terms: string[]) {
     return 1;
   }
   const normalized = normalize(value);
-  const hits = terms.filter((term) => normalized.includes(normalize(term))).length;
+  const hits = terms.filter((term) =>
+    normalized.includes(normalize(term))
+  ).length;
   return hits / terms.length;
 }
 
@@ -171,10 +172,7 @@ function evaluateSourceFidelity(evalCase: CouncilEvalCase) {
     faithfulness: result.grounded
       ? lexicalSupportScore(sourceClaim, sourceText)
       : 0,
-    retrievalRelevance: termCoverage(
-      sourceText,
-      evalCase.relevanceTerms ?? []
-    ),
+    retrievalRelevance: termCoverage(sourceText, evalCase.relevanceTerms ?? []),
   };
 }
 
@@ -277,11 +275,17 @@ function evaluateConflict(evalCase: CouncilEvalCase) {
 
 function evaluateApplication(evalCase: CouncilEvalCase) {
   const terms = evalCase.applicationTerms ?? [];
-  const references = [reference("Grounded context for a reversible next move.")];
+  const references = [
+    reference("Grounded context for a reversible next move."),
+  ];
   const brief = emptyBrief(evalCase.context);
-  brief.agreement = [interpretationClaim("A reversible next step is supported.")];
+  brief.agreement = [
+    interpretationClaim("A reversible next step is supported."),
+  ];
   brief.nextMoves = [
-    applicationClaim(`Run a focused ${terms.join(" ")} step before committing.`),
+    applicationClaim(
+      `Run a focused ${terms.join(" ")} step before committing.`
+    ),
   ];
   const result = sanitizeCouncilBrief({
     brief,

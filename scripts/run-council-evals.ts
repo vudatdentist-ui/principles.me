@@ -49,8 +49,7 @@ console.table(
 
 const regressed = metrics.filter(
   (metric) =>
-    evaluation.scores[metric] <
-    baseline.scores[metric] - baseline.maxRegression
+    evaluation.scores[metric] < baseline.scores[metric] - baseline.maxRegression
 );
 
 if (evaluation.failedCaseIds.length) {

@@ -13,7 +13,9 @@ const dataset = JSON.parse(await readFile(datasetPath, "utf8")) as Dataset;
 const evaluation = evaluateFixtureDataset(dataset.cases);
 
 if (dataset.cases.length !== 50) {
-  throw new Error(`Expected 50 Council eval cases, found ${dataset.cases.length}.`);
+  throw new Error(
+    `Expected 50 Council eval cases, found ${dataset.cases.length}.`
+  );
 }
 if (evaluation.failedCaseIds.length) {
   throw new Error(
