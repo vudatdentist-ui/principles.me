@@ -5,10 +5,17 @@ import type { CouncilPlan, RetrievedReference } from "./types";
 
 type RawReference = Omit<RetrievedReference, "key" | "retrievalContexts">;
 
+export type RetrievalReason =
+  | "NOT_CONFIGURED"
+  | "RAGFLOW_RETRIEVED"
+  | "PARTIAL_RETRIEVAL"
+  | "NO_MATCHES"
+  | "UNAVAILABLE";
+
 type RetrievalResponse = {
   configured: boolean;
   references: RetrievedReference[];
-  reason: string;
+  reason: RetrievalReason;
   queryCount: number;
   successfulQueryCount: number;
 };

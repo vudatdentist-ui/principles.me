@@ -1,3 +1,4 @@
+import { isPromptInjectionLeak } from "./security";
 import type {
   CouncilBrief,
   CouncilClaim,
@@ -70,7 +71,7 @@ function sanitizeClaim(
     ),
   ];
   const text = claim.text?.trim();
-  if (!text || hasPersonaAttribution(text)) {
+  if (!text || hasPersonaAttribution(text) || isPromptInjectionLeak(text)) {
     return null;
   }
   if (claim.layer !== "application" && citations.length === 0) {

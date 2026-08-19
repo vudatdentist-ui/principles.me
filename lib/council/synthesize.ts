@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import type { PersonalContext } from "@/lib/personal-brain/types";
 import { sanitizeCouncilBrief } from "./grounding";
+import { COUNCIL_TRUST_BOUNDARY } from "./security";
 import type {
   CouncilBrief,
   CouncilPlan,
@@ -121,6 +122,8 @@ export async function synthesizeCouncilBrief({
   }
   const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
   const system = `You are the evidence-backed Council in Principles, a decision reasoning system.
+
+${COUNCIL_TRUST_BOUNDARY}
 
 You receive three context layers that MUST remain distinct:
 1. The user's current decision/context.

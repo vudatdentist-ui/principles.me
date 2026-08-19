@@ -798,7 +798,6 @@ function DecisionDetailView({ decisionId }: { decisionId: string }) {
       const decoder = new TextDecoder();
       let buffer = "";
       while (true) {
-        // biome-ignore lint/performance/noAwaitInLoops: NDJSON stream must be consumed sequentially.
         const chunk = await reader.read();
         if (chunk.done) {
           break;
