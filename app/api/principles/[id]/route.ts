@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { revisePrinciple, setPrincipleStatus } from "@/lib/db/decision-queries";
+import {
+  revisePrinciple,
+  setPrincipleStatus,
+} from "@/lib/db/principle-queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
 const updateSchema = z.discriminatedUnion("action", [

@@ -1,10 +1,16 @@
 "use client";
 
-import { Archive, Pencil, RotateCcw } from "lucide-react";
-import { type ChangeEvent, useCallback, useEffect, useState } from "react";
-import baseStyles from "./decision-workspace.module.css";
-import styles from "./judgment-loop.module.css";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import styles from "./principles-registry.module.css";
 import { WorkspaceShell } from "./workspace-shell";
+
+type PrincipleOrigin = {
+  href?: string;
+  kind: "decision" | "journal" | "problem" | "manual" | "team";
+  label: string;
+  relation?: "created" | "adopted" | "applied" | "challenged";
+  sourceId?: string;
+};
 
 type PrincipleRevisionRecord = {
   createdAt: string;
@@ -14,21 +20,30 @@ type PrincipleRevisionRecord = {
   statement: string;
 };
 
+type RelatedDecision = {
+  createdAt: string;
+  id: string;
+  outcomeId: string | null;
+  outcomeResult: string | null;
+  outcomeVerdict: "positive" | "mixed" | "negative" | "too_early" | null;
+  question: string;
+  relation: "suggested" | "applied" | "challenged" | "created" | "adopted";
+  title: string;
+};
+
 type PrincipleRecord = {
+  changedCount: number;
   createdAt: string;
   description: string | null;
   id: string;
-  originDecision: {
-    id: string;
-    question: string;
-    title: string;
-  } | null;
+  origins: PrincipleOrigin[];
+  relatedDecisions: RelatedDecision[];
   revision: number;
   revisions: PrincipleRevisionRecord[];
   sourceDecisionId: string | null;
   statement: string;
   status: "active" | "revised" | "retired";
-  timesApplied: number;
+  timesUsed: number;
   updatedAt: string;
 };
 
@@ -41,54 +56,60 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
   return payload;
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
+function changeLabel(count: number) {
+  if (count === 0) {
+    return null;
+  }
+  return count === 1 ? "changed once" : `changed ${count} times`;
 }
 
-function PrincipleCard({
+function originKindLabel(kind: PrincipleOrigin["kind"]) {
+  if (kind === "decision") {
+    return "Decision";
+  }
+  if (kind === "journal") {
+    return "Journal";
+  }
+  if (kind === "problem") {
+    return "Problem";
+  }
+  if (kind === "team") {
+    return "Team";
+  }
+  return "Manual";
+}
+
+function PrincipleItem({
   item,
+  isOpen,
   onRefresh,
+  onToggle,
 }: {
   item: PrincipleRecord;
+  isOpen: boolean;
   onRefresh: () => Promise<void>;
+  onToggle: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editStatement, setEditStatement] = useState(item.statement);
-  const [editDescription, setEditDescription] = useState(
-    item.description || ""
-  );
+  const [editDescription, setEditDescription] = useState(item.description ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  const handleStatementChange = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => {
-      setEditStatement(event.target.value);
-    },
-    []
+  const changed = changeLabel(item.changedCount);
+  const supporting = item.relatedDecisions.filter(
+    (row) => row.relation === "applied" || row.relation === "adopted" || row.relation === "created"
   );
-
-  const handleDescriptionChange = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => {
-      setEditDescription(event.target.value);
-    },
-    []
+  const challenges = item.relatedDecisions.filter(
+    (row) => row.relation === "challenged"
   );
+  const outcomes = item.relatedDecisions.filter((row) => row.outcomeId);
 
   const startEditing = useCallback(() => {
     setEditStatement(item.statement);
-    setEditDescription(item.description || "");
+    setEditDescription(item.description ?? "");
     setEditing(true);
     setError("");
   }, [item.description, item.statement]);
-
-  const cancelEditing = useCallback(() => {
-    setEditing(false);
-    setError("");
-  }, []);
 
   const saveRevision = useCallback(async () => {
     setSaving(true);
@@ -114,166 +135,207 @@ function PrincipleCard({
     }
   }, [editDescription, editStatement, item.id, onRefresh]);
 
-  const retire = useCallback(async () => {
-    setSaving(true);
-    setError("");
-    try {
-      await fetchJson(`/api/principles/${item.id}`, {
-        body: JSON.stringify({ action: "retire" }),
-        headers: { "content-type": "application/json" },
-        method: "PATCH",
-      });
-      await onRefresh();
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Could not update principle status."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }, [item.id, onRefresh]);
-
-  const activate = useCallback(async () => {
-    setSaving(true);
-    setError("");
-    try {
-      await fetchJson(`/api/principles/${item.id}`, {
-        body: JSON.stringify({ action: "activate" }),
-        headers: { "content-type": "application/json" },
-        method: "PATCH",
-      });
-      await onRefresh();
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Could not update principle status."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }, [item.id, onRefresh]);
+  const updateStatus = useCallback(
+    async (action: "retire" | "activate") => {
+      setSaving(true);
+      setError("");
+      try {
+        await fetchJson(`/api/principles/${item.id}`, {
+          body: JSON.stringify({ action }),
+          headers: { "content-type": "application/json" },
+          method: "PATCH",
+        });
+        await onRefresh();
+      } catch (caught) {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Could not update principle status."
+        );
+      } finally {
+        setSaving(false);
+      }
+    },
+    [item.id, onRefresh]
+  );
 
   return (
-    <article
-      className={`${baseStyles.card} ${styles.principleCard}`}
-      data-testid="principle-card"
-    >
-      <div className={styles.principleTopline}>
-        <span className={`${styles.lifecycle} ${styles[item.status]}`}>
-          {item.status}
-        </span>
-        <span>Revision {item.revision}</span>
-      </div>
-
-      {editing ? (
-        <div className={baseStyles.form}>
-          <div className={baseStyles.field}>
-            <label htmlFor={`edit-statement-${item.id}`}>
-              Edit principle statement
-            </label>
-            <textarea
-              id={`edit-statement-${item.id}`}
-              onChange={handleStatementChange}
-              value={editStatement}
-            />
-          </div>
-          <div className={baseStyles.field}>
-            <label htmlFor={`edit-description-${item.id}`}>
-              Edit principle nuance
-            </label>
-            <textarea
-              id={`edit-description-${item.id}`}
-              onChange={handleDescriptionChange}
-              value={editDescription}
-            />
-          </div>
-          <div className={styles.cardActions}>
-            <button
-              className={baseStyles.primaryButton}
-              disabled={saving || !editStatement.trim()}
-              onClick={saveRevision}
-              type="button"
-            >
-              Save revision
-            </button>
-            <button
-              className={baseStyles.secondaryButton}
-              onClick={cancelEditing}
-              type="button"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <strong className={styles.principleStatement}>
-            {item.statement}
-          </strong>
-          {item.description ? <p>{item.description}</p> : null}
-        </>
-      )}
-
-      {error ? <div className={baseStyles.error}>{error}</div> : null}
-
-      <div className={styles.principleMeta}>
-        <span>Created {formatDate(item.createdAt)}</span>
-        <span>Times applied: {item.timesApplied}</span>
-        {item.originDecision ? (
-          <a href={`/decisions/${item.originDecision.id}`}>
-            Origin: {item.originDecision.question}
-          </a>
-        ) : (
-          <span>Origin decision unavailable</span>
-        )}
-      </div>
-
-      <details className={styles.revisionHistory}>
-        <summary>Revision history</summary>
-        <div className={styles.revisionList}>
-          {item.revisions.map((revision) => (
-            <div key={revision.id}>
-              <strong>v{revision.revision}</strong>
-              <p>{revision.statement}</p>
-              <span>{formatDate(revision.createdAt)}</span>
-            </div>
-          ))}
-        </div>
-      </details>
-
-      {editing ? null : (
-        <div className={styles.cardActions}>
-          <button
-            className={baseStyles.secondaryButton}
-            onClick={startEditing}
-            type="button"
-          >
-            <Pencil size={14} /> Edit
-          </button>
+    <article className={styles.item} data-testid="principle-card">
+      <button
+        aria-expanded={isOpen}
+        className={styles.rowButton}
+        onClick={onToggle}
+        type="button"
+      >
+        <span className={styles.statement}>{item.statement}</span>
+        <span className={styles.meta}>
+          <span>Used {item.timesUsed} times</span>
+          {changed ? <span className={styles.dot}>{changed}</span> : null}
           {item.status === "retired" ? (
-            <button
-              className={baseStyles.secondaryButton}
-              disabled={saving}
-              onClick={activate}
-              type="button"
-            >
-              <RotateCcw size={14} /> Reactivate
-            </button>
-          ) : (
-            <button
-              className={baseStyles.secondaryButton}
-              disabled={saving}
-              onClick={retire}
-              type="button"
-            >
-              <Archive size={14} /> Retire
-            </button>
+            <span className={styles.dot}>Retired</span>
+          ) : null}
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div className={styles.detail}>
+          {editing ? (
+            <div className={styles.editForm}>
+              <div className={styles.field}>
+                <label htmlFor={`edit-statement-${item.id}`}>Statement</label>
+                <textarea
+                  id={`edit-statement-${item.id}`}
+                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                    setEditStatement(event.target.value)
+                  }
+                  value={editStatement}
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor={`edit-description-${item.id}`}>Notes</label>
+                <textarea
+                  id={`edit-description-${item.id}`}
+                  onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                    setEditDescription(event.target.value)
+                  }
+                  value={editDescription}
+                />
+              </div>
+              <div className={styles.actions}>
+                <button
+                  className={styles.primaryButton}
+                  disabled={saving || !editStatement.trim()}
+                  onClick={saveRevision}
+                  type="button"
+                >
+                  Save revision
+                </button>
+                <button
+                  className={styles.textButton}
+                  onClick={() => setEditing(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : item.description ? (
+            <p className={styles.description}>{item.description}</p>
+          ) : null}
+
+          {error ? <div className={styles.error}>{error}</div> : null}
+
+          <section className={styles.section}>
+            <h2>Origin</h2>
+            <div className={styles.originList}>
+              {item.origins.map((origin, index) => (
+                <div
+                  className={styles.origin}
+                  key={`${origin.kind}-${origin.sourceId ?? index}`}
+                >
+                  <span>{originKindLabel(origin.kind)} · </span>
+                  {origin.href ? <a href={origin.href}>{origin.label}</a> : origin.label}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {supporting.length ? (
+            <section className={styles.section}>
+              <h2>Supporting decisions</h2>
+              <div className={styles.relatedList}>
+                {supporting.map((related) => (
+                  <div
+                    className={styles.related}
+                    key={`${related.id}-${related.outcomeId ?? related.relation}`}
+                  >
+                    <a href={`/decisions/${related.id}`}>{related.title}</a>
+                    <span className={styles.relation}>{related.relation}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {challenges.length ? (
+            <section className={styles.section}>
+              <h2>Challenges</h2>
+              <div className={styles.relatedList}>
+                {challenges.map((related) => (
+                  <div className={styles.related} key={`${related.id}-challenge`}>
+                    <a href={`/decisions/${related.id}`}>{related.title}</a>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {outcomes.length ? (
+            <section className={styles.section}>
+              <h2>Usage & outcomes</h2>
+              <div className={styles.relatedList}>
+                {outcomes.map((related) => (
+                  <div
+                    className={styles.related}
+                    key={`${related.id}-${related.outcomeId}`}
+                  >
+                    <a href={`/decisions/${related.id}`}>{related.title}</a>
+                    {related.outcomeVerdict ? (
+                      <span className={styles.relation}>{related.outcomeVerdict}</span>
+                    ) : null}
+                    {related.outcomeResult ? (
+                      <span className={styles.outcome}>{related.outcomeResult}</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className={styles.section}>
+            <h2>History</h2>
+            <div className={styles.revisionList}>
+              {item.revisions.map((revision) => (
+                <div className={styles.revision} key={revision.id}>
+                  <strong>v{revision.revision}</strong>
+                  <span>{revision.statement}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {editing ? null : (
+            <div className={styles.detailActions}>
+              <button
+                className={styles.textButton}
+                onClick={startEditing}
+                type="button"
+              >
+                Edit
+              </button>
+              {item.status === "retired" ? (
+                <button
+                  className={styles.textButton}
+                  disabled={saving}
+                  onClick={() => updateStatus("activate")}
+                  type="button"
+                >
+                  Reactivate
+                </button>
+              ) : (
+                <button
+                  className={styles.textButton}
+                  disabled={saving}
+                  onClick={() => updateStatus("retire")}
+                  type="button"
+                >
+                  Retire
+                </button>
+              )}
+            </div>
           )}
         </div>
-      )}
+      ) : null}
     </article>
   );
 }
@@ -282,6 +344,16 @@ export function MyPrinciplesWorkspace() {
   const [principles, setPrinciples] = useState<PrincipleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [statement, setStatement] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const activeCount = useMemo(
+    () => principles.filter((item) => item.status !== "retired").length,
+    [principles]
+  );
 
   const loadPrinciples = useCallback(async () => {
     const payload = await fetchJson<{ principles: PrincipleRecord[] }>(
@@ -302,38 +374,108 @@ export function MyPrinciplesWorkspace() {
       .finally(() => setLoading(false));
   }, [loadPrinciples]);
 
+  const createPrinciple = useCallback(async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const payload = await fetchJson<{ principle: { id: string } }>(
+        "/api/principles",
+        {
+          body: JSON.stringify({
+            description: description || undefined,
+            statement,
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }
+      );
+      setStatement("");
+      setDescription("");
+      setCreating(false);
+      setOpenId(payload.principle.id);
+      await loadPrinciples();
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Could not create principle."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [description, loadPrinciples, statement]);
+
   return (
-    <WorkspaceShell active="principles" title="My Principles">
-      <section>
-        <div className={baseStyles.pageHeader}>
+    <WorkspaceShell active="principles" title="Principles">
+      <section className={styles.workspace}>
+        <header className={styles.header}>
           <div>
-            <span className={baseStyles.eyebrow}>What you chose to keep</span>
-            <h1>My Principles</h1>
-            <p>
-              User-owned rules extracted from real decisions, with origin and
-              revision history intact.
-            </p>
+            <h1>Principles</h1>
+            <span className={styles.count}>{activeCount} active</span>
           </div>
-        </div>
+          <button
+            aria-label="Add principle"
+            className={styles.addButton}
+            onClick={() => setCreating((current) => !current)}
+            type="button"
+          >
+            +
+          </button>
+        </header>
 
-        {loading ? (
-          <div className={baseStyles.loading}>Loading principles…</div>
+        {creating ? (
+          <div className={styles.createForm}>
+            <div className={styles.field}>
+              <label htmlFor="new-principle-statement">Principle</label>
+              <textarea
+                autoFocus
+                id="new-principle-statement"
+                onChange={(event) => setStatement(event.target.value)}
+                value={statement}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="new-principle-description">Notes</label>
+              <textarea
+                id="new-principle-description"
+                onChange={(event) => setDescription(event.target.value)}
+                value={description}
+              />
+            </div>
+            <div className={styles.actions}>
+              <button
+                className={styles.primaryButton}
+                disabled={saving || !statement.trim()}
+                onClick={createPrinciple}
+                type="button"
+              >
+                Add
+              </button>
+              <button
+                className={styles.textButton}
+                onClick={() => setCreating(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         ) : null}
-        {error ? <div className={baseStyles.error}>{error}</div> : null}
+
+        {loading ? <div className={styles.loading}>Loading…</div> : null}
+        {error ? <div className={styles.error}>{error}</div> : null}
         {!loading && !error && principles.length === 0 ? (
-          <div className={baseStyles.empty}>
-            <strong>No adopted principles yet.</strong>
-            Complete a Decision → Council → Judgment loop, then explicitly adopt
-            a principle worth reusing.
-          </div>
+          <div className={styles.empty}>No principles yet.</div>
         ) : null}
 
-        <div className={styles.principlesGrid}>
+        <div className={styles.list}>
           {principles.map((item) => (
-            <PrincipleCard
+            <PrincipleItem
+              isOpen={openId === item.id}
               item={item}
               key={item.id}
               onRefresh={loadPrinciples}
+              onToggle={() =>
+                setOpenId((current) => (current === item.id ? null : item.id))
+              }
             />
           ))}
         </div>
