@@ -194,14 +194,10 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     [0.1, -1.0, 0],
     [-1.0, -0.62, -0.08],
   ];
-  const brainTrunkCenters = [
-    [-1.02, 0.55, 0.16],
-    [-0.58, 0.98, 0.18],
-    [0.08, 1.02, 0.2],
-    [0.72, 0.62, 0.18],
-    [0.86, -0.02, 0.2],
-    [0.34, -0.72, 0.18],
-  ];
+  const brainTrunkCenters = Array.from({ length: TRUNK_COUNT }, () => [
+    0, 0, 0,
+  ]);
+  const brainTrunkCounts = Array.from({ length: TRUNK_COUNT }, () => 0);
   const thinkerCenters = [
     [-1.45, 0.45, 0.05],
     [-0.88, -0.35, 0.18],
@@ -217,6 +213,15 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     samplers[index % samplers.length].sample(sample, normal);
     sample.applyMatrix4(mesh.matrixWorld).multiplyScalar(1.3);
     brain.set([sample.x, sample.y, sample.z], index * 3);
+    const brainCluster =
+      Math.floor(
+        ((Math.atan2(sample.y, sample.x) + Math.PI) / (Math.PI * 2)) *
+          TRUNK_COUNT
+      ) % TRUNK_COUNT;
+    brainTrunkCenters[brainCluster][0] += sample.x;
+    brainTrunkCenters[brainCluster][1] += sample.y;
+    brainTrunkCenters[brainCluster][2] += sample.z;
+    brainTrunkCounts[brainCluster] += 1;
     colors.set(colorFor(sample).toArray(), index * 3);
     seeds[index] = seeded(index, 17);
     scales[index] = 0.0058 + 0.0124 * seeded(index, 31) ** 2;
@@ -256,6 +261,14 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
       ],
       index * 3
     );
+  }
+
+  for (let cluster = 0; cluster < TRUNK_COUNT; cluster += 1) {
+    const center = brainTrunkCenters[cluster];
+    const count = Math.max(1, brainTrunkCounts[cluster]);
+    center[0] /= count;
+    center[1] /= count;
+    center[2] /= count;
   }
 
   const dustGeometry = new THREE.BufferGeometry();
@@ -369,9 +382,9 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
         targetArray[index * 3 + 2] = target[2] + offset.z * modeOffset;
       }
       trunkCenter.set(
-        centers[cluster][0],
-        centers[cluster][1],
-        centers[cluster][2]
+        brainTrunkCenters[cluster][0],
+        brainTrunkCenters[cluster][1],
+        brainTrunkCenters[cluster][2]
       );
       trunkColors.set(colorFor(trunkCenter).toArray(), index * 3);
       trunkSeeds[index] = seeded(index, 229);
@@ -411,15 +424,15 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   );
   trunkGeometry.instanceCount = trunkInstanceCount;
   const trunkMaterial = new THREE.ShaderMaterial({
-    blending: THREE.NormalBlending,
+    blending: THREE.AdditiveBlending,
     depthWrite: false,
     fragmentShader: BASE_FRAGMENT,
     side: THREE.DoubleSide,
     transparent: true,
     uniforms: {
       ...uniformSet(),
-      uDepth: { value: 0.08 },
-      uOpacity: { value: 0.7 },
+      uDepth: { value: 0.04 },
+      uOpacity: { value: 0.55 },
     },
     vertexShader: BASE_VERTEX,
   });
