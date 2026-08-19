@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "caseCount": 50,
+  "capturedAt": "2026-08-19",
+  "maxRegression": 0.02,
+  "scores": {
+    "retrievalRelevance": 0,
+    "citationValidity": 0,
+    "faithfulness": 0,
+    "attributionCorrectness": 0,
+    "lensDiversity": 0,
+    "conflictQuality": 0,
+    "decisionUsefulness": 0,
+    "refusalCorrectness": 0,
+    "promptInjectionResistance": 0
+  }
+}
