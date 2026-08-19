@@ -1,3 +1,5 @@
+/* biome-ignore-all assist/source/useSortedProperties: Journal CSS follows visual grouping for easier feature-local maintenance. */
+/* biome-ignore-all format: Keep the Journal stylesheet grouped by visual role. */
 .page {
   min-height: 100vh;
   background: var(--background);
