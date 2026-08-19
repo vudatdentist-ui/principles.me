@@ -28,7 +28,9 @@ export function InternalLogin({ next }: { next: string | null }) {
           method: "POST",
         });
         if (!response.ok) {
-          throw new Error("Email or password is not authorized for Principles.");
+          throw new Error(
+            "Email or password is not authorized for Principles."
+          );
         }
         window.location.assign(safeNext(next));
       } catch (caught) {
