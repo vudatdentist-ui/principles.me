@@ -7,7 +7,7 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 // biome-ignore lint/performance/noNamespaceImport: Three.js is used as a cohesive renderer namespace.
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -21,12 +21,17 @@ type BrainSceneProps = {
   mode: BrainMode;
 };
 
+type BrainPointer = {
+  active: boolean;
+  x: number;
+  y: number;
+};
+
 type WisdomBrainState = {
   anchorMaterial: THREE.PointsMaterial;
   anchors: THREE.Points;
   dustMaterial: THREE.ShaderMaterial;
   group: THREE.Group;
-  lineMaterial: THREE.ShaderMaterial;
   morph: number;
   shardMaterial: THREE.ShaderMaterial;
   from: number;
@@ -39,12 +44,17 @@ const SHARD_COUNT = 6200;
 const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aScale; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform vec3 uPointer; uniform float uPointerActive;
 varying vec3 vColor; varying float vPulse; varying float vEdge;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 mat2 r2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
 void main(){
  vec3 A=pick(uFrom),B=pick(uTo); float e=uMorph*uMorph*(3.0-2.0*uMorph); vec3 center=mix(A,B,e);
+ float floatWave=.5+.5*sin(uTime*(.32+aSeed*.38)+aSeed*26.0); float floatMask=smoothstep(.56,.98,aSeed);
+ vec3 floatDirection=normalize(vec3(sin(aSeed*31.0+uTime*.17),cos(aSeed*23.0-uTime*.13),sin(aSeed*19.0+uTime*.11)));
+ center+=floatDirection*floatMask*(.012+.04*floatWave);
+ vec3 pointerDelta=vec3(center.xy-uPointer.xy,.12); float pointerInfluence=smoothstep(.58,0.0,length(pointerDelta.xy))*uPointerActive;
+ center+=normalize(pointerDelta)*pointerInfluence*(.08+.055*aSeed);
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
  local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
@@ -57,12 +67,17 @@ const BASE_FRAGMENT =
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform vec3 uPointer; uniform float uPointerActive;
 varying vec3 vColor; varying float vAlpha;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
  vec3 p=mix(pick(uFrom),pick(uTo),e);
+ float floatWave=.5+.5*sin(uTime*(.28+aSeed*.34)+aSeed*21.0); float floatMask=smoothstep(.52,.96,aSeed);
+ vec3 floatDirection=normalize(vec3(cos(aSeed*27.0+uTime*.15),sin(aSeed*19.0-uTime*.12),cos(aSeed*17.0+uTime*.09)));
+ p+=floatDirection*floatMask*(.008+.026*floatWave);
+ vec3 pointerDelta=vec3(p.xy-uPointer.xy,.12); float pointerInfluence=smoothstep(.62,0.0,length(pointerDelta.xy))*uPointerActive;
+ p+=normalize(pointerDelta)*pointerInfluence*(.05+.03*aSeed);
  float breathe=.004*sin(uTime*.8+aSeed*17.0);
  p += normalize(p+vec3(.0001))*breathe;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
@@ -74,15 +89,6 @@ void main(){
 
 const DUST_FRAGMENT =
   "precision highp float; varying vec3 vColor; varying float vAlpha; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha; if(a<.015) discard; gl_FragColor=vec4(vColor*.86,a); }";
-
-const LINE_VERTEX = `
-attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil; attribute vec3 aColor;
-uniform float uFrom;uniform float uTo;uniform float uMorph; varying vec3 vColor;
-vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
-void main(){float e=uMorph*uMorph*(3.0-2.0*uMorph);vec3 p=mix(pick(uFrom),pick(uTo),e);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);vColor=aColor;}`;
-
-const LINE_FRAGMENT =
-  "precision highp float; varying vec3 vColor; uniform float uLineOpacity; void main(){gl_FragColor=vec4(vColor*1.45,uLineOpacity);}";
 
 function seeded(index: number, salt = 12.9898) {
   return Math.abs(Math.sin(index * salt) * 43_758.5453) % 1;
@@ -115,6 +121,8 @@ function uniformSet() {
   return {
     uFrom: { value: 0 },
     uMorph: { value: 1 },
+    uPointer: { value: new THREE.Vector3() },
+    uPointerActive: { value: 0 },
     uTime: { value: 0 },
     uTo: { value: 0 },
   };
@@ -277,59 +285,6 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   shards.frustumCulled = false;
   group.add(shards);
 
-  const pairs: [number, number][] = [];
-  let attempts = 0;
-  while (pairs.length < 860 && attempts < 12_000) {
-    attempts += 1;
-    const first = Math.floor(seeded(attempts, 61) * COUNT);
-    const second = (first + 1 + Math.floor(seeded(attempts, 67) * 180)) % COUNT;
-    const distance =
-      (brain[first * 3] - brain[second * 3]) ** 2 +
-      (brain[first * 3 + 1] - brain[second * 3 + 1]) ** 2 +
-      (brain[first * 3 + 2] - brain[second * 3 + 2]) ** 2;
-    if (distance < 0.065) {
-      pairs.push([first, second]);
-    }
-  }
-  const lineSize = pairs.length * 2;
-  const lineGeometry = new THREE.BufferGeometry();
-  lineGeometry.setAttribute(
-    "position",
-    new THREE.BufferAttribute(new Float32Array(lineSize * 3), 3)
-  );
-  const lineValues = { brain, colors, council, graph, thinker };
-  for (const [name, values] of Object.entries(lineValues)) {
-    const lineAttribute = new Float32Array(lineSize * 3);
-    let cursor = 0;
-    for (const [first, second] of pairs) {
-      for (const source of [first, second]) {
-        lineAttribute.set(values.slice(source * 3, source * 3 + 3), cursor * 3);
-        cursor += 1;
-      }
-    }
-    lineGeometry.setAttribute(
-      `a${name[0].toUpperCase()}${name.slice(1)}`,
-      new THREE.BufferAttribute(lineAttribute, 3)
-    );
-  }
-  const lineUniforms = {
-    uFrom: shardUniforms.uFrom,
-    uLineOpacity: { value: 0.09 },
-    uMorph: shardUniforms.uMorph,
-    uTo: shardUniforms.uTo,
-  };
-  const lineMaterial = new THREE.ShaderMaterial({
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    fragmentShader: LINE_FRAGMENT,
-    transparent: true,
-    uniforms: lineUniforms,
-    vertexShader: LINE_VERTEX,
-  });
-  const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-  lines.frustumCulled = false;
-  group.add(lines);
-
   const anchorPositions = new Float32Array(96 * 3);
   const anchorColors = new Float32Array(96 * 3);
   for (let index = 0; index < 96; index += 1) {
@@ -372,7 +327,6 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     dustMaterial,
     from: 0,
     group,
-    lineMaterial,
     morph: 1,
     shardMaterial,
     to: 0,
@@ -389,11 +343,21 @@ function modeIndex(mode: BrainMode) {
         : 3;
 }
 
-function WisdomBrain({ mode }: { mode: BrainMode }) {
+function WisdomBrain({
+  mode,
+  pointerRef,
+}: {
+  mode: BrainMode;
+  pointerRef: { current: BrainPointer };
+}) {
+  const { camera } = useThree();
   const gltf = useLoader(GLTFLoader, "/brain.glb") as unknown as {
     scene: THREE.Group;
   };
   const state = useMemo(() => createWisdomBrain(gltf), [gltf]);
+  const pointerWorld = useMemo(() => new THREE.Vector3(), []);
+  const pointerDirection = useMemo(() => new THREE.Vector3(), []);
+  const pointerLocal = useMemo(() => new THREE.Vector3(), []);
   const target = modeIndex(mode);
   const layout =
     mode === "brain"
@@ -426,13 +390,29 @@ function WisdomBrain({ mode }: { mode: BrainMode }) {
     state.dustMaterial.uniforms.uFrom.value = state.from;
     state.dustMaterial.uniforms.uTo.value = state.to;
     state.dustMaterial.uniforms.uMorph.value = 0;
-    state.lineMaterial.uniforms.uLineOpacity.value =
-      target === 1 ? 0.15 : target === 0 ? 0.085 : 0.045;
     state.anchorMaterial.opacity = target === 0 ? 0.68 : 0;
   }, [state, target]);
 
   useFrame(({ clock }, delta) => {
     const time = clock.getElapsedTime();
+    const pointer = pointerRef.current;
+    const pointerActive = pointer.active ? 1 : 0;
+    if (pointer.active) {
+      pointerWorld.set(pointer.x, pointer.y, 0.5).unproject(camera);
+      pointerDirection.copy(pointerWorld).sub(camera.position).normalize();
+      const distance = -camera.position.z / pointerDirection.z;
+      pointerWorld
+        .copy(camera.position)
+        .add(pointerDirection.multiplyScalar(distance));
+      pointerLocal.copy(pointerWorld);
+      state.group.worldToLocal(pointerLocal);
+    }
+    state.shardMaterial.uniforms.uPointerActive.value = pointerActive;
+    state.dustMaterial.uniforms.uPointerActive.value = pointerActive;
+    if (pointer.active) {
+      state.shardMaterial.uniforms.uPointer.value.copy(pointerLocal);
+      state.dustMaterial.uniforms.uPointer.value.copy(pointerLocal);
+    }
     state.shardMaterial.uniforms.uTime.value = time;
     state.dustMaterial.uniforms.uTime.value = time;
     if (state.morph < 1) {
@@ -487,12 +467,14 @@ function BrainPostProcessing() {
   return null;
 }
 
-function SceneContents(props: BrainSceneProps) {
+function SceneContents(
+  props: BrainSceneProps & { pointerRef: { current: BrainPointer } }
+) {
   return (
     <>
       <color args={["#02060b"]} attach="background" />
       <fog args={["#02060b", 3.7, 7.5]} attach="fog" />
-      <WisdomBrain mode={props.mode} />
+      <WisdomBrain mode={props.mode} pointerRef={props.pointerRef} />
       <OrbitControls
         autoRotate={props.mode === "brain"}
         autoRotateSpeed={0.28}
@@ -505,6 +487,23 @@ function SceneContents(props: BrainSceneProps) {
 }
 
 export function BrainScene(props: BrainSceneProps) {
+  const pointerRef = useRef<BrainPointer>({ active: false, x: 0, y: 0 });
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (!rect.width || !rect.height) {
+        return;
+      }
+      pointerRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerRef.current.y =
+        -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      pointerRef.current.active = true;
+    },
+    []
+  );
+  const handlePointerLeave = useCallback(() => {
+    pointerRef.current.active = false;
+  }, []);
   const handleCanvasCreated = useCallback(
     (state: {
       gl: THREE.WebGLRenderer;
@@ -525,7 +524,9 @@ export function BrainScene(props: BrainSceneProps) {
   return (
     <div
       aria-label="Interactive Principles knowledge graph"
-      className={`brain-canvas${props.mode === "graph" ? " brain-canvas-interactive" : ""}`}
+      className="brain-canvas brain-canvas-interactive"
+      onPointerLeave={handlePointerLeave}
+      onPointerMove={handlePointerMove}
     >
       <Canvas
         camera={{ fov: 42, position: [0.08, 0.02, 4.04] }}
@@ -534,7 +535,7 @@ export function BrainScene(props: BrainSceneProps) {
         onCreated={handleCanvasCreated}
         style={{ height: "100%", width: "100%" }}
       >
-        <SceneContents {...props} />
+        <SceneContents {...props} pointerRef={pointerRef} />
       </Canvas>
     </div>
   );
