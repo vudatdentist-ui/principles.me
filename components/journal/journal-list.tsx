@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  type ChangeEvent,
+  type KeyboardEvent,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import styles from "./journal.module.css";
 
 type EntrySummary = {
@@ -31,6 +37,16 @@ function timeLabel(value: Date | string) {
   });
 }
 
+function entryStatusLabel(entry: EntrySummary) {
+  if (entry.candidateStatus === "pending") {
+    return " · Candidate";
+  }
+  if (entry.candidateStatus === "adopted") {
+    return " · Principle";
+  }
+  return "";
+}
+
 export function JournalList({ entries }: { entries: EntrySummary[] }) {
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +63,7 @@ export function JournalList({ entries }: { entries: EntrySummary[] }) {
     return [...groups.entries()];
   }, [entries]);
 
-  async function createEntry() {
+  const createEntry = useCallback(async () => {
     const text = body.trim();
     if (!text || saving) {
       return;
@@ -66,7 +82,24 @@ export function JournalList({ entries }: { entries: EntrySummary[] }) {
     }
     const payload = (await response.json()) as { entry: { id: string } };
     window.location.assign(`/journal/${payload.entry.id}`);
-  }
+  }, [body, saving]);
+
+  const handleBodyChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      setBody(event.target.value);
+    },
+    []
+  );
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        createEntry();
+      }
+    },
+    [createEntry]
+  );
 
   return (
     <>
@@ -75,13 +108,8 @@ export function JournalList({ entries }: { entries: EntrySummary[] }) {
           aria-label="New journal entry"
           autoFocus
           className={styles.textarea}
-          onChange={(event) => setBody(event.target.value)}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-              event.preventDefault();
-              void createEntry();
-            }
-          }}
+          onChange={handleBodyChange}
+          onKeyDown={handleKeyDown}
           placeholder="What happened?"
           value={body}
         />
@@ -89,7 +117,7 @@ export function JournalList({ entries }: { entries: EntrySummary[] }) {
           <button
             className={styles.quietAction}
             disabled={!body.trim() || saving}
-            onClick={() => void createEntry()}
+            onClick={createEntry}
             type="button"
           >
             {saving ? "Saving" : "Save →"}
@@ -112,11 +140,7 @@ export function JournalList({ entries }: { entries: EntrySummary[] }) {
                 <div className={styles.entryMeta}>
                   {timeLabel(entry.occurredAt)}
                   {entry.reflection ? " · Reflected" : " · Reflect →"}
-                  {entry.candidateStatus === "pending"
-                    ? " · Candidate"
-                    : entry.candidateStatus === "adopted"
-                      ? " · Principle"
-                      : ""}
+                  {entryStatusLabel(entry)}
                 </div>
               </a>
             ))}
