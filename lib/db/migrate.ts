@@ -8,7 +8,7 @@ config({ path: process.env.ENV_FILE || ".env.local" });
 async function runMigrate() {
   const databaseUrl = process.env.POSTGRES_URL?.trim();
   if (!databaseUrl) {
-    throw new Error("POSTGRES_URL is required to run database migrations.");
+    throw new Error("POSTGRES_URL_REQUIRED");
   }
 
   const connection = postgres(databaseUrl, { max: 1 });
@@ -23,8 +23,15 @@ async function runMigrate() {
   }
 }
 
-runMigrate().catch((error) => {
-  console.error("Migration failed");
-  console.error(error);
+runMigrate().catch((error: unknown) => {
+  console.error(
+    JSON.stringify({
+      code: error instanceof Error ? error.name : "MIGRATION_FAILED",
+      event: "app_error",
+      kind: "migration",
+      stage: "db:migrate",
+      timestamp: new Date().toISOString(),
+    })
+  );
   process.exitCode = 1;
 });
