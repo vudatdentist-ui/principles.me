@@ -216,9 +216,10 @@ test.describe("Decision workspace", () => {
       adoptedPrinciple.getByRole("heading", { name: "Origin" })
     ).toBeVisible();
     await expect(adoptedPrinciple.getByText("Decision ·")).toBeVisible();
-    await expect(
-      adoptedPrinciple.getByText("Tiếp tục partnership?")
-    ).toBeVisible();
+    await expect(adoptedPrinciple.getByRole("link").first()).toHaveAttribute(
+      "href",
+      /\/decisions\//
+    );
     await expect(
       adoptedPrinciple.getByRole("heading", { name: "Usage & outcomes" })
     ).toBeVisible();
@@ -243,9 +244,7 @@ test.describe("Decision workspace", () => {
       .filter({ hasText: original })
       .first();
     await expect(principleCard).toBeVisible();
-    await expect(
-      principleCard.getByText("Manual", { exact: true })
-    ).toBeVisible();
+    await expect(principleCard).toContainText("Manual · Manual");
     await expect(
       principleCard.getByText("Used 0 times", { exact: true })
     ).toBeVisible();
