@@ -3,6 +3,7 @@ import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import type { CouncilBrief, CouncilPlan } from "@/lib/council/types";
 import {
   type Decision,
   decision,
@@ -149,17 +150,23 @@ export async function saveDecisionAnalysis({
   id,
   userId,
   councilAnalysis,
+  councilBrief,
+  councilPlan,
   evidence,
 }: {
   id: string;
   userId: string;
   councilAnalysis: string;
+  councilBrief: CouncilBrief | null;
+  councilPlan: CouncilPlan;
   evidence: DecisionEvidence[];
 }) {
   const [updatedDecision] = await db
     .update(decision)
     .set({
       councilAnalysis,
+      councilBrief,
+      councilPlan,
       evidence,
       status: "exploring",
       updatedAt: new Date(),
