@@ -12,7 +12,7 @@
     "ragflow:seed": "node scripts/seed-ragflow.mjs",
     "brain:extract": "node scripts/extract-brain-asset.mjs",
     "council:verify": "pnpm exec tsx scripts/verify-council-v1.ts",
-    "check": "ultracite check",
+    "check": "ultracite check --max-diagnostics=200",
     "fix": "ultracite fix",
     "prepare": "husky",
     "db:generate": "drizzle-kit generate",
