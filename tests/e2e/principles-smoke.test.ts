@@ -8,10 +8,14 @@ test.describe("Principles foundation smoke", () => {
       "Think with"
     );
     await expect(page.getByLabel("Ask your council")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Main navigation" })
+    ).toBeVisible();
   });
 
-  test("carries a real question into the Council workspace", async ({ page }) => {
+  test("carries a real question into the Council workspace", async ({
+    page,
+  }) => {
     const question =
       "Should I keep working with a capable cofounder who avoids difficult conversations?";
 
@@ -19,7 +23,9 @@ test.describe("Principles foundation smoke", () => {
     await page.getByLabel("Ask your council").fill(question);
     await page.getByLabel("Ask your council").press("Enter");
 
-    await expect(page.getByRole("heading", { name: "Ask the council." })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Ask the council." })
+    ).toBeVisible();
     await expect(page.locator("#council-question")).toHaveValue(question);
   });
 
