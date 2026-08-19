@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import styles from "@/components/journal/journal.module.css";
 import { JournalList } from "@/components/journal/journal-list";
 import { listJournalEntries } from "@/lib/journal/queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
-export default async function JournalPage() {
+async function JournalRoute() {
   const workspaceUser = await getWorkspaceUser();
   const entries = await listJournalEntries(workspaceUser.id);
 
@@ -21,5 +22,13 @@ export default async function JournalPage() {
         <JournalList entries={entries} />
       </div>
     </main>
+  );
+}
+
+export default function JournalPage() {
+  return (
+    <Suspense fallback={null}>
+      <JournalRoute />
+    </Suspense>
   );
 }
