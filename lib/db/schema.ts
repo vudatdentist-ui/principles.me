@@ -159,10 +159,13 @@ export const principleStatus = pgEnum("principle_status", [
   "retired",
 ]);
 
-export const decisionPrincipleRelation = pgEnum(
-  "decision_principle_relation",
-  ["suggested", "applied", "challenged", "created", "adopted"]
-);
+export const decisionPrincipleRelation = pgEnum("decision_principle_relation", [
+  "suggested",
+  "applied",
+  "challenged",
+  "created",
+  "adopted",
+]);
 
 export const decisionOutcomeVerdict = pgEnum("decision_outcome_verdict", [
   "positive",
