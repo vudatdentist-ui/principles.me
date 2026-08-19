@@ -210,7 +210,9 @@ function PrincipleCard({
         </div>
       ) : (
         <>
-          <strong className={styles.principleStatement}>{item.statement}</strong>
+          <strong className={styles.principleStatement}>
+            {item.statement}
+          </strong>
           {item.description ? <p>{item.description}</p> : null}
         </>
       )}
@@ -328,7 +330,11 @@ export function MyPrinciplesWorkspace() {
 
         <div className={styles.principlesGrid}>
           {principles.map((item) => (
-            <PrincipleCard item={item} key={item.id} onRefresh={loadPrinciples} />
+            <PrincipleCard
+              item={item}
+              key={item.id}
+              onRefresh={loadPrinciples}
+            />
           ))}
         </div>
       </section>
