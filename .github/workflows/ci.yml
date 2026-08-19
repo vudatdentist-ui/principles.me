@@ -31,7 +31,6 @@ jobs:
         with:
           ref: agent/milestone-4-judgment-loop
       - name: Patch exact formatter hunk
-        id: patch
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -41,20 +40,16 @@ jobs:
               buffer +
               (chunk.value
                 ? decoder.decode(chunk.value, { stream: !chunk.done })
-                : "");'''
+                : "");'''.replace("              buffer", "      buffer").replace("              (chunk", "      (chunk").replace("                ? decoder", "        ? decoder").replace("                :", "        :")
           new = '''    const nextBuffer =
-              buffer + (chunk.value ? decoder.decode(chunk.value, { stream: !chunk.done }) : "");'''
+      buffer + (chunk.value ? decoder.decode(chunk.value, { stream: !chunk.done }) : "");'''
           count = text.count(old)
-          if count > 1:
-              raise SystemExit(f"expected at most one formatter hunk, found {count}")
-          if count == 1:
-              path.write_text(text.replace(old, new))
+          if count != 1:
+              raise SystemExit(f"expected exactly one formatter hunk, found {count}")
+          path.write_text(text.replace(old, new))
           PY
-      - name: Commit exact patch if needed
+      - name: Commit exact patch
         run: |
-          if git diff --quiet -- components/judgment-decision.tsx; then
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add components/judgment-decision.tsx
