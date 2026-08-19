@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import styles from "@/components/journal/journal.module.css";
 import { JournalEntryView } from "@/components/journal/journal-entry";
 import { getJournalEntryDetail } from "@/lib/journal/queries";
@@ -6,7 +7,7 @@ import { getWorkspaceUser } from "@/lib/workspace-user";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export default async function JournalEntryPage({ params }: PageProps) {
+async function JournalEntryRoute({ params }: PageProps) {
   const [{ id }, workspaceUser] = await Promise.all([
     params,
     getWorkspaceUser(),
@@ -47,5 +48,13 @@ export default async function JournalEntryPage({ params }: PageProps) {
         />
       </div>
     </main>
+  );
+}
+
+export default function JournalEntryPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={null}>
+      <JournalEntryRoute params={params} />
+    </Suspense>
   );
 }
