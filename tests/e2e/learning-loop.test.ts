@@ -85,9 +85,10 @@ test.describe("Milestone 6 Learning Loop", () => {
     await principleReview
       .getByRole("button", { name: "Save revision" })
       .click();
-    await expect(
-      principleReview.getByTestId("principle-review-saved")
-    ).toContainText("revise · resulting revision 2");
+    await expect(loop).toContainText(revisedPrinciple);
+    await expect(loop.getByTestId("principle-review-saved")).toContainText(
+      "revise · resulting revision 2"
+    );
 
     await page.reload();
     await page.getByTestId("learning-loop-launcher").click();
