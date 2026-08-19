@@ -23,5 +23,5 @@ export type JournalCortexSuggestion = {
 };
 
 export interface JournalCortexAdapter {
-  reflect(context: JournalCortexContext): Promise<JournalCortexSuggestion>;
+  reflect: (context: JournalCortexContext) => Promise<JournalCortexSuggestion>;
 }
