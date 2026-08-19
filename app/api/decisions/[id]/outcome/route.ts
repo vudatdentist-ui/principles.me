@@ -21,9 +21,14 @@ const outcomeSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, context: RouteContext) {
-  const parsed = outcomeSchema.safeParse(await request.json().catch(() => null));
+  const parsed = outcomeSchema.safeParse(
+    await request.json().catch(() => null)
+  );
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid outcome review." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid outcome review." },
+      { status: 400 }
+    );
   }
 
   const [{ id }, workspaceUser] = await Promise.all([
