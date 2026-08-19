@@ -177,7 +177,8 @@ function scoreCase(evalCase: CouncilEvalCase, response: EvalResponse) {
   const citations = claims.flatMap((claim) => claim.citations ?? []);
   if (evalCase.category === "citation_correctness") {
     scores.citationValidity =
-      citations.length > 0 && citations.every((citation) => allowedKeys.has(citation))
+      citations.length > 0 &&
+      citations.every((citation) => allowedKeys.has(citation))
         ? 1
         : 0;
   }
@@ -207,7 +208,10 @@ function scoreCase(evalCase: CouncilEvalCase, response: EvalResponse) {
       : 1;
   }
 
-  if (evalCase.category === "conflict_detection" && evalCase.conflictTerms?.length) {
+  if (
+    evalCase.category === "conflict_detection" &&
+    evalCase.conflictTerms?.length
+  ) {
     const conflictText = [
       ...(response.answer?.brief?.disagreement ?? []),
       ...(response.answer?.brief?.crux ?? []),
@@ -217,7 +221,10 @@ function scoreCase(evalCase: CouncilEvalCase, response: EvalResponse) {
     scores.conflictQuality = termCoverage(conflictText, evalCase.conflictTerms);
   }
 
-  if (evalCase.category === "application" && evalCase.applicationTerms?.length) {
+  if (
+    evalCase.category === "application" &&
+    evalCase.applicationTerms?.length
+  ) {
     const nextMoveText = (response.answer?.brief?.nextMoves ?? [])
       .map((claim) => claim.text ?? "")
       .join(" ");
@@ -256,7 +263,9 @@ function chooseCases(dataset: Dataset) {
     .map((value) => value.trim())
     .filter(Boolean);
   if (requestedIds.length) {
-    const byId = new Map(dataset.cases.map((evalCase) => [evalCase.id, evalCase]));
+    const byId = new Map(
+      dataset.cases.map((evalCase) => [evalCase.id, evalCase])
+    );
     const selected = requestedIds.map((id) => byId.get(id));
     const missing = requestedIds.filter((_, index) => !selected[index]);
     if (missing.length) {
@@ -326,10 +335,15 @@ async function main() {
       method: "POST",
     });
     if (!response.ok) {
-      throw new Error(`${evalCase.id}: Council returned HTTP ${response.status}`);
+      throw new Error(
+        `${evalCase.id}: Council returned HTTP ${response.status}`
+      );
     }
     const scored = scoreCase(evalCase, parseEvents(await response.text()));
-    for (const [metric, score] of Object.entries(scored) as [LiveMetric, number][]) {
+    for (const [metric, score] of Object.entries(scored) as [
+      LiveMetric,
+      number,
+    ][]) {
       metricValues.get(metric)?.push(score);
     }
   }
@@ -351,7 +365,9 @@ async function main() {
     (metric) => (metricValues.get(metric)?.length ?? 0) > 0
   );
   const minimumScore = Number(process.env.EVAL_MIN_SCORE || "0.5");
-  const belowMinimum = measured.filter((metric) => scores[metric] < minimumScore);
+  const belowMinimum = measured.filter(
+    (metric) => scores[metric] < minimumScore
+  );
   if (belowMinimum.length) {
     throw new Error(
       `Live Council metrics below ${minimumScore}: ${belowMinimum.join(", ")}`
@@ -426,6 +442,8 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : "Live Council eval failed.");
+  console.error(
+    error instanceof Error ? error.message : "Live Council eval failed."
+  );
   process.exitCode = 1;
 });
