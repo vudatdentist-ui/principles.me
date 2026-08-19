@@ -1,0 +1,246 @@
+/* biome-ignore-all assist/source/useSortedProperties: Journal CSS follows visual grouping for easier feature-local maintenance. */
+/* biome-ignore-all format: Keep the Journal stylesheet grouped by visual role. */
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.frame {
+  width: min(760px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 44px 0 96px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.headerActions,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.link,
+.action,
+.quietAction {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+}
+
+.link,
+.quietAction {
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+  font-size: 13px;
+}
+
+.link:hover,
+.quietAction:hover {
+  color: var(--text);
+}
+
+.action {
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.action:disabled,
+.quietAction:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.composer {
+  margin-bottom: 48px;
+}
+
+.textarea,
+.reflectionArea,
+.smallArea,
+.candidateInput {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.textarea {
+  min-height: 128px;
+  padding: 0;
+  font-size: 19px;
+  line-height: 1.55;
+}
+
+.textarea::placeholder,
+.reflectionArea::placeholder,
+.smallArea::placeholder,
+.candidateInput::placeholder {
+  color: color-mix(in srgb, var(--text) 34%, transparent);
+}
+
+.composerFooter {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  padding-top: 12px;
+}
+
+.day {
+  margin-top: 32px;
+}
+
+.dayLabel,
+.label {
+  color: color-mix(in srgb, var(--text) 48%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.entryLink {
+  display: block;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  padding: 18px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.entryBody {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.entryLink:hover .entryBody {
+  opacity: 0.72;
+}
+
+.entryMeta {
+  margin-top: 9px;
+  color: color-mix(in srgb, var(--text) 43%, transparent);
+  font-size: 12px;
+}
+
+.empty {
+  color: color-mix(in srgb, var(--text) 45%, transparent);
+  font-size: 14px;
+}
+
+.experience {
+  margin: 0 0 28px;
+  white-space: pre-wrap;
+  font-size: 20px;
+  line-height: 1.65;
+  letter-spacing: -0.01em;
+}
+
+.section {
+  border-top: 1px solid color-mix(in srgb, var(--text) 11%, transparent);
+  padding: 26px 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.reflectionArea {
+  min-height: 136px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.smallArea {
+  min-height: 76px;
+  margin-top: 18px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.assistQuestion {
+  margin: 0 0 18px;
+  padding-left: 14px;
+  border-left: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.candidate {
+  margin-top: 28px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  padding-top: 22px;
+}
+
+.candidateInput {
+  min-height: 72px;
+  margin: 10px 0 14px;
+  font-size: 16px;
+  font-weight: 520;
+  line-height: 1.55;
+}
+
+.rationale {
+  margin: 0 0 14px;
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.status {
+  color: color-mix(in srgb, var(--text) 52%, transparent);
+  font-size: 12px;
+}
+
+.error {
+  margin-top: 12px;
+  color: var(--destructive, #a33);
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .frame {
+    width: min(100% - 24px, 760px);
+    padding-top: 24px;
+  }
+
+  .header {
+    margin-bottom: 28px;
+  }
+
+  .experience {
+    font-size: 18px;
+  }
+}

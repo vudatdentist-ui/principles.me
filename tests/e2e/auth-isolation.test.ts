@@ -50,7 +50,7 @@ test.describe("Milestone 8 internal auth isolation", () => {
     await sql.end({ timeout: 5 });
   });
 
-  test("User A cannot leak Decisions or Principles to User B", async ({
+  test("User A cannot leak Decisions, Principles, or Journal to User B", async ({
     browser,
   }) => {
     const contextA = await browser.newContext();
@@ -85,6 +85,28 @@ test.describe("Milestone 8 internal auth isolation", () => {
       principleStatement
     );
 
+    const privateJournalText = `Private journal ${crypto.randomUUID()}`;
+    const createJournal = await contextA.request.post("/api/journal", {
+      data: { body: privateJournalText },
+    });
+    expect(createJournal.status()).toBe(201);
+    const journalPayload = (await createJournal.json()) as {
+      entry: { id: string };
+    };
+    const journalId = journalPayload.entry.id;
+
+    const saveReflection = await contextA.request.put(
+      `/api/journal/${journalId}/reflection`,
+      {
+        data: {
+          candidate: { statement: "Private candidate principle." },
+          observation: "Private recurring pattern.",
+          text: "Private reflection.",
+        },
+      }
+    );
+    expect(saveReflection.status()).toBe(200);
+
     const contextB = await browser.newContext();
     await login(contextB, EMAIL_B, PASSWORD_B);
 
@@ -105,10 +127,42 @@ test.describe("Milestone 8 internal auth isolation", () => {
       principleStatement
     );
 
+    const journalListB = await contextB.request.get("/api/journal");
+    expect(journalListB.status()).toBe(200);
+    expect(JSON.stringify(await journalListB.json())).not.toContain(
+      privateJournalText
+    );
+
+    const crossJournalRead = await contextB.request.get(
+      `/api/journal/${journalId}`
+    );
+    expect(crossJournalRead.status()).toBe(404);
+
+    const crossReflectionWrite = await contextB.request.put(
+      `/api/journal/${journalId}/reflection`,
+      { data: { text: "B must not modify A's reflection." } }
+    );
+    expect(crossReflectionWrite.status()).toBe(404);
+
+    const crossAssist = await contextB.request.post(
+      `/api/journal/${journalId}/reflection/assist`
+    );
+    expect(crossAssist.status()).toBe(404);
+
+    const crossJournalDelete = await contextB.request.delete(
+      `/api/journal/${journalId}`
+    );
+    expect(crossJournalDelete.status()).toBe(404);
+
     const crossDelete = await contextB.request.delete(
       `/api/decisions/${decisionId}`
     );
     expect(crossDelete.status()).toBe(404);
+
+    const journalCleanup = await contextA.request.delete(
+      `/api/journal/${journalId}`
+    );
+    expect(journalCleanup.status()).toBe(204);
 
     const cleanup = await contextA.request.delete(
       `/api/decisions/${decisionId}`
