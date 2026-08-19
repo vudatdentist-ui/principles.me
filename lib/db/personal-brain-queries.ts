@@ -63,7 +63,10 @@ export async function getPersonalContext({
 
   const currentText = `${question}\n${context}`.trim();
   const decisionsById = new Map(decisions.map((item) => [item.id, item]));
-  const latestJudgmentByDecision = new Map<string, (typeof judgments)[number]>();
+  const latestJudgmentByDecision = new Map<
+    string,
+    (typeof judgments)[number]
+  >();
   for (const item of judgments) {
     if (!latestJudgmentByDecision.has(item.decisionId)) {
       latestJudgmentByDecision.set(item.decisionId, item);
@@ -78,7 +81,7 @@ export async function getPersonalContext({
     .filter((item) => item.status !== "retired")
     .map((item) => {
       const origin = item.sourceDecisionId
-        ? decisionsById.get(item.sourceDecisionId) ?? null
+        ? (decisionsById.get(item.sourceDecisionId) ?? null)
         : null;
       const directScore = relevanceScore(
         currentText,
@@ -114,7 +117,10 @@ export async function getPersonalContext({
       } satisfies PersonalPrincipleMemory;
     })
     .filter((item) => item.relevance >= 0.025)
-    .sort((a, b) => b.relevance - a.relevance || b.createdAt.localeCompare(a.createdAt))
+    .sort(
+      (a, b) =>
+        b.relevance - a.relevance || b.createdAt.localeCompare(a.createdAt)
+    )
     .slice(0, 5);
 
   const similarDecisions: SimilarDecisionMemory[] = decisions
@@ -147,11 +153,14 @@ export async function getPersonalContext({
       } satisfies SimilarDecisionMemory;
     })
     .filter((item) => item.relevance >= 0.04)
-    .sort((a, b) => b.relevance - a.relevance || b.createdAt.localeCompare(a.createdAt))
+    .sort(
+      (a, b) =>
+        b.relevance - a.relevance || b.createdAt.localeCompare(a.createdAt)
+    )
     .slice(0, 4);
 
   const currentJudgment = currentDecisionId
-    ? latestJudgmentByDecision.get(currentDecisionId) ?? null
+    ? (latestJudgmentByDecision.get(currentDecisionId) ?? null)
     : null;
   const contradictions = currentJudgment
     ? principleMemories
@@ -214,7 +223,11 @@ export async function applyExistingPrinciple({
         .limit(1),
     ]);
 
-  if (!selectedDecision || !selectedPrinciple || selectedPrinciple.status === "retired") {
+  if (
+    !selectedDecision ||
+    !selectedPrinciple ||
+    selectedPrinciple.status === "retired"
+  ) {
     return null;
   }
   if (existing) {
@@ -244,10 +257,7 @@ export async function getPersonalBrainSummary(
       .select()
       .from(decisionPrinciple)
       .where(eq(decisionPrinciple.userId, userId)),
-    db
-      .select()
-      .from(decisionOutcome)
-      .where(eq(decisionOutcome.userId, userId)),
+    db.select().from(decisionOutcome).where(eq(decisionOutcome.userId, userId)),
   ]);
 
   const statusCounts: PersonalBrainSummary["statusCounts"] = {
@@ -286,8 +296,8 @@ export async function getPersonalBrainSummary(
     decisionCount: decisions.length,
     principleCount: principles.length,
     principlesReused: applicationCounts.size,
-    reviewCount: new Set(outcomes.map((item) => item.decisionId)).size,
     reusedPrinciples,
+    reviewCount: new Set(outcomes.map((item) => item.decisionId)).size,
     statusCounts,
   };
 }
