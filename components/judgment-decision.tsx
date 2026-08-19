@@ -188,7 +188,10 @@ function consumeNdjsonStream(
 ): Promise<void> {
   return reader.read().then((chunk) => {
     const nextBuffer =
-      buffer + (chunk.value ? decoder.decode(chunk.value, { stream: !chunk.done }) : "");
+      buffer +
+      (chunk.value
+        ? decoder.decode(chunk.value, { stream: !chunk.done })
+        : "");
     if (chunk.done) {
       if (nextBuffer.trim()) {
         onEvent(JSON.parse(nextBuffer) as FeedEvent);
@@ -471,9 +474,10 @@ function JudgmentStage({
 
         if (hasCouncil) {
           try {
-            await fetchJson(`/api/decisions/${decisionId}/principle-candidate`, {
-              method: "POST",
-            });
+            await fetchJson(
+              `/api/decisions/${decisionId}/principle-candidate`,
+              { method: "POST" }
+            );
             await onRefresh();
           } catch (caught) {
             setError(
@@ -777,9 +781,7 @@ function CandidateStage({
           </p>
         </div>
         {candidate ? (
-          <span
-            className={`${styles.candidateStatus} ${styles[candidate.status]}`}
-          >
+          <span className={`${styles.candidateStatus} ${styles[candidate.status]}`}>
             {candidate.status}
           </span>
         ) : null}
@@ -950,7 +952,9 @@ function ManualPrinciples({
         await onRefresh();
       } catch (caught) {
         setError(
-          caught instanceof Error ? caught.message : "Could not save principle."
+          caught instanceof Error
+            ? caught.message
+            : "Could not save principle."
         );
       } finally {
         setSaving(false);
