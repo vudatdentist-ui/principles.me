@@ -6,9 +6,6 @@ on:
   push:
     branches: [main, master]
 
-permissions:
-  contents: write
-
 concurrency:
   group: foundation-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -22,43 +19,8 @@ env:
   REDIS_URL: redis://localhost:6379
 
 jobs:
-  patch_m4_stream_format:
-    name: Patch M4 stream formatter hunk
-    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'agent/milestone-4-judgment-loop' }}
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: agent/milestone-4-judgment-loop
-      - name: Patch exact formatter hunk
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path("components/judgment-decision.tsx")
-          text = path.read_text()
-          old = '''    const nextBuffer =
-              buffer +
-              (chunk.value
-                ? decoder.decode(chunk.value, { stream: !chunk.done })
-                : "");'''.replace("              buffer", "      buffer").replace("              (chunk", "      (chunk").replace("                ? decoder", "        ? decoder").replace("                :", "        :")
-          new = '''    const nextBuffer =
-      buffer + (chunk.value ? decoder.decode(chunk.value, { stream: !chunk.done }) : "");'''
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f"expected exactly one formatter hunk, found {count}")
-          path.write_text(text.replace(old, new))
-          PY
-      - name: Commit exact patch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add components/judgment-decision.tsx
-          git commit -m "Fix M4 stream formatting"
-          git push origin HEAD:agent/milestone-4-judgment-loop
-
   quality:
     name: Quality + fresh DB
-    if: ${{ github.event_name != 'pull_request' || github.head_ref != 'agent/milestone-4-judgment-loop' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     services:
