@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { JournalEntryView } from "@/components/journal/journal-entry";
 import styles from "@/components/journal/journal.module.css";
+import { JournalEntryView } from "@/components/journal/journal-entry";
 import { getJournalEntryDetail } from "@/lib/journal/queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
