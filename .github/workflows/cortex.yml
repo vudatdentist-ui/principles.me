@@ -5,7 +5,7 @@ on:
     branches: [main, master]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   cortex-contract:
@@ -13,8 +13,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/cortex-core
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -27,57 +25,6 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Apply and validate canonical repo fixes
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          service = Path("lib/cortex/service.ts")
-          text = service.read_text()
-          text = text.replace(
-              "export class CortexService {\n  private readonly makeRunId: () => string;\n\n  constructor(private readonly dependencies: CortexDependencies) {\n    this.makeRunId = dependencies.makeRunId ?? (() => crypto.randomUUID());\n  }",
-              "export class CortexService {\n  private readonly dependencies: CortexDependencies;\n  private readonly makeRunId: () => string;\n\n  constructor(dependencies: CortexDependencies) {\n    this.dependencies = dependencies;\n    this.makeRunId = dependencies.makeRunId ?? (() => crypto.randomUUID());\n  }",
-          )
-          text = text.replace(
-              "  async run(input: CortexRunInput, userId: string): Promise<CortexResponse> {",
-              "  run(input: CortexRunInput, userId: string): Promise<CortexResponse> {",
-          )
-          service.write_text(text)
-
-          db = Path("lib/db/cortex-run-queries.ts")
-          text = db.read_text().replace("    const row = rows[0];", "    const [row] = rows;")
-          text = text.replace(
-              "    if (!rows[0]) {\n      throw new Error(\"Cortex run update failed owner check.\");\n    }",
-              "    const [updated] = rows;\n    if (!updated) {\n      throw new Error(\"Cortex run update failed owner check.\");\n    }",
-          )
-          db.write_text(text)
-
-          test = Path("scripts/verify-cortex-core.mts")
-          text = test.read_text()
-          markers = [
-              "  async create(record: CortexRunRecord) {\n",
-              "  async get({ runId, userId }: { runId: string; userId: string }) {\n",
-              "  async update(record: CortexRunRecord) {\n",
-              "  async retrieve() {\n",
-              "  async reason({ allowClarification, answers }) {\n",
-              "    async retrieve() {\n",
-              "    async reason() {\n",
-          ]
-          for marker in markers:
-              indent = marker[: len(marker) - len(marker.lstrip())]
-              replacement = marker + indent + "  await Promise.resolve();\n"
-              text = text.replace(marker, replacement)
-          test.write_text(text)
-          PY
-          pnpm exec biome check --write --unsafe app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
-          pnpm check
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add app/api/cortex lib/cortex lib/db/cortex-run-queries.ts scripts/verify-cortex-core.mts
-          if ! git diff --cached --quiet; then
-            git commit --no-verify -m "Apply Cortex lint fixes"
-            git push origin HEAD:agent/cortex-core
-          fi
       - name: Verify Cortex contract and trust invariants
         run: pnpm exec tsx scripts/verify-cortex-core.mts
       - name: Verify existing Council trust baseline
