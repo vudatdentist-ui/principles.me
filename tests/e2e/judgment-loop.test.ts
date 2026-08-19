@@ -73,7 +73,10 @@ test.describe("Milestone 4 Judgment Loop", () => {
     await expect(card).toContainText("Used 0 times");
     await card.getByRole("button").first().click();
     await expect(card.getByRole("heading", { name: "Origin" })).toBeVisible();
-    await expect(card.getByText("Tiếp tục partnership?")).toBeVisible();
+    await expect(card.getByRole("link").first()).toHaveAttribute(
+      "href",
+      /\/decisions\//
+    );
     await expect(card.getByText("v1", { exact: true })).toBeVisible();
 
     await card.getByRole("button", { name: "Edit" }).click();
