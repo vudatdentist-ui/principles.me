@@ -35,6 +35,11 @@ export async function GET() {
   );
   const deepseekConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
   const ready = database && auth && ragflowConfigured && deepseekConfigured;
+  const version =
+    process.env.APP_VERSION?.trim() ||
+    process.env.SOURCE_COMMIT?.trim() ||
+    process.env.GIT_SHA?.trim() ||
+    "development";
 
   return NextResponse.json(
     {
@@ -46,8 +51,11 @@ export async function GET() {
       },
       environment: process.env.APP_ENV ?? "development",
       status: ready ? "ok" : "degraded",
-      version: process.env.APP_VERSION ?? process.env.GIT_SHA ?? "development",
+      version,
     },
-    { status: ready ? 200 : 503 }
+    {
+      headers: { "Cache-Control": "no-store" },
+      status: ready ? 200 : 503,
+    }
   );
 }
