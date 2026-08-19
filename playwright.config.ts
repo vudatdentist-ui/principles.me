@@ -17,7 +17,7 @@ export default defineConfig({
     {
       name: "principles-chromium",
       testMatch:
-        /e2e\/(principles-smoke|judgment-loop|personal-brain)\.test\.ts/,
+        /e2e\/(principles-smoke|judgment-loop|personal-brain|learning-loop)\.test\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
   ],
