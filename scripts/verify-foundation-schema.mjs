@@ -13,6 +13,7 @@ const requiredTables = [
   "DecisionPrinciple",
   "DecisionOutcome",
 ];
+const requiredDecisionColumns = ["councilPlan", "councilBrief"];
 const requiredEnums = {
   decision_outcome_verdict: ["positive", "mixed", "negative", "too_early"],
   decision_principle_relation: [
@@ -72,6 +73,21 @@ try {
     assert(tableNames.has(table), `Missing migrated table: ${table}`);
   }
 
+  const decisionColumns = await sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'Decision'
+  `;
+  const decisionColumnNames = new Set(
+    decisionColumns.map((row) => row.column_name)
+  );
+  for (const column of requiredDecisionColumns) {
+    assert(
+      decisionColumnNames.has(column),
+      `Missing Decision persistence column: ${column}`
+    );
+  }
+
   const enumRows = await sql`
     SELECT t.typname AS name, e.enumlabel AS value, e.enumsortorder AS position
     FROM pg_type t
@@ -104,11 +120,43 @@ try {
   `;
   cleanupUserId = owner.id;
 
+  const councilPlan = {
+    lenses: [{ id: "trust", label: "Trust & integrity" }],
+    members: [{ id: "dalio", name: "Ray Dalio" }],
+    mode: "auto",
+  };
+  const councilBrief = {
+    crux: [{ citations: ["R1"], layer: "interpretation", text: "Test trust." }],
+    situation: { citations: [], layer: "application", text: "A decision." },
+  };
   const [decision] = await sql`
-    INSERT INTO "Decision" ("userId", "title", "question", "status")
-    VALUES (${owner.id}, 'Foundation decision', 'Does the domain schema work?', 'exploring')
-    RETURNING "id"
+    INSERT INTO "Decision" (
+      "userId",
+      "title",
+      "question",
+      "status",
+      "councilPlan",
+      "councilBrief"
+    )
+    VALUES (
+      ${owner.id},
+      'Foundation decision',
+      'Does the domain schema work?',
+      'exploring',
+      ${sql.json(councilPlan)},
+      ${sql.json(councilBrief)}
+    )
+    RETURNING "id", "councilPlan", "councilBrief"
   `;
+  assert(
+    decision.councilPlan?.mode === "auto",
+    "Decision councilPlan JSON did not round-trip"
+  );
+  assert(
+    decision.councilBrief?.crux?.[0]?.citations?.[0] === "R1",
+    "Decision councilBrief JSON did not round-trip"
+  );
+
   const [judgment] = await sql`
     INSERT INTO "Judgment" ("decisionId", "userId", "summary", "confidence")
     VALUES (${decision.id}, ${owner.id}, 'The schema should enforce ownership and lifecycle.', 'high')
