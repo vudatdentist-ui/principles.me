@@ -5,6 +5,9 @@ config({ path: process.env.ENV_FILE || ".env.local" });
 
 const port = Number(process.env.PORT || 3000);
 const baseURL = `http://127.0.0.1:${port}`;
+const webServerCommand = process.env.CI
+  ? "pnpm build && pnpm start"
+  : "pnpm dev";
 
 export default defineConfig({
   expect: { timeout: 15_000 },
@@ -18,7 +21,7 @@ export default defineConfig({
     },
   ],
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "html",
-  retries: process.env.CI ? 1 : 0,
+  retries: 0,
   testDir: "./tests",
   timeout: 60_000,
   use: {
@@ -27,9 +30,9 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm dev",
+    command: webServerCommand,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
     url: baseURL,
   },
   workers: 1,
