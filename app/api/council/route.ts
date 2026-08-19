@@ -3,6 +3,8 @@ import { briefToText } from "@/lib/council/grounding";
 import { buildCouncilPlan } from "@/lib/council/lenses";
 import { retrieveCouncilEvidence } from "@/lib/council/retrieval";
 import { synthesizeCouncilBrief } from "@/lib/council/synthesize";
+import { getPersonalContext } from "@/lib/db/personal-brain-queries";
+import { getWorkspaceUser } from "@/lib/workspace-user";
 
 export const maxDuration = 60;
 
@@ -32,6 +34,24 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(line(event)));
       try {
         write({
+          message: "Đang retrieve personal principles và similar decisions…",
+          stage: "PERSONAL_MEMORY",
+          type: "status",
+        });
+        const workspaceUser = await getWorkspaceUser();
+        const personalContext = await getPersonalContext({
+          context,
+          question,
+          userId: workspaceUser.id,
+        });
+        write({
+          contradictionCount: personalContext.contradictions.length,
+          personalPrincipleCount: personalContext.principles.length,
+          similarDecisionCount: personalContext.similarDecisions.length,
+          type: "personal_context",
+        });
+
+        write({
           message: "Đang phân tích decision thành các reasoning lenses…",
           stage: "CLASSIFYING",
           type: "status",
@@ -40,7 +60,7 @@ export async function POST(request: Request) {
         write({ plan, type: "plan" });
 
         write({
-          message: `Đang retrieval evidence theo ${plan.lenses.length} lenses và ${plan.members.length} Council members…`,
+          message: `Đang retrieval external evidence theo ${plan.lenses.length} lenses và ${plan.members.length} Council members…`,
           stage: "RETRIEVING",
           type: "status",
         });
@@ -65,13 +85,13 @@ export async function POST(request: Request) {
                 : "RAGFlow không trả về chunk phù hợp cho các decision lenses.";
           write({
             message:
-              "Không có evidence đủ liên quan; Council sẽ không synthesis một recommendation giả.",
+              "Không có external evidence đủ liên quan; personal memory không được dùng để giả thành sourced recommendation.",
             stage: "NO_EVIDENCE",
             type: "status",
           });
           write({
             answer:
-              "Chưa có evidence đủ liên quan từ RAGFlow để tạo một Council brief có căn cứ.",
+              "Chưa có external evidence đủ liên quan từ RAGFlow để tạo một Council brief có căn cứ.",
             brief: null,
             caveats: [caveat],
             citations: [],
@@ -85,12 +105,13 @@ export async function POST(request: Request) {
 
         write({
           message:
-            "Evidence đã khóa. DeepSeek đang tách evidence, interpretation và application…",
+            "External evidence đã khóa. DeepSeek đang reasoning với provenance tách riêng khỏi personal memory…",
           stage: "SYNTHESIZING",
           type: "status",
         });
         const result = await synthesizeCouncilBrief({
           context,
+          personalContext,
           plan,
           question,
           references: retrieval.references,
