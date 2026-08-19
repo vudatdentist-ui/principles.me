@@ -45,7 +45,10 @@ test.describe("Principles foundation smoke", () => {
       page.getByText(/Chưa có evidence đủ liên quan từ RAGFlow/)
     ).toBeVisible();
 
-    await page.getByRole("button", { name: /Sources/ }).first().click();
+    await page
+      .getByRole("button", { name: /Sources/ })
+      .first()
+      .click();
     await expect(
       page.getByRole("heading", { name: "Sources for this question." })
     ).toBeVisible();
