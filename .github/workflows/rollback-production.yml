@@ -1,0 +1,93 @@
+name: Rollback Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: Previously deployed Git SHA to restore
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+
+jobs:
+  rollback:
+    if: vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    environment: production
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_sha }}
+      - name: Validate rollback target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ inputs.target_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker manifest inspect "$IMAGE_REPOSITORY:$TARGET_SHA" >/dev/null
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+      - name: Copy release assets
+        env:
+          DEPLOY_PATH: ${{ vars.PRODUCTION_DEPLOY_PATH }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_PATH'"
+          scp docker-compose.release.yml ops/deploy-release.sh "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
+      - name: Authenticate VPS to GHCR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          printf '%s' "$GH_TOKEN" | ssh "$SSH_USER@$SSH_HOST" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+      - name: Roll back exact immutable image
+        env:
+          DEPLOY_PATH: ${{ vars.PRODUCTION_DEPLOY_PATH }}
+          ENV_FILE: ${{ vars.PRODUCTION_ENV_FILE }}
+          PRODUCTION_HOST: ${{ vars.PRODUCTION_HOST }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          TARGET_SHA: ${{ inputs.target_sha }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" \
+            "cd '$DEPLOY_PATH' && chmod +x ops/deploy-release.sh 2>/dev/null || chmod +x deploy-release.sh; \
+            COMPOSE_FILE=docker-compose.release.yml \
+            COMPOSE_PROJECT=principles-production \
+            PRINCIPLES_IMAGE='$IMAGE_REPOSITORY:$TARGET_SHA' \
+            PRINCIPLES_IMAGE_TAG='$TARGET_SHA' \
+            PRINCIPLES_ENV_FILE='$ENV_FILE' \
+            PRINCIPLES_HOST='$PRODUCTION_HOST' \
+            TRAEFIK_ROUTER=principles-production \
+            ./deploy-release.sh"
+      - name: Install dependencies for production smoke
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install chromium
+      - name: Production smoke after rollback
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: https://${{ vars.PRODUCTION_HOST }}
+          SMOKE_USER_EMAIL: ${{ secrets.PRODUCTION_SMOKE_EMAIL }}
+          SMOKE_USER_PASSWORD: ${{ secrets.PRODUCTION_SMOKE_PASSWORD }}
+          SMOKE_COUNCIL_QUESTION: ${{ vars.PRODUCTION_SMOKE_COUNCIL_QUESTION }}
+        run: pnpm exec playwright test tests/e2e/release-smoke.test.ts
