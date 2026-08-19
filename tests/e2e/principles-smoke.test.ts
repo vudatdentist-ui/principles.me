@@ -206,9 +206,13 @@ test.describe("Decision workspace", () => {
 
     await page.goto("/principles");
     await expect(
-      page.getByText(
-        "Do not normalize repeated avoidance of hard conversations."
-      )
+      page
+        .getByTestId("principle-card")
+        .locator("strong")
+        .filter({
+          hasText: "Do not normalize repeated avoidance of hard conversations.",
+        })
+        .first()
     ).toBeVisible();
   });
 });
