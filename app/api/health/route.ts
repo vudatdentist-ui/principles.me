@@ -30,7 +30,8 @@ export async function GET() {
     process.env.GIT_SHA?.trim() ||
     "development";
   const releaseEnvironment =
-    ["staging", "production"].includes(environment) || SHA_PATTERN.test(version);
+    ["staging", "production"].includes(environment) ||
+    SHA_PATTERN.test(version);
   const authRequired = internalAuthRequired();
   let auth = !releaseEnvironment;
 
