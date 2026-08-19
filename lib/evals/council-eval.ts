@@ -326,9 +326,7 @@ function evaluateAdversarial(evalCase: CouncilEvalCase) {
 export function evaluateFixtureCase(
   evalCase: CouncilEvalCase
 ): CouncilEvalCaseResult {
-  const metrics: Partial<CouncilEvalScores> = {
-    lensDiversity: planScore(evalCase),
-  };
+  const metrics: Partial<CouncilEvalScores> = {};
 
   if (evalCase.category === "source_fidelity") {
     Object.assign(metrics, evaluateSourceFidelity(evalCase));
@@ -338,6 +336,8 @@ export function evaluateFixtureCase(
     Object.assign(metrics, evaluateAttribution(evalCase));
   } else if (evalCase.category === "insufficient_evidence") {
     Object.assign(metrics, evaluateRefusal(evalCase));
+  } else if (evalCase.category === "lens_diversity") {
+    metrics.lensDiversity = planScore(evalCase);
   } else if (evalCase.category === "conflict_detection") {
     Object.assign(metrics, evaluateConflict(evalCase));
   } else if (evalCase.category === "application") {
