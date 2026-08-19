@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { checkDatabaseReady } from "@/lib/db/release-queries";
-import { assertInternalAuthConfigured } from "@/lib/internal-auth";
+import {
+  assertInternalAuthConfigured,
+  internalAuthRequired,
+} from "@/lib/internal-auth";
 import { logAppError } from "@/lib/observability/app-error";
+
+const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 
 export async function GET() {
   let database = false;
-  let auth = false;
 
   try {
     await checkDatabaseReady();
@@ -18,9 +22,21 @@ export async function GET() {
     });
   }
 
+  const environment =
+    process.env.APP_ENV?.trim().toLowerCase() || "development";
+  const version =
+    process.env.APP_VERSION?.trim() ||
+    process.env.SOURCE_COMMIT?.trim() ||
+    process.env.GIT_SHA?.trim() ||
+    "development";
+  const releaseEnvironment =
+    ["staging", "production"].includes(environment) || SHA_PATTERN.test(version);
+  const authRequired = internalAuthRequired();
+  let auth = !releaseEnvironment;
+
   try {
     assertInternalAuthConfigured();
-    auth = true;
+    auth = !releaseEnvironment || authRequired;
   } catch {
     logAppError({
       code: "AUTH_CONFIG_INVALID",
@@ -35,21 +51,17 @@ export async function GET() {
   );
   const deepseekConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
   const ready = database && auth && ragflowConfigured && deepseekConfigured;
-  const version =
-    process.env.APP_VERSION?.trim() ||
-    process.env.SOURCE_COMMIT?.trim() ||
-    process.env.GIT_SHA?.trim() ||
-    "development";
 
   return NextResponse.json(
     {
       checks: {
         auth,
+        authRequired,
         database,
         deepseekConfigured,
         ragflowConfigured,
       },
-      environment: process.env.APP_ENV ?? "development",
+      environment,
       status: ready ? "ok" : "degraded",
       version,
     },
