@@ -1,5 +1,12 @@
 import { z } from "zod";
 import {
+  type EvidenceAudit,
+  type EvidenceReference,
+  formatEvidence,
+  parseEvidenceAudit,
+  sanitizeAnswer,
+} from "@/lib/evidence-contract";
+import {
   isFreshnessSensitive,
   modeDescription,
   modeLabel,
@@ -21,19 +28,7 @@ type ChatMessage = {
   role: "system" | "user";
 };
 
-type RetrievedReference = {
-  chunkId: string | null;
-  datasetId: string | null;
-  documentId: string | null;
-  key: string;
-  positions: unknown[];
-  publishedAt?: string | null;
-  score: number | null;
-  sourceType: "ragflow" | "web";
-  text: string;
-  title: string;
-  url?: string | null;
-};
+type RetrievedReference = EvidenceReference;
 
 type ModuleResult = {
   contextId: string;
@@ -91,10 +86,12 @@ function normalizeChunk(
   if (!text) {
     return null;
   }
+  const documentId =
+    String(chunk.document_id ?? chunk.doc_id ?? "").trim() || null;
   return {
     chunkId: String(chunk.id ?? chunk.chunk_id ?? "").trim() || null,
     datasetId: String(chunk.dataset_id ?? "").trim() || null,
-    documentId: String(chunk.document_id ?? chunk.doc_id ?? "").trim() || null,
+    documentId,
     key: `R${index + 1}`,
     positions: Array.isArray(chunk.positions)
       ? chunk.positions.slice(0, 20)
@@ -106,7 +103,9 @@ function normalizeChunk(
       chunk.document_name ??
         chunk.docnm_kwd ??
         chunk.document ??
-        "RAGFlow document"
+        (documentId
+          ? `Document ${documentId.slice(0, 12)}`
+          : "Untitled RAGFlow chunk")
     ).trim(),
   };
 }
@@ -159,7 +158,9 @@ async function retrieve(question: string): Promise<{
     ) {
       return {
         configured: true,
-        reason: `HTTP_${response.status}`,
+        reason: String(
+          payload.message ?? payload.msg ?? `HTTP_${response.status}`
+        ).slice(0, 240),
         references: [],
       };
     }
@@ -273,20 +274,6 @@ async function researchWeb(question: string): Promise<{
   }
 }
 
-function formatEvidence(references: RetrievedReference[]): string {
-  if (!references.length) {
-    return "NO EVIDENCE WAS RETRIEVED.";
-  }
-  return references
-    .slice(0, 10)
-    .map((reference) => {
-      const source = reference.sourceType === "web" ? "WEB" : "RAGFLOW";
-      const url = reference.url ? `\nURL: ${reference.url}` : "";
-      return `[${reference.key}] ${source} · ${reference.title}${url}\n${reference.text.slice(0, 2800)}`;
-    })
-    .join("\n\n");
-}
-
 async function deepSeek(messages: ChatMessage[], temperature = 0.25) {
   const key = process.env.DEEPSEEK_API_KEY?.trim();
   if (!key) {
@@ -398,14 +385,18 @@ function synthesisMessages(
   userContext: string,
   references: RetrievedReference[],
   results: ModuleResult[],
-  critic = ""
+  critic = "",
+  audit?: EvidenceAudit
 ): ChatMessage[] {
   const evidence = formatEvidence(references);
   const criticBlock = critic ? `\n\nCRITIC REVIEW:\n${critic}` : "";
+  const auditBlock = audit
+    ? `\n\nEVIDENCE AUDIT (binding quality gate):\n${JSON.stringify(audit, null, 2)}`
+    : "\n\nEVIDENCE AUDIT: not run yet. Treat all unsupported factual claims as unknown.";
   return [
     {
       content:
-        "You are the Synthesis Judge inside Principles Thinker. Combine isolated module outputs into one useful answer. Evidence from RAGFlow or explicitly enabled web research is the only source authority for factual claims. Every source-backed claim must cite its exact key like [R1] or [W1]. Do not invent citations. Clearly label model inference, hypotheses, assumptions, and user-specific recommendations. If evidence is absent or insufficient, say so before offering any uncited reasoning. Do not mention agents as personalities.",
+        "You are the Synthesis Judge inside Principles Thinker. Combine isolated module outputs into one useful answer, but treat evidence quality as a hard constraint. Evidence from RAGFlow or explicitly enabled web research is the only source authority for factual claims. Every source-backed claim must cite the exact key like [R1] or [W1], and the cited excerpt must actually support that claim. Never use a source merely because it is topically adjacent. Never invent citations, page numbers, quotes, or bibliographic details. Clearly label model inference, hypotheses, assumptions, and user-specific recommendations. If evidence is absent, tangential, or contradicted, say that plainly before offering uncited reasoning. Do not mention agents as personalities.",
       role: "system",
     },
     {
@@ -416,54 +407,53 @@ function synthesisMessages(
           : "PRINCIPLES ME CONTEXT: none supplied",
         `RAW EVIDENCE:\n${evidence}`,
         `ISOLATED MODULE OUTPUTS:\n${modulePacket(results)}`,
+        auditBlock,
         criticBlock,
-        "Prefer a short answer with: conclusion, evidence-backed observations, reasoning/hypotheses, and next question or action.",
+        "Use this structure when useful: conclusion; evidence-backed observations with citations; reasoning or hypotheses explicitly marked as such; unknowns or conflicts; one practical next step. Do not turn a generic textbook explanation into an evidence-backed observation.",
       ].join("\n\n"),
       role: "user",
     },
   ];
 }
 
-function sanitizeAnswer(
-  answer: string,
-  references: RetrievedReference[]
-): { answer: string; citations: string[]; grounded: boolean } {
-  const allowed = new Set(references.map((reference) => reference.key));
-  const citations = [
-    ...new Set(
-      [...answer.matchAll(/\[((?:R|W)\d+)\]/g)]
-        .map((match) => match[1])
-        .filter((key) => allowed.has(key))
-    ),
-  ];
-  const withoutUnknown = answer
-    .replace(/\[((?:R|W)\d+)\]/g, (full, key: string) =>
-      allowed.has(key) ? full : ""
-    )
-    .replace(/[ \t]{2,}/g, " ")
-    .trim();
-  if (!references.length) {
-    return {
-      answer:
-        withoutUnknown || "Chưa có evidence từ RAGFlow hoặc web research.",
-      citations: [],
-      grounded: false,
-    };
+async function auditDraft(
+  question: string,
+  references: RetrievedReference[],
+  results: ModuleResult[],
+  draft: string
+): Promise<EvidenceAudit> {
+  const allowedKeys = new Set(references.map((reference) => reference.key));
+  try {
+    const raw = await deepSeek(
+      [
+        {
+          content:
+            "You are the Evidence Judge. Audit a draft claim by claim against the supplied evidence packet. The packet is the only source authority. Do not use general model knowledge. A claim is supported only when the cited excerpt entails it; topical similarity is not enough. Mark absent, overgeneralized, or extrapolated facts unsupported. Mark a claim contradicted when the packet says the opposite. Return JSON only with this exact shape: { verdict: grounded|mixed|ungrounded, claims: [{ claim, status: supported|partially_supported|unsupported|contradicted, citations: [exact allowed keys], reason }], missingEvidence: [string], corrections: [string] }. Do not invent citation keys.",
+          role: "system",
+        },
+        {
+          content: [
+            `QUESTION:\n${question}`,
+            `EVIDENCE PACKET:\n${formatEvidence(references)}`,
+            `DRAFT TO AUDIT:\n${draft}`,
+            `INDEPENDENT ANALYSES (not source authority):\n${modulePacket(results)}`,
+            `ALLOWED CITATION KEYS: ${[...allowedKeys].join(", ") || "none"}`,
+          ].join("\n\n"),
+          role: "user",
+        },
+      ],
+      0.05
+    );
+    return parseEvidenceAudit(raw, allowedKeys);
+  } catch {
+    return parseEvidenceAudit("", allowedKeys);
   }
-  if (!citations.length) {
-    return {
-      answer:
-        "Chưa có kết luận có căn cứ: bản tổng hợp không gắn được citation hợp lệ vào evidence đã thu thập.",
-      citations: [],
-      grounded: false,
-    };
-  }
-  return { answer: withoutUnknown, citations, grounded: true };
 }
 
 async function streamSynthesis(
   messages: ChatMessage[],
   references: RetrievedReference[],
+  audit: EvidenceAudit,
   write: (event: Record<string, unknown>) => void
 ) {
   const key = process.env.DEEPSEEK_API_KEY?.trim();
@@ -528,7 +518,7 @@ async function streamSynthesis(
       }
     }
   }
-  return sanitizeAnswer(output, references);
+  return sanitizeAnswer(output, references, audit);
 }
 
 export async function POST(request: Request) {
@@ -651,61 +641,102 @@ export async function POST(request: Request) {
           type: "status",
         });
 
-        let critic = "";
-        if (mode === "max") {
-          const draft = await deepSeek(
-            synthesisMessages(
-              question,
-              userContext,
-              references,
-              successfulResults
-            ),
-            0.2
-          );
-          write({
-            message:
-              "Max mode: Critic đang kiểm tra mâu thuẫn và claim chưa có nguồn…",
-            stage: "CRITIQUE",
-            type: "status",
-          });
-          critic = await deepSeek(
-            [
-              {
-                content:
-                  "You are an adversarial critic. Check the draft against the raw evidence and isolated module outputs. List unsupported factual claims, citation mismatches, contradictions, and missing uncertainty. Do not rewrite the answer.",
-                role: "system",
-              },
-              {
-                content: [
-                  `QUESTION:\n${question}`,
-                  `RAW EVIDENCE:\n${formatEvidence(references)}`,
-                  `DRAFT:\n${draft}`,
-                  `MODULE OUTPUTS:\n${modulePacket(successfulResults)}`,
-                ].join("\n\n"),
-                role: "user",
-              },
-            ],
-            0.1
-          );
-        }
+        const draft = await deepSeek(
+          synthesisMessages(
+            question,
+            userContext,
+            references,
+            successfulResults
+          ),
+          0.2
+        );
+        write({
+          message:
+            mode === "max"
+              ? "Max mode: Evidence Judge đang kiểm tra từng claim và mâu thuẫn…"
+              : "Evidence Judge đang kiểm tra từng claim trước khi trả lời…",
+          stage: "AUDIT",
+          type: "status",
+        });
+        const audit = await auditDraft(
+          question,
+          references,
+          successfulResults,
+          draft
+        );
+        write({
+          claims: audit.claims.slice(0, 20),
+          corrections: audit.corrections.slice(0, 8),
+          missingEvidence: audit.missingEvidence.slice(0, 8),
+          type: "audit",
+          verdict: audit.verdict,
+        });
+        const critic =
+          mode === "max"
+            ? [
+                "Max mode quality gate:",
+                `Verdict: ${audit.verdict}`,
+                audit.corrections.length
+                  ? `Corrections: ${audit.corrections.join("; ")}`
+                  : "No correction was returned.",
+                audit.missingEvidence.length
+                  ? `Missing evidence: ${audit.missingEvidence.join("; ")}`
+                  : "No missing-evidence note was returned.",
+              ].join("\n")
+            : "";
         write({
           message: "DeepSeek đang stream câu trả lời cuối của Thinker Machine…",
           stage: "STREAMING",
           type: "status",
         });
-        const result = await streamSynthesis(
+        const streamedResult = await streamSynthesis(
           synthesisMessages(
             question,
             userContext,
             references,
             successfulResults,
-            critic
+            critic,
+            audit
           ),
           references,
+          audit,
           write
         );
         write({
+          message: "Evidence Judge đang xác nhận lại câu trả lời đã stream…",
+          stage: "FINAL_AUDIT",
+          type: "status",
+        });
+        const finalAudit = await auditDraft(
+          question,
+          references,
+          successfulResults,
+          streamedResult.answer
+        );
+        write({
+          claims: finalAudit.claims.slice(0, 20),
+          corrections: finalAudit.corrections.slice(0, 8),
+          final: true,
+          missingEvidence: finalAudit.missingEvidence.slice(0, 8),
+          type: "audit",
+          verdict: finalAudit.verdict,
+        });
+        const result = sanitizeAnswer(
+          streamedResult.answer,
+          references,
+          finalAudit
+        );
+        write({
           answer: result.answer,
+          audit: {
+            claimCount: finalAudit.claims.length,
+            unsupportedCount: finalAudit.claims.filter((claim) =>
+              ["partially_supported", "unsupported", "contradicted"].includes(
+                claim.status
+              )
+            ).length,
+            verdict: finalAudit.verdict,
+          },
           citations: result.citations,
           grounded: result.grounded,
           mode,

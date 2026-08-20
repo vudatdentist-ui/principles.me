@@ -634,6 +634,8 @@ function ResponsePage({
   onSources: () => void;
 }) {
   const answer = [...events].reverse().find((event) => event.type === "answer");
+  const audit = [...events].reverse().find((event) => event.type === "audit");
+  const auditVerdict = text(audit?.verdict, "unknown");
   const machine = [...events]
     .reverse()
     .find((event) => event.type === "machine");
@@ -668,7 +670,11 @@ function ResponsePage({
             {busy
               ? statuses.at(-1) || "Council is thinking…"
               : answer
-                ? "Synthesis complete · citations validated"
+                ? answer.grounded
+                  ? "Synthesis complete · evidence validated"
+                  : auditVerdict === "mixed"
+                    ? "Synthesis complete · evidence mixed"
+                    : "Synthesis complete · evidence not verified"
                 : "Waiting for the council stream"}
           </p>
         </div>
@@ -697,8 +703,9 @@ function ResponsePage({
             {error ? <div className="error-banner">{error}</div> : null}
             {answer && !answer.grounded ? (
               <div className="caveat-banner">
-                Không có evidence/citation hợp lệ cho câu trả lời này. Hãy nạp
-                tài liệu vào RAGFlow rồi hỏi lại.
+                {references.length
+                  ? "Evidence Judge chưa xác nhận đầy đủ các claim. Những phần suy luận phải được xem như suy luận, không phải dữ kiện từ nguồn."
+                  : "Không có evidence từ RAGFlow hoặc web research cho câu hỏi này. Hãy nạp tài liệu hoặc bật web research rồi hỏi lại."}
               </div>
             ) : null}
           </div>
@@ -750,6 +757,9 @@ function ResponsePage({
             <div className="protocol-line">
               <span className="signal cyan" /> Contexts ·{" "}
               {String(machine?.moduleCount ?? 0)} isolated passes
+            </div>
+            <div className="protocol-line">
+              <span className="signal violet" /> Evidence Judge · {auditVerdict}
             </div>
           </div>
           <div className="glass-panel source-preview">
