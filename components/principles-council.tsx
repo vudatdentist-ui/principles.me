@@ -297,39 +297,6 @@ export function PrinciplesCouncil() {
           </div>
         </header>
 
-        <div
-          aria-label="Thinker Machine visual mode"
-          className="mode-dock glass-panel"
-        >
-          {(["brain", "graph", "constellation", "council"] as BrainMode[]).map(
-            (item) => (
-              <button
-                className={mode === item ? "active" : ""}
-                key={item}
-                onClick={() => {
-                  go(
-                    item === "brain"
-                      ? "home"
-                      : item === "graph"
-                        ? "brain"
-                        : item === "constellation"
-                          ? "thinkers"
-                          : "council"
-                  );
-                }}
-              >
-                {item === "brain"
-                  ? "Thinker Machine"
-                  : item === "graph"
-                    ? "Graph"
-                    : item === "constellation"
-                      ? "Knowledge Constellation"
-                      : "Council"}
-              </button>
-            )
-          )}
-        </div>
-
         {route === "home" ? <LandingPage onLogin={() => go("login")} /> : null}
         {route === "login" ? (
           <LoginPage onBack={() => go("home")} onEnter={() => go("council")} />
@@ -418,28 +385,14 @@ function LandingPage({ onLogin }: { onLogin: () => void }) {
   return (
     <div className="page home-page landing-page">
       <div className="hero-block">
-        <span className="eyebrow">A thinking operating system</span>
         <h1>
           Think with
           <br />
           <span className="gradient-text">the greats.</span>
         </h1>
-        <p>
-          A living workspace for turning trusted knowledge into better
-          questions, decisions and principles.
-        </p>
         <button className="primary-button landing-cta" onClick={onLogin}>
           Enter Principles <ArrowUpRight size={14} />
         </button>
-      </div>
-      <div className="home-rail">
-        <div className="glass-panel quote-panel">
-          <span className="eyebrow">Today’s signal</span>
-          <p>
-            “The quality of your thinking depends on the quality of the
-            questions you ask.”
-          </p>
-        </div>
       </div>
     </div>
   );

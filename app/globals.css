@@ -291,31 +291,6 @@ textarea:focus-visible {
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(18px) saturate(120%);
 }
-.mode-dock {
-  position: absolute;
-  bottom: 26px;
-  left: 59%;
-  z-index: 12;
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  transform: translateX(-50%);
-}
-.mode-dock button {
-  padding: 7px 10px;
-  font-size: 8px;
-  color: #8190a4;
-  white-space: nowrap;
-  background: transparent;
-  border: 0;
-  border-radius: 7px;
-}
-.mode-dock button:hover,
-.mode-dock button.active {
-  color: #fff;
-  background: rgba(49, 67, 104, 0.68);
-  box-shadow: inset 0 0 0 1px rgba(102, 133, 190, 0.4);
-}
 .page {
   position: absolute;
   inset: 0;
@@ -345,7 +320,7 @@ textarea:focus-visible {
   letter-spacing: 0.12em;
 }
 .hero-block h1 {
-  margin: 12px 0 0;
+  margin: 0;
   font-size: clamp(38px, 4.1vw, 58px);
   line-height: 0.98;
   letter-spacing: -0.06em;
@@ -363,15 +338,8 @@ textarea:focus-visible {
 }
 .landing-cta {
   padding: 10px 14px;
-  margin-top: 6px;
+  margin-top: 24px;
   font-size: 11px;
-}
-.hero-block p {
-  max-width: 420px;
-  margin: 18px 0;
-  font-size: 12px;
-  line-height: 1.65;
-  color: #9ba7b8;
 }
 .ask-bar {
   display: flex;
@@ -428,29 +396,8 @@ textarea:focus-visible {
   color: #fff;
   border-color: var(--stroke-strong);
 }
-.home-rail {
-  position: absolute;
-  top: 86px;
-  right: 20px;
-  display: grid;
-  gap: 13px;
-  width: 235px;
-}
-.quote-panel,
 .topics-panel {
   padding: 15px;
-}
-.quote-panel p {
-  margin: 13px 0 0;
-  font-size: 10.5px;
-  line-height: 1.55;
-  color: #cdd5e0;
-}
-.quote-panel small {
-  display: block;
-  margin-top: 10px;
-  font-size: 8px;
-  color: #747f90;
 }
 .topics-panel button {
   display: flex;
@@ -1286,12 +1233,6 @@ textarea:focus-visible {
     justify-content: center;
     padding-inline: 0;
   }
-  .home-rail {
-    display: none;
-  }
-  .thinker-dock {
-    right: 20px;
-  }
   .hero-block {
     width: 450px;
   }
@@ -1369,29 +1310,11 @@ textarea:focus-visible {
   .hero-block h1 {
     font-size: 42px;
   }
-  .thinker-dock {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    margin-top: 360px;
-  }
   .thinker-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .thinker-card:nth-child(n + 4) {
     display: none;
-  }
-  .mode-dock {
-    right: 12px;
-    bottom: 74px;
-    left: 12px;
-    justify-content: center;
-    overflow-x: auto;
-    transform: none;
-  }
-  .mode-dock button {
-    padding-inline: 8px;
   }
   .page-heading,
   .council-heading {
