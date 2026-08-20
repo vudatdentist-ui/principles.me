@@ -25,7 +25,7 @@
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
     "test": "pnpm exec playwright test",
-    "test:e2e": "pnpm exec playwright test tests/e2e/principles-smoke.test.ts tests/e2e/judgment-loop.test.ts tests/e2e/personal-brain.test.ts tests/e2e/learning-loop.test.ts tests/e2e/goals-loop.test.ts tests/e2e/journal-reflection.test.ts",
+    "test:e2e": "pnpm exec playwright test tests/e2e/personal-os-smoke.test.ts tests/e2e/goals-loop.test.ts tests/e2e/journal-reflection.test.ts",
     "verify": "pnpm check && pnpm typecheck && pnpm council:verify && pnpm db:check && pnpm build"
   },
   "dependencies": {

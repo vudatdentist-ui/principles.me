@@ -127,6 +127,60 @@ const candidate = {
     "Do not dissolve a high-value partnership before testing whether the trust problem can be corrected through explicit behavioral commitments.",
 };
 
+const cortexResult = {
+  result: {
+    changeConditions: [
+      {
+        evidenceKeys: ["R3"],
+        layer: "application",
+        text: "Revisit the recommendation if the reversible test changes the downside or the evidence base.",
+      },
+    ],
+    confidence: {
+      level: "medium",
+      rationale: {
+        evidenceKeys: ["R1", "R3"],
+        layer: "application",
+        text: "The evidence supports a bounded test, but it cannot establish the outcome in advance.",
+      },
+    },
+    conflicts: [
+      {
+        evidenceKeys: ["R1", "R2"],
+        layer: "interpretation",
+        text: "The same behavior may reflect relationship dynamics or incentives, so do not treat one explanation as settled.",
+      },
+    ],
+    crux: [
+      {
+        evidenceKeys: ["R1", "R3"],
+        layer: "interpretation",
+        text: "The key question is whether explicit commitments produce observable change during a time-bounded test.",
+      },
+    ],
+    framing: {
+      evidenceKeys: ["R1"],
+      layer: "application",
+      text: "Treat this as a reversible test of trust and behavior, not as a permanent verdict about the person.",
+    },
+    recommendation: {
+      actions: [
+        {
+          evidenceKeys: ["R1", "R3"],
+          layer: "application",
+          text: "Define the behavior, owner, review date, and consequence before deciding whether to continue.",
+        },
+      ],
+      summary: {
+        evidenceKeys: ["R1", "R3"],
+        layer: "application",
+        text: "Run a reversible conflict-repair protocol before making an irreversible partnership decision.",
+      },
+    },
+  },
+  status: "complete",
+};
+
 const server = http.createServer(async (request, response) => {
   if (request.method === "GET" && request.url === "/health") {
     return json(response, 200, { ok: true });
@@ -147,6 +201,11 @@ const server = http.createServer(async (request, response) => {
   if (request.method === "POST" && request.url === "/chat/completions") {
     const body = await readJson(request);
     const system = String(body?.messages?.[0]?.content || "");
+    if (system.includes("You are Cortex, the shared reasoning engine")) {
+      return json(response, 200, {
+        choices: [{ message: { content: JSON.stringify(cortexResult) } }],
+      });
+    }
     const content = system.includes("candidate principle")
       ? JSON.stringify(candidate)
       : JSON.stringify(brief);
