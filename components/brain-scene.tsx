@@ -108,7 +108,7 @@ void main(){
  p.z += uDepth;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
  gl_Position=projectionMatrix*mv;
- vStrength=.025+.018*pulse+.14*influence;
+ vStrength=.05+.025*pulse+.18*influence;
 }`;
 
 const LINK_FRAGMENT =
@@ -370,14 +370,15 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     new THREE.BufferAttribute(lineCouncil, 3)
   );
   const lineMaterial = new THREE.ShaderMaterial({
-    blending: THREE.NormalBlending,
+    blending: THREE.AdditiveBlending,
+    depthTest: false,
     depthWrite: false,
     fragmentShader: LINK_FRAGMENT,
     transparent: true,
     uniforms: {
       ...uniformSet(),
       uDepth: { value: 0.04 },
-      uOpacity: { value: 0.32 },
+      uOpacity: { value: 0.42 },
     },
     vertexShader: LINK_VERTEX,
   });
