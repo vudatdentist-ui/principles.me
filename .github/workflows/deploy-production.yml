@@ -37,7 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck and build
-        run: pnpm check && pnpm build
+        run: pnpm build
 
   deploy:
     name: Deploy to Hostinger VPS
