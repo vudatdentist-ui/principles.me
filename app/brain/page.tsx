@@ -6,7 +6,7 @@ import { getWorkspaceUser } from "@/lib/workspace-user";
 import styles from "./personal-brain.module.css";
 
 async function PersonalBrainContent() {
-  const workspaceUser = await getWorkspaceUser();
+  const workspaceUser = await getWorkspaceUser({ persistCookie: false });
   const summary = await getPersonalBrainSummary(workspaceUser.id);
 
   return (

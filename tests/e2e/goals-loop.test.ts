@@ -1,5 +1,22 @@
 import { expect, test } from "@playwright/test";
 
+async function workspaceHeaders(page: import("@playwright/test").Page) {
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).some(
+        (cookie) => cookie.name === "principles-workspace"
+      )
+    )
+    .toBe(true);
+  const workspaceCookie = (await page.context().cookies()).find(
+    (item) => item.name === "principles-workspace"
+  );
+  if (!workspaceCookie) {
+    throw new Error("Workspace cookie was not created.");
+  }
+  return { cookie: `${workspaceCookie.name}=${workspaceCookie.value}` };
+}
+
 test.describe("Goals execution loop", () => {
   test("persists goal, problem, diagnosis, principle and action", async ({
     page,
@@ -7,9 +24,11 @@ test.describe("Goals execution loop", () => {
     await page.goto("/goals");
     await expect(page.getByLabel("New goal")).toBeVisible();
     const { request } = page.context();
+    const headers = await workspaceHeaders(page);
 
     const goalResponse = await request.post("/api/goals", {
       data: { title: "Build a profitable Principles" },
+      headers,
     });
     expect(goalResponse.ok()).toBeTruthy();
     const { goal } = await goalResponse.json();
@@ -18,6 +37,7 @@ test.describe("Goals execution loop", () => {
       `/api/goals/${goal.id}/problems`,
       {
         data: { title: "Users don't return after first session" },
+        headers,
       }
     );
     expect(problemResponse.ok()).toBeTruthy();
@@ -32,6 +52,7 @@ test.describe("Goals execution loop", () => {
             rootCause:
               "The first session does not create a reusable operating rule.",
           },
+          headers,
         })
       ).ok()
     ).toBeTruthy();
@@ -44,12 +65,14 @@ test.describe("Goals execution loop", () => {
             principleCandidate:
               "If a session reveals a repeated obstacle, end with one reusable principle.",
           },
+          headers,
         })
       ).ok()
     ).toBeTruthy();
 
     const adopted = await request.patch(commandUrl, {
       data: { command: "adopt_candidate" },
+      headers,
     });
     expect(adopted.ok()).toBeTruthy();
 
@@ -60,11 +83,14 @@ test.describe("Goals execution loop", () => {
             command: "add_action",
             title: "Test the principle capture flow",
           },
+          headers,
         })
       ).ok()
     ).toBeTruthy();
 
-    const detailResponse = await request.get(`/api/goals/${goal.id}`);
+    const detailResponse = await request.get(`/api/goals/${goal.id}`, {
+      headers,
+    });
     expect(detailResponse.ok()).toBeTruthy();
     const detail = await detailResponse.json();
     expect(detail.goal.title).toBe("Build a profitable Principles");
@@ -97,25 +123,33 @@ test.describe("Goals execution loop", () => {
 
       const { request: ownerRequest } = ownerContext;
       const { request: otherRequest } = otherContext;
+      const ownerHeaders = await workspaceHeaders(ownerPage);
+      const otherHeaders = await workspaceHeaders(otherPage);
       const ownerResponse = await ownerRequest.post("/api/goals", {
         data: { title: "Owner only goal" },
+        headers: ownerHeaders,
       });
       expect(ownerResponse.ok()).toBeTruthy();
       const { goal } = await ownerResponse.json();
 
       const problemResponse = await ownerRequest.post(
         `/api/goals/${goal.id}/problems`,
-        { data: { title: "Private obstacle" } }
+        { data: { title: "Private obstacle" }, headers: ownerHeaders }
       );
       expect(problemResponse.ok()).toBeTruthy();
       const { problem } = await problemResponse.json();
 
-      const hiddenGoal = await otherRequest.get(`/api/goals/${goal.id}`);
+      const hiddenGoal = await otherRequest.get(`/api/goals/${goal.id}`, {
+        headers: otherHeaders,
+      });
       expect(hiddenGoal.status()).toBe(404);
 
       const crossUserMutation = await otherRequest.patch(
         `/api/goals/${goal.id}/problems/${problem.id}`,
-        { data: { command: "save_diagnosis", rootCause: "Cross-user write" } }
+        {
+          data: { command: "save_diagnosis", rootCause: "Cross-user write" },
+          headers: otherHeaders,
+        }
       );
       expect(crossUserMutation.status()).toBe(404);
     } finally {

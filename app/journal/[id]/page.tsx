@@ -10,7 +10,7 @@ type PageProps = { params: Promise<{ id: string }> };
 async function JournalEntryRoute({ params }: PageProps) {
   const [{ id }, workspaceUser] = await Promise.all([
     params,
-    getWorkspaceUser(),
+    getWorkspaceUser({ persistCookie: false }),
   ]);
   const detail = await getJournalEntryDetail({ id, userId: workspaceUser.id });
   if (!detail) {

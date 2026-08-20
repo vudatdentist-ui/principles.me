@@ -6,7 +6,7 @@ import { listJournalEntries } from "@/lib/journal/queries";
 import { getWorkspaceUser } from "@/lib/workspace-user";
 
 async function JournalRoute() {
-  const workspaceUser = await getWorkspaceUser();
+  const workspaceUser = await getWorkspaceUser({ persistCookie: false });
   const entries = await listJournalEntries(workspaceUser.id);
   return (
     <div className={styles.frame}>
