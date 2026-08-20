@@ -34,7 +34,6 @@ import {
   thinkerById,
 } from "@/lib/principles-graph";
 import {
-  modeDescription,
   modeLabel,
   THINKER_MACHINE_MODULES,
   type ThinkerMachineMode,
@@ -42,6 +41,7 @@ import {
 
 type Route =
   | "home"
+  | "login"
   | "brain"
   | "council"
   | "response"
@@ -63,6 +63,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   decisions: "Decisions",
   home: "Thinker Machine",
   library: "Library",
+  login: "Login",
   mybrain: "My Brain",
   principles: "Principles",
   profile: "Thinker Profile",
@@ -97,7 +98,6 @@ function activeMode(route: Route): BrainMode {
 
 export function PrinciplesCouncil() {
   const [route, setRoute] = useState<Route>("home");
-  const [question, setQuestion] = useState("");
   const [councilQuestion, setCouncilQuestion] = useState(QUESTIONS[0]);
   const [selectedThinkerId, setSelectedThinkerId] = useState("dalio");
   const [machineMode, setMachineMode] =
@@ -141,7 +141,7 @@ export function PrinciplesCouncil() {
     setBusy(true);
     setError("");
     setEvents([]);
-    setRoute("response");
+    setRoute("council");
     try {
       const response = await fetch("/api/council", {
         body: JSON.stringify({
@@ -330,20 +330,9 @@ export function PrinciplesCouncil() {
           )}
         </div>
 
-        {route === "home" ? (
-          <HomePage
-            onAsk={() => {
-              setCouncilQuestion(question.trim() || QUESTIONS[0]);
-              go("council");
-            }}
-            onQuick={(item) => {
-              setCouncilQuestion(item);
-              go("council");
-            }}
-            onThinker={chooseThinker}
-            question={question}
-            setQuestion={setQuestion}
-          />
+        {route === "home" ? <LandingPage onLogin={() => go("login")} /> : null}
+        {route === "login" ? (
+          <LoginPage onBack={() => go("home")} onEnter={() => go("council")} />
         ) : null}
         {route === "brain" || route === "principles" || route === "concepts" ? (
           <GraphPage onAsk={() => go("council")} route={route} />
@@ -351,30 +340,23 @@ export function PrinciplesCouncil() {
         {route === "council" ? (
           <CouncilPage
             allowWebResearch={allowWebResearch}
-            machineMode={machineMode}
-            onAsk={(value) => void askCouncil(value ?? councilQuestion)}
-            question={councilQuestion}
-            setAllowWebResearch={setAllowWebResearch}
-            setMachineMode={setMachineMode}
-            setQuestion={setCouncilQuestion}
-          />
-        ) : null}
-        {route === "response" ? (
-          <ResponsePage
             busy={busy}
             error={error}
             events={events}
             machineMode={machineMode}
-            onNew={() => go("council")}
+            onAsk={(value) => void askCouncil(value ?? councilQuestion)}
             onSources={() => go("sources")}
             question={councilQuestion}
             references={references}
+            setAllowWebResearch={setAllowWebResearch}
+            setMachineMode={setMachineMode}
+            setQuestion={setCouncilQuestion}
             tokens={tokens}
           />
         ) : null}
         {route === "sources" ? (
           <SourcesPage
-            onBack={() => go("response")}
+            onBack={() => go("council")}
             question={councilQuestion}
             references={references}
           />
@@ -432,21 +414,9 @@ function NavButton({
   );
 }
 
-function HomePage({
-  question,
-  setQuestion,
-  onAsk,
-  onQuick,
-  onThinker,
-}: {
-  question: string;
-  setQuestion: (value: string) => void;
-  onAsk: () => void;
-  onQuick: (value: string) => void;
-  onThinker: (id: string) => void;
-}) {
+function LandingPage({ onLogin }: { onLogin: () => void }) {
   return (
-    <div className="page home-page">
+    <div className="page home-page landing-page">
       <div className="hero-block">
         <span className="eyebrow">A thinking operating system</span>
         <h1>
@@ -455,33 +425,12 @@ function HomePage({
           <span className="gradient-text">the greats.</span>
         </h1>
         <p>
-          Bring a real question to the Thinker Machine. RAGFlow finds evidence,
-          isolated reasoning passes explore the problem, and DeepSeek makes the
-          synthesis. You decide what becomes part of your system.
+          A living workspace for turning trusted knowledge into better
+          questions, decisions and principles.
         </p>
-        <div className="ask-bar">
-          <input
-            aria-label="Ask your council"
-            onChange={(event) => setQuestion(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                onAsk();
-              }
-            }}
-            placeholder="Ask the Thinker Machine anything…"
-            value={question}
-          />
-          <button aria-label="Ask Council" onClick={onAsk}>
-            <Send size={17} />
-          </button>
-        </div>
-        <div className="quick-row">
-          {QUESTIONS.map((item) => (
-            <button key={item} onClick={() => onQuick(item)}>
-              {item}
-            </button>
-          ))}
-        </div>
+        <button className="primary-button landing-cta" onClick={onLogin}>
+          Enter Principles <ArrowUpRight size={14} />
+        </button>
       </div>
       <div className="home-rail">
         <div className="glass-panel quote-panel">
@@ -490,50 +439,31 @@ function HomePage({
             “The quality of your thinking depends on the quality of the
             questions you ask.”
           </p>
-          <small>— Council protocol · evidence first</small>
-        </div>
-        <div className="glass-panel topics-panel">
-          <span className="eyebrow">Explore the constellation</span>
-          {[
-            "Systems & incentives",
-            "Character & judgment",
-            "Power & institutions",
-          ].map((item, index) => (
-            <button key={item} onClick={() => onQuick(QUESTIONS[index])}>
-              <span className="topic-orb">{index + 1}</span>
-              {item}
-              <ChevronRight size={13} />
-            </button>
-          ))}
         </div>
       </div>
-      <div className="thinker-dock glass-panel">
-        <div className="section-line">
-          <span className="eyebrow">Knowledge clusters in the library</span>
-          <button onClick={() => onThinker("dalio")}>
-            View sources <ArrowUpRight size={12} />
-          </button>
-        </div>
-        <div className="thinker-row">
-          {THINKERS.map((thinker) => (
-            <button
-              className="thinker-card"
-              key={thinker.id}
-              onClick={() => onThinker(thinker.id)}
-            >
-              <span
-                className="thinker-sigil"
-                style={{ "--sigil": thinker.accent } as React.CSSProperties}
-              >
-                {thinker.name.slice(0, 1)}
-              </span>
-              <span>
-                <b>{thinker.name}</b>
-                <small>{thinker.tradition}</small>
-              </span>
-            </button>
-          ))}
-        </div>
+    </div>
+  );
+}
+
+function LoginPage({
+  onBack,
+  onEnter,
+}: {
+  onBack: () => void;
+  onEnter: () => void;
+}) {
+  return (
+    <div className="page auth-page">
+      <div className="glass-panel auth-card">
+        <span className="eyebrow">Principles workspace</span>
+        <h2>Enter your thinking system.</h2>
+        <p>Continue into the private Thinker Machine workspace.</p>
+        <button className="primary-button" onClick={onEnter}>
+          Continue locally <ArrowUpRight size={14} />
+        </button>
+        <button className="back-link" onClick={onBack}>
+          ← Back to landing
+        </button>
       </div>
     </div>
   );
@@ -590,19 +520,31 @@ function GraphPage({ route, onAsk }: { route: Route; onAsk: () => void }) {
 
 function CouncilPage({
   allowWebResearch,
+  busy,
+  error,
+  events,
   machineMode,
   question,
+  references,
   setAllowWebResearch,
   setMachineMode,
   setQuestion,
+  tokens,
+  onSources,
   onAsk,
 }: {
   allowWebResearch: boolean;
+  busy: boolean;
+  error: string;
+  events: FeedEvent[];
   machineMode: ThinkerMachineMode;
   question: string;
+  references: Record<string, unknown>[];
   setAllowWebResearch: (value: boolean) => void;
   setMachineMode: (value: ThinkerMachineMode) => void;
   setQuestion: (value: string) => void;
+  tokens: string;
+  onSources: () => void;
   onAsk: (value?: string) => void;
 }) {
   return (
@@ -613,11 +555,6 @@ function CouncilPage({
             Thinker Machine · retrieval → isolated contexts → synthesis
           </span>
           <h2>Run the machine.</h2>
-          <p>
-            One evidence context, independent reasoning contexts, and one
-            synthesis judge. No module is a person or can see another module’s
-            answer.
-          </p>
         </div>
         <span className="protocol-pill">
           <ShieldCheck size={12} /> context isolation
@@ -626,7 +563,7 @@ function CouncilPage({
       <div className="council-layout">
         <div className="glass-panel council-form">
           <label className="eyebrow" htmlFor="machine-question">
-            Your question
+            Ask the machine
           </label>
           <textarea
             id="machine-question"
@@ -642,22 +579,17 @@ function CouncilPage({
               <Globe2 size={13} />
               <span>
                 <b>Allow web research</b>
-                <small>Only when RAGFlow is missing or freshness matters</small>
               </span>
               <span className="toggle-indicator" />
             </button>
           </div>
           <div className="council-footer">
-            <small>
-              RAGFlow remains the primary corpus. External sources are kept
-              separate and never silently added to Principles Me.
-            </small>
             <button
               className="primary-button"
               disabled={!question.trim()}
               onClick={() => onAsk(question)}
             >
-              <Send size={14} /> Run Thinker Machine
+              <Send size={14} /> {busy ? "Thinking…" : "Think"}
             </button>
           </div>
         </div>
@@ -687,7 +619,6 @@ function CouncilPage({
                   </span>
                   <span>
                     <b>{modeLabel(mode)}</b>
-                    <small>{modeDescription(mode)}</small>
                   </span>
                   <span className="check-mark">
                     {machineMode === mode ? "✓" : ""}
@@ -708,13 +639,24 @@ function CouncilPage({
                 />
                 <span>
                   <b>{module.label}</b>
-                  <small>{module.description}</small>
                 </span>
               </div>
             ))}
           </div>
         </div>
       </div>
+      {events.length || busy || error ? (
+        <ResponsePage
+          busy={busy}
+          error={error}
+          events={events}
+          machineMode={machineMode}
+          onSources={onSources}
+          question={question}
+          references={references}
+          tokens={tokens}
+        />
+      ) : null}
     </div>
   );
 }
@@ -728,7 +670,6 @@ function ResponsePage({
   error,
   machineMode,
   onSources,
-  onNew,
 }: {
   question: string;
   events: FeedEvent[];
@@ -738,7 +679,6 @@ function ResponsePage({
   error: string;
   machineMode: ThinkerMachineMode;
   onSources: () => void;
-  onNew: () => void;
 }) {
   const answer = [...events].reverse().find((event) => event.type === "answer");
   const machine = [...events]
@@ -763,7 +703,7 @@ function ResponsePage({
     .map((event) => text(event.message))
     .filter(Boolean);
   return (
-    <div className="page overlay-page response-page">
+    <div className="inline-response response-page">
       <div className="page-heading">
         <div>
           <span className="eyebrow">Council response</span>
@@ -779,15 +719,10 @@ function ResponsePage({
                 : "Waiting for the council stream"}
           </p>
         </div>
-        <div className="heading-actions">
-          <button className="secondary-button" onClick={onSources}>
-            <BookOpen size={14} /> Sources{" "}
-            {references.length ? `(${references.length})` : ""}
-          </button>
-          <button className="primary-button" onClick={onNew}>
-            <Sparkles size={14} /> New question
-          </button>
-        </div>
+        <button className="secondary-button" onClick={onSources}>
+          <BookOpen size={14} /> Sources{" "}
+          {references.length ? `(${references.length})` : ""}
+        </button>
       </div>
       <div className="response-grid">
         <div className="response-main">
@@ -837,22 +772,11 @@ function ResponsePage({
                     />
                     <div>
                       <b>{module.label}</b>
-                      <small>
-                        {event?.contextType === "evidence"
-                          ? "Evidence context"
-                          : "Independent context"}
-                      </small>
                     </div>
                     <span className={`module-status ${stage.toLowerCase()}`}>
                       {stage === "COMPLETE" ? "ready" : stage.toLowerCase()}
                     </span>
                   </div>
-                  <p>{module.description}</p>
-                  {event?.contextId ? (
-                    <small className="context-id">
-                      {text(event.contextId)}
-                    </small>
-                  ) : null}
                 </div>
               );
             })}
@@ -862,10 +786,6 @@ function ResponsePage({
           <div className="glass-panel agree-panel">
             <span className="eyebrow">Thinker Machine protocol</span>
             <h3>{modeLabel(machineMode)} · evidence before confidence.</h3>
-            <p>
-              Retrieval is separated from every reasoning context. Only RAGFlow
-              and explicitly enabled web sources become evidence.
-            </p>
             <div className="protocol-line">
               <span className="signal green" /> RAGFlow ·{" "}
               {references.length ? `${references.length} chunks` : "no chunks"}
