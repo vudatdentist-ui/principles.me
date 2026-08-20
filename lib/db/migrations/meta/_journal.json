@@ -43,6 +43,27 @@
       "when": 1787142300000,
       "tag": "0005_learning_loop",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787180400000,
+      "tag": "0006_cortex_run",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787184000000,
+      "tag": "0007_journal_reflection",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787187600000,
+      "tag": "0008_goals_loop",
+      "breakpoints": true
     }
   ]
 }

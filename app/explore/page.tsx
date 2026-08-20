@@ -1,5 +1,4 @@
-import { DecisionWorkspace } from "@/components/decision-workspace";
-
+import { redirect } from "next/navigation";
 export default function ExplorePage() {
-  return <DecisionWorkspace initialView="explore" />;
+  redirect("/");
 }
