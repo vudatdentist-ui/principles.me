@@ -2,8 +2,12 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Goals execution loop", () => {
   test("persists goal, problem, diagnosis, principle and action", async ({
-    request,
+    page,
   }) => {
+    await page.goto("/goals");
+    await expect(page.getByLabel("New goal")).toBeVisible();
+    const { request } = page.context();
+
     const goalResponse = await request.post("/api/goals", {
       data: { title: "Build a profitable Principles" },
     });
@@ -84,25 +88,32 @@ test.describe("Goals execution loop", () => {
     const otherContext = await browser.newContext();
 
     try {
-      const ownerResponse = await ownerContext.request.post("/api/goals", {
+      const ownerPage = await ownerContext.newPage();
+      const otherPage = await otherContext.newPage();
+      await ownerPage.goto("/goals");
+      await otherPage.goto("/goals");
+      await expect(ownerPage.getByLabel("New goal")).toBeVisible();
+      await expect(otherPage.getByLabel("New goal")).toBeVisible();
+
+      const { request: ownerRequest } = ownerContext;
+      const { request: otherRequest } = otherContext;
+      const ownerResponse = await ownerRequest.post("/api/goals", {
         data: { title: "Owner only goal" },
       });
       expect(ownerResponse.ok()).toBeTruthy();
       const { goal } = await ownerResponse.json();
 
-      const problemResponse = await ownerContext.request.post(
+      const problemResponse = await ownerRequest.post(
         `/api/goals/${goal.id}/problems`,
         { data: { title: "Private obstacle" } }
       );
       expect(problemResponse.ok()).toBeTruthy();
       const { problem } = await problemResponse.json();
 
-      const hiddenGoal = await otherContext.request.get(
-        `/api/goals/${goal.id}`
-      );
+      const hiddenGoal = await otherRequest.get(`/api/goals/${goal.id}`);
       expect(hiddenGoal.status()).toBe(404);
 
-      const crossUserMutation = await otherContext.request.patch(
+      const crossUserMutation = await otherRequest.patch(
         `/api/goals/${goal.id}/problems/${problem.id}`,
         { data: { command: "save_diagnosis", rootCause: "Cross-user write" } }
       );

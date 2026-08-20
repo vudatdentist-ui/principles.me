@@ -2,8 +2,12 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Journal + reflection", () => {
   test("experience becomes an explicitly adopted principle with provenance", async ({
-    request,
+    page,
   }) => {
+    await page.goto("/journal");
+    await expect(page.getByLabel("New journal entry")).toBeVisible();
+    const { request } = page.context();
+
     const experience = `Designer missed another deadline ${crypto.randomUUID()}.`;
     const candidateStatement =
       "If ownership matters, define the owner and deadline before work begins.";
@@ -106,7 +110,11 @@ test.describe("Journal + reflection", () => {
     expect(deleteResponse.status()).toBe(204);
   });
 
-  test("rejected candidate never becomes a principle", async ({ request }) => {
+  test("rejected candidate never becomes a principle", async ({ page }) => {
+    await page.goto("/journal");
+    await expect(page.getByLabel("New journal entry")).toBeVisible();
+    const { request } = page.context();
+
     const createResponse = await request.post("/api/journal", {
       data: { body: `Conflict ${crypto.randomUUID()}` },
     });

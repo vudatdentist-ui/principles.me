@@ -48,10 +48,13 @@ test.describe("Personal OS v1", () => {
 
     const decisionId = new URL(page.url()).pathname.split("/").pop();
     expect(decisionId).toMatch(/^[0-9a-f-]{36}$/);
-    const cleanup = await page
-      .context()
-      .request.delete(`/api/decisions/${decisionId}`);
-    expect(cleanup.status()).toBe(204);
+    const cleanupStatus = await page.evaluate(async (id) => {
+      const response = await fetch(`/api/decisions/${id}`, {
+        method: "DELETE",
+      });
+      return response.status;
+    }, decisionId);
+    expect(cleanupStatus).toBe(204);
   });
 
   test("Cortex fails closed when retrieval returns no evidence", async ({
