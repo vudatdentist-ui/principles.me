@@ -34,5 +34,5 @@
     "next.config.js",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "infra/ragflow/upstream", "output"]
+  "exclude": [".next", "node_modules", "infra/ragflow/upstream", "output"]
 }

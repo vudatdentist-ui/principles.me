@@ -15,10 +15,13 @@ import {
   ChevronRight,
   CircleHelp,
   GitBranch,
+  Globe2,
+  Layers3,
   Library,
   Network,
   Search,
   Send,
+  ShieldCheck,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -30,6 +33,12 @@ import {
   type Thinker,
   thinkerById,
 } from "@/lib/principles-graph";
+import {
+  modeDescription,
+  modeLabel,
+  THINKER_MACHINE_MODULES,
+  type ThinkerMachineMode,
+} from "@/lib/thinker-machine";
 
 type Route =
   | "home"
@@ -50,17 +59,17 @@ type FeedEvent = Record<string, unknown> & { type?: string };
 const ROUTE_LABELS: Record<Route, string> = {
   brain: "Brain",
   concepts: "Concepts",
-  council: "Council",
+  council: "Thinker Machine",
   decisions: "Decisions",
-  home: "Home",
+  home: "Thinker Machine",
   library: "Library",
   mybrain: "My Brain",
   principles: "Principles",
   profile: "Thinker Profile",
-  response: "Council Response",
+  response: "Thinker Machine · Synthesis",
   sources: "Sources",
   teambrain: "Team Brain",
-  thinkers: "Thinkers",
+  thinkers: "Knowledge Sources",
 };
 
 const QUESTIONS = [
@@ -90,12 +99,10 @@ export function PrinciplesCouncil() {
   const [route, setRoute] = useState<Route>("home");
   const [question, setQuestion] = useState("");
   const [councilQuestion, setCouncilQuestion] = useState(QUESTIONS[0]);
-  const [selectedThinkerIds, setSelectedThinkerIds] = useState([
-    "dalio",
-    "munger",
-    "buffett",
-  ]);
   const [selectedThinkerId, setSelectedThinkerId] = useState("dalio");
+  const [machineMode, setMachineMode] =
+    useState<ThinkerMachineMode>("adaptive");
+  const [allowWebResearch, setAllowWebResearch] = useState(false);
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -125,16 +132,6 @@ export function PrinciplesCouncil() {
       setRoute("profile");
     }
   };
-  const toggleThinker = (id: string) => {
-    setSelectedThinkerIds((current) =>
-      current.includes(id)
-        ? current.length === 1
-          ? current
-          : current.filter((item) => item !== id)
-        : [...current, id]
-    );
-  };
-
   async function askCouncil(value = councilQuestion) {
     const trimmed = value.trim();
     if (!trimmed || busy) {
@@ -148,8 +145,9 @@ export function PrinciplesCouncil() {
     try {
       const response = await fetch("/api/council", {
         body: JSON.stringify({
+          mode: machineMode,
           question: trimmed,
-          thinkerIds: selectedThinkerIds,
+          webResearch: allowWebResearch,
         }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -221,13 +219,13 @@ export function PrinciplesCouncil() {
           <NavButton
             active={route === "council" || route === "response"}
             icon={<Sparkles size={15} />}
-            label="Council"
+            label="Thinker Machine"
             onClick={() => go("council")}
           />
           <NavButton
             active={route === "thinkers" || route === "profile"}
-            icon={<Users size={15} />}
-            label="Thinkers"
+            icon={<Library size={15} />}
+            label="Knowledge Sources"
             onClick={() => go("thinkers")}
           />
           <p className="nav-label nav-spacer">Knowledge</p>
@@ -289,14 +287,20 @@ export function PrinciplesCouncil() {
             <button aria-label="Search">
               <Search size={16} />
             </button>
-            <button aria-label="Ask council" onClick={() => go("council")}>
+            <button
+              aria-label="Open Thinker Machine"
+              onClick={() => go("council")}
+            >
               <Sparkles size={16} />
             </button>
             <span className="topbar-avatar">Y</span>
           </div>
         </header>
 
-        <div aria-label="Brain mode" className="mode-dock glass-panel">
+        <div
+          aria-label="Thinker Machine visual mode"
+          className="mode-dock glass-panel"
+        >
           {(["brain", "graph", "constellation", "council"] as BrainMode[]).map(
             (item) => (
               <button
@@ -315,11 +319,11 @@ export function PrinciplesCouncil() {
                 }}
               >
                 {item === "brain"
-                  ? "Brain"
+                  ? "Thinker Machine"
                   : item === "graph"
                     ? "Graph"
                     : item === "constellation"
-                      ? "Thinker Constellation"
+                      ? "Knowledge Constellation"
                       : "Council"}
               </button>
             )
@@ -346,11 +350,13 @@ export function PrinciplesCouncil() {
         ) : null}
         {route === "council" ? (
           <CouncilPage
+            allowWebResearch={allowWebResearch}
+            machineMode={machineMode}
             onAsk={(value) => void askCouncil(value ?? councilQuestion)}
             question={councilQuestion}
-            selectedThinkerIds={selectedThinkerIds}
+            setAllowWebResearch={setAllowWebResearch}
+            setMachineMode={setMachineMode}
             setQuestion={setCouncilQuestion}
-            toggleThinker={toggleThinker}
           />
         ) : null}
         {route === "response" ? (
@@ -358,6 +364,7 @@ export function PrinciplesCouncil() {
             busy={busy}
             error={error}
             events={events}
+            machineMode={machineMode}
             onNew={() => go("council")}
             onSources={() => go("sources")}
             question={councilQuestion}
@@ -448,9 +455,9 @@ function HomePage({
           <span className="gradient-text">the greats.</span>
         </h1>
         <p>
-          Bring a real question to a council of thinkers. Retrieval finds the
-          evidence. DeepSeek reasons across the lenses. You decide what becomes
-          part of your system.
+          Bring a real question to the Thinker Machine. RAGFlow finds evidence,
+          isolated reasoning passes explore the problem, and DeepSeek makes the
+          synthesis. You decide what becomes part of your system.
         </p>
         <div className="ask-bar">
           <input
@@ -461,7 +468,7 @@ function HomePage({
                 onAsk();
               }
             }}
-            placeholder="Ask your council anything…"
+            placeholder="Ask the Thinker Machine anything…"
             value={question}
           />
           <button aria-label="Ask Council" onClick={onAsk}>
@@ -502,9 +509,9 @@ function HomePage({
       </div>
       <div className="thinker-dock glass-panel">
         <div className="section-line">
-          <span className="eyebrow">A few minds in the room</span>
+          <span className="eyebrow">Knowledge clusters in the library</span>
           <button onClick={() => onThinker("dalio")}>
-            View constellation <ArrowUpRight size={12} />
+            View sources <ArrowUpRight size={12} />
           </button>
         </div>
         <div className="thinker-row">
@@ -548,19 +555,19 @@ function GraphPage({ route, onAsk }: { route: Route; onAsk: () => void }) {
           </span>
           <h2>{title}</h2>
           <p>
-            Explore relationships between thinkers, principles, mechanisms and
+            Explore relationships between sources, principles, mechanisms and
             questions. This graph is native to Principles; RAGFlow evidence
-            stays in Sources.
+            stays in Sources and feeds the Thinker Machine.
           </p>
         </div>
         <button className="primary-button" onClick={onAsk}>
-          <Sparkles size={14} /> Ask Council
+          <Sparkles size={14} /> Open Thinker Machine
         </button>
       </div>
       <div className="stats-row">
         <Stat label="Nodes" value="42" />
         <Stat label="Relations" value="86" />
-        <Stat label="Thinkers" value="6" />
+        <Stat label="Source clusters" value="6" />
         <Stat label="Evidence links" value="0" />
       </div>
       <div className="graph-inspector glass-panel">
@@ -582,16 +589,20 @@ function GraphPage({ route, onAsk }: { route: Route; onAsk: () => void }) {
 }
 
 function CouncilPage({
+  allowWebResearch,
+  machineMode,
   question,
+  setAllowWebResearch,
+  setMachineMode,
   setQuestion,
-  selectedThinkerIds,
-  toggleThinker,
   onAsk,
 }: {
+  allowWebResearch: boolean;
+  machineMode: ThinkerMachineMode;
   question: string;
+  setAllowWebResearch: (value: boolean) => void;
+  setMachineMode: (value: ThinkerMachineMode) => void;
   setQuestion: (value: string) => void;
-  selectedThinkerIds: string[];
-  toggleThinker: (id: string) => void;
   onAsk: (value?: string) => void;
 }) {
   return (
@@ -599,76 +610,107 @@ function CouncilPage({
       <div className="council-heading">
         <div>
           <span className="eyebrow">
-            Council room · retrieval → reasoning → synthesis
+            Thinker Machine · retrieval → isolated contexts → synthesis
           </span>
-          <h2>Ask the council.</h2>
+          <h2>Run the machine.</h2>
           <p>
-            Choose the lenses you want in the room. RAGFlow retrieves evidence;
-            DeepSeek performs the synthesis.
+            One evidence context, independent reasoning contexts, and one
+            synthesis judge. No module is a person or can see another module’s
+            answer.
           </p>
         </div>
         <span className="protocol-pill">
-          <span className="status-dot" /> grounded protocol
+          <ShieldCheck size={12} /> context isolation
         </span>
       </div>
       <div className="council-layout">
         <div className="glass-panel council-form">
-          <label className="eyebrow" htmlFor="council-question">
+          <label className="eyebrow" htmlFor="machine-question">
             Your question
           </label>
           <textarea
-            id="council-question"
+            id="machine-question"
             onChange={(event) => setQuestion(event.target.value)}
             value={question}
           />
-          <div className="scope-row">
-            <button className="active">My knowledge</button>
-            <button>Selected thinkers</button>
-            <button>Open inquiry</button>
+          <div className="machine-options">
+            <button
+              aria-pressed={allowWebResearch}
+              className={`web-research-toggle${allowWebResearch ? " active" : ""}`}
+              onClick={() => setAllowWebResearch(!allowWebResearch)}
+            >
+              <Globe2 size={13} />
+              <span>
+                <b>Allow web research</b>
+                <small>Only when RAGFlow is missing or freshness matters</small>
+              </span>
+              <span className="toggle-indicator" />
+            </button>
           </div>
           <div className="council-footer">
             <small>
-              Evidence is shown in full after retrieval. No citation is
-              invented.
+              RAGFlow remains the primary corpus. External sources are kept
+              separate and never silently added to Principles Me.
             </small>
             <button
               className="primary-button"
               disabled={!question.trim()}
               onClick={() => onAsk(question)}
             >
-              <Send size={14} /> Ask Council
+              <Send size={14} /> Run Thinker Machine
             </button>
           </div>
         </div>
         <div className="glass-panel selected-panel">
           <div className="section-line">
             <div>
-              <span className="eyebrow">The room</span>
-              <h3>{selectedThinkerIds.length} thinkers selected</h3>
+              <span className="eyebrow">Reasoning budget</span>
+              <h3>{modeLabel(machineMode)} mode</h3>
             </div>
-            <Users size={16} />
+            <Layers3 size={16} />
           </div>
-          <div className="select-list">
-            {THINKERS.map((thinker) => (
-              <button
-                className={`select-thinker${selectedThinkerIds.includes(thinker.id) ? " selected" : ""}`}
-                key={thinker.id}
-                onClick={() => toggleThinker(thinker.id)}
-              >
-                <span
-                  className="thinker-sigil"
-                  style={{ "--sigil": thinker.accent } as React.CSSProperties}
+          <div className="machine-mode-list">
+            {(["adaptive", "high", "max"] as ThinkerMachineMode[]).map(
+              (mode) => (
+                <button
+                  aria-pressed={machineMode === mode}
+                  className={`machine-mode-row${machineMode === mode ? " selected" : ""}`}
+                  key={mode}
+                  onClick={() => setMachineMode(mode)}
                 >
-                  {thinker.name.slice(0, 1)}
-                </span>
+                  <span className="mode-number">
+                    {mode === "adaptive"
+                      ? "01"
+                      : mode === "high"
+                        ? "05"
+                        : "05+"}
+                  </span>
+                  <span>
+                    <b>{modeLabel(mode)}</b>
+                    <small>{modeDescription(mode)}</small>
+                  </span>
+                  <span className="check-mark">
+                    {machineMode === mode ? "✓" : ""}
+                  </span>
+                </button>
+              )
+            )}
+          </div>
+          <div className="machine-module-list">
+            <span className="eyebrow">Available passes</span>
+            {THINKER_MACHINE_MODULES.map((module) => (
+              <div className="machine-module-row" key={module.id}>
+                <span
+                  className="module-signal"
+                  style={
+                    { "--module-accent": module.accent } as React.CSSProperties
+                  }
+                />
                 <span>
-                  <b>{thinker.name}</b>
-                  <small>{thinker.lens}</small>
+                  <b>{module.label}</b>
+                  <small>{module.description}</small>
                 </span>
-                <span className="check-mark">
-                  {selectedThinkerIds.includes(thinker.id) ? "✓" : "+"}
-                </span>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -684,6 +726,7 @@ function ResponsePage({
   tokens,
   busy,
   error,
+  machineMode,
   onSources,
   onNew,
 }: {
@@ -693,10 +736,28 @@ function ResponsePage({
   tokens: string;
   busy: boolean;
   error: string;
+  machineMode: ThinkerMachineMode;
   onSources: () => void;
   onNew: () => void;
 }) {
   const answer = [...events].reverse().find((event) => event.type === "answer");
+  const machine = [...events]
+    .reverse()
+    .find((event) => event.type === "machine");
+  const moduleEvents = events.filter((event) => event.type === "module");
+  const latestModules = new Map<string, FeedEvent>();
+  for (const event of moduleEvents) {
+    const id = text(event.id);
+    if (id) {
+      latestModules.set(id, event);
+    }
+  }
+  const visibleModules = latestModules.size
+    ? THINKER_MACHINE_MODULES.filter((module) => latestModules.has(module.id))
+    : THINKER_MACHINE_MODULES.slice(
+        0,
+        Number(machine?.moduleCount ?? (machineMode === "adaptive" ? 3 : 5))
+      );
   const statuses = events
     .filter((event) => event.type === "status")
     .map((event) => text(event.message))
@@ -753,40 +814,57 @@ function ResponsePage({
               </div>
             ) : null}
           </div>
-          <div className="perspective-grid">
-            {THINKERS.filter(
-              (thinker) =>
-                events.length === 0 ||
-                text(answer?.answer).includes(thinker.name) ||
-                true
-            )
-              .slice(0, 3)
-              .map((thinker) => (
-                <div className="glass-panel perspective-card" key={thinker.id}>
-                  <div className="person-line">
+          <div className="machine-run-grid">
+            <div className="machine-run-heading">
+              <span className="eyebrow">Thinker Machine passes</span>
+              <span className="context-badge">
+                <ShieldCheck size={11} /> isolated contexts
+              </span>
+            </div>
+            {visibleModules.map((module) => {
+              const event = latestModules.get(module.id);
+              const stage = text(event?.stage, busy ? "QUEUED" : "READY");
+              return (
+                <div className="glass-panel machine-run-card" key={module.id}>
+                  <div className="machine-run-top">
                     <span
-                      className="thinker-sigil"
+                      className="module-signal"
                       style={
-                        { "--sigil": thinker.accent } as React.CSSProperties
+                        {
+                          "--module-accent": module.accent,
+                        } as React.CSSProperties
                       }
-                    >
-                      {thinker.name.slice(0, 1)}
+                    />
+                    <div>
+                      <b>{module.label}</b>
+                      <small>
+                        {event?.contextType === "evidence"
+                          ? "Evidence context"
+                          : "Independent context"}
+                      </small>
+                    </div>
+                    <span className={`module-status ${stage.toLowerCase()}`}>
+                      {stage === "COMPLETE" ? "ready" : stage.toLowerCase()}
                     </span>
-                    <b>{thinker.name}</b>
                   </div>
-                  <p>{thinker.lens}</p>
-                  <small>Perspective lens · not evidence</small>
+                  <p>{module.description}</p>
+                  {event?.contextId ? (
+                    <small className="context-id">
+                      {text(event.contextId)}
+                    </small>
+                  ) : null}
                 </div>
-              ))}
+              );
+            })}
           </div>
         </div>
         <aside className="response-side">
           <div className="glass-panel agree-panel">
-            <span className="eyebrow">Council protocol</span>
-            <h3>Evidence before confidence.</h3>
+            <span className="eyebrow">Thinker Machine protocol</span>
+            <h3>{modeLabel(machineMode)} · evidence before confidence.</h3>
             <p>
-              Retrieval is separated from synthesis. The graph can surface
-              hypotheses; only RAGFlow chunks become evidence.
+              Retrieval is separated from every reasoning context. Only RAGFlow
+              and explicitly enabled web sources become evidence.
             </p>
             <div className="protocol-line">
               <span className="signal green" /> RAGFlow ·{" "}
@@ -795,6 +873,10 @@ function ResponsePage({
             <div className="protocol-line">
               <span className="signal violet" /> DeepSeek ·{" "}
               {busy ? "streaming" : "ready"}
+            </div>
+            <div className="protocol-line">
+              <span className="signal cyan" /> Contexts ·{" "}
+              {String(machine?.moduleCount ?? 0)} isolated passes
             </div>
           </div>
           <div className="glass-panel source-preview">
@@ -856,6 +938,7 @@ function SourcesPage({
                   {text(reference.key, `R${index + 1}`)}
                 </span>
                 <span className="score">
+                  {text(reference.sourceType, "ragflow")} ·{" "}
                   {reference.score
                     ? `score ${Number(reference.score).toFixed(2)}`
                     : "retrieved"}
@@ -868,6 +951,16 @@ function SourcesPage({
                 {text(reference.datasetId, "unresolved")} · chunk{" "}
                 {text(reference.chunkId, "unresolved")}
               </small>
+              {reference.url ? (
+                <a
+                  className="source-url"
+                  href={text(reference.url)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open external source ↗
+                </a>
+              ) : null}
             </article>
           ))}
         </div>
@@ -890,11 +983,12 @@ function ThinkersPage({ onSelect }: { onSelect: (id: string) => void }) {
     <div className="page overlay-page">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">The constellation</span>
-          <h2>Thinkers.</h2>
+          <span className="eyebrow">Source library · not agents</span>
+          <h2>Knowledge sources.</h2>
           <p>
-            Different traditions. Different blind spots. One room for better
-            questions.
+            Authors and traditions live here as source metadata. The Thinker
+            Machine uses evidence from their documents; it does not simulate
+            separate personalities.
           </p>
         </div>
       </div>
@@ -934,7 +1028,7 @@ function ProfilePage({
   return (
     <div className="page overlay-page profile-page">
       <button className="back-link" onClick={onBack}>
-        ← Thinker constellation
+        ← Knowledge sources
       </button>
       <div className="profile-hero glass-panel">
         <span
@@ -949,7 +1043,7 @@ function ProfilePage({
           <p>{thinker.lens}</p>
         </div>
         <button className="primary-button" onClick={onAsk}>
-          <Sparkles size={14} /> Bring to Council
+          <Sparkles size={14} /> Ask Thinker Machine
         </button>
       </div>
       <div className="profile-grid">
@@ -1087,7 +1181,7 @@ function SystemPage({ route, onAsk }: { route: Route; onAsk: () => void }) {
             you are ready.
           </p>
           <button className="text-button" onClick={onAsk}>
-            Explore with Council <ArrowUpRight size={12} />
+            Explore with Thinker Machine <ArrowUpRight size={12} />
           </button>
         </div>
         <div className="glass-panel dashboard-card">
