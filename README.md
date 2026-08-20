@@ -84,7 +84,7 @@ $env:RAGFLOW_DOCUMENT_DIR='C:\Users\Admin\Desktop\Source'
 pnpm ragflow:seed
 ```
 
-`RAGFLOW_DOCUMENT_DIR` accepts PDF, Markdown, text, Word, PowerPoint, Excel and CSV files. The seeder uploads each file with its original filename, so RAGFlow keeps provenance per document. Use licensed or user-owned primary sources for production research.
+`RAGFLOW_DOCUMENT_DIR` accepts PDF, Markdown, text, Word, PowerPoint, Excel and CSV files. The seeder uploads new files, explicitly starts RAGFlow parsing/indexing, waits for terminal document states, and preserves provenance per document. Set `RAGFLOW_REPARSE_EXISTING=true` to reparse documents already in the dataset after changing parser settings. EPUB is not a native RAGFlow input in this flow; convert it to HTML/Markdown or PDF first. Use licensed or user-owned primary sources for production research.
 
 ## Verification
 

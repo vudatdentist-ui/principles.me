@@ -69,6 +69,14 @@ function numeric(value: unknown): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
+function booleanEnv(name: string, fallback: boolean): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) {
+    return fallback;
+  }
+  return !["0", "false", "no", "off"].includes(value);
+}
+
 function normalizeChunk(
   chunk: Record<string, unknown>,
   index: number
@@ -123,16 +131,16 @@ async function retrieve(question: string): Promise<{
         dataset_ids: datasetIds,
         document_ids: [],
         highlight: false,
-        keyword: false,
+        keyword: booleanEnv("RAGFLOW_KEYWORD_SEARCH", true),
         page: 1,
         page_size: Number(process.env.RAGFLOW_TOP_K || 10),
         question,
         similarity_threshold: Number(
-          process.env.RAGFLOW_SIMILARITY_THRESHOLD || 0.15
+          process.env.RAGFLOW_SIMILARITY_THRESHOLD || 0.2
         ),
         top_k: Number(process.env.RAGFLOW_TOP_K || 10),
         vector_similarity_weight: Number(
-          process.env.RAGFLOW_VECTOR_SIMILARITY_WEIGHT || 0.7
+          process.env.RAGFLOW_VECTOR_SIMILARITY_WEIGHT || 0.3
         ),
       }),
       headers: {
