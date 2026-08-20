@@ -79,7 +79,7 @@ test.describe("Journal + reflection", () => {
     expect(assistResponse.status()).toBe(200);
     const assist = await assistResponse.json();
     expect(assist.source).toBe("cortex");
-    expect(assist.suggestion.question).toBeTruthy();
+    expect(assist.suggestion.observation).toBeTruthy();
 
     const editedStatement = `${candidateStatement} Confirm it in writing.`;
     const editResponse = await request.patch(
