@@ -80,12 +80,12 @@ export function modeLabel(mode: ThinkerMachineMode): string {
 
 export function modeDescription(mode: ThinkerMachineMode): string {
   if (mode === "high") {
-    return "Five isolated reasoning contexts, then synthesis.";
+    return "Five isolated reasoning contexts, iterative evaluation, then synthesis.";
   }
   if (mode === "max") {
-    return "Five contexts, synthesis, adversarial critique, and revision.";
+    return "Five contexts, up to three self-critique revisions, then synthesis.";
   }
-  return "The machine chooses a 3- or 5-pass run from the question.";
+  return "The machine chooses a 3- or 5-pass run and one targeted revision.";
 }
 
 function appearsComplex(question: string): boolean {

@@ -386,13 +386,17 @@ function synthesisMessages(
   references: RetrievedReference[],
   results: ModuleResult[],
   critic = "",
-  audit?: EvidenceAudit
+  audit?: EvidenceAudit,
+  approvedDraft = ""
 ): ChatMessage[] {
   const evidence = formatEvidence(references);
   const criticBlock = critic ? `\n\nCRITIC REVIEW:\n${critic}` : "";
   const auditBlock = audit
     ? `\n\nEVIDENCE AUDIT (binding quality gate):\n${JSON.stringify(audit, null, 2)}`
     : "\n\nEVIDENCE AUDIT: not run yet. Treat all unsupported factual claims as unknown.";
+  const approvedDraftBlock = approvedDraft
+    ? `\n\nAPPROVED WORKING DRAFT:\n${approvedDraft}\n\nRender this approved draft faithfully. Do not introduce new factual claims while formatting it.`
+    : "";
   return [
     {
       content:
@@ -409,6 +413,7 @@ function synthesisMessages(
         `ISOLATED MODULE OUTPUTS:\n${modulePacket(results)}`,
         auditBlock,
         criticBlock,
+        approvedDraftBlock,
         "Use this structure when useful: conclusion; evidence-backed observations with citations; reasoning or hypotheses explicitly marked as such; unknowns or conflicts; one practical next step. Do not turn a generic textbook explanation into an evidence-backed observation.",
       ].join("\n\n"),
       role: "user",
@@ -428,7 +433,7 @@ async function auditDraft(
       [
         {
           content:
-            "You are the Evidence Judge. Audit a draft claim by claim against the supplied evidence packet. The packet is the only source authority. Do not use general model knowledge. A claim is supported only when the cited excerpt entails it; topical similarity is not enough. Mark absent, overgeneralized, or extrapolated facts unsupported. Mark a claim contradicted when the packet says the opposite. Return JSON only with this exact shape: { verdict: grounded|mixed|ungrounded, claims: [{ claim, status: supported|partially_supported|unsupported|contradicted, citations: [exact allowed keys], reason }], missingEvidence: [string], corrections: [string] }. Do not invent citation keys.",
+            "You are the Evidence Judge and quality editor. Audit a draft claim by claim against the supplied evidence packet. The packet is the only source authority. Do not use general model knowledge. A claim is supported only when the cited excerpt entails it; topical similarity is not enough. Mark absent, overgeneralized, or extrapolated facts unsupported. Mark a claim contradicted when the packet says the opposite. Evaluate answer fit, evidence fidelity, reasoning depth, clarity, and actionability. Give a qualityScore from 0 to 10. Set decision to accept only at 8.5 or above and when no material claim is partially supported, unsupported, or contradicted. Return JSON only with this exact shape: { verdict: grounded|mixed|ungrounded, decision: accept|revise, qualityScore: number, claims: [{ claim, status: supported|partially_supported|unsupported|contradicted, citations: [exact allowed keys], reason }], strengths: [string], missingEvidence: [string], corrections: [string], revision: string }. Do not invent citation keys.",
           role: "system",
         },
         {
@@ -447,6 +452,53 @@ async function auditDraft(
     return parseEvidenceAudit(raw, allowedKeys);
   } catch {
     return parseEvidenceAudit("", allowedKeys);
+  }
+}
+
+function refinementBudget(mode: "adaptive" | "high" | "max"): number {
+  if (mode === "max") {
+    return 3;
+  }
+  if (mode === "high") {
+    return 2;
+  }
+  return 1;
+}
+
+async function reviseDraft(
+  question: string,
+  userContext: string,
+  references: RetrievedReference[],
+  results: ModuleResult[],
+  draft: string,
+  audit: EvidenceAudit
+): Promise<string> {
+  try {
+    return await deepSeek(
+      [
+        {
+          content:
+            "You are the Revision Editor inside Principles Thinker. Improve the answer using the Evidence Judge report. Preserve claims that are actually supported and their exact citations. Remove unsupported or contradicted factual claims, narrow overclaims, and label reasoning or hypotheses explicitly. If evidence is absent, say so clearly; never compensate by inventing facts or citations. Increase depth through mechanisms, trade-offs, counterexamples, and a practical next step, but do not add uncited facts. Return only the revised answer, with no discussion of this editing process and no mention of agents.",
+          role: "system",
+        },
+        {
+          content: [
+            `QUESTION:\n${question}`,
+            userContext
+              ? `PRINCIPLES ME CONTEXT:\n${userContext}`
+              : "PRINCIPLES ME CONTEXT: none supplied",
+            `EVIDENCE PACKET:\n${formatEvidence(references)}`,
+            `CURRENT DRAFT:\n${draft}`,
+            `EVIDENCE JUDGE REPORT:\n${JSON.stringify(audit, null, 2)}`,
+            `INDEPENDENT ANALYSES (reasoning inputs, not source authority):\n${modulePacket(results)}`,
+          ].join("\n\n"),
+          role: "user",
+        },
+      ],
+      0.15
+    );
+  } catch {
+    return draft;
   }
 }
 
@@ -641,7 +693,7 @@ export async function POST(request: Request) {
           type: "status",
         });
 
-        const draft = await deepSeek(
+        let workingDraft = await deepSeek(
           synthesisMessages(
             question,
             userContext,
@@ -650,27 +702,61 @@ export async function POST(request: Request) {
           ),
           0.2
         );
-        write({
-          message:
-            mode === "max"
-              ? "Max mode: Evidence Judge đang kiểm tra từng claim và mâu thuẫn…"
-              : "Evidence Judge đang kiểm tra từng claim trước khi trả lời…",
-          stage: "AUDIT",
-          type: "status",
-        });
-        const audit = await auditDraft(
+        let audit = await auditDraft(
           question,
           references,
           successfulResults,
-          draft
+          workingDraft
         );
         write({
           claims: audit.claims.slice(0, 20),
           corrections: audit.corrections.slice(0, 8),
+          decision: audit.decision,
+          iteration: 0,
           missingEvidence: audit.missingEvidence.slice(0, 8),
+          qualityScore: audit.qualityScore,
           type: "audit",
           verdict: audit.verdict,
         });
+        const maxRefinements = refinementBudget(mode);
+        let refinementCount = 0;
+        while (
+          refinementCount < maxRefinements &&
+          audit.decision !== "accept"
+        ) {
+          refinementCount += 1;
+          write({
+            iteration: refinementCount,
+            message: `Vòng tự sửa ${refinementCount}/${maxRefinements}: thiết kế lại câu trả lời theo Evidence Judge…`,
+            stage: "REVISION",
+            type: "status",
+          });
+          // biome-ignore lint/performance/noAwaitInLoops: Refinement must use the previous audit before the next revision.
+          workingDraft = await reviseDraft(
+            question,
+            userContext,
+            references,
+            successfulResults,
+            workingDraft,
+            audit
+          );
+          audit = await auditDraft(
+            question,
+            references,
+            successfulResults,
+            workingDraft
+          );
+          write({
+            claims: audit.claims.slice(0, 20),
+            corrections: audit.corrections.slice(0, 8),
+            decision: audit.decision,
+            iteration: refinementCount,
+            missingEvidence: audit.missingEvidence.slice(0, 8),
+            qualityScore: audit.qualityScore,
+            type: "audit",
+            verdict: audit.verdict,
+          });
+        }
         const critic =
           mode === "max"
             ? [
@@ -696,7 +782,8 @@ export async function POST(request: Request) {
             references,
             successfulResults,
             critic,
-            audit
+            audit,
+            workingDraft
           ),
           references,
           audit,
@@ -716,8 +803,10 @@ export async function POST(request: Request) {
         write({
           claims: finalAudit.claims.slice(0, 20),
           corrections: finalAudit.corrections.slice(0, 8),
+          decision: finalAudit.decision,
           final: true,
           missingEvidence: finalAudit.missingEvidence.slice(0, 8),
+          qualityScore: finalAudit.qualityScore,
           type: "audit",
           verdict: finalAudit.verdict,
         });
@@ -730,6 +819,9 @@ export async function POST(request: Request) {
           answer: result.answer,
           audit: {
             claimCount: finalAudit.claims.length,
+            decision: finalAudit.decision,
+            qualityScore: finalAudit.qualityScore,
+            refinementCount,
             unsupportedCount: finalAudit.claims.filter((claim) =>
               ["partially_supported", "unsupported", "contradicted"].includes(
                 claim.status

@@ -636,6 +636,10 @@ function ResponsePage({
   const answer = [...events].reverse().find((event) => event.type === "answer");
   const audit = [...events].reverse().find((event) => event.type === "audit");
   const auditVerdict = text(audit?.verdict, "unknown");
+  const auditScore =
+    typeof audit?.qualityScore === "number"
+      ? ` · ${audit.qualityScore.toFixed(1)}/10`
+      : "";
   const machine = [...events]
     .reverse()
     .find((event) => event.type === "machine");
@@ -760,6 +764,7 @@ function ResponsePage({
             </div>
             <div className="protocol-line">
               <span className="signal violet" /> Evidence Judge · {auditVerdict}
+              {auditScore}
             </div>
           </div>
           <div className="glass-panel source-preview">

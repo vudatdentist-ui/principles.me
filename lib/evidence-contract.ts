@@ -30,7 +30,11 @@ export type EvidenceAuditClaim = {
 export type EvidenceAudit = {
   claims: EvidenceAuditClaim[];
   corrections: string[];
+  decision: "accept" | "revise";
   missingEvidence: string[];
+  qualityScore: number;
+  revision: string;
+  strengths: string[];
   verdict: "grounded" | "mixed" | "ungrounded";
 };
 
@@ -51,7 +55,11 @@ const auditSchema = z.object({
     })
   ),
   corrections: z.array(z.string()).catch([]),
+  decision: z.enum(["accept", "revise"]).catch("revise"),
   missingEvidence: z.array(z.string()).catch([]),
+  qualityScore: z.number().min(0).max(10).catch(0),
+  revision: z.string().catch(""),
+  strengths: z.array(z.string()).catch([]),
   verdict: z.enum(["grounded", "mixed", "ungrounded"]).catch("mixed"),
 });
 
@@ -59,7 +67,11 @@ function emptyAudit(reason: string): EvidenceAudit {
   return {
     claims: [],
     corrections: [reason],
+    decision: "revise",
     missingEvidence: [reason],
+    qualityScore: 0,
+    revision: reason,
+    strengths: [],
     verdict: "mixed",
   };
 }
@@ -112,12 +124,19 @@ export function parseEvidenceAudit(
   );
   const verdict =
     audit.verdict === "grounded" && hasBadClaim ? "mixed" : audit.verdict;
+  const qualityScore = Math.max(0, Math.min(10, audit.qualityScore));
+  const decision =
+    hasBadClaim || qualityScore < 8.5 ? "revise" : audit.decision;
   return {
     claims,
     corrections: audit.corrections.map((item) => item.trim()).filter(Boolean),
+    decision,
     missingEvidence: audit.missingEvidence
       .map((item) => item.trim())
       .filter(Boolean),
+    qualityScore,
+    revision: audit.revision.trim(),
+    strengths: audit.strengths.map((item) => item.trim()).filter(Boolean),
     verdict,
   };
 }
