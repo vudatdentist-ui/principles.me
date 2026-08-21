@@ -61,5 +61,39 @@ jobs:
             pnpm exec biome lint lib/db/schema.ts lib/db/queries features/decision/persistence features/review/persistence
             POSTGRES_URL=postgres://validation:validation@127.0.0.1:5432/principles_validation pnpm db:check
           fi
+      - name: Validate available Wave 2 scopes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d features/decision/orchestration ]; then
+            pnpm exec biome lint features/decision/orchestration
+            if compgen -G "features/decision/orchestration/__tests__/*.test.ts" > /dev/null; then
+              pnpm exec tsx --test features/decision/orchestration/__tests__/*.test.ts
+            fi
+          fi
+          if [ -d features/decision/ui ]; then
+            pnpm exec biome lint features/decision/ui
+          fi
+          if [ -d app/api/v2/decisions ]; then
+            pnpm exec biome lint app/api/v2/decisions
+          fi
+          if [ -d features/decision/transport ]; then
+            pnpm exec biome lint features/decision/transport
+            if compgen -G "features/decision/transport/__tests__/*.test.ts" > /dev/null; then
+              pnpm exec tsx --test features/decision/transport/__tests__/*.test.ts
+            fi
+          fi
+          if [ -d features/review/application ]; then
+            pnpm exec biome lint features/review/application
+            if compgen -G "features/review/application/__tests__/*.test.ts" > /dev/null; then
+              pnpm exec tsx --test features/review/application/__tests__/*.test.ts
+            fi
+          fi
+          if [ -d features/principles ]; then
+            pnpm exec biome lint features/principles
+            if compgen -G "features/principles/__tests__/*.test.ts" > /dev/null; then
+              pnpm exec tsx --test features/principles/__tests__/*.test.ts
+            fi
+          fi
       - name: Build
         run: pnpm build
