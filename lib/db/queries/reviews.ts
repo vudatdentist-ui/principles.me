@@ -8,6 +8,7 @@ import {
   decision,
   decisionAssumptionReview,
   decisionOutcome,
+  decisionPrinciple,
   decisionPrincipleReview,
   principle,
 } from "../schema";
@@ -117,17 +118,27 @@ export async function createPrincipleReviewRecord(
   const [scope] = await decisionPersistenceDb
     .select({
       outcomeId: decisionOutcome.id,
-      principleId: principle.id,
+      principleId: decisionPrinciple.principleId,
     })
     .from(decisionOutcome)
     .innerJoin(decision, eq(decisionOutcome.decisionId, decision.id))
-    .innerJoin(principle, eq(principle.id, input.principleId))
+    .innerJoin(
+      decisionPrinciple,
+      and(
+        eq(decisionPrinciple.decisionId, input.decisionId),
+        eq(decisionPrinciple.principleId, input.principleId),
+        eq(decisionPrinciple.userId, input.userId)
+      )
+    )
+    .innerJoin(principle, eq(principle.id, decisionPrinciple.principleId))
     .where(
       and(
         eq(decisionOutcome.id, input.outcomeId),
         eq(decisionOutcome.decisionId, input.decisionId),
         eq(decisionOutcome.userId, input.userId),
+        eq(decision.id, input.decisionId),
         eq(decision.userId, input.userId),
+        eq(principle.id, input.principleId),
         eq(principle.userId, input.userId)
       )
     )
