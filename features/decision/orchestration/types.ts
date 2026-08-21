@@ -50,7 +50,7 @@ export type DecisionOrchestratorDependencies = {
 };
 
 export interface DecisionOrchestrator {
-  run(request: DecisionOrchestratorRequest): Promise<DecisionOrchestratorResult>;
+  run: (request: DecisionOrchestratorRequest) => Promise<DecisionOrchestratorResult>;
 }
 
 export type DecisionAnalysis = {
