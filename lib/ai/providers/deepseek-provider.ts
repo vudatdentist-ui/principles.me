@@ -60,7 +60,7 @@ function optionalNumber(value: unknown): number | undefined {
 
 function normalizeUsage(value: unknown): AiTokenUsage | undefined {
   if (!isRecord(value)) {
-    return undefined;
+    return;
   }
 
   const completionTokens = optionalNumber(value.completion_tokens);
@@ -71,7 +71,7 @@ function normalizeUsage(value: unknown): AiTokenUsage | undefined {
     promptTokens === undefined &&
     totalTokens === undefined
   ) {
-    return undefined;
+    return;
   }
 
   return {
@@ -193,7 +193,7 @@ function assertPayload(value: unknown): Record<string, unknown> {
 }
 
 function completionContent(payload: Record<string, unknown>): string {
-  const choices = payload.choices;
+  const { choices } = payload;
   if (!Array.isArray(choices) || !isRecord(choices[0])) {
     throw new AiProviderError("AI provider returned an invalid response.", {
       code: "invalid_response",
@@ -202,7 +202,7 @@ function completionContent(payload: Record<string, unknown>): string {
     });
   }
 
-  const message = choices[0].message;
+  const { message } = choices[0];
   const content = isRecord(message) ? message.content : undefined;
   if (typeof content !== "string" || !content.trim()) {
     throw new AiProviderError("AI provider returned an empty response.", {
@@ -216,9 +216,9 @@ function completionContent(payload: Record<string, unknown>): string {
 }
 
 function streamContent(payload: Record<string, unknown>): string | undefined {
-  const choices = payload.choices;
+  const { choices } = payload;
   if (choices === undefined) {
-    return undefined;
+    return;
   }
   if (!Array.isArray(choices)) {
     throw new AiProviderError("AI provider returned an invalid stream event.", {
@@ -228,7 +228,7 @@ function streamContent(payload: Record<string, unknown>): string | undefined {
     });
   }
   if (choices.length === 0) {
-    return undefined;
+    return;
   }
   if (!isRecord(choices[0])) {
     throw new AiProviderError("AI provider returned an invalid stream event.", {
@@ -238,7 +238,7 @@ function streamContent(payload: Record<string, unknown>): string | undefined {
     });
   }
 
-  const delta = choices[0].delta;
+  const { delta } = choices[0];
   if (!isRecord(delta)) {
     throw new AiProviderError("AI provider returned an invalid stream event.", {
       code: "invalid_response",
@@ -247,9 +247,9 @@ function streamContent(payload: Record<string, unknown>): string | undefined {
     });
   }
 
-  const content = delta.content;
+  const { content } = delta;
   if (content === undefined || content === null) {
-    return undefined;
+    return;
   }
   if (typeof content !== "string") {
     throw new AiProviderError("AI provider returned an invalid stream event.", {
