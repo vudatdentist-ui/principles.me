@@ -218,19 +218,25 @@ test("accepts a completed run and repeated acceptance delegates idempotently", a
 });
 
 test("failed or incomplete runs cannot be accepted", async () => {
-  for (const run of [
+  const runs = [
     makeRun({ completedAt: null }),
     makeRun({ failedAt: now }),
     makeRun({ decisionBrief: null }),
-  ]) {
-    const decisionRepository = makeDecisionRepository({
-      runs: new Map([[run.id, run]]),
-    });
-    const result = await acceptDecision(
-      { runId: run.id, userId: userA },
-      { decisionRepository }
-    );
+  ];
+  const results = await Promise.all(
+    runs.map((run) => {
+      const decisionRepository = makeDecisionRepository({
+        runs: new Map([[run.id, run]]),
+      });
 
+      return acceptDecision(
+        { runId: run.id, userId: userA },
+        { decisionRepository }
+      );
+    })
+  );
+
+  for (const result of results) {
     assert.deepEqual(result, {
       error: { code: "run_not_complete" },
       ok: false,
@@ -304,7 +310,7 @@ test("records an outcome for an owned decision and exposes review context", asyn
   );
 
   assert.equal(recorded.ok, true);
-  const capturedOutcome = capturedOutcomes[0];
+  const [capturedOutcome] = capturedOutcomes;
   assert.equal(capturedOutcome?.decisionId, decision.id);
   assert.equal(capturedOutcome?.lessons, createdOutcome.lessons);
   assert.equal(capturedOutcome?.result, createdOutcome.result);
