@@ -298,7 +298,7 @@ export function createDecisionOrchestrator(
 
         const finalAnalysis = revisedAnalysis ?? initialAnalysis;
         const brief = buildDecisionBrief({
-          analysis: finalAnalysiss,
+          analysis: finalAnalysis,
           evidence: evidence.references,
           question,
           runId,
