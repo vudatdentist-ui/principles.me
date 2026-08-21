@@ -45,23 +45,25 @@ test("generateText returns normalized completion content", async () => {
   const provider = new DeepSeekProvider({
     apiKey: "secret-value",
     baseUrl: "https://example.test/",
-    fetch: async (input, init) => {
+    fetch: (input, init) => {
       assert.equal(input, "https://example.test/chat/completions");
       requestBody = JSON.parse(String(init?.body));
       assert.equal(
         (init?.headers as Record<string, string>).authorization,
         "Bearer secret-value"
       );
-      return jsonResponse({
-        choices: [{ message: { content: "  answer  " } }],
-        id: "completion-1",
-        model: "deepseek-chat",
-        usage: {
-          completion_tokens: 3,
-          prompt_tokens: 4,
-          total_tokens: 7,
-        },
-      });
+      return Promise.resolve(
+        jsonResponse({
+          choices: [{ message: { content: "  answer  " } }],
+          id: "completion-1",
+          model: "deepseek-chat",
+          usage: {
+            completion_tokens: 3,
+            prompt_tokens: 4,
+            total_tokens: 7,
+          },
+        })
+      );
     },
   });
 
@@ -105,11 +107,13 @@ test("generateObject requests JSON and validates through caller parser", async (
   let requestBody: Record<string, unknown> | undefined;
   const provider = new DeepSeekProvider({
     apiKey: "test-key",
-    fetch: async (_input, init) => {
+    fetch: (_input, init) => {
       requestBody = JSON.parse(String(init?.body));
-      return jsonResponse({
-        choices: [{ message: { content: '{"answer":42}' } }],
-      });
+      return Promise.resolve(
+        jsonResponse({
+          choices: [{ message: { content: '{"answer":42}' } }],
+        })
+      );
     },
   });
 
@@ -270,13 +274,15 @@ test("streamText emits text deltas and uses streaming request payload", async ()
   const metadata: unknown[] = [];
   const provider = new DeepSeekProvider({
     apiKey: "test-key",
-    fetch: async (_input, init) => {
+    fetch: (_input, init) => {
       requestBody = JSON.parse(String(init?.body));
-      return streamResponse([
-        'data: {"id":"stream-1","model":"deepseek-chat","choices":[{"delta":{"content":"Hel"}}]}\n\n',
-        'data: {"choices":[{"delta":{"content":"lo"}}]}\n\n',
-        "data: [DONE]\n\n",
-      ]);
+      return Promise.resolve(
+        streamResponse([
+          'data: {"id":"stream-1","model":"deepseek-chat","choices":[{"delta":{"content":"Hel"}}]}\n\n',
+          'data: {"choices":[{"delta":{"content":"lo"}}]}\n\n',
+          "data: [DONE]\n\n",
+        ])
+      );
     },
   });
 
