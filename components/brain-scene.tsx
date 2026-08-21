@@ -48,7 +48,7 @@ const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aScale; attribute float aSeed;
 uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
-varying vec3 vColor; varying float vPulse; varying float vEdge;
+varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 mat2 r2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
 void main(){
@@ -62,17 +62,17 @@ void main(){
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
  local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
- vColor=aColor; vPulse=.88+.22*sin(uTime*1.35+aSeed*11.0); vEdge=clamp(length(position)*1.25,0.0,1.0);
+ vColor=aColor; vPulse=.88+.22*sin(uTime*1.35+aSeed*11.0); vEdge=clamp(length(position)*1.25,0.0,1.0); vHover=pointerInfluence;
 }`;
 
 const BASE_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; uniform float uOpacity; void main(){ vec3 c=vColor*(.76+vPulse*.31); gl_FragColor=vec4(c,uOpacity); }";
+  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; uniform float uOpacity; void main(){ vec3 c=vColor*(.76+vPulse*.31+vHover*.24); gl_FragColor=vec4(c,uOpacity+.035*vHover); }";
 
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aSeed;
 uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
-varying vec3 vColor; varying float vAlpha;
+varying vec3 vColor; varying float vAlpha; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
@@ -89,11 +89,11 @@ void main(){
  gl_Position=projectionMatrix*mv;
  float perspective=clamp(2.7/max(.8,-mv.z),.45,2.4);
  gl_PointSize=(1.15+2.65*aSeed*aSeed)*perspective;
- vColor=aColor; vAlpha=.23+.27*aSeed;
+ vColor=aColor; vAlpha=.23+.27*aSeed; vHover=pointerInfluence;
 }`;
 
 const DUST_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vAlpha; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha; if(a<.015) discard; gl_FragColor=vec4(vColor*.86,a); }";
+  "precision highp float; varying vec3 vColor; varying float vAlpha; varying float vHover; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha*(1.0+.16*vHover); if(a<.015) discard; gl_FragColor=vec4(vColor*(.86+.16*vHover),a); }";
 
 const LINK_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
