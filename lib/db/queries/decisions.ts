@@ -173,7 +173,7 @@ export async function getDecisionRunRecord(
   return selected ?? null;
 }
 
-export async function createSavedDecisionRecord(
+export function createSavedDecisionRecord(
   input: CreateSavedDecisionRecordInput
 ): Promise<Decision | null> {
   return decisionPersistenceDb.transaction(async (tx) => {
@@ -343,7 +343,7 @@ export async function getDecisionDetailRecord(
   };
 }
 
-export async function listRecentDecisionRecords(
+export function listRecentDecisionRecords(
   userId: string,
   limit: number
 ): Promise<DecisionSummaryRecord[]> {
@@ -364,7 +364,7 @@ export async function listRecentDecisionRecords(
     .limit(normalizeRecentLimit(limit));
 }
 
-export async function listDueForReviewDecisionRecords(
+export function listDueForReviewDecisionRecords(
   userId: string
 ): Promise<DecisionSummaryRecord[]> {
   return decisionPersistenceDb
