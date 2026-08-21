@@ -41,7 +41,7 @@ export function createDecisionStream({
         }
       };
 
-      const onStarted = async (runId: string) => {
+      const onStarted = (runId: string) => {
         if (started) {
           throw new Error("Decision run emitted started more than once.");
         }
@@ -53,7 +53,7 @@ export function createDecisionStream({
         enqueue(encodeDecisionStreamEvent(startedEvent(runId)));
       };
 
-      const onProgress = async (progress: DecisionTransportProgress) => {
+      const onProgress = (progress: DecisionTransportProgress) => {
         if (!started) {
           throw new Error("Decision run emitted progress before started.");
         }
