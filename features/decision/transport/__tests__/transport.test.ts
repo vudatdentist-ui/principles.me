@@ -224,16 +224,12 @@ test("emits revision only when the orchestrator reports that stage", async () =>
   );
 });
 
-test("emits one safe typed error after streaming starts without leaking internals", async () => {
+test("maps a V2-201 typed error to one safe stream error without leaking internals", async () => {
   const rawSecret = "SQL postgres://secret@database and provider API key";
   const runner: DecisionTransportRunner = async ({ onProgress, onStarted }) => {
     await onStarted?.("run-1");
     await onProgress?.({ stage: "analysis" });
-    const error = Object.assign(new Error(rawSecret), {
-      code: "provider_error",
-      retryable: true,
-    });
-    throw error;
+    throw Object.assign(new Error(rawSecret), { code: "model_failed" });
   };
   const handler = createDecisionPostHandler({
     resolveUserId: resolveUser("user-123"),
@@ -248,8 +244,8 @@ test("emits one safe typed error after streaming starts without leaking internal
   assert.equal(events.some((event) => event.type === "done"), false);
   assert.equal(body.includes(rawSecret), false);
   assert.deepEqual(events.at(-1), {
-    code: "provider_error",
-    message: "A decision dependency is temporarily unavailable.",
+    code: "model_failed",
+    message: "Decision model request failed.",
     retryable: true,
     type: "error",
   });
