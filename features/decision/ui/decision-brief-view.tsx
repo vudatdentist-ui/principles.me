@@ -37,7 +37,7 @@ export function DecisionBriefView({
   return (
     <Surface className={styles.brief} variant="plain">
       <header className={styles.briefHeader}>
-        <p className="v2-type-eyebrow">Decision brief</p>
+        <p className={`${styles.eyebrow} v2-type-eyebrow`}>Decision brief</p>
         <h2 className={styles.recommendation}>{brief.recommendation}</h2>
         <p className={styles.confidence}>
           <strong>{confidenceLabel(brief.confidence.level)}.</strong>{" "}
