@@ -61,7 +61,7 @@ const LINK_COUNT = 72;
 const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aScale; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive; uniform sampler2D uTouch;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform vec2 uPointerScreen; uniform float uPointerActive; uniform sampler2D uTouch;
 varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 mat2 r2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
@@ -71,9 +71,9 @@ void main(){
  vec3 floatDirection=normalize(vec3(sin(aSeed*31.0+uTime*.17),cos(aSeed*23.0-uTime*.13),sin(aSeed*19.0+uTime*.11)));
  center+=floatDirection*floatMask*(.008+.026*floatWave);
  center.z += uDepth;
- vec2 pointerDelta=center.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float cursorInfluence=smoothstep(.34,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*24.0-uTime*3.6+aSeed*3.0);
- float touch=texture2D(uTouch,clamp((center.xy+vec2(2.4))/4.8,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.62);
- center.xy+=radial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
+ vec4 centerClip=projectionMatrix*modelViewMatrix*vec4(center,1.0); vec2 particleScreen=centerClip.xy/centerClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.26,0.0,screenDistance)*uPointerActive; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*42.0-uTime*3.6+aSeed*3.0);
+ float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.62);
+ center.xy+=screenRadial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
  local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
@@ -86,7 +86,7 @@ const BASE_FRAGMENT =
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive; uniform sampler2D uTouch;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform vec2 uPointerScreen; uniform float uPointerActive; uniform sampler2D uTouch;
 varying vec3 vColor; varying float vAlpha; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
@@ -96,9 +96,9 @@ void main(){
  vec3 floatDirection=normalize(vec3(cos(aSeed*27.0+uTime*.15),sin(aSeed*19.0-uTime*.12),cos(aSeed*17.0+uTime*.09)));
  p+=floatDirection*floatMask*(.006+.018*floatWave);
  p.z += uDepth;
- vec2 pointerDelta=p.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float cursorInfluence=smoothstep(.38,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*22.0-uTime*3.2+aSeed*4.0);
- float touch=texture2D(uTouch,clamp((p.xy+vec2(2.4))/4.8,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.5);
- p.xy+=radial*cursorInfluence*(.006+.008*ripple); p.z+=cursorInfluence*(.003+.005*ripple)+touch*.005;
+ vec4 particleClip=projectionMatrix*modelViewMatrix*vec4(p,1.0); vec2 particleScreen=particleClip.xy/particleClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.30,0.0,screenDistance)*uPointerActive; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*38.0-uTime*3.2+aSeed*4.0);
+ float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.5);
+ p.xy+=screenRadial*cursorInfluence*(.006+.008*ripple); p.z+=cursorInfluence*(.003+.005*ripple)+touch*.005;
  float breathe=.004*sin(uTime*.8+aSeed*17.0);
  p += normalize(p+vec3(.0001))*breathe;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
@@ -113,15 +113,15 @@ const DUST_FRAGMENT =
 
 const LINK_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive; uniform sampler2D uTouch;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform vec2 uPointerScreen; uniform float uPointerActive; uniform sampler2D uTouch;
 varying float vStrength;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
  vec3 p=mix(pick(uFrom),pick(uTo),e);
  float pulse=.5+.5*sin(uTime*.8+p.x*2.0+p.y*1.6);
- float cursorInfluence=smoothstep(.48,0.0,length(p.xy-uPointer.xy))*uPointerActive;
- float touch=texture2D(uTouch,clamp((p.xy+vec2(2.4))/4.8,.02,.98)).r;
+ vec4 linkClip=projectionMatrix*modelViewMatrix*vec4(p,1.0); vec2 linkScreen=linkClip.xy/linkClip.w; vec2 screenDelta=linkScreen-uPointerScreen; float cursorInfluence=smoothstep(.34,0.0,length(screenDelta))*uPointerActive;
+ float touch=texture2D(uTouch,clamp(linkScreen*.5+.5,.02,.98)).r;
  float influence=max(cursorInfluence,touch*.6);
  p += normalize(vec3(p.xy-uPointer.xy,.18))*cursorInfluence*.006;
  p.z += uDepth;
@@ -187,6 +187,7 @@ function uniformSet(touchTexture: THREE.Texture) {
     uMorph: { value: 1 },
     uPointer: { value: new THREE.Vector3() },
     uPointerActive: { value: 0 },
+    uPointerScreen: { value: new THREE.Vector2() },
     uTime: { value: 0 },
     uTo: { value: 0 },
     uTouch: { value: touchTexture },
@@ -458,7 +459,6 @@ function modeIndex(mode: BrainMode) {
 function updateTouchField(
   field: BrainTouchField,
   pointer: BrainPointer,
-  pointerLocal: THREE.Vector3,
   delta: number
 ) {
   const { canvas, context, samples } = field;
@@ -467,8 +467,8 @@ function updateTouchField(
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   if (pointer.active) {
-    const u = THREE.MathUtils.clamp((pointerLocal.x + 2.4) / 4.8, 0.02, 0.98);
-    const v = THREE.MathUtils.clamp((pointerLocal.y + 2.4) / 4.8, 0.02, 0.98);
+    const u = THREE.MathUtils.clamp(pointer.x * 0.5 + 0.5, 0.02, 0.98);
+    const v = THREE.MathUtils.clamp(pointer.y * 0.5 + 0.5, 0.02, 0.98);
     const [previous] = samples;
     const distance = previous
       ? Math.hypot(u - previous.u, v - previous.v)
@@ -510,15 +510,12 @@ function WisdomBrain({
   mode: BrainMode;
   pointerRef: { current: BrainPointer };
 }) {
-  const { camera } = useThree();
   const gltf = useLoader(GLTFLoader, "/brain.glb") as unknown as {
     scene: THREE.Group;
   };
   const state = useMemo(() => createWisdomBrain(gltf), [gltf]);
-  const pointerWorld = useMemo(() => new THREE.Vector3(), []);
-  const pointerDirection = useMemo(() => new THREE.Vector3(), []);
-  const pointerLocal = useMemo(() => new THREE.Vector3(), []);
-  const pointerSmooth = useMemo(() => new THREE.Vector3(), []);
+  const pointerScreenTarget = useMemo(() => new THREE.Vector2(), []);
+  const pointerScreenSmooth = useMemo(() => new THREE.Vector2(), []);
   const target = modeIndex(mode);
   const layout =
     mode === "brain"
@@ -562,32 +559,21 @@ function WisdomBrain({
   useFrame(({ clock }, delta) => {
     const time = clock.getElapsedTime();
     const pointer = pointerRef.current;
-    if (pointer.active) {
-      pointerWorld.set(pointer.x, pointer.y, 0.5).unproject(camera);
-      pointerDirection.copy(pointerWorld).sub(camera.position).normalize();
-      if (Math.abs(pointerDirection.z) > 0.0001) {
-        const distance = -camera.position.z / pointerDirection.z;
-        pointerWorld
-          .copy(camera.position)
-          .add(pointerDirection.multiplyScalar(distance));
-        pointerLocal.copy(pointerWorld);
-        state.group.worldToLocal(pointerLocal);
-      }
-    }
-    updateTouchField(state.touchField, pointer, pointerLocal, delta);
+    updateTouchField(state.touchField, pointer, delta);
+    pointerScreenTarget.set(pointer.x, pointer.y);
+    pointerScreenSmooth.lerp(pointerScreenTarget, 1 - Math.exp(-delta * 12));
     state.pointerStrength = THREE.MathUtils.damp(
       state.pointerStrength,
       pointer.active ? 1 : 0,
       6.5,
       delta
     );
-    pointerSmooth.lerp(pointerLocal, 1 - Math.exp(-delta * 9));
     state.shardMaterial.uniforms.uPointerActive.value = state.pointerStrength;
     state.dustMaterial.uniforms.uPointerActive.value = state.pointerStrength;
     state.lineMaterial.uniforms.uPointerActive.value = state.pointerStrength;
-    state.shardMaterial.uniforms.uPointer.value.copy(pointerSmooth);
-    state.dustMaterial.uniforms.uPointer.value.copy(pointerSmooth);
-    state.lineMaterial.uniforms.uPointer.value.copy(pointerSmooth);
+    state.shardMaterial.uniforms.uPointerScreen.value.copy(pointerScreenSmooth);
+    state.dustMaterial.uniforms.uPointerScreen.value.copy(pointerScreenSmooth);
+    state.lineMaterial.uniforms.uPointerScreen.value.copy(pointerScreenSmooth);
     state.shardMaterial.uniforms.uTime.value = time;
     state.dustMaterial.uniforms.uTime.value = time;
     state.lineMaterial.uniforms.uTime.value = time;
