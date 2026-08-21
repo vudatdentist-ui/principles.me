@@ -1,7 +1,19 @@
 name: Playwright Tests
+
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - "app/v2/**"
+      - "features/decision/**"
+      - "features/evidence/**"
+      - "features/shared/**"
+      - "docs/v2/**"
+      - "scripts/verify-v2-contracts.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - ".github/workflows/v2-foundation.yml"
+      - ".github/workflows/playwright.yml"
   pull_request:
     branches: [main, master]
     paths-ignore:
@@ -11,7 +23,10 @@ on:
       - "features/shared/**"
       - "docs/v2/**"
       - "scripts/verify-v2-contracts.ts"
+      - "package.json"
+      - "tsconfig.json"
       - ".github/workflows/v2-foundation.yml"
+      - ".github/workflows/playwright.yml"
 
 jobs:
   test:
@@ -33,9 +48,9 @@ jobs:
           node-version: lts/*
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.32.1
           run_install: false
 
       - name: Get pnpm store directory
@@ -44,7 +59,7 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -60,7 +75,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
