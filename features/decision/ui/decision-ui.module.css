@@ -69,7 +69,7 @@
   max-inline-size: 48rem;
 }
 
-.briefHeader :global(.v2-type-eyebrow) {
+.eyebrow {
   margin: 0 0 var(--v2-space-3);
 }
 
