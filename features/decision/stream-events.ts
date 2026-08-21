@@ -67,8 +67,8 @@ export type DecisionStreamEvent = z.infer<typeof decisionStreamEventSchema>;
 export class DecisionStreamProtocolError extends Error {
   readonly line: string;
 
-  constructor(message: string, line: string, options?: ErrorOptions) {
-    super(message, options);
+  constructor(message: string, line: string, cause?: unknown) {
+    super(message, { cause });
     this.name = "DecisionStreamProtocolError";
     this.line = line;
   }
@@ -89,7 +89,7 @@ export function parseDecisionStreamLine(
     throw new DecisionStreamProtocolError(
       "Decision stream contained invalid JSON.",
       trimmed,
-      { cause: error }
+      error
     );
   }
 
@@ -98,7 +98,7 @@ export function parseDecisionStreamLine(
     throw new DecisionStreamProtocolError(
       "Decision stream event did not match the v1 contract.",
       trimmed,
-      { cause: parsed.error }
+      parsed.error
     );
   }
 
