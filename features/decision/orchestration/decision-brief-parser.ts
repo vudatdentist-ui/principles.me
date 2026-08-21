@@ -51,7 +51,7 @@ function invalidOutput(message: string): DecisionModelOutputError {
 export function parseDecisionAnalysis(value: unknown): DecisionAnalysis {
   const input = requiredRecord(value, "analysis");
   const confidence = requiredRecord(input.confidence, "confidence");
-  const level = confidence.level;
+  const { level } = confidence;
   if (level !== "low" && level !== "medium" && level !== "high") {
     throw invalidOutput("confidence.level is invalid.");
   }
@@ -80,7 +80,7 @@ export function parseDecisionAnalysis(value: unknown): DecisionAnalysis {
   });
 
   const review = requiredRecord(input.review, "review");
-  const suggestedAt = review.suggestedAt;
+  const { suggestedAt } = review;
   if (suggestedAt !== null && typeof suggestedAt !== "string") {
     throw invalidOutput("review.suggestedAt must be a string or null.");
   }
@@ -107,11 +107,11 @@ export function parseDecisionAnalysis(value: unknown): DecisionAnalysis {
 
 export function parseDecisionAudit(value: unknown): DecisionAudit {
   const input = requiredRecord(value, "audit");
-  const decision = input.decision;
+  const { decision } = input;
   if (decision !== "accept" && decision !== "revise") {
     throw invalidOutput("audit.decision is invalid.");
   }
-  const verdict = input.verdict;
+  const { verdict } = input;
   if (verdict !== "grounded" && verdict !== "mixed" && verdict !== "ungrounded") {
     throw invalidOutput("audit.verdict is invalid.");
   }

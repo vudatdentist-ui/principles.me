@@ -1,4 +1,4 @@
-import type { JsonSnapshot } from "../persistence";
+import type { DecisionRun, JsonSnapshot } from "../persistence";
 import type { EvidenceReference } from "../../evidence/contracts";
 import { EvidenceProviderError } from "../../evidence/providers/provider-error";
 import { AiProviderError } from "../../../lib/ai/providers/provider-error";
@@ -212,7 +212,7 @@ export function createDecisionOrchestrator(
       let runId: string | null = null;
       try {
         await emitProgress(request, "context");
-        let run;
+        let run: DecisionRun;
         try {
           run = await dependencies.repository.createRun({
             contextSnapshot: context,
