@@ -91,7 +91,7 @@ export const reviewRepository: ReviewRepository = {
     return outcomes.map(mapOutcome);
   },
 
-  async markDecisionReviewed(decisionId, userId, reviewedAt = new Date()) {
+  markDecisionReviewed(decisionId, userId, reviewedAt = new Date()) {
     return markDecisionReviewedRecord(decisionId, userId, reviewedAt);
   },
 };
