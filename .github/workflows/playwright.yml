@@ -3,30 +3,14 @@ name: Playwright Tests
 on:
   push:
     branches: [main, master]
-    paths-ignore:
-      - "app/v2/**"
-      - "features/decision/**"
-      - "features/evidence/**"
-      - "features/shared/**"
-      - "docs/v2/**"
-      - "scripts/verify-v2-contracts.ts"
-      - "package.json"
-      - "tsconfig.json"
-      - ".github/workflows/v2-foundation.yml"
-      - ".github/workflows/playwright.yml"
+    paths:
+      - "tests/**"
+      - "playwright.config.ts"
   pull_request:
     branches: [main, master]
-    paths-ignore:
-      - "app/v2/**"
-      - "features/decision/**"
-      - "features/evidence/**"
-      - "features/shared/**"
-      - "docs/v2/**"
-      - "scripts/verify-v2-contracts.ts"
-      - "package.json"
-      - "tsconfig.json"
-      - ".github/workflows/v2-foundation.yml"
-      - ".github/workflows/playwright.yml"
+    paths:
+      - "tests/**"
+      - "playwright.config.ts"
 
 jobs:
   test:
