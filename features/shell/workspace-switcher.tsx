@@ -1,6 +1,10 @@
 "use client";
 
-import type { ChangeEvent, SelectHTMLAttributes } from "react";
+import {
+  useCallback,
+  type ChangeEvent,
+  type SelectHTMLAttributes,
+} from "react";
 import {
   defaultWorkspaceOptions,
   type ShellWorkspaceOption,
@@ -28,10 +32,13 @@ export function WorkspaceSwitcher({
     .filter(Boolean)
     .join(" ");
 
-  function handleChange(event: ChangeEvent<HTMLSelectElement>) {
-    onChange?.(event);
-    onValueChange?.(event.currentTarget.value);
-  }
+  const handleChange = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      onChange?.(event);
+      onValueChange?.(event.currentTarget.value);
+    },
+    [onChange, onValueChange]
+  );
 
   return (
     <label className={classes}>
