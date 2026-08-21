@@ -1,0 +1,264 @@
+.workspace {
+  color: var(--v2-color-text);
+  inline-size: 100%;
+}
+
+.header {
+  margin-block-end: var(--v2-space-6);
+  max-inline-size: 42rem;
+}
+
+.title {
+  font-size: clamp(2rem, 1.7rem + 1.2vw, 3rem);
+  font-weight: 560;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin: var(--v2-space-2) 0 0;
+  text-wrap: balance;
+}
+
+.lede {
+  color: var(--v2-color-text-secondary);
+  font-size: var(--v2-text-md);
+  line-height: 1.6;
+  margin: var(--v2-space-4) 0 0;
+  max-inline-size: 38rem;
+}
+
+.statusRegion {
+  border-block-end: var(--v2-border-width) solid var(--v2-color-border);
+  padding-block: var(--v2-space-4);
+}
+
+.errorRegion {
+  border-block: var(--v2-border-width) solid var(--v2-color-border);
+  margin-block-start: var(--v2-space-6);
+  padding-block: var(--v2-space-5);
+}
+
+.errorRegion h2 {
+  margin: 0 0 var(--v2-space-2);
+}
+
+.retryAction {
+  margin-block-start: var(--v2-space-4);
+}
+
+.workspace :global(.v2-decision-ask-form) {
+  display: grid;
+  gap: var(--v2-space-3);
+}
+
+.workspace :global(.v2-decision-ask-form .v2-textarea) {
+  background: transparent;
+  font-size: var(--v2-text-lg);
+  min-block-size: 9.5rem;
+  padding: var(--v2-space-4);
+}
+
+.workspace :global(.v2-decision-ask-form__actions) {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.workspace :global(.v2-decision-brief) {
+  margin-block-start: var(--v2-space-8);
+}
+
+.workspace :global(.v2-decision-brief__header) {
+  max-inline-size: 48rem;
+}
+
+.workspace :global(.v2-decision-brief__header .v2-type-eyebrow) {
+  margin: 0 0 var(--v2-space-3);
+}
+
+.workspace :global(.v2-decision-brief__recommendation) {
+  font-size: clamp(1.75rem, 1.55rem + 0.8vw, 2.4rem);
+  font-weight: 560;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.workspace :global(.v2-decision-brief__confidence) {
+  color: var(--v2-color-text-secondary);
+  line-height: 1.6;
+  margin: var(--v2-space-4) 0 0;
+}
+
+.workspace :global(.v2-decision-brief__confidence strong) {
+  color: var(--v2-color-text);
+  font-weight: 620;
+}
+
+.workspace :global(.v2-decision-brief__section-title) {
+  color: var(--v2-color-text-muted);
+  font-size: var(--v2-text-xs);
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  margin: 0 0 var(--v2-space-3);
+  text-transform: uppercase;
+}
+
+.workspace :global(.v2-decision-brief section) {
+  margin-block-start: var(--v2-space-6);
+}
+
+.workspace :global(.v2-decision-brief section p) {
+  line-height: 1.65;
+  margin: 0;
+}
+
+.workspace :global(.v2-decision-reasons) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workspace :global(.v2-decision-reason) {
+  border-block-start: var(--v2-border-width) solid var(--v2-color-border);
+  padding-block: var(--v2-space-4);
+}
+
+.workspace :global(.v2-decision-reason:last-child) {
+  border-block-end: var(--v2-border-width) solid var(--v2-color-border);
+}
+
+.workspace :global(.v2-decision-reason__text) {
+  font-size: var(--v2-text-md);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.workspace :global(.v2-decision-reason__meta) {
+  color: var(--v2-color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-family: var(--v2-font-mono);
+  font-size: var(--v2-text-xs);
+  gap: var(--v2-space-3);
+  letter-spacing: 0.01em;
+  margin: var(--v2-space-2) 0 0;
+}
+
+.workspace :global(.v2-decision-brief__split) {
+  display: grid;
+  gap: var(--v2-space-6);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workspace :global(.v2-decision-unknowns) {
+  display: grid;
+  gap: var(--v2-space-2);
+  margin: 0;
+  padding-inline-start: 1.2rem;
+}
+
+.workspace :global(.v2-decision-brief__actions) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v2-space-2);
+}
+
+.workspace :global(.v2-decision-brief__validity) {
+  color: var(--v2-color-text-muted);
+  font-family: var(--v2-font-mono);
+  font-size: var(--v2-text-xs);
+  margin: var(--v2-space-4) 0 0;
+}
+
+.workspace :global(.v2-decision-evidence__empty) {
+  color: var(--v2-color-text-muted);
+  margin: 0;
+}
+
+.workspace :global(.v2-decision-evidence__item) {
+  border-block-end: var(--v2-border-width) solid var(--v2-color-border);
+  padding-block: var(--v2-space-5);
+}
+
+.workspace :global(.v2-decision-evidence__item:first-child) {
+  padding-block-start: 0;
+}
+
+.workspace :global(.v2-decision-evidence__key) {
+  color: var(--v2-color-text-muted);
+  font-family: var(--v2-font-mono);
+  font-size: var(--v2-text-xs);
+  margin: 0 0 var(--v2-space-2);
+}
+
+.workspace :global(.v2-decision-evidence__title) {
+  font-size: var(--v2-text-md);
+  font-weight: 620;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.workspace :global(.v2-decision-evidence__meta) {
+  color: var(--v2-color-text-muted);
+  font-size: var(--v2-text-sm);
+  margin: var(--v2-space-1) 0 0;
+}
+
+.workspace :global(.v2-decision-evidence__dates) {
+  display: grid;
+  gap: var(--v2-space-2);
+  margin: var(--v2-space-4) 0 0;
+}
+
+.workspace :global(.v2-decision-evidence__dates div) {
+  display: grid;
+  gap: var(--v2-space-1);
+  grid-template-columns: 5rem 1fr;
+}
+
+.workspace :global(.v2-decision-evidence__dates dt),
+.workspace :global(.v2-decision-evidence__dates dd) {
+  font-size: var(--v2-text-xs);
+  margin: 0;
+}
+
+.workspace :global(.v2-decision-evidence__dates dt) {
+  color: var(--v2-color-text-muted);
+}
+
+.workspace :global(.v2-decision-evidence__excerpt) {
+  color: var(--v2-color-text-secondary);
+  font-size: var(--v2-text-sm);
+  line-height: 1.6;
+  margin: var(--v2-space-4) 0 0;
+}
+
+.workspace :global(.v2-decision-evidence__link-row) {
+  margin: var(--v2-space-3) 0 0;
+}
+
+.workspace :global(.v2-decision-evidence__link-row a) {
+  color: var(--v2-color-accent);
+  font-size: var(--v2-text-sm);
+  text-underline-offset: 0.2em;
+}
+
+.workspace :global(.v2-decision-evidence__link-row a:focus-visible) {
+  outline: var(--v2-focus-width) solid var(--v2-color-focus);
+  outline-offset: 3px;
+}
+
+@media (max-width: 42rem) {
+  .workspace :global(.v2-decision-brief__split) {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace :global(.v2-decision-ask-form .v2-textarea) {
+    font-size: var(--v2-text-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace * {
+    scroll-behavior: auto;
+  }
+}
