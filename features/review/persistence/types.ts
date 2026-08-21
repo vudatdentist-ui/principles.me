@@ -66,22 +66,22 @@ export interface CreatePrincipleReviewInput {
 }
 
 export interface ReviewRepository {
-  createAssumptionReview(
+  createAssumptionReview: (
     input: CreateAssumptionReviewInput
-  ): Promise<PersistedAssumptionReview | null>;
-  createOutcome(
+  ) => Promise<PersistedAssumptionReview | null>;
+  createOutcome: (
     input: CreateDecisionOutcomeInput
-  ): Promise<PersistedDecisionOutcome | null>;
-  createPrincipleReview(
+  ) => Promise<PersistedDecisionOutcome | null>;
+  createPrincipleReview: (
     input: CreatePrincipleReviewInput
-  ): Promise<PersistedPrincipleReview | null>;
-  listOutcomes(
+  ) => Promise<PersistedPrincipleReview | null>;
+  listOutcomes: (
     decisionId: string,
     userId: string
-  ): Promise<PersistedDecisionOutcome[]>;
-  markDecisionReviewed(
+  ) => Promise<PersistedDecisionOutcome[]>;
+  markDecisionReviewed: (
     decisionId: string,
     userId: string,
     reviewedAt?: Date
-  ): Promise<boolean>;
+  ) => Promise<boolean>;
 }
