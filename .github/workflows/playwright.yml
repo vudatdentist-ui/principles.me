@@ -39,10 +39,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  cancel-in-progress: true
-  group: v2-playwright-${{ github.ref }}
-
 jobs:
   test:
     timeout-minutes: 20
