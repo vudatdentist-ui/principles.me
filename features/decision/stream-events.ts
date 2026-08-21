@@ -64,13 +64,17 @@ export const decisionStreamEventSchema = z.discriminatedUnion("type", [
 export type DecisionStage = z.infer<typeof decisionStageSchema>;
 export type DecisionStreamEvent = z.infer<typeof decisionStreamEventSchema>;
 
+type DecisionStreamProtocolErrorOptions = ErrorOptions & {
+  line: string;
+};
+
 export class DecisionStreamProtocolError extends Error {
   readonly line: string;
 
-  constructor(message: string, line: string, cause?: unknown) {
-    super(message, { cause });
+  constructor(message: string, options: DecisionStreamProtocolErrorOptions) {
+    super(message, { cause: options.cause });
     this.name = "DecisionStreamProtocolError";
-    this.line = line;
+    this.line = options.line;
   }
 }
 
@@ -88,8 +92,7 @@ export function parseDecisionStreamLine(
   } catch (error) {
     throw new DecisionStreamProtocolError(
       "Decision stream contained invalid JSON.",
-      trimmed,
-      error
+      { cause: error, line: trimmed }
     );
   }
 
@@ -97,8 +100,7 @@ export function parseDecisionStreamLine(
   if (!parsed.success) {
     throw new DecisionStreamProtocolError(
       "Decision stream event did not match the v1 contract.",
-      trimmed,
-      parsed.error
+      { cause: parsed.error, line: trimmed }
     );
   }
 
