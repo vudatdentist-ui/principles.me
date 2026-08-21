@@ -36,7 +36,30 @@ jobs:
         run: pnpm contracts:v2
       - name: Typecheck
         run: pnpm typecheck
-      - name: Lint v2 scope
+      - name: Lint foundation scope
         run: pnpm exec biome lint app/v2 features/decision features/evidence features/shared scripts/verify-v2-contracts.ts
+      - name: Validate available Wave 1 scopes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d features/evidence/providers ]; then
+            pnpm exec biome lint features/evidence/providers
+            pnpm exec tsx --test features/evidence/providers/__tests__/*.test.ts
+          fi
+          if [ -d features/brain ]; then
+            pnpm exec biome lint features/brain
+            pnpm exec tsx --test features/brain/__tests__/*.test.ts
+          fi
+          if [ -d lib/ai/providers ]; then
+            pnpm exec biome lint lib/ai/providers
+            pnpm exec tsx --test lib/ai/providers/__tests__/*.test.ts
+          fi
+          if [ -d features/shell ]; then
+            pnpm exec biome lint features/shell features/ui-v2 styles/v2
+          fi
+          if [ -d features/decision/persistence ]; then
+            pnpm exec biome lint lib/db/schema.ts lib/db/queries features/decision/persistence features/review/persistence
+            POSTGRES_URL=postgres://validation:validation@127.0.0.1:5432/principles_validation pnpm db:check
+          fi
       - name: Build
         run: pnpm build
