@@ -95,7 +95,7 @@ test("stream parser preserves Unicode across multibyte chunk boundaries", async 
   const encoder = new TextEncoder();
   const bytes = encoder.encode('data: {"text":"Xin chào 👋"}\n\ndata: [DONE]\n\n');
   const emoji = encoder.encode("👋");
-  const emojiStart = bytes.findIndex((value, index) =>
+  const emojiStart = bytes.findIndex((_value, index) =>
     emoji.every((emojiByte, offset) => bytes[index + offset] === emojiByte)
   );
   assert.ok(emojiStart > 0);
