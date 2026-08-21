@@ -179,10 +179,9 @@ function createRendererState(
   gltf: { scene: THREE.Group },
   graph: RenderableBrainGraph,
   policy: BrainPerformancePolicy,
-  view: BrainView
+  initialMorph: number
 ): BrainRendererState {
   const count = policy.particleCount;
-  const initialMorph = view === "graph" ? 1 : 0;
   const group = new THREE.Group();
   const brainPositions = sampleBrainPositions(gltf, count);
   const graphParticles = createGraphParticlePositions(graph, count);
@@ -331,9 +330,10 @@ function WisdomBrain({
   const gltf = useLoader(GLTFLoader, "/brain.glb") as unknown as {
     scene: THREE.Group;
   };
+  const [initialMorph] = useState(() => (view === "graph" ? 1 : 0));
   const state = useMemo(
-    () => createRendererState(gltf, graph, policy, view),
-    [gltf, graph, policy, view]
+    () => createRendererState(gltf, graph, policy, initialMorph),
+    [gltf, graph, initialMorph, policy]
   );
   const pointerTarget = useMemo(() => new THREE.Vector2(), []);
   const pointerSmooth = useMemo(() => new THREE.Vector2(), []);
@@ -363,10 +363,6 @@ function WisdomBrain({
     }
     state.lineMaterial.uniforms.uTime.value = time;
     state.lineMaterial.uniforms.uMorph.value = state.morph;
-
-    if (policy.autoRotate && view === "brain") {
-      state.group.rotation.y += delta * 0.055;
-    }
   });
 
   const layout =
