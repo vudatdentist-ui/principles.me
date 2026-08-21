@@ -1,0 +1,40 @@
+name: V2 Foundation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "arch/**"
+      - "agent/**"
+      - "integration/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  cancel-in-progress: true
+  group: v2-foundation-${{ github.ref }}
+
+jobs:
+  contracts:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          cache: pnpm
+          node-version: 20
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify v2 contracts
+        run: pnpm contracts:v2
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Repository checks
+        run: pnpm check
