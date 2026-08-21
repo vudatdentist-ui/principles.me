@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getBrainPerformancePolicy } from "../brain-performance";
+import {
+  createCachedBrainCapabilityReader,
+  getBrainPerformancePolicy,
+} from "../brain-performance";
 
 test("defaults to full quality when no constraints are reported", () => {
   assert.equal(getBrainPerformancePolicy().tier, "full");
@@ -45,4 +48,27 @@ test("caller override is deterministic when accessibility allows it", () => {
     webglAvailable: true,
   });
   assert.equal(policy.tier, "reduced");
+});
+
+test("cached capability detection is reused across viewport decisions", () => {
+  let detectionCount = 0;
+  const readWebglAvailability = createCachedBrainCapabilityReader(() => {
+    detectionCount += 1;
+    return true;
+  });
+
+  const full = getBrainPerformancePolicy({
+    viewportHeight: 800,
+    viewportWidth: 1200,
+    webglAvailable: readWebglAvailability(),
+  });
+  const reduced = getBrainPerformancePolicy({
+    viewportHeight: 800,
+    viewportWidth: 820,
+    webglAvailable: readWebglAvailability(),
+  });
+
+  assert.equal(detectionCount, 1);
+  assert.equal(full.tier, "full");
+  assert.equal(reduced.tier, "reduced");
 });
