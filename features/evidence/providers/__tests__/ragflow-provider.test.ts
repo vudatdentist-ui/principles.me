@@ -20,33 +20,35 @@ function jsonResponse(payload: unknown, status = 200): Response {
 test("RAGFlow success normalizes multiple chunks and preserves legacy request conventions", async () => {
   let requestedUrl = "";
   let requestedInit: RequestInit | undefined;
-  const fetchMock: typeof fetch = async (input, init) => {
+  const fetchMock: typeof fetch = (input, init) => {
     requestedUrl = String(input);
     requestedInit = init;
-    return jsonResponse({
-      code: 0,
-      data: {
-        chunks: [
-          {
-            content: "First excerpt",
-            dataset_id: "dataset-a",
-            document_id: "doc-a",
-            document_name: "Document A",
-            id: "chunk-a",
-            positions: [[12, 0, 12, 480]],
-            similarity: 0.92,
-          },
-          {
-            chunk_id: "chunk-b",
-            content_with_weight: "Second excerpt",
-            dataset_id: "dataset-b",
-            doc_id: "doc-b",
-            docnm_kwd: "Document B",
-            similarity: "0.81",
-          },
-        ],
-      },
-    });
+    return Promise.resolve(
+      jsonResponse({
+        code: 0,
+        data: {
+          chunks: [
+            {
+              content: "First excerpt",
+              dataset_id: "dataset-a",
+              document_id: "doc-a",
+              document_name: "Document A",
+              id: "chunk-a",
+              positions: [[12, 0, 12, 480]],
+              similarity: 0.92,
+            },
+            {
+              chunk_id: "chunk-b",
+              content_with_weight: "Second excerpt",
+              dataset_id: "dataset-b",
+              doc_id: "doc-b",
+              docnm_kwd: "Document B",
+              similarity: "0.81",
+            },
+          ],
+        },
+      })
+    );
   };
 
   const provider = new RagflowEvidenceProvider({
@@ -189,9 +191,9 @@ test("RAGFlow respects an already-aborted caller signal without fetching", async
   let called = false;
   const provider = new RagflowEvidenceProvider({
     env: BASE_ENV,
-    fetch: async () => {
+    fetch: () => {
       called = true;
-      return jsonResponse({ code: 0, data: { chunks: [] } });
+      return Promise.resolve(jsonResponse({ code: 0, data: { chunks: [] } }));
     },
   });
   const controller = new AbortController();
