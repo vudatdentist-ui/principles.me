@@ -54,6 +54,19 @@ const POLICIES: Readonly<Record<BrainQualityTier, BrainPerformancePolicy>> = {
   },
 };
 
+export function createCachedBrainCapabilityReader(
+  readCapability: () => boolean
+): () => boolean {
+  let cached: boolean | undefined;
+
+  return () => {
+    if (cached === undefined) {
+      cached = readCapability();
+    }
+    return cached;
+  };
+}
+
 export function getBrainPerformancePolicy(
   input: BrainPerformanceInput = {}
 ): BrainPerformancePolicy {
