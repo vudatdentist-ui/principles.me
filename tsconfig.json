@@ -29,7 +29,10 @@
     "app/**/*.tsx",
     "components/brain-scene.tsx",
     "components/principles-council.tsx",
+    "features/**/*.ts",
+    "features/**/*.tsx",
     "lib/principles-graph.ts",
+    "scripts/verify-v2-contracts.ts",
     ".next/types/**/*.ts",
     "next.config.js",
     ".next/dev/types/**/*.ts"

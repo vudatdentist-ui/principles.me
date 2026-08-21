@@ -1,0 +1,46 @@
+.shell {
+  background: #f7f6f2;
+  color: #171714;
+  min-height: 100vh;
+}
+
+.header {
+  align-items: center;
+  border-bottom: 1px solid rgb(23 23 20 / 10%);
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 76rem;
+  padding: 1.1rem clamp(1.25rem, 4vw, 3rem);
+}
+
+.brand {
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.navigation {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.navigation a {
+  color: rgb(23 23 20 / 66%);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.navigation a:focus-visible,
+.navigation a:hover {
+  color: inherit;
+  outline: none;
+}
+
+.main {
+  margin: 0 auto;
+  max-width: 76rem;
+  padding: 0 clamp(1.25rem, 4vw, 3rem);
+}
