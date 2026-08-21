@@ -26,7 +26,7 @@ async function resolveUserId(request: Request): Promise<string | null> {
   }
 }
 
-const unavailableRunner: DecisionTransportRunner = async () => {
+const unavailableRunner: DecisionTransportRunner = () => {
   throw Object.assign(new Error("Decision orchestrator is not available."), {
     code: "orchestrator_unavailable",
     retryable: true,
