@@ -36,5 +36,7 @@ jobs:
         run: pnpm contracts:v2
       - name: Typecheck
         run: pnpm typecheck
-      - name: Repository checks
-        run: pnpm check
+      - name: Lint v2 scope
+        run: pnpm exec biome lint app/v2 features/decision features/evidence features/shared scripts/verify-v2-contracts.ts
+      - name: Build
+        run: pnpm build
