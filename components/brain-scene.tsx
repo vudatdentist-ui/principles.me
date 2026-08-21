@@ -27,6 +27,19 @@ type BrainPointer = {
   y: number;
 };
 
+type TouchSample = {
+  life: number;
+  u: number;
+  v: number;
+};
+
+type BrainTouchField = {
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  samples: TouchSample[];
+  texture: THREE.CanvasTexture;
+};
+
 type WisdomBrainState = {
   dustMaterial: THREE.ShaderMaterial;
   group: THREE.Group;
@@ -34,6 +47,7 @@ type WisdomBrainState = {
   linkLines: THREE.LineSegments;
   morph: number;
   pointerStrength: number;
+  touchField: BrainTouchField;
   shardMaterial: THREE.ShaderMaterial;
   from: number;
   to: number;
@@ -47,7 +61,7 @@ const LINK_COUNT = 72;
 const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aScale; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive; uniform sampler2D uTouch;
 varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 mat2 r2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
@@ -57,8 +71,9 @@ void main(){
  vec3 floatDirection=normalize(vec3(sin(aSeed*31.0+uTime*.17),cos(aSeed*23.0-uTime*.13),sin(aSeed*19.0+uTime*.11)));
  center+=floatDirection*floatMask*(.008+.026*floatWave);
  center.z += uDepth;
- vec2 pointerDelta=center.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float pointerInfluence=smoothstep(.42,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*24.0-uTime*3.6+aSeed*3.0);
- center.xy+=radial*pointerInfluence*(.032+.026*ripple); center.z+=pointerInfluence*(.008+.014*ripple);
+ vec2 pointerDelta=center.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float cursorInfluence=smoothstep(.34,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*24.0-uTime*3.6+aSeed*3.0);
+ float touch=texture2D(uTouch,clamp((center.xy+vec2(2.4))/4.8,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.62);
+ center.xy+=radial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
  local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
@@ -71,7 +86,7 @@ const BASE_FRAGMENT =
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute float aSeed;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive; uniform sampler2D uTouch;
 varying vec3 vColor; varying float vAlpha; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
@@ -81,8 +96,9 @@ void main(){
  vec3 floatDirection=normalize(vec3(cos(aSeed*27.0+uTime*.15),sin(aSeed*19.0-uTime*.12),cos(aSeed*17.0+uTime*.09)));
  p+=floatDirection*floatMask*(.006+.018*floatWave);
  p.z += uDepth;
- vec2 pointerDelta=p.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float pointerInfluence=smoothstep(.46,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*22.0-uTime*3.2+aSeed*4.0);
- p.xy+=radial*pointerInfluence*(.022+.018*ripple); p.z+=pointerInfluence*(.005+.008*ripple);
+ vec2 pointerDelta=p.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float cursorInfluence=smoothstep(.38,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*22.0-uTime*3.2+aSeed*4.0);
+ float touch=texture2D(uTouch,clamp((p.xy+vec2(2.4))/4.8,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.5);
+ p.xy+=radial*cursorInfluence*(.006+.008*ripple); p.z+=cursorInfluence*(.003+.005*ripple)+touch*.005;
  float breathe=.004*sin(uTime*.8+aSeed*17.0);
  p += normalize(p+vec3(.0001))*breathe;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
@@ -97,19 +113,21 @@ const DUST_FRAGMENT =
 
 const LINK_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
-uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive;
+uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform float uPointerActive; uniform sampler2D uTouch;
 varying float vStrength;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
  vec3 p=mix(pick(uFrom),pick(uTo),e);
  float pulse=.5+.5*sin(uTime*.8+p.x*2.0+p.y*1.6);
- float influence=smoothstep(.58,0.0,length(p.xy-uPointer.xy))*uPointerActive;
- p += normalize(vec3(p.xy-uPointer.xy,.18))*influence*.012;
+ float cursorInfluence=smoothstep(.48,0.0,length(p.xy-uPointer.xy))*uPointerActive;
+ float touch=texture2D(uTouch,clamp((p.xy+vec2(2.4))/4.8,.02,.98)).r;
+ float influence=max(cursorInfluence,touch*.6);
+ p += normalize(vec3(p.xy-uPointer.xy,.18))*cursorInfluence*.006;
  p.z += uDepth;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
  gl_Position=projectionMatrix*mv;
- vStrength=.025+.018*pulse+.08*influence;
+ vStrength=.025+.018*pulse+.05*influence;
 }`;
 
 const LINK_FRAGMENT =
@@ -142,7 +160,27 @@ function colorFor(point: THREE.Vector3) {
   );
 }
 
-function uniformSet() {
+function createTouchField(): BrainTouchField {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("The Brain touch field could not be created.");
+  }
+  context.fillStyle = "#000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.generateMipmaps = false;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return { canvas, context, samples: [], texture };
+}
+
+function uniformSet(touchTexture: THREE.Texture) {
   return {
     uDepth: { value: 0 },
     uFrom: { value: 0 },
@@ -151,11 +189,13 @@ function uniformSet() {
     uPointerActive: { value: 0 },
     uTime: { value: 0 },
     uTo: { value: 0 },
+    uTouch: { value: touchTexture },
   };
 }
 
 function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   const group = new THREE.Group();
+  const touchField = createTouchField();
   const meshes: THREE.Mesh[] = [];
   gltf.scene.updateMatrixWorld(true);
   gltf.scene.traverse((object) => {
@@ -252,7 +292,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   dustGeometry.setAttribute("aCouncil", new THREE.BufferAttribute(council, 3));
   dustGeometry.setAttribute("aColor", new THREE.BufferAttribute(colors, 3));
   dustGeometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
-  const dustUniforms = uniformSet();
+  const dustUniforms = uniformSet(touchField.texture);
   const dustMaterial = new THREE.ShaderMaterial({
     blending: THREE.AdditiveBlending,
     depthWrite: false,
@@ -297,7 +337,10 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     new THREE.InstancedBufferAttribute(seeds, 1)
   );
   shardGeometry.instanceCount = SHARD_COUNT;
-  const shardUniforms = { ...uniformSet(), uOpacity: { value: 0.54 } };
+  const shardUniforms = {
+    ...uniformSet(touchField.texture),
+    uOpacity: { value: 0.54 },
+  };
   const shardMaterial = new THREE.ShaderMaterial({
     blending: THREE.AdditiveBlending,
     depthWrite: false,
@@ -377,7 +420,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     fragmentShader: LINK_FRAGMENT,
     transparent: true,
     uniforms: {
-      ...uniformSet(),
+      ...uniformSet(touchField.texture),
       uDepth: { value: 0.04 },
       uOpacity: { value: 0.42 },
     },
@@ -398,6 +441,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     pointerStrength: 0,
     shardMaterial,
     to: 0,
+    touchField,
   };
 }
 
@@ -409,6 +453,54 @@ function modeIndex(mode: BrainMode) {
       : mode === "constellation"
         ? 2
         : 3;
+}
+
+function updateTouchField(
+  field: BrainTouchField,
+  pointer: BrainPointer,
+  pointerLocal: THREE.Vector3,
+  delta: number
+) {
+  const { canvas, context, samples } = field;
+  const fade = Math.min(0.28, delta * 3.4);
+  context.fillStyle = `rgba(0, 0, 0, ${fade})`;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (pointer.active) {
+    const u = THREE.MathUtils.clamp((pointerLocal.x + 2.4) / 4.8, 0.02, 0.98);
+    const v = THREE.MathUtils.clamp((pointerLocal.y + 2.4) / 4.8, 0.02, 0.98);
+    const [previous] = samples;
+    const distance = previous
+      ? Math.hypot(u - previous.u, v - previous.v)
+      : Number.POSITIVE_INFINITY;
+    if (distance > 0.004) {
+      samples.unshift({ life: 1, u, v });
+      if (samples.length > 48) {
+        samples.pop();
+      }
+    }
+  }
+
+  context.globalCompositeOperation = "lighter";
+  for (const sample of samples) {
+    sample.life = Math.max(0, sample.life - delta * 1.8);
+    const x = sample.u * canvas.width;
+    const y = (1 - sample.v) * canvas.height;
+    const radius = 7 + (1 - sample.life) * 12;
+    const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${sample.life * 0.72})`);
+    gradient.addColorStop(0.35, `rgba(255, 255, 255, ${sample.life * 0.28})`);
+    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+    context.fillStyle = gradient;
+    context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+  context.globalCompositeOperation = "source-over";
+  for (let index = samples.length - 1; index >= 0; index -= 1) {
+    if (samples[index].life <= 0.015) {
+      samples.splice(index, 1);
+    }
+  }
+  field.texture.needsUpdate = true;
 }
 
 function WisdomBrain({
@@ -446,6 +538,8 @@ function WisdomBrain({
               scale: 0.78,
             };
 
+  useEffect(() => () => state.touchField.texture.dispose(), [state]);
+
   useEffect(() => {
     if (state.to === target) {
       return;
@@ -480,6 +574,7 @@ function WisdomBrain({
         state.group.worldToLocal(pointerLocal);
       }
     }
+    updateTouchField(state.touchField, pointer, pointerLocal, delta);
     state.pointerStrength = THREE.MathUtils.damp(
       state.pointerStrength,
       pointer.active ? 1 : 0,
