@@ -71,7 +71,7 @@ void main(){
  vec3 floatDirection=normalize(vec3(sin(aSeed*31.0+uTime*.17),cos(aSeed*23.0-uTime*.13),sin(aSeed*19.0+uTime*.11)));
  center+=floatDirection*floatMask*(.008+.026*floatWave);
  center.z += uDepth;
- vec4 centerClip=projectionMatrix*modelViewMatrix*vec4(center,1.0); vec2 particleScreen=centerClip.xy/centerClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float frontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float cursorInfluence=smoothstep(.26,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*42.0-uTime*3.6+aSeed*3.0);
+ vec4 centerView=modelViewMatrix*vec4(center,1.0); vec4 originView=modelViewMatrix*vec4(0.0,0.0,0.0,1.0); float depthDelta=centerView.z-originView.z; float depthFrontness=smoothstep(-.02,.26,depthDelta); float normalFrontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float frontness=depthFrontness*(.3+.7*normalFrontness); vec4 centerClip=projectionMatrix*centerView; vec2 particleScreen=centerClip.xy/centerClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.26,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*42.0-uTime*3.6+aSeed*3.0);
  float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r*frontness; float pointerInfluence=max(cursorInfluence,touch*.62);
  center.xy+=screenRadial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
@@ -96,7 +96,7 @@ void main(){
  vec3 floatDirection=normalize(vec3(cos(aSeed*27.0+uTime*.15),sin(aSeed*19.0-uTime*.12),cos(aSeed*17.0+uTime*.09)));
  p+=floatDirection*floatMask*(.006+.018*floatWave);
  p.z += uDepth;
- vec4 particleClip=projectionMatrix*modelViewMatrix*vec4(p,1.0); vec2 particleScreen=particleClip.xy/particleClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float frontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float cursorInfluence=smoothstep(.30,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*38.0-uTime*3.2+aSeed*4.0);
+ vec4 particleView=modelViewMatrix*vec4(p,1.0); vec4 originView=modelViewMatrix*vec4(0.0,0.0,0.0,1.0); float depthFrontness=smoothstep(-.02,.26,particleView.z-originView.z); float normalFrontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float frontness=depthFrontness*(.3+.7*normalFrontness); vec4 particleClip=projectionMatrix*particleView; vec2 particleScreen=particleClip.xy/particleClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.30,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*38.0-uTime*3.2+aSeed*4.0);
  float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r*frontness; float pointerInfluence=max(cursorInfluence,touch*.5);
  p.xy+=screenRadial*cursorInfluence*(.006+.008*ripple); p.z+=cursorInfluence*(.003+.005*ripple)+touch*.005;
  float breathe=.004*sin(uTime*.8+aSeed*17.0);
@@ -120,8 +120,8 @@ void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
  vec3 p=mix(pick(uFrom),pick(uTo),e);
  float pulse=.5+.5*sin(uTime*.8+p.x*2.0+p.y*1.6);
- vec4 linkClip=projectionMatrix*modelViewMatrix*vec4(p,1.0); vec2 linkScreen=linkClip.xy/linkClip.w; vec2 screenDelta=linkScreen-uPointerScreen; float cursorInfluence=smoothstep(.34,0.0,length(screenDelta))*uPointerActive;
- float touch=texture2D(uTouch,clamp(linkScreen*.5+.5,.02,.98)).r;
+ vec4 linkView=modelViewMatrix*vec4(p,1.0); vec4 originView=modelViewMatrix*vec4(0.0,0.0,0.0,1.0); float frontness=smoothstep(-.02,.26,linkView.z-originView.z); vec4 linkClip=projectionMatrix*linkView; vec2 linkScreen=linkClip.xy/linkClip.w; vec2 screenDelta=linkScreen-uPointerScreen; float cursorInfluence=smoothstep(.34,0.0,length(screenDelta))*uPointerActive*frontness;
+ float touch=texture2D(uTouch,clamp(linkScreen*.5+.5,.02,.98)).r*frontness;
  float influence=max(cursorInfluence,touch*.6);
  p += normalize(vec3(p.xy-uPointer.xy,.18))*cursorInfluence*.006;
  p.z += uDepth;
