@@ -75,6 +75,10 @@ function parseLines(body: string): DecisionStreamEvent[] {
     .map((line) => JSON.parse(line) as DecisionStreamEvent);
 }
 
+function resolveUser(userId: string | null): () => Promise<string | null> {
+  return () => Promise.resolve(userId);
+}
+
 function successfulRunner(
   options: { includeRevision?: boolean; statusMessage?: string } = {}
 ): DecisionTransportRunner {
@@ -123,10 +127,10 @@ test("rejects invalid, empty, and client-supplied tenant fields", async () => {
 test("returns 401 before invoking the orchestrator when unauthenticated", async () => {
   let calls = 0;
   const handler = createDecisionPostHandler({
-    resolveUserId: async () => null,
-    runner: async () => {
+    resolveUserId: resolveUser(null),
+    runner: () => {
       calls += 1;
-      return { brief, runId: "run-1" };
+      return Promise.resolve({ brief, runId: "run-1" });
     },
   });
 
@@ -144,10 +148,10 @@ test("returns 401 before invoking the orchestrator when unauthenticated", async 
 test("returns 400 for invalid authenticated requests without invoking the orchestrator", async () => {
   let calls = 0;
   const handler = createDecisionPostHandler({
-    resolveUserId: async () => "user-123",
-    runner: async () => {
+    resolveUserId: resolveUser("user-123"),
+    runner: () => {
       calls += 1;
-      return { brief, runId: "run-1" };
+      return Promise.resolve({ brief, runId: "run-1" });
     },
   });
 
@@ -165,13 +169,13 @@ test("returns 400 for invalid authenticated requests without invoking the orches
 test("frames the frozen event lifecycle as exact newline-delimited JSON", async () => {
   let observedUserId = "";
   let observedQuestion = "";
-  const runner: DecisionTransportRunner = async (input) => {
+  const runner: DecisionTransportRunner = (input) => {
     observedUserId = input.userId;
     observedQuestion = input.question;
     return successfulRunner()(input);
   };
   const handler = createDecisionPostHandler({
-    resolveUserId: async () => "user-123",
+    resolveUserId: resolveUser("user-123"),
     runner,
   });
 
@@ -206,7 +210,7 @@ test("frames the frozen event lifecycle as exact newline-delimited JSON", async 
 
 test("emits revision only when the orchestrator reports that stage", async () => {
   const handler = createDecisionPostHandler({
-    resolveUserId: async () => "user-123",
+    resolveUserId: resolveUser("user-123"),
     runner: successfulRunner({ includeRevision: true }),
   });
 
@@ -232,7 +236,7 @@ test("emits one safe typed error after streaming starts without leaking internal
     throw error;
   };
   const handler = createDecisionPostHandler({
-    resolveUserId: async () => "user-123",
+    resolveUserId: resolveUser("user-123"),
     runner,
   });
 
@@ -257,7 +261,7 @@ test("propagates the request abort signal and terminates with a safe abort event
   const runner: DecisionTransportRunner = async ({ signal, onStarted }) => {
     observedSignal = signal;
     await onStarted?.("run-1");
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((_resolve, reject) => {
       if (signal.aborted) {
         reject(new DOMException("Aborted", "AbortError"));
         return;
@@ -271,7 +275,7 @@ test("propagates the request abort signal and terminates with a safe abort event
     return { brief, runId: "run-1" };
   };
   const handler = createDecisionPostHandler({
-    resolveUserId: async () => "user-123",
+    resolveUserId: resolveUser("user-123"),
     runner,
   });
 
