@@ -69,7 +69,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Lint V2 test harness
-        run: pnpm exec biome lint tests/v2 playwright.config.ts
+        run: pnpm exec biome lint tests playwright.config.ts
 
       - name: Run deterministic harness tests
         run: pnpm exec tsx --test tests/v2/unit/*.test.ts
