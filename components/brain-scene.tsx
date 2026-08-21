@@ -60,7 +60,7 @@ const LINK_COUNT = 72;
 
 const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
-attribute vec3 aColor; attribute float aScale; attribute float aSeed;
+attribute vec3 aColor; attribute vec3 aNormal; attribute float aScale; attribute float aSeed;
 uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform vec2 uPointerScreen; uniform float uPointerActive; uniform sampler2D uTouch;
 varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
@@ -71,8 +71,8 @@ void main(){
  vec3 floatDirection=normalize(vec3(sin(aSeed*31.0+uTime*.17),cos(aSeed*23.0-uTime*.13),sin(aSeed*19.0+uTime*.11)));
  center+=floatDirection*floatMask*(.008+.026*floatWave);
  center.z += uDepth;
- vec4 centerClip=projectionMatrix*modelViewMatrix*vec4(center,1.0); vec2 particleScreen=centerClip.xy/centerClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.26,0.0,screenDistance)*uPointerActive; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*42.0-uTime*3.6+aSeed*3.0);
- float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.62);
+ vec4 centerClip=projectionMatrix*modelViewMatrix*vec4(center,1.0); vec2 particleScreen=centerClip.xy/centerClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float frontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float cursorInfluence=smoothstep(.26,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*42.0-uTime*3.6+aSeed*3.0);
+ float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r*frontness; float pointerInfluence=max(cursorInfluence,touch*.62);
  center.xy+=screenRadial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
  local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz; local.yz=r2(aSeed*5.2+uTime*.07)*local.yz;
@@ -85,7 +85,7 @@ const BASE_FRAGMENT =
 
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
-attribute vec3 aColor; attribute float aSeed;
+attribute vec3 aColor; attribute vec3 aNormal; attribute float aSeed;
 uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform vec2 uPointerScreen; uniform float uPointerActive; uniform sampler2D uTouch;
 varying vec3 vColor; varying float vAlpha; varying float vHover;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
@@ -96,8 +96,8 @@ void main(){
  vec3 floatDirection=normalize(vec3(cos(aSeed*27.0+uTime*.15),sin(aSeed*19.0-uTime*.12),cos(aSeed*17.0+uTime*.09)));
  p+=floatDirection*floatMask*(.006+.018*floatWave);
  p.z += uDepth;
- vec4 particleClip=projectionMatrix*modelViewMatrix*vec4(p,1.0); vec2 particleScreen=particleClip.xy/particleClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.30,0.0,screenDistance)*uPointerActive; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*38.0-uTime*3.2+aSeed*4.0);
- float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.5);
+ vec4 particleClip=projectionMatrix*modelViewMatrix*vec4(p,1.0); vec2 particleScreen=particleClip.xy/particleClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float frontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float cursorInfluence=smoothstep(.30,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*38.0-uTime*3.2+aSeed*4.0);
+ float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r*frontness; float pointerInfluence=max(cursorInfluence,touch*.5);
  p.xy+=screenRadial*cursorInfluence*(.006+.008*ripple); p.z+=cursorInfluence*(.003+.005*ripple)+touch*.005;
  float breathe=.004*sin(uTime*.8+aSeed*17.0);
  p += normalize(p+vec3(.0001))*breathe;
@@ -223,10 +223,12 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   const thinker = new Float32Array(COUNT * 3);
   const council = new Float32Array(COUNT * 3);
   const colors = new Float32Array(COUNT * 3);
+  const normals = new Float32Array(COUNT * 3);
   const scales = new Float32Array(COUNT);
   const seeds = new Float32Array(COUNT);
   const sample = new THREE.Vector3();
   const normal = new THREE.Vector3();
+  const normalMatrix = new THREE.Matrix3();
   const centers = [
     [-1.25, 0.58, 0],
     [-0.2, 1.02, 0.1],
@@ -249,7 +251,11 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     const mesh = meshes[index % meshes.length];
     samplers[index % samplers.length].sample(sample, normal);
     sample.applyMatrix4(mesh.matrixWorld).multiplyScalar(1.3);
+    normal
+      .applyMatrix3(normalMatrix.getNormalMatrix(mesh.matrixWorld))
+      .normalize();
     brain.set([sample.x, sample.y, sample.z], index * 3);
+    normals.set([normal.x, normal.y, normal.z], index * 3);
     colors.set(colorFor(sample, index).toArray(), index * 3);
     seeds[index] = seeded(index, 17);
     scales[index] = 0.007 + 0.0185 * seeded(index, 31) ** 1.6;
@@ -301,6 +307,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   dustGeometry.setAttribute("aThinker", new THREE.BufferAttribute(thinker, 3));
   dustGeometry.setAttribute("aCouncil", new THREE.BufferAttribute(council, 3));
   dustGeometry.setAttribute("aColor", new THREE.BufferAttribute(colors, 3));
+  dustGeometry.setAttribute("aNormal", new THREE.BufferAttribute(normals, 3));
   dustGeometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
   const dustUniforms = uniformSet(touchField.texture);
   const dustMaterial = new THREE.ShaderMaterial({
@@ -338,6 +345,10 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   shardGeometry.setAttribute(
     "aColor",
     new THREE.InstancedBufferAttribute(colors, 3)
+  );
+  shardGeometry.setAttribute(
+    "aNormal",
+    new THREE.InstancedBufferAttribute(normals, 3)
   );
   shardGeometry.setAttribute(
     "aScale",
