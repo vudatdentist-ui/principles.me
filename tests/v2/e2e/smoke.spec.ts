@@ -37,9 +37,11 @@ test("renders the V2 product shell without legacy dashboard concepts", async ({
   await expect(workspace.locator('option[value="company"]')).toBeDisabled();
 
   await expect(page.getByTestId("model-selector")).toHaveCount(0);
-  for (const term of LEGACY_SURFACE_TERMS) {
-    await expect(page.getByText(term, { exact: false })).toHaveCount(0);
-  }
+  await Promise.all(
+    LEGACY_SURFACE_TERMS.map((term) =>
+      expect(page.getByText(term, { exact: false })).toHaveCount(0)
+    )
+  );
 });
 
 test("keeps V2 navigation available across History and Brain", async ({ page }) => {
