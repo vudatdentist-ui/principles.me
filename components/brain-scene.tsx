@@ -33,6 +33,7 @@ type WisdomBrainState = {
   lineMaterial: THREE.ShaderMaterial;
   linkLines: THREE.LineSegments;
   morph: number;
+  pointerStrength: number;
   shardMaterial: THREE.ShaderMaterial;
   from: number;
   to: number;
@@ -52,12 +53,12 @@ vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return
 mat2 r2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
 void main(){
  vec3 A=pick(uFrom),B=pick(uTo); float e=uMorph*uMorph*(3.0-2.0*uMorph); vec3 center=mix(A,B,e);
- float floatWave=.5+.5*sin(uTime*(.32+aSeed*.38)+aSeed*26.0); float floatMask=smoothstep(.56,.98,aSeed);
+ float floatWave=.5+.5*sin(uTime*(.32+aSeed*.38)+aSeed*26.0); float detachCycle=.5+.5*sin(uTime*.42+aSeed*43.0); float floatMask=smoothstep(.78,.99,aSeed)*smoothstep(.68,.96,detachCycle);
  vec3 floatDirection=normalize(vec3(sin(aSeed*31.0+uTime*.17),cos(aSeed*23.0-uTime*.13),sin(aSeed*19.0+uTime*.11)));
- center+=floatDirection*floatMask*(.012+.04*floatWave);
+ center+=floatDirection*floatMask*(.008+.026*floatWave);
  center.z += uDepth;
- vec3 pointerDelta=vec3(center.xy-uPointer.xy,.12); float pointerInfluence=smoothstep(.58,0.0,length(pointerDelta.xy))*uPointerActive;
- center+=normalize(pointerDelta)*pointerInfluence*(.08+.055*aSeed);
+ vec2 pointerDelta=center.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float pointerInfluence=smoothstep(.42,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*24.0-uTime*3.6+aSeed*3.0);
+ center.xy+=radial*pointerInfluence*(.032+.026*ripple); center.z+=pointerInfluence*(.008+.014*ripple);
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
  local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
@@ -76,12 +77,12 @@ vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return
 void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
  vec3 p=mix(pick(uFrom),pick(uTo),e);
- float floatWave=.5+.5*sin(uTime*(.28+aSeed*.34)+aSeed*21.0); float floatMask=smoothstep(.52,.96,aSeed);
+ float floatWave=.5+.5*sin(uTime*(.28+aSeed*.34)+aSeed*21.0); float detachCycle=.5+.5*sin(uTime*.36+aSeed*37.0); float floatMask=smoothstep(.82,.995,aSeed)*smoothstep(.72,.98,detachCycle);
  vec3 floatDirection=normalize(vec3(cos(aSeed*27.0+uTime*.15),sin(aSeed*19.0-uTime*.12),cos(aSeed*17.0+uTime*.09)));
- p+=floatDirection*floatMask*(.008+.026*floatWave);
+ p+=floatDirection*floatMask*(.006+.018*floatWave);
  p.z += uDepth;
- vec3 pointerDelta=vec3(p.xy-uPointer.xy,.12); float pointerInfluence=smoothstep(.62,0.0,length(pointerDelta.xy))*uPointerActive;
- p+=normalize(pointerDelta)*pointerInfluence*(.05+.03*aSeed);
+ vec2 pointerDelta=p.xy-uPointer.xy; float pointerDistance=length(pointerDelta); float pointerInfluence=smoothstep(.46,0.0,pointerDistance)*uPointerActive; vec2 radial=pointerDistance>.001?pointerDelta/pointerDistance:vec2(0.0); float ripple=.5+.5*sin(pointerDistance*22.0-uTime*3.2+aSeed*4.0);
+ p.xy+=radial*pointerInfluence*(.022+.018*ripple); p.z+=pointerInfluence*(.005+.008*ripple);
  float breathe=.004*sin(uTime*.8+aSeed*17.0);
  p += normalize(p+vec3(.0001))*breathe;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
@@ -103,12 +104,12 @@ void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
  vec3 p=mix(pick(uFrom),pick(uTo),e);
  float pulse=.5+.5*sin(uTime*.8+p.x*2.0+p.y*1.6);
- float influence=smoothstep(.9,0.0,length(p.xy-uPointer.xy))*uPointerActive;
- p += normalize(vec3(p.xy-uPointer.xy,.18))*influence*.025;
+ float influence=smoothstep(.58,0.0,length(p.xy-uPointer.xy))*uPointerActive;
+ p += normalize(vec3(p.xy-uPointer.xy,.18))*influence*.012;
  p.z += uDepth;
  vec4 mv=modelViewMatrix*vec4(p,1.0);
  gl_Position=projectionMatrix*mv;
- vStrength=.05+.025*pulse+.18*influence;
+ vStrength=.025+.018*pulse+.08*influence;
 }`;
 
 const LINK_FRAGMENT =
@@ -265,7 +266,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   group.add(dust);
 
   const shardGeometry = new THREE.InstancedBufferGeometry();
-  const octahedron = new THREE.OctahedronGeometry(1, 0).toNonIndexed();
+  const octahedron = new THREE.OctahedronGeometry(1, 0);
   shardGeometry.setAttribute("position", octahedron.getAttribute("position"));
   shardGeometry.setAttribute(
     "aBrain",
@@ -394,6 +395,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     lineMaterial,
     linkLines,
     morph: 1,
+    pointerStrength: 0,
     shardMaterial,
     to: 0,
   };
@@ -424,6 +426,7 @@ function WisdomBrain({
   const pointerWorld = useMemo(() => new THREE.Vector3(), []);
   const pointerDirection = useMemo(() => new THREE.Vector3(), []);
   const pointerLocal = useMemo(() => new THREE.Vector3(), []);
+  const pointerSmooth = useMemo(() => new THREE.Vector3(), []);
   const target = modeIndex(mode);
   const layout =
     mode === "brain"
@@ -465,25 +468,31 @@ function WisdomBrain({
   useFrame(({ clock }, delta) => {
     const time = clock.getElapsedTime();
     const pointer = pointerRef.current;
-    const pointerActive = pointer.active ? 1 : 0;
     if (pointer.active) {
       pointerWorld.set(pointer.x, pointer.y, 0.5).unproject(camera);
       pointerDirection.copy(pointerWorld).sub(camera.position).normalize();
-      const distance = -camera.position.z / pointerDirection.z;
-      pointerWorld
-        .copy(camera.position)
-        .add(pointerDirection.multiplyScalar(distance));
-      pointerLocal.copy(pointerWorld);
-      state.group.worldToLocal(pointerLocal);
+      if (Math.abs(pointerDirection.z) > 0.0001) {
+        const distance = -camera.position.z / pointerDirection.z;
+        pointerWorld
+          .copy(camera.position)
+          .add(pointerDirection.multiplyScalar(distance));
+        pointerLocal.copy(pointerWorld);
+        state.group.worldToLocal(pointerLocal);
+      }
     }
-    state.shardMaterial.uniforms.uPointerActive.value = pointerActive;
-    state.dustMaterial.uniforms.uPointerActive.value = pointerActive;
-    state.lineMaterial.uniforms.uPointerActive.value = pointerActive;
-    if (pointer.active) {
-      state.shardMaterial.uniforms.uPointer.value.copy(pointerLocal);
-      state.dustMaterial.uniforms.uPointer.value.copy(pointerLocal);
-      state.lineMaterial.uniforms.uPointer.value.copy(pointerLocal);
-    }
+    state.pointerStrength = THREE.MathUtils.damp(
+      state.pointerStrength,
+      pointer.active ? 1 : 0,
+      6.5,
+      delta
+    );
+    pointerSmooth.lerp(pointerLocal, 1 - Math.exp(-delta * 9));
+    state.shardMaterial.uniforms.uPointerActive.value = state.pointerStrength;
+    state.dustMaterial.uniforms.uPointerActive.value = state.pointerStrength;
+    state.lineMaterial.uniforms.uPointerActive.value = state.pointerStrength;
+    state.shardMaterial.uniforms.uPointer.value.copy(pointerSmooth);
+    state.dustMaterial.uniforms.uPointer.value.copy(pointerSmooth);
+    state.lineMaterial.uniforms.uPointer.value.copy(pointerSmooth);
     state.shardMaterial.uniforms.uTime.value = time;
     state.dustMaterial.uniforms.uTime.value = time;
     state.lineMaterial.uniforms.uTime.value = time;
@@ -518,9 +527,9 @@ function BrainPostProcessing() {
     next.addPass(
       new UnrealBloomPass(
         new THREE.Vector2(size.width, size.height),
-        0.5,
         0.32,
-        0.36
+        0.32,
+        0.44
       )
     );
     return next;
