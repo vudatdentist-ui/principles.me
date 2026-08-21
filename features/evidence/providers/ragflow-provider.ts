@@ -10,6 +10,7 @@ import {
   createProviderAbortScope,
   EvidenceProviderError,
   providerHttpError,
+  providerInvalidResponseError,
   providerTransportError,
 } from "./provider-error";
 
@@ -87,7 +88,7 @@ async function parseJson(
   try {
     return await response.json();
   } catch (cause) {
-    throw new EvidenceProviderError(provider, "invalid_response", { cause });
+    throw providerInvalidResponseError(provider, cause);
   }
 }
 
