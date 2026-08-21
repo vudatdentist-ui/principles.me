@@ -48,8 +48,10 @@ function validUrl(value: unknown): string | null {
     return null;
   }
   try {
-    new URL(candidate);
-    return candidate;
+    const parsed = new URL(candidate);
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? candidate
+      : null;
   } catch {
     return null;
   }
