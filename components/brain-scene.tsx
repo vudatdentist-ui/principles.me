@@ -75,13 +75,13 @@ void main(){
  float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r; float pointerInfluence=max(cursorInfluence,touch*.62);
  center.xy+=screenRadial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
  float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
- local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz;
+ local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz; local.yz=r2(aSeed*5.2+uTime*.07)*local.yz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
  vColor=aColor; vPulse=.88+.22*sin(uTime*1.35+aSeed*11.0); vEdge=clamp(length(position)*1.25,0.0,1.0); vHover=pointerInfluence;
 }`;
 
 const BASE_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; uniform float uOpacity; void main(){ vec3 c=vColor*(.76+vPulse*.31+vHover*.24); gl_FragColor=vec4(c,uOpacity+.035*vHover); }";
+  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; uniform float uOpacity; void main(){ vec3 c=vColor*(.68+vPulse*.25+vHover*.2); gl_FragColor=vec4(c,uOpacity+.025*vHover); }";
 
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
@@ -143,20 +143,29 @@ function gaussian(index: number, salt: number) {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283_185 * v);
 }
 
-function colorFor(point: THREE.Vector3) {
-  let color: THREE.Color;
-  if (point.x < -0.26) {
-    color = new THREE.Color(point.y > 0.02 ? "#4f8fff" : "#32e8ff");
-  } else if (point.x > 0.26) {
-    color = new THREE.Color(point.y > 0.06 ? "#ff708d" : "#d46dff");
-  } else if (point.y < -0.18) {
-    color = new THREE.Color(point.z > -0.25 ? "#52eea8" : "#ffc15f");
-  } else {
-    color = new THREE.Color("#b07dff");
-  }
+function colorFor(point: THREE.Vector3, index: number) {
+  const palette = [
+    "#ffd21f",
+    "#f5e9ff",
+    "#9c3fff",
+    "#20e6d1",
+    "#ff3f92",
+    "#2b8fff",
+    "#ff721a",
+  ];
+  const color = new THREE.Color(
+    palette[Math.floor(seeded(index, 47) * palette.length)]
+  );
+  const hsl = { h: 0, l: 0, s: 0 };
+  color.getHSL(hsl);
+  color.setHSL(
+    (hsl.h + (point.x + point.y) * 0.012 + seeded(index, 53) * 0.05 + 1) % 1,
+    Math.min(1, hsl.s * (0.92 + seeded(index, 61) * 0.14)),
+    Math.min(0.86, hsl.l + seeded(index, 67) * 0.1)
+  );
   return color.lerp(
     new THREE.Color("#ffffff"),
-    0.018 + seeded(Math.floor((point.x + point.y + point.z) * 1000), 17) * 0.05
+    0.018 + seeded(index, 71) * 0.1
   );
 }
 
@@ -241,7 +250,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     samplers[index % samplers.length].sample(sample, normal);
     sample.applyMatrix4(mesh.matrixWorld).multiplyScalar(1.3);
     brain.set([sample.x, sample.y, sample.z], index * 3);
-    colors.set(colorFor(sample).toArray(), index * 3);
+    colors.set(colorFor(sample, index).toArray(), index * 3);
     seeds[index] = seeded(index, 17);
     scales[index] = 0.0058 + 0.0124 * seeded(index, 31) ** 2;
 
@@ -307,8 +316,9 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   group.add(dust);
 
   const shardGeometry = new THREE.InstancedBufferGeometry();
-  const octahedron = new THREE.OctahedronGeometry(1, 0);
-  shardGeometry.setAttribute("position", octahedron.getAttribute("position"));
+  const tetrahedron = new THREE.TetrahedronGeometry(1, 0);
+  const shardEdges = new THREE.EdgesGeometry(tetrahedron);
+  shardGeometry.setAttribute("position", shardEdges.getAttribute("position"));
   shardGeometry.setAttribute(
     "aBrain",
     new THREE.InstancedBufferAttribute(brain, 3)
@@ -340,7 +350,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   shardGeometry.instanceCount = SHARD_COUNT;
   const shardUniforms = {
     ...uniformSet(touchField.texture),
-    uOpacity: { value: 0.54 },
+    uOpacity: { value: 0.56 },
   };
   const shardMaterial = new THREE.ShaderMaterial({
     blending: THREE.AdditiveBlending,
@@ -351,7 +361,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     uniforms: shardUniforms,
     vertexShader: BASE_VERTEX,
   });
-  const shards = new THREE.Mesh(shardGeometry, shardMaterial);
+  const shards = new THREE.LineSegments(shardGeometry, shardMaterial);
   shards.frustumCulled = false;
   group.add(shards);
 
