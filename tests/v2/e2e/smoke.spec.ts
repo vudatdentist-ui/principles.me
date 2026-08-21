@@ -34,7 +34,10 @@ test("renders the V2 product shell without legacy dashboard concepts", async ({
 
   const workspace = page.getByRole("combobox", { name: "Workspace" });
   await expect(workspace).toHaveValue("personal");
-  await expect(workspace.locator('option[value="company"]')).toBeDisabled();
+  await expect(workspace.locator('option[value="company"]')).toHaveAttribute(
+    "disabled",
+    ""
+  );
 
   await expect(page.getByTestId("model-selector")).toHaveCount(0);
   await Promise.all(
