@@ -131,7 +131,7 @@ test("retryable error stays an error after done and renders safe copy", () => {
   ]);
 
   assert.equal(state.phase, "error");
-  const error = state.error;
+  const { error } = state;
   assert.ok(error);
   assert.equal(error.retryable, true);
   const displayMessage = decisionErrorDisplayMessage(error);
@@ -175,7 +175,7 @@ test("primary view limits reasons to three and exposes textual confidence", () =
 });
 
 test("Accept and Adjust dispatch the frozen DecisionBrief unchanged", () => {
-  const calls: Array<[string, DecisionBrief]> = [];
+  const calls: [string, DecisionBrief][] = [];
   const callbacks = {
     onAccept: (value: DecisionBrief) => calls.push(["accept", value]),
     onAdjust: (value: DecisionBrief) => calls.push(["adjust", value]),
