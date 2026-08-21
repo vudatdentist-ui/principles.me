@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import type { DecisionBrief } from "@/features/decision/contracts";
 import { Button } from "@/features/ui-v2/button";
 import { Drawer } from "@/features/ui-v2/drawer";
@@ -19,7 +20,7 @@ export type DecisionWorkspaceProps = {
   onEvidenceOpenChange: (open: boolean) => void;
   onQuestionChange: (question: string) => void;
   onRetry?: () => void;
-  onSubmit: (question: string) => void | Promise<void>;
+  onSubmit: (question: string) => void;
   question: string;
   state: DecisionUiState;
 };
@@ -35,6 +36,9 @@ export function DecisionWorkspace({
   state,
 }: DecisionWorkspaceProps) {
   const isSubmitting = state.phase === "submitting";
+  const handleViewEvidence = useCallback(() => {
+    onEvidenceOpenChange(true);
+  }, [onEvidenceOpenChange]);
 
   return (
     <div className={`${styles.workspace} v2-theme`} data-phase={state.phase}>
@@ -63,7 +67,10 @@ export function DecisionWorkspace({
       ) : null}
 
       {state.phase === "error" && state.error ? (
-        <section className={styles.errorRegion} aria-labelledby="decision-error-heading">
+        <section
+          aria-labelledby="decision-error-heading"
+          className={styles.errorRegion}
+        >
           <h2 className="v2-type-heading" id="decision-error-heading">
             Decision brief unavailable
           </h2>
@@ -85,7 +92,7 @@ export function DecisionWorkspace({
           brief={state.brief}
           onAccept={onAccept}
           onAdjust={onAdjust}
-          onViewEvidence={() => onEvidenceOpenChange(true)}
+          onViewEvidence={handleViewEvidence}
         />
       ) : null}
 
