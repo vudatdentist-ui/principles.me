@@ -46,12 +46,19 @@ export function providerHttpError(
   return new EvidenceProviderError(provider, "provider_error", { status });
 }
 
+export function providerInvalidResponseError(
+  provider: string,
+  cause: unknown
+): EvidenceProviderError {
+  return new EvidenceProviderError(provider, "invalid_response", { cause });
+}
+
 export type AbortKind = "aborted" | "timeout" | null;
 
 export interface ProviderAbortScope {
   readonly signal: AbortSignal;
-  dispose(): void;
-  kind(): AbortKind;
+  dispose: () => void;
+  kind: () => AbortKind;
 }
 
 export function createProviderAbortScope(
@@ -84,7 +91,7 @@ export function createProviderAbortScope(
   }, Math.max(0, timeoutMs));
 
   return {
-    dispose() {
+    dispose: () => {
       clearTimeout(timer);
       parentSignal.removeEventListener("abort", abortFromParent);
     },
