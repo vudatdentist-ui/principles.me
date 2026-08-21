@@ -46,6 +46,21 @@ const STAGE_STATUS: Record<DecisionStage, string> = {
   revision: "Refining the decision brief.",
 };
 
+const CONFIDENCE_LABELS: Record<
+  DecisionBrief["confidence"]["level"],
+  string
+> = {
+  high: "High confidence",
+  low: "Low confidence",
+  medium: "Medium confidence",
+};
+
+const REASON_KIND_LABELS: Record<DecisionReasonKind, string> = {
+  fact: "Fact",
+  inference: "Inference",
+  "user-context": "Your context",
+};
+
 export function createDecisionUiState(): DecisionUiState {
   return {
     brief: null,
@@ -72,25 +87,11 @@ export function decisionErrorDisplayMessage(error: DecisionUiError): string {
 export function confidenceLabel(
   level: DecisionBrief["confidence"]["level"]
 ): string {
-  switch (level) {
-    case "high":
-      return "High confidence";
-    case "medium":
-      return "Medium confidence";
-    case "low":
-      return "Low confidence";
-  }
+  return CONFIDENCE_LABELS[level];
 }
 
 export function reasonKindLabel(kind: DecisionReasonKind): string {
-  switch (kind) {
-    case "fact":
-      return "Fact";
-    case "inference":
-      return "Inference";
-    case "user-context":
-      return "Your context";
-  }
+  return REASON_KIND_LABELS[kind];
 }
 
 export function visibleDecisionReasons(
@@ -184,6 +185,8 @@ function reduceStreamEvent(
         stage: null,
         status: null,
       };
+    default:
+      return state;
   }
 }
 
@@ -207,6 +210,8 @@ export function reduceDecisionUiState(
       };
     case "reset":
       return createDecisionUiState();
+    default:
+      return state;
   }
 }
 
