@@ -9,10 +9,10 @@ export type EvidenceProviderResult = EvidencePacket;
 export interface EvidenceProvider {
   readonly id: string;
 
-  retrieve(
+  retrieve: (
     request: EvidenceQuery,
     signal: AbortSignal
-  ): Promise<EvidenceProviderResult>;
+  ) => Promise<EvidenceProviderResult>;
 }
 
 export interface EvidenceProviderDependencies {
