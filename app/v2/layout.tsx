@@ -1,7 +1,21 @@
+import { ProductShell } from "@/features/shell/product-shell";
+import type { ShellWorkspaceOption } from "@/features/shell/shell-types";
+import { WorkspaceSwitcher } from "@/features/shell/workspace-switcher";
 import type { Metadata } from "next";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import styles from "./layout.module.css";
+import "../../styles/v2/tokens.css";
+import "../../styles/v2/typography.css";
+import "../../styles/v2/components.css";
+
+const navigation = [
+  { href: "/v2/history", label: "History" },
+  { href: "/v2/brain", label: "Brain" },
+] as const;
+
+const workspaceOptions: readonly ShellWorkspaceOption[] = [
+  { id: "personal", label: "Personal" },
+  { disabled: true, id: "company", label: "Company" },
+];
 
 export const metadata: Metadata = {
   description: "A minimal decision workspace backed by a typed evidence system.",
@@ -10,17 +24,17 @@ export const metadata: Metadata = {
 
 export default function V2Layout({ children }: { children: ReactNode }) {
   return (
-    <div className={styles.shell}>
-      <header className={styles.header}>
-        <Link className={styles.brand} href="/v2">
-          Principles
-        </Link>
-        <nav aria-label="V2 navigation" className={styles.navigation}>
-          <Link href="/v2/history">History</Link>
-          <Link href="/v2/brain">Brain</Link>
-        </nav>
-      </header>
-      <main className={styles.main}>{children}</main>
-    </div>
+    <ProductShell
+      navigation={navigation}
+      workspace={
+        <WorkspaceSwitcher
+          defaultValue="personal"
+          label="Workspace"
+          options={workspaceOptions}
+        />
+      }
+    >
+      {children}
+    </ProductShell>
   );
 }
