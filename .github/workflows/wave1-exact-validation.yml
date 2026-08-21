@@ -1,0 +1,55 @@
+name: Wave 1 Exact Validation
+
+on:
+  push:
+    branches:
+      - "integration/validate-pr**"
+
+permissions:
+  contents: read
+
+concurrency:
+  cancel-in-progress: true
+  group: wave1-exact-${{ github.ref }}
+
+jobs:
+  exact:
+    runs-on: ubuntu-22.04
+    env:
+      POSTGRES_URL: postgres://postgres:postgres@127.0.0.1:5432/principles_validation
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          cache: pnpm
+          node-version: 20
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate available Wave 1 scopes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d features/evidence/providers ]; then
+            pnpm exec biome lint features/evidence/providers
+            pnpm exec tsx --test features/evidence/providers/__tests__/*.test.ts
+          fi
+          if [ -d features/brain ]; then
+            pnpm exec biome lint features/brain
+            pnpm exec tsx --test features/brain/__tests__/*.test.ts
+          fi
+          if [ -d lib/ai/providers ]; then
+            pnpm exec biome lint lib/ai/providers
+            pnpm exec tsx --test lib/ai/providers/__tests__/*.test.ts
+          fi
+          if [ -d features/shell ]; then
+            pnpm exec biome lint features/shell features/ui-v2 styles/v2
+          fi
+          if [ -d features/decision/persistence ]; then
+            pnpm exec biome lint lib/db/schema.ts lib/db/queries features/decision/persistence features/review/persistence
+            pnpm db:check
+          fi
