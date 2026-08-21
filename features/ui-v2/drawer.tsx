@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -46,16 +47,23 @@ export function Drawer({
     }
   }, [open]);
 
-  function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
-    event.preventDefault();
+  const requestClose = useCallback(() => {
     onOpenChange(false);
-  }
+  }, [onOpenChange]);
 
-  function handleClose() {
+  const handleCancel = useCallback(
+    (event: SyntheticEvent<HTMLDialogElement>) => {
+      event.preventDefault();
+      requestClose();
+    },
+    [requestClose]
+  );
+
+  const handleClose = useCallback(() => {
     if (open) {
-      onOpenChange(false);
+      requestClose();
     }
-  }
+  }, [open, requestClose]);
 
   return (
     <dialog
@@ -79,7 +87,7 @@ export function Drawer({
         </div>
         <button
           className="v2-drawer__close"
-          onClick={() => onOpenChange(false)}
+          onClick={requestClose}
           type="button"
         >
           {closeLabel}
