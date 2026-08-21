@@ -81,7 +81,7 @@ void main(){
 }`;
 
 const BASE_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; uniform float uOpacity; void main(){ vec3 c=vColor*(.68+vPulse*.25+vHover*.2); gl_FragColor=vec4(c,uOpacity+.025*vHover); }";
+  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; uniform float uOpacity; void main(){ vec3 c=vColor*(.78+vPulse*.28+vHover*.22); gl_FragColor=vec4(c,uOpacity+.03*vHover); }";
 
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
@@ -160,12 +160,12 @@ function colorFor(point: THREE.Vector3, index: number) {
   color.getHSL(hsl);
   color.setHSL(
     (hsl.h + (point.x + point.y) * 0.012 + seeded(index, 53) * 0.05 + 1) % 1,
-    Math.min(1, hsl.s * (0.92 + seeded(index, 61) * 0.14)),
-    Math.min(0.86, hsl.l + seeded(index, 67) * 0.1)
+    Math.min(1, hsl.s * (1.02 + seeded(index, 61) * 0.12)),
+    Math.min(0.92, hsl.l + seeded(index, 67) * 0.14)
   );
   return color.lerp(
     new THREE.Color("#ffffff"),
-    0.018 + seeded(index, 71) * 0.1
+    0.012 + seeded(index, 71) * 0.06
   );
 }
 
@@ -252,7 +252,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
     brain.set([sample.x, sample.y, sample.z], index * 3);
     colors.set(colorFor(sample, index).toArray(), index * 3);
     seeds[index] = seeded(index, 17);
-    scales[index] = 0.0058 + 0.0124 * seeded(index, 31) ** 2;
+    scales[index] = 0.007 + 0.0185 * seeded(index, 31) ** 1.6;
 
     const center = centers[cluster];
     const spread = 0.29 + 0.18 * seeded(index, 21);
@@ -350,7 +350,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   shardGeometry.instanceCount = SHARD_COUNT;
   const shardUniforms = {
     ...uniformSet(touchField.texture),
-    uOpacity: { value: 0.56 },
+    uOpacity: { value: 0.68 },
   };
   const shardMaterial = new THREE.ShaderMaterial({
     blending: THREE.AdditiveBlending,
@@ -618,9 +618,9 @@ function BrainPostProcessing() {
     next.addPass(
       new UnrealBloomPass(
         new THREE.Vector2(size.width, size.height),
+        0.38,
         0.32,
-        0.32,
-        0.44
+        0.42
       )
     );
     return next;
@@ -683,7 +683,7 @@ export function BrainScene(props: BrainSceneProps) {
       const parent = state.gl.domElement.parentElement;
       state.gl.outputColorSpace = THREE.SRGBColorSpace;
       state.gl.toneMapping = THREE.ACESFilmicToneMapping;
-      state.gl.toneMappingExposure = 0.82;
+      state.gl.toneMappingExposure = 0.9;
       const rect = parent?.getBoundingClientRect();
       if (rect && rect.width > 0 && rect.height > 0) {
         state.setSize(rect.width, rect.height);
