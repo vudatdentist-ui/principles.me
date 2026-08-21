@@ -4,13 +4,20 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - "app/v2/**"
+      - "features/decision/**"
+      - "features/evidence/**"
+      - "features/shared/**"
+      - "docs/v2/**"
+      - "scripts/verify-v2-contracts.ts"
+      - ".github/workflows/v2-foundation.yml"
 
 jobs:
   test:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
-      # These should be the same ones as used in production
       AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
       POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
       BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
