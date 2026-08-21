@@ -18,20 +18,22 @@ test("web success preserves URL, source title, retrieval time, and publication t
   let requestedInit: RequestInit | undefined;
   const provider = new WebEvidenceProvider({
     env: BASE_ENV,
-    fetch: async (input, init) => {
+    fetch: (input, init) => {
       assert.equal(String(input), "https://api.tavily.com/search");
       requestedInit = init;
-      return jsonResponse({
-        results: [
-          {
-            content: "A current, provider-returned excerpt.",
-            published_date: "2026-08-20T02:00:00.000Z",
-            score: 0.83,
-            title: "Current source",
-            url: "https://example.com/current-source",
-          },
-        ],
-      });
+      return Promise.resolve(
+        jsonResponse({
+          results: [
+            {
+              content: "A current, provider-returned excerpt.",
+              published_date: "2026-08-20T02:00:00.000Z",
+              score: 0.83,
+              title: "Current source",
+              url: "https://example.com/current-source",
+            },
+          ],
+        })
+      );
     },
     now: () => NOW,
   });
@@ -131,15 +133,15 @@ test("web unauthorized response is typed without parsing a private body", async 
   let parsed = false;
   const provider = new WebEvidenceProvider({
     env: BASE_ENV,
-    fetch: async () =>
-      ({
-        json: async () => {
+    fetch: () =>
+      Promise.resolve({
+        json: () => {
           parsed = true;
-          throw new Error("private response body");
+          return Promise.reject(new Error("private response body"));
         },
         ok: false,
         status: 401,
-      }) as unknown as Response,
+      } as unknown as Response),
   });
 
   await assert.rejects(
