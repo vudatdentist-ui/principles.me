@@ -1,4 +1,5 @@
 import type { DecisionBrief } from "@/features/decision/contracts";
+import styles from "./decision-ui.module.css";
 
 export type EvidenceDrawerContentProps = {
   sources: DecisionBrief["sources"];
@@ -6,17 +7,21 @@ export type EvidenceDrawerContentProps = {
 
 type EvidenceReference = DecisionBrief["sources"][number];
 
+const SOURCE_TYPE_LABELS: Record<EvidenceReference["sourceType"], string> = {
+  market: "Market data",
+  ragflow: "Knowledge base",
+  "user-context": "Your context",
+  web: "Web source",
+};
+
+const EVIDENCE_DATE_FORMATTER = new Intl.DateTimeFormat("en", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "UTC",
+});
+
 function sourceTypeLabel(sourceType: EvidenceReference["sourceType"]): string {
-  switch (sourceType) {
-    case "ragflow":
-      return "Knowledge base";
-    case "web":
-      return "Web source";
-    case "market":
-      return "Market data";
-    case "user-context":
-      return "Your context";
-  }
+  return SOURCE_TYPE_LABELS[sourceType];
 }
 
 function readableProvider(provider: string): string {
@@ -33,11 +38,7 @@ function formatTimestamp(value: string): string {
     return value;
   }
 
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  }).format(date);
+  return EVIDENCE_DATE_FORMATTER.format(date);
 }
 
 function sourceHost(url: string): string {
@@ -52,22 +53,22 @@ export function EvidenceDrawerContent({
   sources,
 }: EvidenceDrawerContentProps) {
   if (sources.length === 0) {
-    return <p className="v2-decision-evidence__empty">No evidence attached.</p>;
+    return <p className={styles.evidenceEmpty}>No evidence attached.</p>;
   }
 
   return (
-    <div className="v2-decision-evidence">
+    <div className={styles.evidence}>
       {sources.map((source) => (
-        <article className="v2-decision-evidence__item" key={source.key}>
+        <article className={styles.evidenceItem} key={source.key}>
           <header>
-            <p className="v2-decision-evidence__key">{source.key}</p>
-            <h3 className="v2-decision-evidence__title">{source.title}</h3>
-            <p className="v2-decision-evidence__meta">
+            <p className={styles.evidenceKey}>{source.key}</p>
+            <h3 className={styles.evidenceTitle}>{source.title}</h3>
+            <p className={styles.evidenceMeta}>
               {sourceTypeLabel(source.sourceType)} · {readableProvider(source.provider)}
             </p>
           </header>
 
-          <dl className="v2-decision-evidence__dates">
+          <dl className={styles.evidenceDates}>
             <div>
               <dt>Retrieved</dt>
               <dd>
@@ -98,11 +99,11 @@ export function EvidenceDrawerContent({
             ) : null}
           </dl>
 
-          <p className="v2-decision-evidence__excerpt">{source.text}</p>
+          <p className={styles.evidenceExcerpt}>{source.text}</p>
 
           {source.url ? (
-            <p className="v2-decision-evidence__link-row">
-              <a href={source.url} rel="noreferrer" target="_blank">
+            <p className={styles.evidenceLinkRow}>
+              <a href={source.url} rel="noopener noreferrer" target="_blank">
                 {sourceHost(source.url)}
               </a>
             </p>
