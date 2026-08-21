@@ -238,6 +238,58 @@ export const decision = pgTable(
 
 export type Decision = InferSelectModel<typeof decision>;
 
+// Snapshot fields are only written while a run is active; repository methods do not expose generic run updates.
+export const decisionRun = pgTable(
+  "DecisionRun",
+  {
+    analysisSnapshot: json("analysisSnapshot"),
+    auditSnapshot: json("auditSnapshot"),
+    completedAt: timestamp("completedAt"),
+    contextSnapshot: json("contextSnapshot").notNull(),
+    decisionBrief: json("decisionBrief"),
+    decisionId: uuid("decisionId").references(() => decision.id, {
+      onDelete: "set null",
+    }),
+    errorCode: text("errorCode"),
+    evidenceSnapshot: json("evidenceSnapshot"),
+    failedAt: timestamp("failedAt"),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    model: text("model").notNull(),
+    promptVersion: text("promptVersion").notNull(),
+    question: text("question").notNull(),
+    retrievalPlan: json("retrievalPlan").notNull(),
+    startedAt: timestamp("startedAt").notNull().defaultNow(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    completedSnapshotCheck: check(
+      "DecisionRun_completed_snapshot_check",
+      sql`${table.completedAt} IS NULL OR (${table.evidenceSnapshot} IS NOT NULL AND ${table.analysisSnapshot} IS NOT NULL AND ${table.auditSnapshot} IS NOT NULL AND ${table.decisionBrief} IS NOT NULL)`
+    ),
+    decisionIdx: index("DecisionRun_decision_idx").on(table.decisionId),
+    decisionLinkCheck: check(
+      "DecisionRun_decision_link_check",
+      sql`${table.decisionId} IS NULL OR ${table.completedAt} IS NOT NULL`
+    ),
+    failedErrorCheck: check(
+      "DecisionRun_failed_error_check",
+      sql`(${table.failedAt} IS NULL AND ${table.errorCode} IS NULL) OR (${table.failedAt} IS NOT NULL AND ${table.errorCode} IS NOT NULL)`
+    ),
+    terminalStateCheck: check(
+      "DecisionRun_terminal_state_check",
+      sql`NOT (${table.completedAt} IS NOT NULL AND ${table.failedAt} IS NOT NULL)`
+    ),
+    userDecisionIdx: index("DecisionRun_user_decision_idx").on(
+      table.userId,
+      table.decisionId
+    ),
+  })
+);
+
+export type DecisionRun = InferSelectModel<typeof decisionRun>;
+
 export const judgment = pgTable(
   "Judgment",
   {
