@@ -140,12 +140,12 @@ export interface CreateDecisionInput {
 }
 
 export interface DecisionRepository {
-  completeRun(input: CompleteDecisionRunInput): Promise<DecisionRun>;
-  createDecision(input: CreateDecisionInput): Promise<PersistedDecision>;
-  createRun(input: CreateDecisionRunInput): Promise<DecisionRun>;
-  failRun(input: FailDecisionRunInput): Promise<void>;
-  getDecision(id: string, userId: string): Promise<DecisionDetail | null>;
-  getRun(id: string, userId: string): Promise<DecisionRun | null>;
-  listDueForReview(userId: string): Promise<DecisionSummary[]>;
-  listRecent(userId: string, limit: number): Promise<DecisionSummary[]>;
+  completeRun: (input: CompleteDecisionRunInput) => Promise<DecisionRun>;
+  createDecision: (input: CreateDecisionInput) => Promise<PersistedDecision>;
+  createRun: (input: CreateDecisionRunInput) => Promise<DecisionRun>;
+  failRun: (input: FailDecisionRunInput) => Promise<void>;
+  getDecision: (id: string, userId: string) => Promise<DecisionDetail | null>;
+  getRun: (id: string, userId: string) => Promise<DecisionRun | null>;
+  listDueForReview: (userId: string) => Promise<DecisionSummary[]>;
+  listRecent: (userId: string, limit: number) => Promise<DecisionSummary[]>;
 }
