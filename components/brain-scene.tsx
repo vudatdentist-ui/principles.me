@@ -74,8 +74,8 @@ void main(){
  vec4 centerView=modelViewMatrix*vec4(center,1.0); vec4 originView=modelViewMatrix*vec4(0.0,0.0,0.0,1.0); float depthDelta=centerView.z-originView.z; float depthFrontness=smoothstep(-.02,.26,depthDelta); float normalFrontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float frontness=depthFrontness*(.3+.7*normalFrontness); vec4 centerClip=projectionMatrix*centerView; vec2 particleScreen=centerClip.xy/centerClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.26,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*42.0-uTime*3.6+aSeed*3.0);
  float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r*frontness; float pointerInfluence=max(cursorInfluence,touch*.62);
  center.xy+=screenRadial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
- float pulse=.92+.18*sin(uTime*1.2+aSeed*18.0); vec3 local=position*aScale*pulse;
- local.xy=r2(aSeed*6.283+uTime*.10)*local.xy; local.xz=r2(aSeed*3.7-uTime*.055)*local.xz; local.yz=r2(aSeed*5.2+uTime*.07)*local.yz;
+ float clusterPhase=dot(center,vec3(1.75,1.35,1.1))+aSeed*.42; float clusterSpin=uTime*(.14+.025*sin(dot(center,vec3(2.0,1.5,.9))))+clusterPhase; float pulse=.92+.18*sin(uTime*1.2+clusterPhase*2.4); vec3 local=position*aScale*pulse;
+ local.xy=r2(clusterSpin)*local.xy; local.xz=r2(clusterSpin*.72+aSeed*.9)*local.xz; local.yz=r2(clusterSpin*.48+aSeed*1.6)*local.yz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
  vColor=aColor; vPulse=.88+.22*sin(uTime*1.35+aSeed*11.0); vEdge=clamp(length(position)*1.25,0.0,1.0); vHover=pointerInfluence;
 }`;
@@ -153,19 +153,24 @@ function colorFor(point: THREE.Vector3, index: number) {
     "#2b8fff",
     "#ff721a",
   ];
+  const cellX = Math.floor(point.x / 0.48);
+  const cellY = Math.floor(point.y / 0.48);
+  const cellZ = Math.floor(point.z / 0.58);
+  const cellSeed = cellX * 17.31 + cellY * 31.73 + cellZ * 47.11;
   const color = new THREE.Color(
-    palette[Math.floor(seeded(index, 47) * palette.length)]
+    palette[Math.floor(seeded(cellSeed, 17) * palette.length)]
   );
   const hsl = { h: 0, l: 0, s: 0 };
   color.getHSL(hsl);
   color.setHSL(
-    (hsl.h + (point.x + point.y) * 0.012 + seeded(index, 53) * 0.05 + 1) % 1,
-    Math.min(1, hsl.s * (1.02 + seeded(index, 61) * 0.12)),
-    Math.min(0.92, hsl.l + seeded(index, 67) * 0.14)
+    (hsl.h + (point.x + point.y) * 0.008 + seeded(cellSeed, 29) * 0.035 + 1) %
+      1,
+    Math.min(1, hsl.s * (1.02 + seeded(cellSeed, 31) * 0.1)),
+    Math.min(0.92, hsl.l + 0.07 + seeded(index, 67) * 0.08)
   );
   return color.lerp(
     new THREE.Color("#ffffff"),
-    0.012 + seeded(index, 71) * 0.06
+    0.012 + seeded(index, 71) * 0.045
   );
 }
 
@@ -608,7 +613,7 @@ function WisdomBrain({
       }
     }
     if (state.to === 0 && state.morph >= 1) {
-      state.group.rotation.y += delta * 0.035;
+      state.group.rotation.y += delta * 0.055;
     }
   });
 
