@@ -12,6 +12,7 @@ import {
 } from "react";
 import { BrainFallback } from "./brain-fallback";
 import {
+  createCachedBrainCapabilityReader,
   getBrainPerformancePolicy,
   type BrainPerformancePolicy,
   type BrainQualityTier,
@@ -66,25 +67,35 @@ class BrainErrorBoundary extends Component<
   }
 }
 
-function supportsWebgl() {
+function detectWebglAvailability() {
+  const canvas = document.createElement("canvas");
+
   try {
-    const canvas = document.createElement("canvas");
-    return Boolean(
-      canvas.getContext("webgl2") ||
-        canvas.getContext("webgl") ||
-        canvas.getContext("experimental-webgl")
-    );
+    const context =
+      canvas.getContext("webgl2") ??
+      canvas.getContext("webgl") ??
+      (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
+
+    if (!context) {
+      return false;
+    }
+
+    context.getExtension("WEBGL_lose_context")?.loseContext();
+    return true;
   } catch {
     return false;
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
   }
 }
 
 function readRuntimeDecision(
   quality: BrainQualityTier | undefined,
-  reducedMotion: boolean
+  reducedMotion: boolean,
+  webglAvailable: boolean
 ): RuntimeDecision {
   const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number };
-  const webglAvailable = supportsWebgl();
 
   return {
     policy: getBrainPerformancePolicy({
@@ -99,6 +110,18 @@ function readRuntimeDecision(
     reducedMotion,
     webglAvailable,
   };
+}
+
+function isSameRuntimeDecision(
+  current: RuntimeDecision | null,
+  next: RuntimeDecision
+) {
+  return Boolean(
+    current &&
+      current.policy === next.policy &&
+      current.reducedMotion === next.reducedMotion &&
+      current.webglAvailable === next.webglAvailable
+  );
 }
 
 const visuallyHiddenStyle = {
@@ -120,10 +143,20 @@ export function BrainLoader({
   view = "brain",
 }: BrainLoaderProps) {
   const [runtime, setRuntime] = useState<RuntimeDecision | null>(null);
+  const readWebglAvailability = useMemo(
+    () => createCachedBrainCapabilityReader(detectWebglAvailability),
+    []
+  );
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setRuntime(readRuntimeDecision(quality, media.matches));
+    const webglAvailable = readWebglAvailability();
+    const update = () => {
+      const next = readRuntimeDecision(quality, media.matches, webglAvailable);
+      setRuntime((current) =>
+        isSameRuntimeDecision(current, next) ? current : next
+      );
+    };
 
     update();
     media.addEventListener("change", update);
@@ -132,7 +165,7 @@ export function BrainLoader({
       media.removeEventListener("change", update);
       window.removeEventListener("resize", update);
     };
-  }, [quality]);
+  }, [quality, readWebglAvailability]);
 
   const accessibleSummary = useMemo(
     () =>
@@ -195,7 +228,7 @@ export function BrainLoader({
   return (
     <BrainErrorBoundary
       fallback={errorFallback}
-      key={`${view}:${runtime.policy.tier}:${graph.nodes.length}:${graph.links.length}`}
+      key={`${runtime.policy.tier}:${graph.nodes.length}:${graph.links.length}`}
     >
       <Suspense
         fallback={
