@@ -23,6 +23,9 @@ const source: DecisionBrief["sources"][number] = {
   url: "https://www.example.com/source?article=1",
 };
 
+const ignoreQuestionChange = (_question: string): undefined => undefined;
+const ignoreSubmit = (_question: string): undefined => undefined;
+
 function makeBrief(sources: DecisionBrief["sources"] = [source]): DecisionBrief {
   return {
     confidence: {
@@ -132,8 +135,8 @@ test("empty evidence state is concise", () => {
 test("AskForm is semantic and makes plain Enter available for textarea input", () => {
   const html = renderToStaticMarkup(
     <AskForm
-      onQuestionChange={() => undefined}
-      onSubmit={() => undefined}
+      onQuestionChange={ignoreQuestionChange}
+      onSubmit={ignoreSubmit}
       question="Should we proceed?"
     />
   );
