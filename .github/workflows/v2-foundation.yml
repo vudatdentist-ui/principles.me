@@ -33,10 +33,21 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verify v2 contracts
         run: pnpm contracts:v2
+      - name: Verify migration history
+        run: node scripts/verify-db-migrations.mjs
       - name: Typecheck
         run: pnpm typecheck
       - name: Lint foundation scope
-        run: pnpm exec biome lint app/v2 features/decision features/evidence features/shared scripts/verify-v2-contracts.ts
+        run: >-
+          pnpm exec biome lint
+          app/api/v2
+          app/v2
+          features/decision
+          features/evidence
+          features/shared
+          scripts/ensure-v2-production-schema.mjs
+          scripts/verify-db-migrations.mjs
+          scripts/verify-v2-contracts.ts
       - name: Validate available Wave 1 scopes
         shell: bash
         run: |

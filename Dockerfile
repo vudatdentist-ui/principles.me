@@ -23,5 +23,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=builder /app/lib/db/migrate.ts ./lib/db/migrate.ts
+COPY --from=builder /app/lib/db/migrations ./lib/db/migrations
+COPY --from=builder /app/scripts/ensure-v2-production-schema.mjs ./scripts/ensure-v2-production-schema.mjs
 EXPOSE 3000
 CMD ["pnpm", "start"]

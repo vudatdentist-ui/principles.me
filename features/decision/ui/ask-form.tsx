@@ -67,7 +67,7 @@ export function AskForm({
         className={styles.questionInput}
         disabled={disabled}
         error={error}
-        hint="Use Enter for a new line. Press Ctrl/⌘ + Enter to submit."
+        hint="Tap Decide to submit. On a keyboard, Ctrl/⌘ + Enter also works."
         label="Decision question"
         maxLength={4000}
         minLength={3}
