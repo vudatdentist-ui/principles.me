@@ -85,9 +85,10 @@ function successfulRunner(
   return async ({ onProgress, onStarted }) => {
     await onStarted?.("run-1");
     await onProgress?.({ stage: "context" });
-    await onProgress?.({ references: [reference], stage: "retrieval" });
+    await onProgress?.({ stage: "retrieval" });
     await onProgress?.({
       message: options.statusMessage,
+      references: [reference],
       stage: "analysis",
     });
     await onProgress?.({ stage: "audit" });
