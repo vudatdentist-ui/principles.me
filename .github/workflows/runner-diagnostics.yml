@@ -2,6 +2,12 @@ name: Self-hosted runner diagnostics
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - integration/self-hosted-ci
+    paths:
+      - ".github/workflows/runner-diagnostics.yml"
+      - "docs/SELF_HOSTED_RUNNER.md"
   pull_request:
     branches: [main]
     paths:
