@@ -1,0 +1,66 @@
+name: Self-hosted runner diagnostics
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/runner-diagnostics.yml"
+      - "docs/SELF_HOSTED_RUNNER.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: principles-ci-diagnostics-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  diagnostics:
+    runs-on: [self-hosted, linux, x64, principles-ci]
+    timeout-minutes: 5
+    steps:
+      - name: Runner host information
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "hostname=$(hostname)"
+          echo "kernel=$(uname -srmo)"
+          echo "arch=$(uname -m)"
+          echo
+          echo "--- OS ---"
+          if [ -r /etc/os-release ]; then
+            cat /etc/os-release
+          else
+            uname -a
+          fi
+          echo
+          echo "--- CPU ---"
+          echo "logical_cpus=$(nproc)"
+          lscpu | grep -E '^(Architecture|CPU\(s\)|Model name|Thread\(s\) per core|Core\(s\) per socket|Socket\(s\)):' || true
+          echo
+          echo "--- RAM ---"
+          free -h
+          echo
+          echo "--- Host runtime before CI setup ---"
+          node --version 2>/dev/null || echo "node=not-installed-on-host-path"
+          npm --version 2>/dev/null || echo "npm=not-installed-on-host-path"
+          pnpm --version 2>/dev/null || echo "pnpm=not-installed-on-host-path"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: CI runtime versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'node=%s\n' "$(node --version)"
+          printf 'npm=%s\n' "$(npm --version)"
+          printf 'pnpm=%s\n' "$(pnpm --version)"
