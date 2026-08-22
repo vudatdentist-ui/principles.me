@@ -81,9 +81,14 @@ function throwIfAborted(signal: AbortSignal): void {
 async function emitProgress(
   request: DecisionOrchestratorRequest,
   stage: DecisionProgressStage,
-  runId?: string
+  runId: string,
+  references?: readonly EvidenceReference[]
 ): Promise<void> {
-  await request.onProgress?.({ ...(runId ? { runId } : {}), stage });
+  await request.onProgress?.({
+    ...(references === undefined ? {} : { references }),
+    runId,
+    stage,
+  });
 }
 
 function normalizeError(
@@ -211,7 +216,6 @@ export function createDecisionOrchestrator(
 
       let runId: string | null = null;
       try {
-        await emitProgress(request, "context");
         let run: DecisionRun;
         try {
           run = await dependencies.repository.createRun({
@@ -229,7 +233,8 @@ export function createDecisionOrchestrator(
         runId = run.id;
         throwIfAborted(signal);
 
-        await emitProgress(request, "retrieval", runId);
+        await emitProgress(request, "context", runId);
++        await emitProgress(request, "retrieval", runId);
         const retrievedAt = now().toISOString();
         const evidence = await collectEvidence(
           dependencies,
@@ -239,7 +244,12 @@ export function createDecisionOrchestrator(
         );
         throwIfAborted(signal);
 
-        await emitProgress(request, "analysis", runId);
+        await emitProgress(
+          request,
+          "analysis",
+          runId,
+          evidence.references
+        );
         let initialAnalysis = await dependencies.aiProvider.generateObject({
           messages: buildAnalysisMessages({
             context,
