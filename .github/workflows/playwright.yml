@@ -1,80 +1,80 @@
-name: Playwright Tests
+name: V2 Playwright
 
 on:
   push:
     branches: [main, master]
     paths:
-      - "tests/**"
+      - "app/v2/**"
+      - "app/api/v2/decisions/**"
+      - "features/decision/contracts.ts"
+      - "features/decision/stream-events.ts"
+      - "features/decision/transport/**"
+      - "features/decision/ui/**"
+      - "features/evidence/contracts.ts"
+      - "features/shared/**"
+      - "features/shell/**"
+      - "features/ui-v2/**"
+      - "styles/v2/**"
+      - "tests/v2/**"
       - "playwright.config.ts"
+      - ".github/workflows/playwright.yml"
   pull_request:
     branches: [main, master]
     paths:
-      - "tests/**"
+      - "app/v2/**"
+      - "app/api/v2/decisions/**"
+      - "features/decision/contracts.ts"
+      - "features/decision/stream-events.ts"
+      - "features/decision/transport/**"
+      - "features/decision/ui/**"
+      - "features/evidence/contracts.ts"
+      - "features/shared/**"
+      - "features/shell/**"
+      - "features/ui-v2/**"
+      - "styles/v2/**"
+      - "tests/v2/**"
       - "playwright.config.ts"
+      - ".github/workflows/playwright.yml"
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    env:
-      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-      POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-      REDIS_URL: ${{ secrets.REDIS_URL }}
+    timeout-minutes: 20
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.32.1
-          run_install: false
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: "pnpm"
+          node-version: 20
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
-
-      - name: Install Playwright Browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+      - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run Playwright tests
-        run: pnpm test
+      - name: Lint V2 test harness
+        run: pnpm exec biome lint tests playwright.config.ts
+
+      - name: Run deterministic harness tests
+        run: pnpm exec tsx --test tests/v2/unit/*.test.ts
+
+      - name: Run V2 smoke tests
+        run: pnpm exec playwright test --project=v2-chromium
 
       - uses: actions/upload-artifact@v4
         if: always() && !cancelled()
         with:
-          name: playwright-report
+          name: v2-playwright-report
           path: playwright-report/
           retention-days: 7
