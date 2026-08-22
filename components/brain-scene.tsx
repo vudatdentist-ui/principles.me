@@ -6,12 +6,10 @@
 "use client";
 
 import { OrbitControls } from "@react-three/drei";
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 // biome-ignore lint/performance/noNamespaceImport: Three.js is used as a cohesive renderer namespace.
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -42,6 +40,7 @@ type BrainTouchField = {
 
 type WisdomBrainState = {
   dustMaterial: THREE.ShaderMaterial;
+  globeGuide: THREE.LineSegments;
   group: THREE.Group;
   lineMaterial: THREE.ShaderMaterial;
   linkLines: THREE.LineSegments;
@@ -57,12 +56,13 @@ const COUNT = 14_000;
 const SHARD_COUNT = 6200;
 const LINK_NODE_COUNT = 96;
 const LINK_COUNT = 72;
+const GLOBE_RADIUS = 1.02;
 
 const BASE_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute vec3 aNormal; attribute float aScale; attribute float aSeed;
 uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform vec2 uPointerScreen; uniform float uPointerActive; uniform sampler2D uTouch;
-varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover;
+varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; varying float vDepth;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 mat2 r2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
 void main(){
@@ -74,20 +74,20 @@ void main(){
  vec4 centerView=modelViewMatrix*vec4(center,1.0); vec4 originView=modelViewMatrix*vec4(0.0,0.0,0.0,1.0); float depthDelta=centerView.z-originView.z; float depthFrontness=smoothstep(-.02,.26,depthDelta); float normalFrontness=smoothstep(-.05,.32,normalize(normalMatrix*aNormal).z); float frontness=depthFrontness*(.3+.7*normalFrontness); vec4 centerClip=projectionMatrix*centerView; vec2 particleScreen=centerClip.xy/centerClip.w; vec2 screenDelta=particleScreen-uPointerScreen; float screenDistance=length(screenDelta); float cursorInfluence=smoothstep(.26,0.0,screenDistance)*uPointerActive*frontness; vec2 screenRadial=screenDistance>.001?screenDelta/screenDistance:vec2(0.0); float ripple=.5+.5*sin(screenDistance*42.0-uTime*3.6+aSeed*3.0);
  float touch=texture2D(uTouch,clamp(particleScreen*.5+.5,.02,.98)).r*frontness; float pointerInfluence=max(cursorInfluence,touch*.62);
  center.xy+=screenRadial*cursorInfluence*(.008+.010*ripple); center.z+=cursorInfluence*(.004+.006*ripple)+touch*.008;
- float clusterPhase=dot(center,vec3(1.75,1.35,1.1))+aSeed*.42; float clusterSpin=uTime*(.14+.025*sin(dot(center,vec3(2.0,1.5,.9))))+clusterPhase; float pulse=.92+.18*sin(uTime*1.2+clusterPhase*2.4); vec3 local=position*aScale*pulse;
- local.xy=r2(clusterSpin)*local.xy; local.xz=r2(clusterSpin*.72+aSeed*.9)*local.xz; local.yz=r2(clusterSpin*.48+aSeed*1.6)*local.yz;
+ float pulse=.92+.18*sin(uTime*1.2+dot(center,vec3(1.75,1.35,1.1))*2.4); vec3 local=position*aScale*pulse;
+ local.xz=r2(uTime*.19)*local.xz;
  vec4 mv=modelViewMatrix*vec4(center+local,1.0); gl_Position=projectionMatrix*mv;
- vColor=aColor; vPulse=.88+.22*sin(uTime*1.35+aSeed*11.0); vEdge=clamp(length(position)*1.25,0.0,1.0); vHover=pointerInfluence;
+ vColor=aColor; vPulse=.88+.22*sin(uTime*1.35+aSeed*11.0); vEdge=clamp(length(position)*1.25,0.0,1.0); vHover=pointerInfluence; vDepth=depthFrontness;
 }`;
 
 const BASE_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; uniform float uOpacity; void main(){ vec3 c=vColor*(.78+vPulse*.28+vHover*.22); gl_FragColor=vec4(c,uOpacity+.03*vHover); }";
+  "precision highp float; varying vec3 vColor; varying float vPulse; varying float vEdge; varying float vHover; varying float vDepth; uniform float uOpacity; void main(){ float shell=.12+.88*vDepth; vec3 c=vColor*(.78+vPulse*.28+vHover*.22)*(.5+.5*vDepth); gl_FragColor=vec4(c,uOpacity*shell+.03*vHover); }";
 
 const DUST_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
 attribute vec3 aColor; attribute vec3 aNormal; attribute float aSeed;
 uniform float uTime; uniform float uFrom; uniform float uTo; uniform float uMorph; uniform float uDepth; uniform vec3 uPointer; uniform vec2 uPointerScreen; uniform float uPointerActive; uniform sampler2D uTouch;
-varying vec3 vColor; varying float vAlpha; varying float vHover;
+varying vec3 vColor; varying float vAlpha; varying float vHover; varying float vDepth;
 vec3 pick(float m){if(m<0.5)return aBrain;if(m<1.5)return aGraph;if(m<2.5)return aThinker;return aCouncil;}
 void main(){
  float e=uMorph*uMorph*(3.0-2.0*uMorph);
@@ -105,11 +105,11 @@ void main(){
  gl_Position=projectionMatrix*mv;
  float perspective=clamp(2.7/max(.8,-mv.z),.45,2.4);
  gl_PointSize=(1.15+2.65*aSeed*aSeed)*perspective;
- vColor=aColor; vAlpha=.23+.27*aSeed; vHover=pointerInfluence;
+ vColor=aColor; vAlpha=.23+.27*aSeed; vHover=pointerInfluence; vDepth=depthFrontness;
 }`;
 
 const DUST_FRAGMENT =
-  "precision highp float; varying vec3 vColor; varying float vAlpha; varying float vHover; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha*(1.0+.16*vHover); if(a<.015) discard; gl_FragColor=vec4(vColor*(.86+.16*vHover),a); }";
+  "precision highp float; varying vec3 vColor; varying float vAlpha; varying float vHover; varying float vDepth; void main(){ vec2 uv=gl_PointCoord-.5; float d=length(uv); float a=smoothstep(.50,.10,d)*vAlpha*(.14+.86*vDepth)*(1.0+.16*vHover); if(a<.015) discard; gl_FragColor=vec4(vColor*(.86+.16*vHover),a); }";
 
 const LINK_VERTEX = `
 attribute vec3 aBrain; attribute vec3 aGraph; attribute vec3 aThinker; attribute vec3 aCouncil;
@@ -135,12 +135,6 @@ const LINK_FRAGMENT =
 
 function seeded(index: number, salt = 12.9898) {
   return Math.abs(Math.sin(index * salt) * 43_758.5453) % 1;
-}
-
-function gaussian(index: number, salt: number) {
-  const u = Math.max(0.0001, seeded(index, salt));
-  const v = seeded(index, salt + 3.7);
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283_185 * v);
 }
 
 function colorFor(point: THREE.Vector3, index: number) {
@@ -208,21 +202,22 @@ function uniformSet(touchTexture: THREE.Texture) {
   };
 }
 
-function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
+function createWisdomBrain(): WisdomBrainState {
   const group = new THREE.Group();
   const touchField = createTouchField();
-  const meshes: THREE.Mesh[] = [];
-  gltf.scene.updateMatrixWorld(true);
-  gltf.scene.traverse((object) => {
-    if (object instanceof THREE.Mesh) {
-      meshes.push(object);
-    }
+  const globeGeometry = new THREE.SphereGeometry(GLOBE_RADIUS, 24, 16);
+  const globeWireframe = new THREE.WireframeGeometry(globeGeometry);
+  globeGeometry.dispose();
+  const globeGuideMaterial = new THREE.LineBasicMaterial({
+    blending: THREE.AdditiveBlending,
+    color: new THREE.Color("#7553d6"),
+    depthWrite: false,
+    opacity: 0.16,
+    transparent: true,
   });
-  if (!meshes.length) {
-    throw new Error("The Principles brain asset contains no mesh.");
-  }
-
-  const samplers = meshes.map((mesh) => new MeshSurfaceSampler(mesh).build());
+  const globeGuide = new THREE.LineSegments(globeWireframe, globeGuideMaterial);
+  globeGuide.frustumCulled = false;
+  group.add(globeGuide);
   const brain = new Float32Array(COUNT * 3);
   const graph = new Float32Array(COUNT * 3);
   const thinker = new Float32Array(COUNT * 3);
@@ -231,17 +226,9 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   const normals = new Float32Array(COUNT * 3);
   const scales = new Float32Array(COUNT);
   const seeds = new Float32Array(COUNT);
-  const sample = new THREE.Vector3();
-  const normal = new THREE.Vector3();
-  const normalMatrix = new THREE.Matrix3();
-  const centers = [
-    [-1.25, 0.58, 0],
-    [-0.2, 1.02, 0.1],
-    [1.02, 0.67, -0.1],
-    [1.28, -0.35, 0.05],
-    [0.1, -1.0, 0],
-    [-1.0, -0.62, -0.08],
-  ];
+  const globePoint = new THREE.Vector3();
+  const latitudeBands = 56;
+  const longitudeSteps = Math.ceil(COUNT / latitudeBands);
   const thinkerCenters = [
     [-1.45, 0.45, 0.05],
     [-0.88, -0.35, 0.18],
@@ -253,28 +240,32 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
 
   for (let index = 0; index < COUNT; index += 1) {
     const cluster = index % 6;
-    const mesh = meshes[index % meshes.length];
-    samplers[index % samplers.length].sample(sample, normal);
-    sample.applyMatrix4(mesh.matrixWorld).multiplyScalar(1.3);
-    normal
-      .applyMatrix3(normalMatrix.getNormalMatrix(mesh.matrixWorld))
-      .normalize();
-    brain.set([sample.x, sample.y, sample.z], index * 3);
-    normals.set([normal.x, normal.y, normal.z], index * 3);
-    colors.set(colorFor(sample, index).toArray(), index * 3);
-    seeds[index] = seeded(index, 17);
-    scales[index] = 0.007 + 0.0185 * seeded(index, 31) ** 1.6;
-
-    const center = centers[cluster];
-    const spread = 0.29 + 0.18 * seeded(index, 21);
-    graph.set(
+    const latitudeIndex = index % latitudeBands;
+    const longitudeIndex = Math.floor(index / latitudeBands);
+    const latitude =
+      -Math.PI / 2 + (Math.PI * (latitudeIndex + 0.5)) / latitudeBands;
+    const longitude = (longitudeIndex / longitudeSteps) * Math.PI * 2;
+    const shellRadius = GLOBE_RADIUS;
+    const latitudeRadius = Math.cos(latitude) * shellRadius;
+    globePoint.set(
+      Math.cos(longitude) * latitudeRadius,
+      Math.sin(latitude) * shellRadius,
+      Math.sin(longitude) * latitudeRadius
+    );
+    brain.set([globePoint.x, globePoint.y, globePoint.z], index * 3);
+    normals.set(
       [
-        center[0] + gaussian(index, 13) * spread,
-        center[1] + gaussian(index, 19) * spread * 0.75,
-        center[2] + gaussian(index, 23) * spread,
+        globePoint.x / shellRadius,
+        globePoint.y / shellRadius,
+        globePoint.z / shellRadius,
       ],
       index * 3
     );
+    colors.set(colorFor(globePoint, index).toArray(), index * 3);
+    seeds[index] = seeded(index, 17);
+    scales[index] = 0.007 + 0.0185 * seeded(index, 31) ** 1.6;
+
+    graph.set([globePoint.x, globePoint.y, globePoint.z], index * 3);
 
     const constellation = thinkerCenters[cluster];
     const angle = seeded(index, 33) * Math.PI * 2;
@@ -461,6 +452,7 @@ function createWisdomBrain(gltf: { scene: THREE.Group }): WisdomBrainState {
   return {
     dustMaterial,
     from: 0,
+    globeGuide,
     group,
     lineMaterial,
     linkLines,
@@ -536,10 +528,7 @@ function WisdomBrain({
   mode: BrainMode;
   pointerRef: { current: BrainPointer };
 }) {
-  const gltf = useLoader(GLTFLoader, "/brain.glb") as unknown as {
-    scene: THREE.Group;
-  };
-  const state = useMemo(() => createWisdomBrain(gltf), [gltf]);
+  const state = useMemo(() => createWisdomBrain(), []);
   const pointerScreenTarget = useMemo(() => new THREE.Vector2(), []);
   const pointerScreenSmooth = useMemo(() => new THREE.Vector2(), []);
   const target = modeIndex(mode);
@@ -580,6 +569,7 @@ function WisdomBrain({
     state.lineMaterial.uniforms.uTo.value = state.to;
     state.lineMaterial.uniforms.uMorph.value = 0;
     state.linkLines.visible = target === 0;
+    state.globeGuide.visible = target === 0 || target === 1;
   }, [state, target]);
 
   useFrame(({ clock }, delta) => {
@@ -612,7 +602,7 @@ function WisdomBrain({
         state.from = state.to;
       }
     }
-    if (state.to === 0 && state.morph >= 1) {
+    if ((state.to === 0 || state.to === 1) && state.morph >= 1) {
       state.group.rotation.y += delta * 0.055;
     }
   });
