@@ -1,4 +1,10 @@
 import { expect, test } from "@playwright/test";
+import {
+  decisionBriefFixture,
+  decisionQuestion,
+  successfulDecisionEvents,
+} from "../fixtures/decision";
+import { installMockDecisionTransport } from "../helpers/mock-transport";
 import { blockExternalNetwork } from "../helpers/network";
 
 const LEGACY_SURFACE_TERMS = [
@@ -39,12 +45,39 @@ test("renders the V2 product shell without legacy dashboard concepts", async ({
     ""
   );
 
+  await expect(page.getByLabel("Decision question")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Decide" })).toBeDisabled();
   await expect(page.getByTestId("model-selector")).toHaveCount(0);
   await Promise.all(
     LEGACY_SURFACE_TERMS.map((term) =>
       expect(page.getByText(term, { exact: false })).toHaveCount(0)
     )
   );
+});
+
+test("streams a mocked Decision Brief through the V2 workspace", async ({
+  page,
+}) => {
+  await installMockDecisionTransport(page, {
+    endpoint: "**/api/v2/decisions",
+    events: successfulDecisionEvents,
+  });
+  await page.goto("/v2");
+
+  await page.getByLabel("Decision question").fill(decisionQuestion);
+  await page.getByRole("button", { name: "Decide" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: decisionBriefFixture.recommendation })
+  ).toBeVisible();
+  await expect(
+    page.getByText(decisionBriefFixture.nextAction, { exact: true })
+  ).toBeVisible();
+
+  const evidenceButton = page.getByRole("button", { name: "View evidence" });
+  await expect(evidenceButton).toBeEnabled();
+  await evidenceButton.click();
+  await expect(page.getByText("Pilot readiness review", { exact: true })).toBeVisible();
 });
 
 test("keeps V2 navigation available across History and Brain", async ({ page }) => {

@@ -25,6 +25,7 @@ const source: DecisionBrief["sources"][number] = {
 
 const ignoreQuestionChange = (_question: string): undefined => undefined;
 const ignoreSubmit = (_question: string): undefined => undefined;
+const ignoreAccept = (_brief: DecisionBrief): undefined => undefined;
 
 function makeBrief(sources: DecisionBrief["sources"] = [source]): DecisionBrief {
   return {
@@ -96,6 +97,22 @@ test("DecisionBrief renders memo content, citations, and required actions", () =
   assert.match(html, />Adjust</);
   assert.match(html, />View evidence</);
   assert.doesNotMatch(html, /thinker|agent|evidence judge|model selector|prompt/i);
+});
+
+test("Accept stays disabled until an integration callback is available", () => {
+  const disabledHtml = renderToStaticMarkup(
+    <DecisionBriefView brief={makeBrief()} />
+  );
+  const enabledHtml = renderToStaticMarkup(
+    <DecisionBriefView brief={makeBrief()} onAccept={ignoreAccept} />
+  );
+  const disabledAccept = disabledHtml.match(/<button[^>]*>Accept<\/button>/)?.[0];
+  const enabledAccept = enabledHtml.match(/<button[^>]*>Accept<\/button>/)?.[0];
+
+  assert.ok(disabledAccept);
+  assert.match(disabledAccept, /disabled=""/);
+  assert.ok(enabledAccept);
+  assert.doesNotMatch(enabledAccept, /disabled=""/);
 });
 
 test("no-source low-confidence brief remains explicit and disables evidence action", () => {
