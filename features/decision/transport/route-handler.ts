@@ -22,19 +22,19 @@ export function createDecisionPostHandler({
   runner,
 }: DecisionRouteDependencies): (request: Request) => Promise<Response> {
   return async (request: Request): Promise<Response> => {
-    const userId = await resolveUserId(request);
-    if (!userId) {
-      return jsonError(401, {
-        code: "unauthenticated",
-        message: "Authentication is required.",
-      });
-    }
-
     const parsed = await parseDecisionRequest(request);
     if (!parsed.ok) {
       return jsonError(400, {
         code: parsed.code,
         message: parsed.message,
+      });
+    }
+
+    const userId = await resolveUserId(request);
+    if (!userId) {
+      return jsonError(401, {
+        code: "unauthenticated",
+        message: "Authentication is required.",
       });
     }
 
