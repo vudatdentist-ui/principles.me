@@ -20,6 +20,9 @@ type ApiErrorPayload = {
   };
 };
 
+type DecisionEventHandler = (events: readonly DecisionStreamEvent[]) => void;
+type DecisionStreamDecoder = ReturnType<typeof createDecisionStreamDecoder>;
+
 function fallbackErrorEvent(
   code: string,
   message: string,
@@ -57,6 +60,21 @@ function isAbortError(error: unknown): boolean {
     (error instanceof DOMException && error.name === "AbortError") ||
     (error instanceof Error && error.name === "AbortError")
   );
+}
+
+async function readDecisionChunks(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  textDecoder: TextDecoder,
+  streamDecoder: DecisionStreamDecoder,
+  applyEvents: DecisionEventHandler
+): Promise<void> {
+  const { done, value } = await reader.read();
+  if (done) {
+    return;
+  }
+
+  applyEvents(streamDecoder.push(textDecoder.decode(value, { stream: true })));
+  return readDecisionChunks(reader, textDecoder, streamDecoder, applyEvents);
 }
 
 export function V2DecisionClient() {
@@ -137,13 +155,7 @@ export function V2DecisionClient() {
           }
         };
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
-          applyEvents(streamDecoder.push(textDecoder.decode(value, { stream: true })));
-        }
+        await readDecisionChunks(reader, textDecoder, streamDecoder, applyEvents);
 
         const decoderTail = textDecoder.decode();
         if (decoderTail) {
@@ -180,16 +192,15 @@ export function V2DecisionClient() {
   );
 
   const handleSubmit = useCallback(
-    (submittedQuestion: string) => {
-      void runDecision(submittedQuestion);
-    },
+    (submittedQuestion: string) => runDecision(submittedQuestion),
     [runDecision]
   );
 
   const handleRetry = useCallback(() => {
     if (lastQuestionRef.current) {
-      void runDecision(lastQuestionRef.current);
+      return runDecision(lastQuestionRef.current);
     }
+    return undefined;
   }, [runDecision]);
 
   const handleEvidenceOpenChange = useCallback((open: boolean) => {
