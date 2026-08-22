@@ -11,6 +11,13 @@ import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
 
 export const maxDuration = 120;
 
+class DecisionSessionUnavailableError extends Error {
+  constructor() {
+    super("Decision session is unavailable.");
+    this.name = "DecisionSessionUnavailableError";
+  }
+}
+
 function configuredEvidenceProviders(): EvidenceProvider[] {
   const ragflowApiKey = process.env.RAGFLOW_API_KEY?.trim();
   const ragflowDatasetIds = (process.env.RAGFLOW_DATASET_IDS ?? "")
@@ -45,18 +52,40 @@ function withSessionCookie(response: Response, setCookie?: string): Response {
   });
 }
 
+function sessionUnavailableResponse(): Response {
+  return Response.json(
+    {
+      error: {
+        code: "session_unavailable",
+        message: "Decision session is temporarily unavailable.",
+      },
+    },
+    { status: 503 }
+  );
+}
+
 export async function POST(request: Request): Promise<Response> {
   let setCookie: string | undefined;
 
   const handler = createDecisionPostHandler({
     resolveUserId: async (sessionRequest) => {
       const session = await resolveDecisionSession(sessionRequest);
-      setCookie = session?.setCookie;
-      return session?.userId ?? null;
+      if (!session) {
+        throw new DecisionSessionUnavailableError();
+      }
+      setCookie = session.setCookie;
+      return session.userId;
     },
     runner,
   });
 
-  const response = await handler(request);
-  return withSessionCookie(response, setCookie);
+  try {
+    const response = await handler(request);
+    return withSessionCookie(response, setCookie);
+  } catch (error) {
+    if (error instanceof DecisionSessionUnavailableError) {
+      return sessionUnavailableResponse();
+    }
+    throw error;
+  }
 }
