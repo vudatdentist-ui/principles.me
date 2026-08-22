@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 concurrency:
   group: production-deploy
@@ -16,7 +15,7 @@ permissions:
 jobs:
   verify:
     name: Verify release
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux, x64, principles-ci]
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -42,7 +41,8 @@ jobs:
   deploy:
     name: Deploy to Hostinger VPS
     needs: verify
-    runs-on: ubuntu-24.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, principles-ci]
     timeout-minutes: 30
     environment: production
     steps:
