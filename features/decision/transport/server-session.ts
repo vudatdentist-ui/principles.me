@@ -79,8 +79,14 @@ function readCookie(request: Request, name: string): string | null {
       continue;
     }
     const key = part.slice(0, separator).trim();
-    if (key === name) {
+    if (key !== name) {
+      continue;
+    }
+
+    try {
       return decodeURIComponent(part.slice(separator + 1).trim());
+    } catch {
+      return null;
     }
   }
   return null;
