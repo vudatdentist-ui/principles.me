@@ -46,13 +46,7 @@ export function startedEvent(runId: string): DecisionStreamEvent {
 export function progressEvents(
   progress: DecisionTransportProgress
 ): DecisionStreamEvent[] {
-  const events: DecisionStreamEvent[] = [
-    decisionStreamEventSchema.parse({
-      message: progress.message?.trim() || DEFAULT_STAGE_MESSAGES[progress.stage],
-      stage: progress.stage,
-      type: "status",
-    }),
-  ];
+  const events: DecisionStreamEvent[] = [];
 
   if (progress.references !== undefined) {
     events.push(
@@ -62,6 +56,14 @@ export function progressEvents(
       })
     );
   }
+
+  events.push(
+    decisionStreamEventSchema.parse({
+      message: progress.message?.trim() || DEFAULT_STAGE_MESSAGES[progress.stage],
+      stage: progress.stage,
+      type: "status",
+    })
+  );
 
   return events;
 }
