@@ -138,7 +138,16 @@ jobs:
 
           # localhost inside principles-web points to the app container, not to
           # the VPS host where the existing RAGFlow service is exposed.
-          if grep -Eq '^RAGFLOW_BASE_URL=http://(localhost|127\.0\.0\.1):9380/?$' .env.production; then
+          if ! grep -Eq '^RAGFLOW_BASE_URL=.+$' .env.production; then
+            if grep -q '^RAGFLOW_BASE_URL=' .env.production; then
+              sed -i \
+                's#^RAGFLOW_BASE_URL=.*#RAGFLOW_BASE_URL=http://host.docker.internal:9380#' \
+                .env.production
+            else
+              printf '\nRAGFLOW_BASE_URL=http://host.docker.internal:9380\n' >> .env.production
+            fi
+            echo 'Configured RAGFLOW_BASE_URL for Docker host access.'
+          elif grep -Eq '^RAGFLOW_BASE_URL=http://(localhost|127\.0\.0\.1):9380/?$' .env.production; then
             sed -i \
               's#^RAGFLOW_BASE_URL=.*#RAGFLOW_BASE_URL=http://host.docker.internal:9380#' \
               .env.production
