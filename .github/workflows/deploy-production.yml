@@ -108,6 +108,17 @@ jobs:
           cd "$APP_DIR"
           test -f .env.production
           test -f docker-compose.hostinger.yml
+
+          if ! grep -Eq '^AUTH_SECRET=.+$' .env.production; then
+            SESSION_SECRET="$(openssl rand -hex 32)"
+            if grep -q '^AUTH_SECRET=' .env.production; then
+              sed -i "s/^AUTH_SECRET=.*/AUTH_SECRET=${SESSION_SECRET}/" .env.production
+            else
+              printf '\nAUTH_SECRET=%s\n' "$SESSION_SECRET" >> .env.production
+            fi
+            unset SESSION_SECRET
+          fi
+
           docker network inspect coolify >/dev/null
           docker compose -f docker-compose.hostinger.yml up -d --build --remove-orphans
 
