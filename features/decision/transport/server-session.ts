@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { createGuestUser } from "@/lib/db/queries";
+import { createV2GuestIdentity } from "@/lib/db/queries/session";
 import { getToken } from "next-auth/jwt";
 
 const SESSION_COOKIE = "principles-v2-session";
@@ -143,13 +143,17 @@ export async function resolveDecisionSession(
     }
   }
 
-  const [guest] = await createGuestUser();
-  if (!guest?.id) {
+  try {
+    const guest = await createV2GuestIdentity();
+    if (!guest) {
+      return null;
+    }
+
+    return {
+      setCookie: sessionCookie(request, encodeSession(guest.id, secret)),
+      userId: guest.id,
+    };
+  } catch {
     return null;
   }
-
-  return {
-    setCookie: sessionCookie(request, encodeSession(guest.id, secret)),
-    userId: guest.id,
-  };
 }
