@@ -49,6 +49,11 @@ jobs:
       - name: Checkout deployment script
         uses: actions/checkout@v4
 
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -88,7 +93,9 @@ jobs:
           set -Eeuo pipefail
           : "${APP_DIR:?APP_DIR is required}"
           : "${STAGE_DIR:?STAGE_DIR is required}"
-          install -d "$(dirname "$APP_DIR")" "$STAGE_DIR"
+          install -d "$(dirname "$APP_DIR")"
+          rm -rf "$STAGE_DIR"
+          install -d "$STAGE_DIR"
           REMOTE
 
           git archive --format=tar "$DEPLOY_SHA" | gzip -1 | \
@@ -98,14 +105,24 @@ jobs:
 
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
             -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "APP_DIR='$APP_DIR' STAGE_DIR='$STAGE_DIR' bash -s" <<'REMOTE'
+            "APP_DIR='$APP_DIR' STAGE_DIR='$STAGE_DIR' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
           set -Eeuo pipefail
           : "${APP_DIR:?APP_DIR is required}"
           : "${STAGE_DIR:?STAGE_DIR is required}"
+          : "${DEPLOY_SHA:?DEPLOY_SHA is required}"
           test -f "$STAGE_DIR/.github/workflows/deploy-production.yml"
+
+          install -d "$APP_DIR"
+          test -f "$APP_DIR/.env.production"
+
+          # Make APP_DIR match the exact Git commit while preserving the one
+          # server-owned file that must survive releases.
+          find "$APP_DIR" -mindepth 1 -maxdepth 1 \
+            ! -name '.env.production' -exec rm -rf -- {} +
           cp -a "$STAGE_DIR/." "$APP_DIR/"
           rm -rf "$STAGE_DIR"
           cd "$APP_DIR"
+
           test -f .env.production
           test -f docker-compose.hostinger.yml
 
@@ -119,16 +136,65 @@ jobs:
             unset SESSION_SECRET
           fi
 
+          # localhost inside principles-web points to the app container, not to
+          # the VPS host where the existing RAGFlow service is exposed.
+          if grep -Eq '^RAGFLOW_BASE_URL=http://(localhost|127\.0\.0\.1):9380/?$' .env.production; then
+            sed -i \
+              's#^RAGFLOW_BASE_URL=.*#RAGFLOW_BASE_URL=http://host.docker.internal:9380#' \
+              .env.production
+            echo 'Adjusted RAGFLOW_BASE_URL for Docker host access.'
+          fi
+
           docker network inspect coolify >/dev/null
-          docker compose -f docker-compose.hostinger.yml up -d --build --remove-orphans
+
+          APP_VERSION="$DEPLOY_SHA" \
+            docker compose -f docker-compose.hostinger.yml build principles
+
+          # Repair only the additive V2 DecisionRun table. The script refuses
+          # to mutate anything when the released User/Decision base schema is absent.
+          APP_VERSION="$DEPLOY_SHA" \
+            docker compose -f docker-compose.hostinger.yml run --rm --no-deps \
+              principles node scripts/ensure-v2-production-schema.mjs
+
+          APP_VERSION="$DEPLOY_SHA" \
+            docker compose -f docker-compose.hostinger.yml up -d --no-build --remove-orphans
 
           test "$(docker inspect -f '{{.State.Running}}' principles-web)" = "true"
           docker compose -f docker-compose.hostinger.yml ps
           REMOTE
 
-      - name: Verify public endpoint
+      - name: Verify deployed V2 release
         shell: bash
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
         run: |
-          curl --fail --silent --show-error --location \
-            --retry 15 --retry-delay 4 --retry-connrefused \
-            --max-time 20 https://principles.me/ >/dev/null
+          set -Eeuo pipefail
+          HEALTH_FILE="$(mktemp)"
+          trap 'rm -f "$HEALTH_FILE"' EXIT
+          export HEALTH_FILE DEPLOY_SHA
+
+          curl --fail-with-body --silent --show-error \
+            --retry 15 --retry-delay 4 --retry-all-errors \
+            --max-time 20 \
+            --output "$HEALTH_FILE" \
+            https://principles.me/api/v2/health
+
+          cat "$HEALTH_FILE"
+          echo
+
+          node <<'NODE'
+          const fs = require("node:fs");
+          const health = JSON.parse(fs.readFileSync(process.env.HEALTH_FILE, "utf8"));
+          if (health.status !== "ok") {
+            throw new Error(`V2 health is ${health.status ?? "unknown"}.`);
+          }
+          if (health.version !== process.env.DEPLOY_SHA) {
+            throw new Error(
+              `V2 health reports ${health.version ?? "unknown"}, expected ${process.env.DEPLOY_SHA}.`
+            );
+          }
+          NODE
+
+          curl --fail --silent --show-error \
+            --retry 10 --retry-delay 3 --retry-all-errors \
+            --max-time 20 https://principles.me/v2 >/dev/null
