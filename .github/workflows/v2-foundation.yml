@@ -2,12 +2,11 @@ name: V2 Foundation
 
 on:
   pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
-      - "arch/**"
-      - "agent/**"
-      - "integration/**"
 
 permissions:
   contents: read
