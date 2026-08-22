@@ -197,10 +197,8 @@ export function V2DecisionClient() {
   );
 
   const handleRetry = useCallback(() => {
-    if (lastQuestionRef.current) {
-      return runDecision(lastQuestionRef.current);
-    }
-    return undefined;
+    const lastQuestion = lastQuestionRef.current;
+    return lastQuestion ? runDecision(lastQuestion) : Promise.resolve();
   }, [runDecision]);
 
   const handleEvidenceOpenChange = useCallback((open: boolean) => {
