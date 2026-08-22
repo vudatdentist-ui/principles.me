@@ -14,11 +14,11 @@ permissions:
 
 concurrency:
   cancel-in-progress: true
-  group: v2-foundation-${{ github.ref }}
+  group: v2-foundation-${{ github.head_ref || github.ref_name }}
 
 jobs:
   contracts:
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, linux, x64, principles-ci]
     steps:
       - uses: actions/checkout@v4
       - name: Install pnpm
