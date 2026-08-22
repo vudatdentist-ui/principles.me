@@ -7,6 +7,11 @@ export type EvidenceDrawerContentProps = {
 
 type EvidenceReference = DecisionBrief["sources"][number];
 
+type SafeSourceLink = {
+  href: string;
+  label: string;
+};
+
 const SOURCE_TYPE_LABELS: Record<EvidenceReference["sourceType"], string> = {
   market: "Market data",
   ragflow: "Knowledge base",
@@ -41,11 +46,23 @@ function formatTimestamp(value: string): string {
   return EVIDENCE_DATE_FORMATTER.format(date);
 }
 
-function sourceHost(url: string): string {
+function safeSourceLink(value: string | null): SafeSourceLink | null {
+  if (!value) {
+    return null;
+  }
+
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    const url = new URL(value);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return null;
+    }
+
+    return {
+      href: url.toString(),
+      label: url.hostname.replace(/^www\./, ""),
+    };
   } catch {
-    return "Open source";
+    return null;
   }
 }
 
@@ -58,58 +75,66 @@ export function EvidenceDrawerContent({
 
   return (
     <div className={styles.evidence}>
-      {sources.map((source) => (
-        <article className={styles.evidenceItem} key={source.key}>
-          <header>
-            <p className={styles.evidenceKey}>{source.key}</p>
-            <h3 className={styles.evidenceTitle}>{source.title}</h3>
-            <p className={styles.evidenceMeta}>
-              {sourceTypeLabel(source.sourceType)} · {readableProvider(source.provider)}
-            </p>
-          </header>
+      {sources.map((source) => {
+        const sourceLink = safeSourceLink(source.url);
 
-          <dl className={styles.evidenceDates}>
-            <div>
-              <dt>Retrieved</dt>
-              <dd>
-                <time dateTime={source.retrievedAt}>
-                  {formatTimestamp(source.retrievedAt)} UTC
-                </time>
-              </dd>
-            </div>
-            {source.publishedAt ? (
+        return (
+          <article className={styles.evidenceItem} key={source.key}>
+            <header>
+              <p className={styles.evidenceKey}>{source.key}</p>
+              <h3 className={styles.evidenceTitle}>{source.title}</h3>
+              <p className={styles.evidenceMeta}>
+                {sourceTypeLabel(source.sourceType)} · {readableProvider(source.provider)}
+              </p>
+            </header>
+
+            <dl className={styles.evidenceDates}>
               <div>
-                <dt>Published</dt>
+                <dt>Retrieved</dt>
                 <dd>
-                  <time dateTime={source.publishedAt}>
-                    {formatTimestamp(source.publishedAt)} UTC
+                  <time dateTime={source.retrievedAt}>
+                    {formatTimestamp(source.retrievedAt)} UTC
                   </time>
                 </dd>
               </div>
-            ) : null}
-            {source.observedAt ? (
-              <div>
-                <dt>Observed</dt>
-                <dd>
-                  <time dateTime={source.observedAt}>
-                    {formatTimestamp(source.observedAt)} UTC
-                  </time>
-                </dd>
-              </div>
-            ) : null}
-          </dl>
+              {source.publishedAt ? (
+                <div>
+                  <dt>Published</dt>
+                  <dd>
+                    <time dateTime={source.publishedAt}>
+                      {formatTimestamp(source.publishedAt)} UTC
+                    </time>
+                  </dd>
+                </div>
+              ) : null}
+              {source.observedAt ? (
+                <div>
+                  <dt>Observed</dt>
+                  <dd>
+                    <time dateTime={source.observedAt}>
+                      {formatTimestamp(source.observedAt)} UTC
+                    </time>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
 
-          <p className={styles.evidenceExcerpt}>{source.text}</p>
+            <p className={styles.evidenceExcerpt}>{source.text}</p>
 
-          {source.url ? (
-            <p className={styles.evidenceLinkRow}>
-              <a href={source.url} rel="noopener noreferrer" target="_blank">
-                {sourceHost(source.url)}
-              </a>
-            </p>
-          ) : null}
-        </article>
-      ))}
+            {sourceLink ? (
+              <p className={styles.evidenceLinkRow}>
+                <a
+                  href={sourceLink.href}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {sourceLink.label}
+                </a>
+              </p>
+            ) : null}
+          </article>
+        );
+      })}
     </div>
   );
 }
