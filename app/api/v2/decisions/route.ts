@@ -1,41 +1,62 @@
-import { getToken } from "next-auth/jwt";
+import { createDecisionOrchestrator } from "@/features/decision/orchestration";
+import { decisionRepository } from "@/features/decision/persistence";
 import {
   createDecisionPostHandler,
-  type DecisionTransportRunner,
+  createOrchestratorTransportRunner,
 } from "@/features/decision/transport";
+import { resolveDecisionSession } from "@/features/decision/transport/server-session";
+import type { EvidenceProvider } from "@/features/evidence/providers/evidence-provider";
+import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
+import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
 
 export const maxDuration = 120;
 
-async function resolveUserId(request: Request): Promise<string | null> {
-  const secret = process.env.AUTH_SECRET?.trim();
-  if (!secret) {
-    return null;
-  }
+function configuredEvidenceProviders(): EvidenceProvider[] {
+  const ragflowApiKey = process.env.RAGFLOW_API_KEY?.trim();
+  const ragflowDatasetIds = (process.env.RAGFLOW_DATASET_IDS ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
 
-  try {
-    const token = await getToken({
-      req: request,
-      secret,
-      secureCookie: new URL(request.url).protocol === "https:",
-    });
-    return typeof token?.sub === "string" && token.sub.trim()
-      ? token.sub.trim()
-      : null;
-  } catch {
-    return null;
-  }
+  return ragflowApiKey && ragflowDatasetIds.length > 0
+    ? [new RagflowEvidenceProvider()]
+    : [];
 }
 
-const unavailableRunner: DecisionTransportRunner = () => {
-  throw Object.assign(new Error("Decision orchestrator is not available."), {
-    code: "orchestrator_unavailable",
-    retryable: true,
-  });
-};
-
-// V2-203 is intentionally safe while V2-201 is still unmerged. Replace this
-// runner with the public V2-201 orchestrator adapter after that API lands.
-export const POST = createDecisionPostHandler({
-  resolveUserId,
-  runner: unavailableRunner,
+const orchestrator = createDecisionOrchestrator({
+  aiProvider: new DeepSeekProvider(),
+  evidenceProviders: configuredEvidenceProviders(),
+  repository: decisionRepository,
 });
+
+const runner = createOrchestratorTransportRunner(orchestrator);
+
+function withSessionCookie(response: Response, setCookie?: string): Response {
+  if (!setCookie) {
+    return response;
+  }
+
+  const headers = new Headers(response.headers);
+  headers.append("set-cookie", setCookie);
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+}
+
+export async function POST(request: Request): Promise<Response> {
+  let setCookie: string | undefined;
+
+  const handler = createDecisionPostHandler({
+    resolveUserId: async (sessionRequest) => {
+      const session = await resolveDecisionSession(sessionRequest);
+      setCookie = session?.setCookie;
+      return session?.userId ?? null;
+    },
+    runner,
+  });
+
+  const response = await handler(request);
+  return withSessionCookie(response, setCookie);
+}
