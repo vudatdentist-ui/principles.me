@@ -39,10 +39,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: v2-playwright-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   test:
     timeout-minutes: 20
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, linux, x64, principles-ci]
 
     steps:
       - uses: actions/checkout@v4
@@ -60,8 +64,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Chromium browser
+        run: pnpm exec playwright install chromium
 
       - name: Lint V2 test harness
         run: pnpm exec biome lint tests playwright.config.ts
