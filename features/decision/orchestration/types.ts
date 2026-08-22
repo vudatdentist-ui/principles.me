@@ -18,7 +18,8 @@ export type DecisionProgressStage =
   | "persistence";
 
 export type DecisionProgressEvent = {
-  readonly runId?: string;
+  readonly references?: readonly EvidenceReference[];
+  readonly runId: string;
   readonly stage: DecisionProgressStage;
 };
 
