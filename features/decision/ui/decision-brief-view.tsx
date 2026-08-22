@@ -104,7 +104,9 @@ export function DecisionBriefView({
       <Divider />
 
       <div className={styles.briefActions}>
-        <Button onClick={handleAccept}>Accept</Button>
+        <Button disabled={!onAccept} onClick={handleAccept}>
+          Accept
+        </Button>
         <Button onClick={handleAdjust} variant="secondary">
           Adjust
         </Button>
