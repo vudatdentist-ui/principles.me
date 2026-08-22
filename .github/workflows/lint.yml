@@ -49,4 +49,6 @@ jobs:
           features/evidence
           features/shared
           lib/principles-graph.ts
+          scripts/ensure-v2-production-schema.mjs
+          scripts/verify-db-migrations.mjs
           scripts/verify-v2-contracts.ts
