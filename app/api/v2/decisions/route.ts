@@ -73,8 +73,9 @@ export async function POST(request: Request): Promise<Response> {
       if (!session) {
         throw new DecisionSessionUnavailableError();
       }
-      setCookie = session.setCookie;
-      return session.userId;
+      const { setCookie: sessionCookie, userId } = session;
+      setCookie = sessionCookie;
+      return userId;
     },
     runner,
   });
