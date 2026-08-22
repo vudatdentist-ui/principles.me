@@ -115,6 +115,13 @@ jobs:
           install -d "$APP_DIR"
           test -f "$APP_DIR/.env.production"
 
+          for required_var in POSTGRES_URL DEEPSEEK_API_KEY; do
+            if ! grep -Eq "^${required_var}=.+$" "$APP_DIR/.env.production"; then
+              echo "${required_var} is required in .env.production." >&2
+              exit 1
+            fi
+          done
+
           # Make APP_DIR match the exact Git commit while preserving the one
           # server-owned file that must survive releases.
           find "$APP_DIR" -mindepth 1 -maxdepth 1 \
