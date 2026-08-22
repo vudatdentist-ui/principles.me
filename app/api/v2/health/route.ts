@@ -1,8 +1,5 @@
 import postgres from "postgres";
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
-
 type SchemaReadiness = {
   database: boolean;
   decisionSchema: boolean;
