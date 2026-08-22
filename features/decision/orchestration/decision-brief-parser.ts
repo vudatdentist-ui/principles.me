@@ -115,6 +115,9 @@ export function parseDecisionAudit(value: unknown): DecisionAudit {
   if (verdict !== "grounded" && verdict !== "mixed" && verdict !== "ungrounded") {
     throw invalidOutput("audit.verdict is invalid.");
   }
+  if (verdict === "ungrounded" && decision !== "revise") {
+    throw invalidOutput("Ungrounded audits must request revision.");
+  }
 
   return {
     decision,
