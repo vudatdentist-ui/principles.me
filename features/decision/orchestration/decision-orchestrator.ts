@@ -234,7 +234,7 @@ export function createDecisionOrchestrator(
         throwIfAborted(signal);
 
         await emitProgress(request, "context", runId);
-+        await emitProgress(request, "retrieval", runId);
+        await emitProgress(request, "retrieval", runId);
         const retrievedAt = now().toISOString();
         const evidence = await collectEvidence(
           dependencies,
