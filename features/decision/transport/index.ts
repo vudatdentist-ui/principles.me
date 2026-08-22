@@ -15,6 +15,7 @@ export {
   encodeDecisionStreamEvent,
   NDJSON_CONTENT_TYPE,
 } from "./ndjson-response";
+export { createOrchestratorTransportRunner } from "./orchestrator-runner";
 export {
   type DecisionRequest,
   decisionRequestSchema,
