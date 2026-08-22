@@ -24,7 +24,7 @@ if (!Array.isArray(journal.entries)) {
   throw new Error("Migration journal entries are missing.");
 }
 
-const entries = journal.entries;
+const { entries } = journal;
 for (const [index, entry] of entries.entries()) {
   if (entry.idx !== index) {
     throw new Error(
