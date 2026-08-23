@@ -19,6 +19,11 @@ jobs:
     runs-on: [self-hosted, linux, x64, principles-ci]
     timeout-minutes: 5
     steps:
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Execute one live decision request
         id: smoke
         shell: bash
@@ -47,7 +52,7 @@ jobs:
           const body = fs.readFileSync(process.env.BODY, "utf8");
           const status = Number(process.env.HTTP_STATUS || 0);
           const ndjson = process.env.NDJSON === "1";
-          let types = [];
+          const types = [];
           let errorCode = "none";
           let retryable = "0";
           let brief = 0;
