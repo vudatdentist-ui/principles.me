@@ -57,7 +57,6 @@ export async function createAccount(input: {
 }): Promise<{ userId: string; workspaceId: string }> {
   const sql = db();
   const mode = signupMode(process.env.AUTH_SIGNUP_MODE);
-  assertBootstrapSecret(mode, input.setupKey);
 
   try {
     return await sql.begin(async (transaction) => {
@@ -67,6 +66,7 @@ export async function createAccount(input: {
       if (mode === "disabled" || (mode === "bootstrap" && userCount > 0)) {
         throw new SignupClosedError();
       }
+      assertBootstrapSecret(mode, input.setupKey);
 
       const users = await transaction`
         INSERT INTO users (email, email_normalized, password_hash)
