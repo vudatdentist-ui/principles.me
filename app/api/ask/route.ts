@@ -1,5 +1,10 @@
 import { z } from "zod";
 import type { EvidenceReference } from "@/features/evidence/contracts";
+import {
+  liveSearchMode,
+  shouldUseLiveSearch,
+} from "@/features/evidence/live-search-policy";
+import { BraveSearchEvidenceProvider } from "@/features/evidence/providers/brave-search-provider";
 import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
 import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
 import { AiProviderError } from "@/lib/ai/providers/provider-error";
@@ -10,30 +15,42 @@ const requestSchema = z.object({
   question: z.string().trim().min(3).max(4000),
 });
 
+type LiveRetrievalState = "disabled" | "empty" | "ok" | "unavailable";
+
+type RetrievalResult = {
+  live: LiveRetrievalState;
+  references: EvidenceReference[];
+};
+
 function line(event: Record<string, unknown>): string {
   return `${JSON.stringify(event)}\n`;
 }
 
 function formatEvidence(references: readonly EvidenceReference[]): string {
   if (references.length === 0) {
-    return "NO RAG EVIDENCE WAS RETRIEVED.";
+    return "NO PRIVATE OR LIVE EVIDENCE WAS RETRIEVED.";
   }
 
   return references
-    .slice(0, 10)
+    .slice(0, 15)
     .map((reference) => {
       const provenance = [
+        `type=${reference.sourceType === "live_web" ? "live_web" : "private_rag"}`,
+        `provider=${reference.provider}`,
         reference.datasetId ? `dataset=${reference.datasetId}` : null,
         reference.documentId ? `document=${reference.documentId}` : null,
         reference.chunkId ? `chunk=${reference.chunkId}` : null,
         reference.score === null ? null : `score=${reference.score.toFixed(3)}`,
+        reference.publishedAt ? `published=${reference.publishedAt}` : null,
+        `retrieved=${reference.retrievedAt}`,
+        reference.url ? `url=${reference.url}` : null,
       ]
         .filter((item): item is string => item !== null)
         .join(" · ");
 
       return [
         `[${reference.key}] ${reference.title}`,
-        provenance ? `PROVENANCE: ${provenance}` : "PROVENANCE: unavailable",
+        `PROVENANCE: ${provenance}`,
         `EXCERPT:\n${reference.text.slice(0, 3200)}`,
       ].join("\n");
     })
@@ -58,7 +75,7 @@ function createCitationGuard(allowedKeys: ReadonlySet<string>) {
 
       pending += character;
       if (character === "]") {
-        const citation = /^\[(R\d+)\]$/.exec(pending);
+        const citation = /^\[((?:R|W)\d+)\]$/.exec(pending);
         if (!citation || allowedKeys.has(citation[1] ?? "")) {
           output += pending;
         }
@@ -84,6 +101,54 @@ function createCitationGuard(allowedKeys: ReadonlySet<string>) {
   return { finish, push };
 }
 
+async function retrieveEvidence(
+  question: string,
+  signal: AbortSignal
+): Promise<RetrievalResult> {
+  const mode = liveSearchMode(process.env.LIVE_SEARCH_MODE);
+  const wantsLive = shouldUseLiveSearch(question, mode);
+  const liveConfigured = Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim());
+  const useLive = wantsLive && liveConfigured;
+
+  const ragflow = new RagflowEvidenceProvider();
+  const brave = new BraveSearchEvidenceProvider();
+
+  const [ragResult, liveResult] = await Promise.allSettled([
+    ragflow.retrieve({ question }, signal),
+    useLive
+      ? brave.retrieve({ question }, signal)
+      : Promise.resolve(null),
+  ]);
+
+  if (signal.aborted) {
+    throw signal.reason ?? new DOMException("Aborted", "AbortError");
+  }
+
+  const references: EvidenceReference[] = [];
+  if (ragResult.status === "fulfilled") {
+    references.push(...ragResult.value.references);
+  } else {
+    console.error(
+      JSON.stringify({ event: "ask_retrieval_failed", provider: "ragflow" })
+    );
+  }
+
+  let live: LiveRetrievalState = "disabled";
+  if (wantsLive && !liveConfigured) {
+    live = "unavailable";
+  } else if (useLive && liveResult.status === "fulfilled" && liveResult.value) {
+    references.push(...liveResult.value.references);
+    live = liveResult.value.references.length > 0 ? "ok" : "empty";
+  } else if (useLive && liveResult.status === "rejected") {
+    live = "unavailable";
+    console.error(
+      JSON.stringify({ event: "ask_retrieval_failed", provider: "brave" })
+    );
+  }
+
+  return { live, references };
+}
+
 function safeError(error: unknown): {
   code: string;
   message: string;
@@ -91,13 +156,13 @@ function safeError(error: unknown): {
 } {
   if (error instanceof AiProviderError) {
     const messages: Record<string, string> = {
+      aborted: "The request was cancelled.",
       invalid_model_output: "The AI returned an invalid answer.",
       invalid_response: "The AI returned an invalid response.",
       provider_error: "The AI service is temporarily unavailable.",
       rate_limited: "The AI service is busy. Please try again.",
       timeout: "The AI service took too long to respond.",
       unauthorized: "The AI service is not configured correctly.",
-      aborted: "The request was cancelled.",
     };
     return {
       code: error.code,
@@ -131,34 +196,19 @@ export async function POST(request: Request): Promise<Response> {
 
       try {
         write({
-          message: "Searching the knowledge base…",
+          message: "Searching knowledge and current sources…",
           stage: "retrieving",
           type: "status",
         });
 
-        let references: EvidenceReference[] = [];
-        try {
-          const packet = await new RagflowEvidenceProvider().retrieve(
-            { question },
-            request.signal
-          );
-          references = [...packet.references];
-        } catch (error) {
-          if (request.signal.aborted) {
-            throw error;
-          }
-          console.error(
-            JSON.stringify({ event: "ask_retrieval_failed", provider: "ragflow" })
-          );
-          write({
-            message:
-              "Knowledge retrieval is unavailable. Answering without retrieved support…",
-            stage: "answering",
-            type: "status",
-          });
-        }
+        const retrieval = await retrieveEvidence(question, request.signal);
+        const references = retrieval.references;
 
-        write({ references, type: "sources" });
+        write({
+          live: retrieval.live,
+          references,
+          type: "sources",
+        });
         write({
           message: "Preparing the answer…",
           stage: "answering",
@@ -175,11 +225,11 @@ export async function POST(request: Request): Promise<Response> {
           messages: [
             {
               content:
-                "You are the knowledge assistant inside Principles. Answer the user's question clearly and practically. Retrieved RAG evidence is the only authority for claims about the user's knowledge base. When a claim comes from retrieved evidence, cite the exact source key such as [R1]. Never invent citation keys, quotes, document details, or evidence. If no relevant evidence is available, say that explicitly before offering any general guidance, and clearly distinguish general guidance from source-backed information.",
+                "You are the intelligence layer inside Principles. Build one concise, practical answer from private RAG evidence and current public web evidence. [R#] sources are private knowledge-base evidence and are authoritative for claims about the user's own documents, policies, and internal knowledge. [W#] sources are live public web evidence and should be preferred for time-sensitive public facts. Cite every material sourced claim with the exact source key. Never invent citation keys, quotes, document details, URLs, dates, or evidence. If private evidence and live web evidence conflict, explicitly surface the conflict and distinguish internal knowledge from current public information instead of silently choosing one. If the question needs current information but LIVE SEARCH STATUS is unavailable or empty, say that current public evidence could not be verified. If evidence is absent, clearly separate unsourced general guidance from verified source-backed information. Keep the answer direct and low-noise.",
               role: "system",
             },
             {
-              content: `QUESTION:\n${question}\n\nRETRIEVED EVIDENCE:\n${evidence}`,
+              content: `QUESTION:\n${question}\n\nLIVE SEARCH STATUS: ${retrieval.live}\n\nEVIDENCE:\n${evidence}`,
               role: "user",
             },
           ],
