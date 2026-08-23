@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { AskWorkspace } from "@/features/ask/ask-workspace";
+import { signupNeedsBootstrapSecret } from "@/features/auth/bootstrap";
 import { AuthScreen } from "@/features/auth/auth-screen";
+import { signupMode } from "@/features/auth/contracts";
 import { sessionContext, signupAvailable } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
 
@@ -12,7 +14,13 @@ export default async function HomePage() {
   const session = token ? await sessionContext(token) : null;
 
   if (!session) {
-    return <AuthScreen signupAvailable={await signupAvailable()} />;
+    const mode = signupMode(process.env.AUTH_SIGNUP_MODE);
+    return (
+      <AuthScreen
+        signupAvailable={await signupAvailable()}
+        signupRequiresSetupKey={signupNeedsBootstrapSecret(mode)}
+      />
+    );
   }
 
   return (
