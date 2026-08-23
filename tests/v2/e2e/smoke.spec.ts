@@ -80,6 +80,40 @@ test("streams a mocked Decision Brief through the V2 workspace", async ({
   await expect(page.getByText("Pilot readiness review", { exact: true })).toBeVisible();
 });
 
+test("scrolls long Decision Briefs inside the V2 shell on desktop", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 720, width: 1280 });
+  await installMockDecisionTransport(page, {
+    endpoint: "**/api/v2/decisions",
+    events: successfulDecisionEvents,
+  });
+  await page.goto("/v2");
+
+  await page.getByLabel("Decision question").fill(decisionQuestion);
+  await page.getByRole("button", { name: "Decide" }).click();
+  await expect(
+    page.getByRole("heading", { name: decisionBriefFixture.recommendation })
+  ).toBeVisible();
+
+  const bodyOverflow = await page.locator("body").evaluate((element) =>
+    getComputedStyle(element).overflow
+  );
+  expect(bodyOverflow).toBe("hidden");
+
+  const shell = page.locator(".v2-shell");
+  const metrics = await shell.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+
+  await shell.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(page.getByText("Valid as of", { exact: false })).toBeInViewport();
+});
+
 test("keeps V2 navigation available across History and Brain", async ({ page }) => {
   await page.goto("/v2");
 
