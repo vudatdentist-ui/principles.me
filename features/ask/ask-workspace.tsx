@@ -6,10 +6,11 @@ import type { EvidenceReference } from "@/features/evidence/contracts";
 import styles from "./ask-workspace.module.css";
 
 type AskPhase = "idle" | "submitting" | "done" | "error";
+type LiveState = "disabled" | "empty" | "ok" | "unavailable";
 
 type StreamEvent =
   | { type: "status"; message: string; stage: "retrieving" | "answering" }
-  | { type: "sources"; references: EvidenceReference[] }
+  | { type: "sources"; references: EvidenceReference[]; live?: LiveState }
   | { type: "token"; token: string }
   | { type: "error"; code: string; message: string; retryable: boolean }
   | { type: "done" };
@@ -32,7 +33,7 @@ export function AskWorkspace() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState<EvidenceReference[]>([]);
-  const [status, setStatus] = useState("Ask a question about your knowledge base.");
+  const [status, setStatus] = useState("Ask across knowledge and the live web.");
   const [phase, setPhase] = useState<AskPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const lastQuestion = useRef("");
@@ -59,7 +60,7 @@ export function AskWorkspace() {
     setAnswer("");
     setSources([]);
     setError(null);
-    setStatus("Searching the knowledge base…");
+    setStatus("Searching knowledge and current sources…");
 
     try {
       const response = await fetch("/api/ask", {
@@ -87,8 +88,8 @@ export function AskWorkspace() {
         const lines = buffer.split(/\r?\n/);
         buffer = lines.pop() ?? "";
 
-        for (const line of lines) {
-          const event = parseEvent(line);
+        for (const streamLine of lines) {
+          const event = parseEvent(streamLine);
           if (!event) {
             continue;
           }
@@ -150,12 +151,9 @@ export function AskWorkspace() {
 
       <section className={styles.workspace}>
         <div className={styles.intro}>
-          <p className={styles.eyebrow}>Current baseline · RAG + AI Q&A</p>
-          <h1>Ask your knowledge base.</h1>
-          <p>
-            This is the only product capability currently considered complete.
-            The rest of Principles is being rebuilt from a clean foundation.
-          </p>
+          <p className={styles.eyebrow}>Knowledge · Live · AI</p>
+          <h1>Ask anything.</h1>
+          <p>Private knowledge and current public evidence, one answer.</p>
         </div>
 
         <form className={styles.askForm} onSubmit={onSubmit}>
@@ -226,18 +224,21 @@ export function AskWorkspace() {
                     </summary>
                     <p>{source.text}</p>
                     <div className={styles.sourceMeta}>
-                      <span>{source.provider}</span>
+                      <span>{source.sourceType === "live_web" ? "LIVE" : "RAG"}</span>
                       {source.score === null ? null : (
                         <span>score {source.score.toFixed(3)}</span>
                       )}
+                      {source.url ? (
+                        <a href={source.url} rel="noreferrer" target="_blank">
+                          open
+                        </a>
+                      ) : null}
                     </div>
                   </details>
                 ))}
               </div>
             ) : (
-              <p className={styles.emptySources}>
-                No RAG sources have been retrieved for this answer.
-              </p>
+              <p className={styles.emptySources}>No sources retrieved.</p>
             )}
           </section>
         ) : null}
