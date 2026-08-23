@@ -8,23 +8,30 @@ import {
   enforceEvidencePolicy,
   parseDecisionAnalysis,
   parseDecisionAudit,
+  parseDecisionFitAudit,
+  parseDecisionPerspective,
   validateAnalysisCitations,
 } from "./decision-brief-parser";
 import {
-  buildAnalysisMessages,
-  buildAuditMessages,
+  buildCouncilPerspectiveMessages,
+  buildDecisionFitAuditMessages,
+  buildEvidenceAuditMessages,
   buildRevisionMessages,
+  buildSynthesisMessages,
 } from "./prompts";
 import { toJsonSnapshot } from "./json-snapshot";
 import { createRetrievalPlan } from "./retrieval-plan";
 import {
+  DECISION_COUNCIL_LENSES,
   DECISION_ORCHESTRATOR_PROMPT_VERSION,
   type DecisionAnalysis,
   type DecisionAudit,
+  type DecisionFitAudit,
   type DecisionOrchestrator,
   type DecisionOrchestratorDependencies,
   type DecisionOrchestratorRequest,
   type DecisionOrchestratorResult,
+  type DecisionPerspective,
   type DecisionProgressStage,
 } from "./types";
 
@@ -63,6 +70,14 @@ type EvidenceCollection = {
 };
 
 const DEFAULT_CONTEXT: JsonSnapshot = {};
+const REASONER_MAX_TOKENS = 700;
+const REASONER_TIMEOUT_MS = 25_000;
+const SYNTHESIS_MAX_TOKENS = 1800;
+const SYNTHESIS_TIMEOUT_MS = 35_000;
+const AUDIT_MAX_TOKENS = 700;
+const AUDIT_TIMEOUT_MS = 20_000;
+const REVISION_MAX_TOKENS = 1800;
+const REVISION_TIMEOUT_MS = 35_000;
 
 function normalizeQuestion(question: string): string {
   const normalized = question.trim();
@@ -206,14 +221,32 @@ async function collectEvidence(
 }
 
 function analysisSnapshot(
+  perspectives: readonly DecisionPerspective[],
   initial: DecisionAnalysis,
   revised: DecisionAnalysis | null
 ): JsonSnapshot {
-  return toJsonSnapshot(revised ? { initial, revised } : { initial });
+  return toJsonSnapshot(
+    revised
+      ? { council: perspectives, initial, revised }
+      : { council: perspectives, initial }
+  );
 }
 
-function auditSnapshot(audit: DecisionAudit, revisionApplied: boolean): JsonSnapshot {
-  return toJsonSnapshot({ audit, revisionApplied });
+function auditSnapshot(
+  audit: DecisionAudit,
+  decisionFitAudit: DecisionFitAudit,
+  revisionApplied: boolean
+): JsonSnapshot {
+  return toJsonSnapshot({ audit, decisionFitAudit, revisionApplied });
+}
+
+function requiresRevision(
+  evidenceAudit: DecisionAudit,
+  decisionFitAudit: DecisionFitAudit
+): boolean {
+  return (
+    evidenceAudit.decision === "revise" || decisionFitAudit.decision === "revise"
+  );
 }
 
 export function createDecisionOrchestrator(
@@ -221,6 +254,10 @@ export function createDecisionOrchestrator(
 ): DecisionOrchestrator {
   const now = dependencies.now ?? (() => new Date());
   const retrievalPlan = createRetrievalPlan(dependencies.evidenceProviders);
+  const reasonerProvider = dependencies.reasonerProvider ?? dependencies.aiProvider;
+  const synthesisProvider = dependencies.synthesisProvider ?? dependencies.aiProvider;
+  const auditProvider = dependencies.auditProvider ?? dependencies.aiProvider;
+  const revisionProvider = dependencies.revisionProvider ?? dependencies.aiProvider;
 
   return {
     async run(request): Promise<DecisionOrchestratorResult> {
@@ -234,7 +271,7 @@ export function createDecisionOrchestrator(
         try {
           run = await dependencies.repository.createRun({
             contextSnapshot: context,
-            model: dependencies.model ?? dependencies.aiProvider.id,
+            model: dependencies.model ?? synthesisProvider.id,
             promptVersion: DECISION_ORCHESTRATOR_PROMPT_VERSION,
             question,
             retrievalPlan: toJsonSnapshot(retrievalPlan),
@@ -264,16 +301,40 @@ export function createDecisionOrchestrator(
           runId,
           evidence.references
         );
-        let initialAnalysis = await dependencies.aiProvider.generateObject({
-          messages: buildAnalysisMessages({
+
+        const perspectives = await Promise.all(
+          DECISION_COUNCIL_LENSES.map(async (lens) =>
+            reasonerProvider.generateObject({
+              maxTokens: REASONER_MAX_TOKENS,
+              messages: buildCouncilPerspectiveMessages({
+                context,
+                evidence: evidence.references,
+                lens,
+                question,
+              }),
+              model: dependencies.model,
+              parse: (value) => parseDecisionPerspective(value, lens),
+              signal,
+              temperature: 0.35,
+              timeoutMs: REASONER_TIMEOUT_MS,
+            })
+          )
+        );
+        throwIfAborted(signal);
+
+        let initialAnalysis = await synthesisProvider.generateObject({
+          maxTokens: SYNTHESIS_MAX_TOKENS,
+          messages: buildSynthesisMessages({
             context,
             evidence: evidence.references,
+            perspectives,
             question,
           }),
           model: dependencies.model,
           parse: parseDecisionAnalysis,
           signal,
-          temperature: 0.2,
+          temperature: 0.15,
+          timeoutMs: SYNTHESIS_TIMEOUT_MS,
         });
         validateAnalysisCitations(initialAnalysis, evidence.references);
         initialAnalysis = enforceEvidencePolicy(
@@ -283,34 +344,55 @@ export function createDecisionOrchestrator(
         throwIfAborted(signal);
 
         await emitProgress(request, "audit", runId);
-        const audit = await dependencies.aiProvider.generateObject({
-          messages: buildAuditMessages({
-            analysis: initialAnalysis,
-            evidence: evidence.references,
-            question,
+        const [evidenceAudit, decisionFitAudit] = await Promise.all([
+          auditProvider.generateObject({
+            maxTokens: AUDIT_MAX_TOKENS,
+            messages: buildEvidenceAuditMessages({
+              analysis: initialAnalysis,
+              evidence: evidence.references,
+              question,
+            }),
+            model: dependencies.model,
+            parse: parseDecisionAudit,
+            signal,
+            temperature: 0,
+            timeoutMs: AUDIT_TIMEOUT_MS,
           }),
-          model: dependencies.model,
-          parse: parseDecisionAudit,
-          signal,
-          temperature: 0,
-        });
+          auditProvider.generateObject({
+            maxTokens: AUDIT_MAX_TOKENS,
+            messages: buildDecisionFitAuditMessages({
+              analysis: initialAnalysis,
+              context,
+              question,
+            }),
+            model: dependencies.model,
+            parse: parseDecisionFitAudit,
+            signal,
+            temperature: 0,
+            timeoutMs: AUDIT_TIMEOUT_MS,
+          }),
+        ]);
         throwIfAborted(signal);
 
         let revisedAnalysis: DecisionAnalysis | null = null;
-        if (audit.decision === "revise") {
+        if (requiresRevision(evidenceAudit, decisionFitAudit)) {
           await emitProgress(request, "revision", runId);
-          revisedAnalysis = await dependencies.aiProvider.generateObject({
+          revisedAnalysis = await revisionProvider.generateObject({
+            maxTokens: REVISION_MAX_TOKENS,
             messages: buildRevisionMessages({
               analysis: initialAnalysis,
-              audit,
               context,
+              decisionFitAudit,
               evidence: evidence.references,
+              evidenceAudit,
+              perspectives,
               question,
             }),
             model: dependencies.model,
             parse: parseDecisionAnalysis,
             signal,
-            temperature: 0.15,
+            temperature: 0.1,
+            timeoutMs: REVISION_TIMEOUT_MS,
           });
           validateAnalysisCitations(revisedAnalysis, evidence.references);
           revisedAnalysis = enforceEvidencePolicy(
@@ -332,8 +414,16 @@ export function createDecisionOrchestrator(
         await emitProgress(request, "persistence", runId);
         try {
           await dependencies.repository.completeRun({
-            analysisSnapshot: analysisSnapshot(initialAnalysis, revisedAnalysis),
-            auditSnapshot: auditSnapshot(audit, revisedAnalysis !== null),
+            analysisSnapshot: analysisSnapshot(
+              perspectives,
+              initialAnalysis,
+              revisedAnalysis
+            ),
+            auditSnapshot: auditSnapshot(
+              evidenceAudit,
+              decisionFitAudit,
+              revisedAnalysis !== null
+            ),
             completedAt: now(),
             decisionBrief: brief,
             evidenceSnapshot: evidence.snapshot,
