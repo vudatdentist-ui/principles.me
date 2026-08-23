@@ -27,11 +27,17 @@ case "$ACTION" in
       printf 'Missing embedded PostgreSQL library directory.\n' >&2
       exit 1
     }
-    test -e "$LIB_DIR/libpq.so.5" || {
-      printf 'Missing embedded PostgreSQL libpq.so.5.\n' >&2
-      find "$LIB_DIR" -maxdepth 1 -type f -o -type l 2>/dev/null | sort >&2 || true
-      exit 1
-    }
+
+    if [ ! -e "$LIB_DIR/libpq.so.5" ]; then
+      libpq_target="$(find "$LIB_DIR" -maxdepth 1 -type f -name 'libpq.so.5.*' | sort -V | tail -n 1)"
+      test -n "$libpq_target" || {
+        printf 'Missing embedded PostgreSQL libpq runtime.\n' >&2
+        find "$LIB_DIR" -maxdepth 1 \( -type f -o -type l \) 2>/dev/null | sort >&2 || true
+        exit 1
+      }
+      ln -s "$(basename "$libpq_target")" "$LIB_DIR/libpq.so.5"
+    fi
+
     export LD_LIBRARY_PATH="$LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
     for binary in initdb pg_ctl postgres; do
