@@ -1,22 +1,6 @@
-# CI and deployment runners
+# Self-hosted CI and deployment runner
 
-This repository intentionally uses two runner classes after Phase 1.
-
-## Disposable verification jobs
-
-Jobs that require an isolated PostgreSQL service run on GitHub-hosted `ubuntu-latest` runners:
-
-- Foundation typecheck/unit/integration/build verification;
-- Playwright browser verification;
-- the release-verification job before production deployment.
-
-This keeps database integration tests disposable and avoids granting Docker daemon access to the long-lived self-hosted CI user.
-
-Pull-request verification receives no production secrets.
-
-## Self-hosted deployment runner
-
-One dedicated GitHub Actions self-hosted Linux x64 runner remains registered for low-privilege repository jobs and deployment orchestration.
+Principles uses one dedicated GitHub Actions Linux x64 runner labeled `principles-ci`.
 
 Required labels:
 
@@ -27,42 +11,70 @@ x64
 principles-ci
 ```
 
-The self-hosted runner is used for:
-
-- lint/shell validation;
-- runner diagnostics;
-- the protected production deployment job after release verification passes.
-
-## Capacity
-
-Run one `principles-ci` runner service unless the repository concurrency policy is deliberately changed. A single runner process executes one self-hosted job at a time.
-
 ## Security boundary
 
 Run the Actions runner as a dedicated unprivileged Linux user such as `principles-ci`.
 
-Do not run the runner as root. Do not grant passwordless sudo or Docker daemon access merely to support pull-request tests. Production credentials are available only to the protected production deployment job.
+Do not run it as root. Do not grant passwordless sudo or Docker daemon access merely to support pull-request tests.
 
-If CI and production share a physical host, keep the CI user separate from the deploy/application user and keep `.env.production` unreadable to CI.
+The Phase 1 audit confirmed the current runner has neither passwordless sudo nor Docker daemon access. That is intentional and should remain true.
+
+Pull-request verification receives no production secrets. The protected production deployment job receives only its environment-scoped SSH/deployment secrets.
+
+## Real PostgreSQL integration tests without privilege
+
+Foundation, Playwright and release-verification jobs need real PostgreSQL behavior, but the CI user must stay unprivileged.
+
+`scripts/ci-postgres.sh` solves this by downloading the exact pinned Linux x64 PostgreSQL 16 binary package:
+
+```text
+@embedded-postgres/linux-x64@16.14.0-beta.17
+```
+
+The script:
+
+1. downloads the exact npm package version into `RUNNER_TEMP`;
+2. hydrates the package's PostgreSQL symlinks;
+3. initializes a disposable cluster as the `principles-ci` user with local trust auth;
+4. binds only to `127.0.0.1` on a workflow-specific port;
+5. creates the requested test database;
+6. runs migrations/tests against that real server;
+7. stops the server and removes its temporary files in an `if: always()` cleanup step.
+
+The package is test infrastructure only. It is not bundled into the application and does not replace production PostgreSQL. Production uses the official `postgres:16-bookworm` image on the VPS private data network.
+
+## Capacity
+
+Run one `principles-ci` runner service unless concurrency is deliberately redesigned. A single runner process executes one self-hosted job at a time, which also prevents the disposable test databases from competing for CPU/RAM.
+
+Current test ports are deliberately distinct:
+
+```text
+Foundation       55432
+Playwright       55433
+Release verify   55434
+```
 
 ## Host prerequisites
 
-Recommended base OS: current Ubuntu LTS or another supported 64-bit Linux distribution.
+Recommended host: supported 64-bit Linux with standard GNU userland and network access to GitHub/npm.
 
-Install standard build and SSH tooling once:
+Install host prerequisites once:
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl git build-essential openssh-client openssl
 ```
 
-Node and pnpm are installed by Actions workflows. Playwright and PostgreSQL integration dependencies are not required on this long-lived runner because those tests use disposable hosted runners.
+Node 22 and pnpm are installed by Actions workflows. PostgreSQL does not need to be installed system-wide.
 
-## Register the runner
+Playwright Chromium dependencies already exist on the current runner; the workflow installs the matching Chromium binary without requiring sudo.
 
-In GitHub open `Settings → Actions → Runners → New self-hosted runner`, choose Linux x64, and follow GitHub's current download and registration instructions.
+## Runner registration
 
-Use a dedicated name and custom label, for example:
+In GitHub open `Settings → Actions → Runners → New self-hosted runner`, choose Linux x64, and follow GitHub's current registration commands.
+
+Example:
 
 ```bash
 ./config.sh \
@@ -74,8 +86,10 @@ Use a dedicated name and custom label, for example:
   --unattended
 ```
 
-Install the runner as a service under the dedicated `principles-ci` user and confirm it appears **Online / Idle** before relying on deployment orchestration.
+Install the runner service under the dedicated `principles-ci` user and confirm it is **Online / Idle**.
 
 ## Production separation
 
-Release verification completes on a disposable hosted runner first. The protected deployment job then uses SSH credentials stored in GitHub's production environment to deploy the exact `main` commit to the VPS. RAGFlow, DeepSeek, database and bootstrap credentials remain server/environment-owned and must never be copied into repository files or pull-request work directories.
+The release-verification job runs the same unprivileged disposable PostgreSQL checks before deployment. Only after it passes does the protected deployment job SSH to the VPS and deploy the exact `main` commit.
+
+RAGFlow, DeepSeek, production database and first-account bootstrap credentials remain server/environment-owned. Never copy them into repository files, pull-request work directories or CI logs.
