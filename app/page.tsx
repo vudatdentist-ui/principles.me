@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { Suspense } from "react";
 import { AskWorkspace } from "@/features/ask/ask-workspace";
 import { signupNeedsBootstrapSecret } from "@/features/auth/bootstrap";
 import { AuthScreen } from "@/features/auth/auth-screen";
@@ -6,7 +7,7 @@ import { signupMode } from "@/features/auth/contracts";
 import { sessionContext, signupAvailable } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
 
-export default async function HomePage() {
+async function WorkspaceEntry() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   const session = token ? await sessionContext(token) : null;
@@ -26,5 +27,13 @@ export default async function HomePage() {
       email={session.user.email}
       workspaceName={session.workspace.name}
     />
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <WorkspaceEntry />
+    </Suspense>
   );
 }
