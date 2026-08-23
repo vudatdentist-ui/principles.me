@@ -27,6 +27,8 @@ export function projectEvidenceForClient(
     snippet: snippet(reference.text),
     sourceType: reference.sourceType,
     title: reference.title,
-    url: reference.url,
+    // Live-search URLs are already public. RAG URLs can contain private hosts,
+    // signed query parameters or internal document paths, so keep them server-side.
+    url: reference.sourceType === "live_web" ? reference.url : null,
   };
 }
