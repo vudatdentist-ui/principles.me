@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  BootstrapConfigurationError,
+  BootstrapSecretError,
+} from "@/features/auth/bootstrap";
 import { assertTrustedOrigin, UntrustedOriginError } from "@/features/auth/origin";
 import { hashPassword } from "@/features/auth/password";
 import {
@@ -13,6 +17,7 @@ import { authRateScope, consumeRateLimit } from "@/features/security/rate-limit"
 const schema = z.object({
   email: z.string().trim().email().max(320),
   password: z.string().min(12).max(256),
+  setupKey: z.string().max(256).optional(),
 });
 
 export async function POST(request: Request): Promise<Response> {
@@ -40,6 +45,7 @@ export async function POST(request: Request): Promise<Response> {
     const account = await createAccount({
       email: parsed.data.email,
       passwordHash,
+      setupKey: parsed.data.setupKey,
     });
     const token = await createSession(account.userId);
 
@@ -50,6 +56,13 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     if (error instanceof UntrustedOriginError) {
       return Response.json({ error: "Request rejected." }, { status: 403 });
+    }
+    if (error instanceof BootstrapSecretError) {
+      return Response.json({ error: "Invalid setup key." }, { status: 403 });
+    }
+    if (error instanceof BootstrapConfigurationError) {
+      console.error(JSON.stringify({ event: "auth_bootstrap_not_configured" }));
+      return Response.json({ error: "Account setup is unavailable." }, { status: 503 });
     }
     if (error instanceof SignupClosedError) {
       return Response.json({ error: "Account creation is closed." }, { status: 403 });
