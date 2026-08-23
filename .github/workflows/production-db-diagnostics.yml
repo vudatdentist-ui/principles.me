@@ -1,4 +1,4 @@
-name: Production image diagnostics
+name: Production app image repair
 
 on:
   push:
@@ -10,14 +10,14 @@ permissions:
   statuses: write
 
 concurrency:
-  group: production-image-diagnostics
+  group: production-app-image-repair
   cancel-in-progress: true
 
 jobs:
-  diagnostics:
-    name: Inspect production image
+  repair:
+    name: Recreate production app from latest image
     runs-on: [self-hosted, linux, x64, principles-ci]
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment: production
     steps:
       - name: Configure SSH agent
@@ -36,141 +36,149 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-      - name: Inspect running image and artifact
-        id: image
+      - name: Force recreate application container
+        id: repair
         shell: bash
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+          TARGET_SHA: 6cfd4ace168343b21fa45fa74ecdd955d950f739
         run: |
           set -Eeuo pipefail
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
           VPS_PORT="${VPS_PORT:-22}"
+          APP_DIR="${APP_DIR:-/opt/principles-council}"
           REPORT="$(mktemp)"
           trap 'rm -f "$REPORT"' EXIT
 
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
-            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" bash -s > "$REPORT" <<'REMOTE'
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' TARGET_SHA='$TARGET_SHA' bash -s" > "$REPORT" <<'REMOTE'
           set -Eeuo pipefail
-          EXPECTED='6cfd4ace168343b21fa45fa74ecdd955d950f739'
+          : "${APP_DIR:?APP_DIR is required}"
+          : "${TARGET_SHA:?TARGET_SHA is required}"
+          cd "$APP_DIR"
+          test -f .env.production
+          test -f docker-compose.hostinger.yml
 
-          APP_RUNNING=0
-          IMAGE_MATCH=0
-          APP_VERSION_MATCH=0
-          HEALTH_MANIFEST=0
-          HEALTH_ARTIFACT=0
-          INTERNAL_HEALTH_STATUS=0
-          V2_STATUS=0
-          V2_NEW_HINT=0
-          DB_CONNECT=0
-          NETWORK_COUNT=0
+          DB_NETWORK="$(sed -n 's/^PRINCIPLES_DB_NETWORK=//p' .env.production | tail -n 1)"
+          case "$DB_NETWORK" in
+            ''|*[!A-Za-z0-9_.-]*) echo 'PRINCIPLES_DB_NETWORK is missing or invalid.' >&2; exit 1 ;;
+          esac
+          docker network inspect "$DB_NETWORK" >/dev/null
+          docker network inspect coolify >/dev/null
 
-          if ! docker inspect principles-web >/dev/null 2>&1; then
-            printf 'APP_RUNNING=0\nIMAGE_MATCH=0\nAPP_VERSION_MATCH=0\nHEALTH_MANIFEST=0\nHEALTH_ARTIFACT=0\nINTERNAL_HEALTH_STATUS=0\nV2_STATUS=0\nV2_NEW_HINT=0\nDB_CONNECT=0\nNETWORK_COUNT=0\n'
-            exit 0
+          if ! docker run --rm --entrypoint sh principles-council-principles:latest -lc \
+            "find .next -type f -path '*api/v2/health*' -print -quit | grep -q ."; then
+            echo 'Latest image does not contain the V2 health artifact; refusing recreation.' >&2
+            exit 1
           fi
 
-          [ "$(docker inspect -f '{{.State.Running}}' principles-web 2>/dev/null || true)" = 'true' ] && APP_RUNNING=1
-          NETWORK_COUNT="$(docker inspect -f '{{len .NetworkSettings.Networks}}' principles-web 2>/dev/null || echo 0)"
+          OVERRIDE_FILE="$(mktemp)"
+          trap 'rm -f "$OVERRIDE_FILE"' EXIT
+          cat > "$OVERRIDE_FILE" <<EOF_OVERRIDE
+          services:
+            principles:
+              networks:
+                - coolify
+                - principles-db
+          networks:
+            principles-db:
+              external: true
+              name: "$DB_NETWORK"
+          EOF_OVERRIDE
 
-          RUNNING_IMAGE_ID="$(docker inspect -f '{{.Image}}' principles-web 2>/dev/null || true)"
-          LATEST_IMAGE_ID="$(docker image inspect -f '{{.Id}}' principles-council-principles:latest 2>/dev/null || true)"
-          if [ -n "$RUNNING_IMAGE_ID" ] && [ "$RUNNING_IMAGE_ID" = "$LATEST_IMAGE_ID" ]; then IMAGE_MATCH=1; fi
+          APP_VERSION="$TARGET_SHA" \
+            docker compose -f docker-compose.hostinger.yml -f "$OVERRIDE_FILE" \
+              up -d --no-build --force-recreate --remove-orphans principles
+
+          test "$(docker inspect -f '{{.State.Running}}' principles-web)" = 'true'
+
+          RUNNING_IMAGE_ID="$(docker inspect -f '{{.Image}}' principles-web)"
+          LATEST_IMAGE_ID="$(docker image inspect -f '{{.Id}}' principles-council-principles:latest)"
+          if [ "$RUNNING_IMAGE_ID" != "$LATEST_IMAGE_ID" ]; then
+            echo 'Recreated container is not using the latest image.' >&2
+            exit 1
+          fi
 
           APP_VERSION="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' principles-web | sed -n 's/^APP_VERSION=//p' | tail -n 1)"
-          if [ "$APP_VERSION" = "$EXPECTED" ]; then APP_VERSION_MATCH=1; fi
-
-          MANIFEST="$(docker exec principles-web sh -lc 'cat .next/server/app-paths-manifest.json 2>/dev/null || true')"
-          if printf '%s' "$MANIFEST" | grep -Fq '/api/v2/health'; then HEALTH_MANIFEST=1; fi
-
-          if docker exec principles-web sh -lc "find .next -type f -path '*api/v2/health*' -print -quit | grep -q ."; then
-            HEALTH_ARTIFACT=1
+          if [ "$APP_VERSION" != "$TARGET_SHA" ]; then
+            echo 'Recreated container does not report the target APP_VERSION.' >&2
+            exit 1
           fi
 
-          HEALTH_STATUS="$(docker exec principles-web node -e '
-            fetch("http://127.0.0.1:3000/api/v2/health", { cache: "no-store" })
-              .then(r => process.stdout.write(String(r.status)))
-              .catch(() => process.stdout.write("0"));
-          ' 2>/dev/null || echo 0)"
-          INTERNAL_HEALTH_STATUS="${HEALTH_STATUS:-0}"
+          APP_NETWORKS=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' principles-web) "
+          case "$APP_NETWORKS" in *" coolify "*) ;; *) echo 'Missing coolify network.' >&2; exit 1 ;; esac
+          case "$APP_NETWORKS" in *" $DB_NETWORK "*) ;; *) echo 'Missing DB network.' >&2; exit 1 ;; esac
 
-          V2_RESULT="$(docker exec principles-web node -e '
-            fetch("http://127.0.0.1:3000/v2", { cache: "no-store" })
-              .then(async r => { const text = await r.text(); console.log(`STATUS=${r.status}`); console.log(`HINT=${text.includes("Tap Decide to submit.") ? 1 : 0}`); })
-              .catch(() => { console.log("STATUS=0"); console.log("HINT=0"); });
-          ' 2>/dev/null || true)"
-          V2_STATUS="$(printf '%s\n' "$V2_RESULT" | sed -n 's/^STATUS=//p' | tail -n 1)"
-          V2_NEW_HINT="$(printf '%s\n' "$V2_RESULT" | sed -n 's/^HINT=//p' | tail -n 1)"
-          V2_STATUS="${V2_STATUS:-0}"
-          V2_NEW_HINT="${V2_NEW_HINT:-0}"
+          HEALTH_STATUS=0
+          HEALTH_OK=0
+          for attempt in $(seq 1 20); do
+            RESULT="$(docker exec principles-web node -e '
+              fetch("http://127.0.0.1:3000/api/v2/health", { cache: "no-store" })
+                .then(async r => { let p=null; try { p=await r.json(); } catch {} console.log(`STATUS=${r.status}`); console.log(`OK=${r.ok && p?.status === "ok" ? 1 : 0}`); })
+                .catch(() => { console.log("STATUS=0"); console.log("OK=0"); });
+            ' 2>/dev/null || true)"
+            HEALTH_STATUS="$(printf '%s\n' "$RESULT" | sed -n 's/^STATUS=//p' | tail -n 1)"
+            HEALTH_OK="$(printf '%s\n' "$RESULT" | sed -n 's/^OK=//p' | tail -n 1)"
+            HEALTH_STATUS="${HEALTH_STATUS:-0}"
+            HEALTH_OK="${HEALTH_OK:-0}"
+            if [ "$HEALTH_STATUS" = '200' ] && [ "$HEALTH_OK" = '1' ]; then break; fi
+            sleep 2
+          done
+          if [ "$HEALTH_STATUS" != '200' ] || [ "$HEALTH_OK" != '1' ]; then
+            echo "Internal V2 health is not ready (HTTP $HEALTH_STATUS)." >&2
+            exit 1
+          fi
 
-          if docker exec principles-web node --input-type=module -e '
-            import postgres from "postgres";
-            const sql = postgres(process.env.POSTGRES_URL, { max: 1, connect_timeout: 5, idle_timeout: 5 });
-            try { await sql.unsafe("select 1"); } finally { await sql.end(); }
-          ' >/dev/null 2>&1; then DB_CONNECT=1; fi
-
-          printf 'APP_RUNNING=%s\n' "$APP_RUNNING"
-          printf 'IMAGE_MATCH=%s\n' "$IMAGE_MATCH"
-          printf 'APP_VERSION_MATCH=%s\n' "$APP_VERSION_MATCH"
-          printf 'HEALTH_MANIFEST=%s\n' "$HEALTH_MANIFEST"
-          printf 'HEALTH_ARTIFACT=%s\n' "$HEALTH_ARTIFACT"
-          printf 'INTERNAL_HEALTH_STATUS=%s\n' "$INTERNAL_HEALTH_STATUS"
-          printf 'V2_STATUS=%s\n' "$V2_STATUS"
-          printf 'V2_NEW_HINT=%s\n' "$V2_NEW_HINT"
-          printf 'DB_CONNECT=%s\n' "$DB_CONNECT"
-          printf 'NETWORK_COUNT=%s\n' "$NETWORK_COUNT"
+          printf 'IMAGE_MATCH=1\n'
+          printf 'VERSION_MATCH=1\n'
+          printf 'NETWORKS_READY=1\n'
+          printf 'INTERNAL_HEALTH=1\n'
           REMOTE
 
           cat "$REPORT"
           while IFS='=' read -r key value; do
             case "$key" in
-              APP_RUNNING) echo "app_running=$value" >> "$GITHUB_OUTPUT" ;;
               IMAGE_MATCH) echo "image_match=$value" >> "$GITHUB_OUTPUT" ;;
-              APP_VERSION_MATCH) echo "app_version_match=$value" >> "$GITHUB_OUTPUT" ;;
-              HEALTH_MANIFEST) echo "health_manifest=$value" >> "$GITHUB_OUTPUT" ;;
-              HEALTH_ARTIFACT) echo "health_artifact=$value" >> "$GITHUB_OUTPUT" ;;
-              INTERNAL_HEALTH_STATUS) echo "internal_health_status=$value" >> "$GITHUB_OUTPUT" ;;
-              V2_STATUS) echo "v2_status=$value" >> "$GITHUB_OUTPUT" ;;
-              V2_NEW_HINT) echo "v2_new_hint=$value" >> "$GITHUB_OUTPUT" ;;
-              DB_CONNECT) echo "db_connect=$value" >> "$GITHUB_OUTPUT" ;;
-              NETWORK_COUNT) echo "network_count=$value" >> "$GITHUB_OUTPUT" ;;
+              VERSION_MATCH) echo "version_match=$value" >> "$GITHUB_OUTPUT" ;;
+              NETWORKS_READY) echo "networks_ready=$value" >> "$GITHUB_OUTPUT" ;;
+              INTERNAL_HEALTH) echo "internal_health=$value" >> "$GITHUB_OUTPUT" ;;
             esac
           done < "$REPORT"
 
-      - name: Publish sanitized diagnostics
+      - name: Check public V2 health
+        id: public
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATUS="$(curl --silent --show-error --max-time 20 -o /tmp/principles-health.$$ -w '%{http_code}' https://principles.me/api/v2/health || true)"
+          trap 'rm -f /tmp/principles-health.$$' EXIT
+          printf 'PUBLIC_STATUS=%s\n' "$STATUS"
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Publish repair status
         if: always()
         uses: actions/github-script@v7
         env:
-          APP: ${{ steps.image.outputs.app_running || '0' }}
-          IMAGE: ${{ steps.image.outputs.image_match || '0' }}
-          VERSION: ${{ steps.image.outputs.app_version_match || '0' }}
-          MANIFEST: ${{ steps.image.outputs.health_manifest || '0' }}
-          ARTIFACT: ${{ steps.image.outputs.health_artifact || '0' }}
-          HEALTH: ${{ steps.image.outputs.internal_health_status || '0' }}
-          V2: ${{ steps.image.outputs.v2_status || '0' }}
-          HINT: ${{ steps.image.outputs.v2_new_hint || '0' }}
-          DB: ${{ steps.image.outputs.db_connect || '0' }}
-          NETS: ${{ steps.image.outputs.network_count || '0' }}
+          JOB_STATUS: ${{ job.status }}
+          IMAGE: ${{ steps.repair.outputs.image_match || '0' }}
+          VERSION: ${{ steps.repair.outputs.version_match || '0' }}
+          NETWORKS: ${{ steps.repair.outputs.networks_ready || '0' }}
+          INTERNAL: ${{ steps.repair.outputs.internal_health || '0' }}
+          PUBLIC_STATUS: ${{ steps.public.outputs.status || '0' }}
         with:
           script: |
-            const description = [
-              `app=${process.env.APP}`,
-              `image=${process.env.IMAGE}`,
-              `ver=${process.env.VERSION}`,
-              `route=${process.env.MANIFEST}/${process.env.ARTIFACT}/${process.env.HEALTH}`,
-              `v2=${process.env.V2}/${process.env.HINT}`,
-              `db=${process.env.DB}`,
-              `nets=${process.env.NETS}`,
-            ].join(" ").slice(0, 140);
+            const success = process.env.JOB_STATUS === "success";
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.sha,
-              state: "success",
-              context: "production/image-diagnostics",
-              description,
+              state: success ? "success" : "failure",
+              context: "production/image-repair",
+              description: `image=${process.env.IMAGE} ver=${process.env.VERSION} nets=${process.env.NETWORKS} internal=${process.env.INTERNAL} public=${process.env.PUBLIC_STATUS}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
