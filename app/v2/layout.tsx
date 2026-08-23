@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import "../../styles/v2/tokens.css";
 import "../../styles/v2/typography.css";
 import "../../styles/v2/components.css";
+import "../../styles/v2/scroll.css";
 
 const navigation = [
   { href: "/v2/history", label: "History" },
