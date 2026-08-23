@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: [self-hosted, linux, x64, principles-ci]
+    runs-on: ubuntu-latest
     env:
       APP_ORIGIN: http://127.0.0.1:3000
       AUTH_SIGNUP_MODE: open
