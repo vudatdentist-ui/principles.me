@@ -10,12 +10,16 @@ const schema = z.object({
   password: z.string().min(1).max(256),
 });
 
+function invalidCredentials(): Response {
+  return Response.json({ error: "Invalid email or password." }, { status: 401 });
+}
+
 export async function POST(request: Request): Promise<Response> {
   try {
     assertTrustedOrigin(request);
     const parsed = schema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
-      return Response.json({ error: "Invalid email or password." }, { status: 401 });
+      return invalidCredentials();
     }
 
     const rate = await consumeRateLimit({
@@ -32,12 +36,14 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const user = await findUserForSignin(parsed.data.email);
-    const valid = user
-      ? await verifyPassword(parsed.data.password, user.passwordHash)
-      : (await hashPassword(parsed.data.password)).length > 0 && false;
+    if (!user) {
+      // Spend a real scrypt operation so an unknown account does not take a cheap path.
+      await hashPassword(parsed.data.password);
+      return invalidCredentials();
+    }
 
-    if (!user || !valid) {
-      return Response.json({ error: "Invalid email or password." }, { status: 401 });
+    if (!(await verifyPassword(parsed.data.password, user.passwordHash))) {
+      return invalidCredentials();
     }
 
     const token = await createSession(user.id);
