@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const source = {
+const ragSource = {
   chunkId: "chunk-1",
   datasetId: "dataset-1",
   documentId: "document-1",
@@ -17,14 +17,31 @@ const source = {
   url: null,
 };
 
+const liveSource = {
+  chunkId: null,
+  datasetId: null,
+  documentId: null,
+  key: "W1",
+  observedAt: null,
+  positions: [],
+  provider: "brave",
+  publishedAt: "2026-08-23T09:30:00.000Z",
+  retrievedAt: "2026-08-23T10:00:00.000Z",
+  score: null,
+  sourceType: "live_web",
+  text: "A current public source excerpt.",
+  title: "Live source",
+  url: "https://example.com/live",
+};
+
 function ndjson(answer: string): string {
   return `${[
     {
-      message: "Searching the knowledge base…",
+      message: "Searching knowledge and current sources…",
       stage: "retrieving",
       type: "status",
     },
-    { references: [source], type: "sources" },
+    { live: "ok", references: [ragSource, liveSource], type: "sources" },
     {
       message: "Preparing the answer…",
       stage: "answering",
@@ -37,29 +54,28 @@ function ndjson(answer: string): string {
     .join("\n")}\n`;
 }
 
-test("knowledge Q&A is the clean root baseline", async ({ page }) => {
+test("hybrid knowledge Q&A is the clean root baseline", async ({ page }) => {
   await page.route("**/api/ask", async (route) => {
     await route.fulfill({
-      body: ndjson("The knowledge base supports this answer [R1]."),
+      body: ndjson("Private knowledge [R1] and current evidence [W1] support this answer."),
       contentType: "application/x-ndjson; charset=utf-8",
       status: 200,
     });
   });
 
   await page.goto("/");
-  await expect(
-    page.getByRole("heading", { name: "Ask your knowledge base." })
-  ).toBeVisible();
-  await expect(page.getByText("Current baseline · RAG + AI Q&A")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ask anything." })).toBeVisible();
+  await expect(page.getByText("Knowledge · Live · AI")).toBeVisible();
 
-  await page.getByLabel("Question").fill("What does my knowledge base say?");
+  await page.getByLabel("Question").fill("What is true right now?");
   await page.getByRole("button", { name: "Ask" }).click();
 
   await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
   await expect(
-    page.getByText("The knowledge base supports this answer [R1].")
+    page.getByText("Private knowledge [R1] and current evidence [W1] support this answer.")
   ).toBeVisible();
   await expect(page.getByText("Knowledge source")).toBeVisible();
+  await expect(page.getByText("Live source")).toBeVisible();
   await expect(page.getByText("Answer complete.")).toBeVisible();
 });
 
@@ -94,5 +110,5 @@ test("long answers use normal document scrolling", async ({ page }) => {
   await page.evaluate(() =>
     window.scrollTo(0, document.documentElement.scrollHeight)
   );
-  await expect(page.getByText("Knowledge source")).toBeInViewport();
+  await expect(page.getByText("Live source")).toBeInViewport();
 });
