@@ -21,7 +21,7 @@ jobs:
     env:
       APP_ORIGIN: http://127.0.0.1:3000
       AUTH_SIGNUP_MODE: open
-      POSTGRES_DB: principles_test
+      POSTGRES_DB: postgres
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PASSWORD: principles_test
       POSTGRES_PORT: 55432
