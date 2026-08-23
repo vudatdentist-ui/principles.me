@@ -6,10 +6,17 @@ import styles from "./auth-screen.module.css";
 
 type Mode = "signin" | "signup";
 
-export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
+export function AuthScreen({
+  signupAvailable,
+  signupRequiresSetupKey,
+}: {
+  signupAvailable: boolean;
+  signupRequiresSetupKey: boolean;
+}) {
   const [mode, setMode] = useState<Mode>(signupAvailable ? "signup" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [setupKey, setSetupKey] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
 
@@ -24,7 +31,11 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
       const response = await fetch(
         mode === "signup" ? "/api/auth/signup" : "/api/auth/signin",
         {
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({
+            email,
+            password,
+            ...(mode === "signup" && signupRequiresSetupKey ? { setupKey } : {}),
+          }),
           headers: { "content-type": "application/json" },
           method: "POST",
         }
@@ -87,6 +98,19 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
             type="password"
             value={password}
           />
+          {mode === "signup" && signupRequiresSetupKey ? (
+            <>
+              <label htmlFor="setup-key">Setup key</label>
+              <input
+                autoComplete="off"
+                id="setup-key"
+                onChange={(event) => setSetupKey(event.target.value)}
+                required
+                type="password"
+                value={setupKey}
+              />
+            </>
+          ) : null}
           {error ? <div className={styles.error}>{error}</div> : null}
           <button className={styles.submit} disabled={working} type="submit">
             {working ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
