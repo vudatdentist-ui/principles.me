@@ -40,21 +40,29 @@ test("Phase 1 keeps durable private state scoped to the authenticated workspace"
   await resetDatabase();
   try {
     const passwordHash = await hashPassword("a strong integration password");
-    const accountA = await createAccount({
-      email: "owner-a@example.com",
-      passwordHash,
-    });
     const accountB = await createAccount({
       email: "owner-b@example.com",
       passwordHash,
     });
+    const accountA = await createAccount({
+      email: "owner-a@example.com",
+      passwordHash,
+    });
 
     assert.notEqual(accountA.workspaceId, accountB.workspaceId);
-    assert.deepEqual(await workspaceRagDatasetIds(accountA.workspaceId), [
+    assert.deepEqual(await workspaceRagDatasetIds(accountB.workspaceId), [
       "dataset-a",
       "dataset-b",
     ]);
-    assert.deepEqual(await workspaceRagDatasetIds(accountB.workspaceId), []);
+    assert.deepEqual(await workspaceRagDatasetIds(accountA.workspaceId), []);
+
+    // Even if a later feature or bad write adds this user to someone else's
+    // Personal Workspace, the active Phase 1 session must resolve to the
+    // Personal Workspace the user actually owns.
+    await db()`
+      INSERT INTO workspace_memberships (workspace_id, user_id, role)
+      VALUES (${accountB.workspaceId}::uuid, ${accountA.userId}::uuid, 'member')
+    `;
 
     const rawSessionToken = await createSession(accountA.userId);
     const context = await sessionContext(rawSessionToken);
