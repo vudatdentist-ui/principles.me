@@ -4,6 +4,7 @@ import {
   createAccount,
   createSession,
   sessionContext,
+  SignupClosedError,
   workspaceRagDatasetIds,
 } from "../../features/auth/repository";
 import { hashPassword } from "../../features/auth/password";
@@ -55,6 +56,18 @@ test("Phase 1 keeps durable private state scoped to the authenticated workspace"
       "dataset-b",
     ]);
     assert.deepEqual(await workspaceRagDatasetIds(accountA.workspaceId), []);
+
+    process.env.AUTH_SIGNUP_MODE = "bootstrap";
+    process.env.AUTH_BOOTSTRAP_SECRET = "correct-bootstrap-secret";
+    await assert.rejects(
+      createAccount({
+        email: "should-not-exist@example.com",
+        passwordHash,
+        setupKey: "wrong-bootstrap-secret",
+      }),
+      (error: unknown) => error instanceof SignupClosedError
+    );
+    process.env.AUTH_SIGNUP_MODE = "open";
 
     // Even if a later feature or bad write adds this user to someone else's
     // Personal Workspace, the active Phase 1 session must resolve to the
