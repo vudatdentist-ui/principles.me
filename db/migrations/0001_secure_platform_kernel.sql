@@ -67,7 +67,8 @@ CREATE TABLE IF NOT EXISTS goals (
   status text NOT NULL DEFAULT 'discovering'
     CHECK (status IN ('discovering', 'chosen', 'paused', 'completed', 'retired')),
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS goals_workspace_idx
@@ -88,7 +89,8 @@ CREATE TABLE IF NOT EXISTS evidence_records (
   observed_at timestamptz,
   retrieved_at timestamptz,
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS evidence_records_workspace_idx
@@ -102,30 +104,39 @@ CREATE TABLE IF NOT EXISTS observations (
   acceptance_state text NOT NULL DEFAULT 'accepted'
     CHECK (acceptance_state IN ('proposed', 'accepted', 'rejected', 'revised')),
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS observations_workspace_idx
   ON observations (workspace_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS observation_evidence (
-  observation_id uuid NOT NULL REFERENCES observations(id) ON DELETE CASCADE,
-  evidence_id uuid NOT NULL REFERENCES evidence_records(id) ON DELETE CASCADE,
-  PRIMARY KEY (observation_id, evidence_id)
+  workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  observation_id uuid NOT NULL,
+  evidence_id uuid NOT NULL,
+  PRIMARY KEY (workspace_id, observation_id, evidence_id),
+  FOREIGN KEY (observation_id, workspace_id)
+    REFERENCES observations(id, workspace_id) ON DELETE CASCADE,
+  FOREIGN KEY (evidence_id, workspace_id)
+    REFERENCES evidence_records(id, workspace_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS reflections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   created_by_user_id uuid NOT NULL REFERENCES users(id),
-  goal_id uuid REFERENCES goals(id) ON DELETE SET NULL,
+  goal_id uuid,
   happened text NOT NULL,
   expected text,
   surprise text,
   learning text,
   status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'completed')),
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (id, workspace_id),
+  FOREIGN KEY (goal_id, workspace_id)
+    REFERENCES goals(id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS reflections_workspace_idx
@@ -145,16 +156,22 @@ CREATE TABLE IF NOT EXISTS principles (
   confidence double precision CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
   last_challenged_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS principles_workspace_idx
   ON principles (workspace_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS principle_evidence (
-  principle_id uuid NOT NULL REFERENCES principles(id) ON DELETE CASCADE,
-  evidence_id uuid NOT NULL REFERENCES evidence_records(id) ON DELETE CASCADE,
-  PRIMARY KEY (principle_id, evidence_id)
+  workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  principle_id uuid NOT NULL,
+  evidence_id uuid NOT NULL,
+  PRIMARY KEY (workspace_id, principle_id, evidence_id),
+  FOREIGN KEY (principle_id, workspace_id)
+    REFERENCES principles(id, workspace_id) ON DELETE CASCADE,
+  FOREIGN KEY (evidence_id, workspace_id)
+    REFERENCES evidence_records(id, workspace_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS ai_suggestions (
@@ -169,16 +186,22 @@ CREATE TABLE IF NOT EXISTS ai_suggestions (
   model_name text,
   reviewed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (id, workspace_id)
 );
 
 CREATE INDEX IF NOT EXISTS ai_suggestions_workspace_idx
   ON ai_suggestions (workspace_id, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS ai_suggestion_evidence (
-  suggestion_id uuid NOT NULL REFERENCES ai_suggestions(id) ON DELETE CASCADE,
-  evidence_id uuid NOT NULL REFERENCES evidence_records(id) ON DELETE CASCADE,
-  PRIMARY KEY (suggestion_id, evidence_id)
+  workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  suggestion_id uuid NOT NULL,
+  evidence_id uuid NOT NULL,
+  PRIMARY KEY (workspace_id, suggestion_id, evidence_id),
+  FOREIGN KEY (suggestion_id, workspace_id)
+    REFERENCES ai_suggestions(id, workspace_id) ON DELETE CASCADE,
+  FOREIGN KEY (evidence_id, workspace_id)
+    REFERENCES evidence_records(id, workspace_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS activity_events (
