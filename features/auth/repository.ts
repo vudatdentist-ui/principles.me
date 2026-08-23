@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { db } from "@/lib/db/client";
+import { assertBootstrapSecret } from "./bootstrap";
 import type { SessionContext } from "./contracts";
 import { signupMode } from "./contracts";
 
@@ -52,9 +53,11 @@ export async function signupAvailable(): Promise<boolean> {
 export async function createAccount(input: {
   email: string;
   passwordHash: string;
+  setupKey?: string;
 }): Promise<{ userId: string; workspaceId: string }> {
   const sql = db();
   const mode = signupMode(process.env.AUTH_SIGNUP_MODE);
+  assertBootstrapSecret(mode, input.setupKey);
 
   try {
     return await sql.begin(async (transaction) => {
