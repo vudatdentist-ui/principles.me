@@ -8,6 +8,7 @@ PACKAGE_DIR="$ROOT/package"
 DATA_DIR="$ROOT/data"
 LOG_FILE="$ROOT/postgres.log"
 BIN_DIR="$PACKAGE_DIR/native/bin"
+LIB_DIR="$PACKAGE_DIR/native/lib"
 POSTGRES_PORT="${POSTGRES_PORT:-55432}"
 POSTGRES_USER="${POSTGRES_USER:-principles}"
 POSTGRES_DB="${POSTGRES_DB:-postgres}"
@@ -21,6 +22,12 @@ case "$ACTION" in
     test -n "$archive"
     tar -xzf "$ROOT/$archive" -C "$ROOT"
     node "$PACKAGE_DIR/scripts/hydrate-symlinks.js"
+
+    test -d "$LIB_DIR" || {
+      printf 'Missing embedded PostgreSQL library directory.\n' >&2
+      exit 1
+    }
+    export LD_LIBRARY_PATH="$LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
     for binary in initdb pg_ctl postgres; do
       test -x "$BIN_DIR/$binary" || {
@@ -57,6 +64,9 @@ case "$ACTION" in
     ;;
 
   stop)
+    if [ -d "$PACKAGE_DIR/native/lib" ]; then
+      export LD_LIBRARY_PATH="$PACKAGE_DIR/native/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
     if [ -x "$BIN_DIR/pg_ctl" ] && [ -d "$DATA_DIR" ]; then
       "$BIN_DIR/pg_ctl" -D "$DATA_DIR" -m fast -w stop >/dev/null 2>&1 || true
     fi
