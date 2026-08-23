@@ -43,19 +43,20 @@ export function workspaceRateScope(workspaceId: string): string {
 }
 
 function requestIp(request: Request): string {
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp) {
-    return realIp;
-  }
-
-  // A trusted reverse proxy appends the immediate client to X-Forwarded-For.
-  // Use the last hop so a user-supplied first value cannot create arbitrary buckets.
+  // Traefik appends the immediate client/proxy hop to X-Forwarded-For.
+  // Prefer the last hop so attacker-controlled leading values or X-Real-IP
+  // cannot create arbitrary rate-limit buckets.
   const forwarded = request.headers
     .get("x-forwarded-for")
     ?.split(",")
     .map((value) => value.trim())
     .filter(Boolean);
-  return forwarded?.at(-1) || "unknown";
+  const forwardedIp = forwarded?.at(-1);
+  if (forwardedIp) {
+    return forwardedIp;
+  }
+
+  return request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
 export function authRateScope(request: Request): string {
