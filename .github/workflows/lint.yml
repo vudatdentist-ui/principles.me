@@ -42,7 +42,7 @@ jobs:
           pnpm exec biome lint
           app/api
           app/v2
-          app/(primary)
+          "app/(primary)"
           app/globals.css
           app/layout.tsx
           components/brain-scene.tsx
