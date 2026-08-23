@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: [self-hosted, linux, x64, principles-ci]
+    runs-on: ubuntu-latest
     env:
       APP_ORIGIN: http://127.0.0.1:3000
       AUTH_SIGNUP_MODE: open
@@ -56,7 +56,7 @@ jobs:
       - name: Apply database migrations
         run: pnpm db:migrate
       - name: Install Chromium browser
-        run: pnpm exec playwright install chromium
+        run: pnpm exec playwright install --with-deps chromium
       - name: Run browser smoke tests
         run: pnpm test:e2e
       - name: Upload Playwright report
