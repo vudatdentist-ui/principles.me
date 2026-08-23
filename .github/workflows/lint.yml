@@ -24,6 +24,8 @@ jobs:
         node-version: [20]
     steps:
       - uses: actions/checkout@v4
+      - name: Validate production deploy shell
+        run: bash -n scripts/deploy-production-v2.sh
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
