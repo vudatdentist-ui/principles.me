@@ -7,6 +7,14 @@ function isLocalhostUrl(value: string): boolean {
   }
 }
 
+function booleanEnv(name: string, fallback: boolean): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) {
+    return fallback;
+  }
+  return !["0", "false", "no", "off"].includes(value);
+}
+
 export async function GET(): Promise<Response> {
   const deepseekConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
   const ragflowConfigured = Boolean(
@@ -18,13 +26,24 @@ export async function GET(): Promise<Response> {
   ).trim();
   const ragflowEndpointReady =
     process.env.NODE_ENV !== "production" || !isLocalhostUrl(ragflowBaseUrl);
-  const ready = deepseekConfigured && ragflowConfigured && ragflowEndpointReady;
+  const liveSearchConfigured = Boolean(
+    process.env.BRAVE_SEARCH_API_KEY?.trim()
+  );
+  const liveSearchRequired = booleanEnv("LIVE_SEARCH_REQUIRED", false);
+  const liveSearchReady = !liveSearchRequired || liveSearchConfigured;
+  const ready =
+    deepseekConfigured &&
+    ragflowConfigured &&
+    ragflowEndpointReady &&
+    liveSearchReady;
   const version = process.env.APP_VERSION?.trim() || "development";
 
   return Response.json(
     {
       checks: {
         deepseekConfigured,
+        liveSearchConfigured,
+        liveSearchReady,
         ragflowConfigured,
         ragflowEndpointReady,
       },
