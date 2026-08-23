@@ -1,0 +1,226 @@
+name: Production DB diagnostics
+
+on:
+  push:
+    branches:
+      - ops/production-db-diagnostics
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: production-db-diagnostics
+  cancel-in-progress: true
+
+jobs:
+  diagnostics:
+    name: Inspect production DB network
+    runs-on: [self-hosted, linux, x64, principles-ci]
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Configure known hosts
+        shell: bash
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$VPS_KNOWN_HOSTS"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Inspect database topology
+        id: db
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$VPS_HOST"
+          test -n "$VPS_USER"
+          VPS_PORT="${VPS_PORT:-22}"
+          REPORT="$(mktemp)"
+          trap 'rm -f "$REPORT"' EXIT
+
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" bash -s > "$REPORT" <<'REMOTE'
+          set -Eeuo pipefail
+
+          PG_CONTAINERS=0
+          APP_DB_CANDIDATES=0
+          APP_DB_NETWORKS=0
+          APP_SHARED_NETWORKS=0
+          HOST_ALIAS_MATCHES=0
+          DB_DNS=0
+          DB_CONNECT=0
+          DB_ERROR=unknown
+          DB_HOST=""
+          APP_NETWORKS=""
+
+          if docker inspect principles-web >/dev/null 2>&1; then
+            APP_NETWORKS=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' principles-web) "
+            DB_HOST="$(docker exec principles-web node -e 'try { const value = process.env.POSTGRES_URL || ""; process.stdout.write(value ? new URL(value).hostname : ""); } catch {}')"
+
+            if [ -n "$DB_HOST" ]; then
+              if docker exec principles-web node -e '
+                const dns = require("node:dns").promises;
+                const host = new URL(process.env.POSTGRES_URL).hostname;
+                dns.lookup(host).then(() => process.exit(0)).catch(() => process.exit(1));
+              ' >/dev/null 2>&1; then
+                DB_DNS=1
+              fi
+
+              DB_RESULT="$(docker exec principles-web node --input-type=module -e '
+                import postgres from "postgres";
+                const sql = postgres(process.env.POSTGRES_URL, { max: 1, connect_timeout: 5, idle_timeout: 5 });
+                try {
+                  await sql.unsafe("select 1");
+                  console.log("CONNECT=1");
+                  console.log("ERROR=none");
+                } catch (error) {
+                  const raw = String(error?.code || error?.name || "unknown");
+                  console.log("CONNECT=0");
+                  console.log(`ERROR=${raw.replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 40)}`);
+                } finally {
+                  await sql.end();
+                }
+              ' 2>/dev/null || true)"
+              DB_CONNECT="$(printf '%s\n' "$DB_RESULT" | sed -n 's/^CONNECT=//p' | tail -n 1)"
+              DB_ERROR="$(printf '%s\n' "$DB_RESULT" | sed -n 's/^ERROR=//p' | tail -n 1)"
+              DB_CONNECT="${DB_CONNECT:-0}"
+              DB_ERROR="${DB_ERROR:-unknown}"
+            fi
+          fi
+
+          while IFS= read -r cid; do
+            [ -n "$cid" ] || continue
+            image="$(docker inspect -f '{{.Config.Image}}' "$cid" 2>/dev/null || true)"
+            case "$(printf '%s' "$image" | tr '[:upper:]' '[:lower:]')" in
+              *postgres*|*postgresql*) ;;
+              *) continue ;;
+            esac
+
+            PG_CONTAINERS=$((PG_CONTAINERS + 1))
+            env_dump="$(mktemp)"
+            docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$cid" > "$env_dump"
+            pg_user="$(sed -n 's/^POSTGRES_USER=//p' "$env_dump" | tail -n 1)"
+            pg_db="$(sed -n 's/^POSTGRES_DB=//p' "$env_dump" | tail -n 1)"
+            pg_password="$(sed -n 's/^POSTGRES_PASSWORD=//p' "$env_dump" | tail -n 1)"
+            rm -f "$env_dump"
+            pg_user="${pg_user:-postgres}"
+            pg_db="${pg_db:-$pg_user}"
+
+            base_schema="$(docker exec -e PGPASSWORD="$pg_password" "$cid" \
+              psql -U "$pg_user" -d "$pg_db" -Atqc \
+              "SELECT CASE WHEN to_regclass('public.\"User\"') IS NOT NULL AND to_regclass('public.\"Decision\"') IS NOT NULL THEN 1 ELSE 0 END;" \
+              2>/dev/null || true)"
+            unset pg_password
+
+            if [ "$base_schema" != "1" ]; then
+              continue
+            fi
+
+            APP_DB_CANDIDATES=$((APP_DB_CANDIDATES + 1))
+            container_name="$(docker inspect -f '{{.Name}}' "$cid" | sed 's#^/##')"
+
+            while IFS='|' read -r network aliases; do
+              [ -n "$network" ] || continue
+              APP_DB_NETWORKS=$((APP_DB_NETWORKS + 1))
+
+              case "$APP_NETWORKS" in
+                *" $network "*) APP_SHARED_NETWORKS=$((APP_SHARED_NETWORKS + 1)) ;;
+              esac
+
+              if [ -n "$DB_HOST" ]; then
+                alias_match=0
+                if [ "$container_name" = "$DB_HOST" ]; then
+                  alias_match=1
+                else
+                  old_ifs="$IFS"
+                  IFS=','
+                  for alias in $aliases; do
+                    if [ -n "$alias" ] && [ "$alias" = "$DB_HOST" ]; then
+                      alias_match=1
+                      break
+                    fi
+                  done
+                  IFS="$old_ifs"
+                fi
+                if [ "$alias_match" = "1" ]; then
+                  HOST_ALIAS_MATCHES=$((HOST_ALIAS_MATCHES + 1))
+                fi
+              fi
+            done <<EOF_NETWORKS
+          $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}}|{{range $cfg.Aliases}}{{.}},{{end}}{{println}}{{end}}' "$cid")
+          EOF_NETWORKS
+          done <<EOF_CONTAINERS
+          $(docker ps -q)
+          EOF_CONTAINERS
+
+          printf 'PG_CONTAINERS=%s\n' "$PG_CONTAINERS"
+          printf 'APP_DB_CANDIDATES=%s\n' "$APP_DB_CANDIDATES"
+          printf 'APP_DB_NETWORKS=%s\n' "$APP_DB_NETWORKS"
+          printf 'APP_SHARED_NETWORKS=%s\n' "$APP_SHARED_NETWORKS"
+          printf 'HOST_ALIAS_MATCHES=%s\n' "$HOST_ALIAS_MATCHES"
+          printf 'DB_DNS=%s\n' "$DB_DNS"
+          printf 'DB_CONNECT=%s\n' "$DB_CONNECT"
+          printf 'DB_ERROR=%s\n' "$(printf '%s' "$DB_ERROR" | tr -cd 'A-Za-z0-9_.-' | cut -c1-40)"
+          REMOTE
+
+          cat "$REPORT"
+          while IFS='=' read -r key value; do
+            case "$key" in
+              PG_CONTAINERS) echo "pg_containers=$value" >> "$GITHUB_OUTPUT" ;;
+              APP_DB_CANDIDATES) echo "app_db_candidates=$value" >> "$GITHUB_OUTPUT" ;;
+              APP_DB_NETWORKS) echo "app_db_networks=$value" >> "$GITHUB_OUTPUT" ;;
+              APP_SHARED_NETWORKS) echo "app_shared_networks=$value" >> "$GITHUB_OUTPUT" ;;
+              HOST_ALIAS_MATCHES) echo "host_alias_matches=$value" >> "$GITHUB_OUTPUT" ;;
+              DB_DNS) echo "db_dns=$value" >> "$GITHUB_OUTPUT" ;;
+              DB_CONNECT) echo "db_connect=$value" >> "$GITHUB_OUTPUT" ;;
+              DB_ERROR) echo "db_error=$value" >> "$GITHUB_OUTPUT" ;;
+            esac
+          done < "$REPORT"
+
+      - name: Publish sanitized diagnostics
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          PG: ${{ steps.db.outputs.pg_containers || '0' }}
+          CANDIDATES: ${{ steps.db.outputs.app_db_candidates || '0' }}
+          DB_NETWORKS: ${{ steps.db.outputs.app_db_networks || '0' }}
+          SHARED: ${{ steps.db.outputs.app_shared_networks || '0' }}
+          ALIAS_MATCHES: ${{ steps.db.outputs.host_alias_matches || '0' }}
+          DNS: ${{ steps.db.outputs.db_dns || '0' }}
+          CONNECT: ${{ steps.db.outputs.db_connect || '0' }}
+          DB_ERROR: ${{ steps.db.outputs.db_error || 'unknown' }}
+        with:
+          script: |
+            const description = [
+              `pg=${process.env.PG}`,
+              `appDb=${process.env.CANDIDATES}`,
+              `nets=${process.env.DB_NETWORKS}`,
+              `shared=${process.env.SHARED}`,
+              `alias=${process.env.ALIAS_MATCHES}`,
+              `dns=${process.env.DNS}`,
+              `connect=${process.env.CONNECT}`,
+              `err=${process.env.DB_ERROR}`,
+            ].join(" ").slice(0, 140);
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "success",
+              context: "production/db-diagnostics",
+              description,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
