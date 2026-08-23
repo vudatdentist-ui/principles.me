@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { SessionContext } from "@/features/auth/contracts";
 import { assertTrustedOrigin, UntrustedOriginError } from "@/features/auth/origin";
 import { workspaceRagDatasetIds } from "@/features/auth/repository";
 import { requireSession, UnauthorizedError } from "@/features/auth/session";
@@ -186,7 +187,7 @@ function safeError(error: unknown): {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let session;
+  let session: SessionContext;
   try {
     assertTrustedOrigin(request);
     session = await requireSession(request);
