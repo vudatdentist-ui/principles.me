@@ -71,7 +71,9 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
   expect(me.body.workspace.kind).toBe("personal");
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  const signInMode = page.getByRole("button", { name: "Sign in" });
+  await expect(signInMode).toBeVisible();
+  await signInMode.click();
 
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill("a strong browser test password");
