@@ -40,12 +40,13 @@ Do not paste the setup key into issues, pull requests, chat transcripts or sourc
 
 ## Database migrations
 
-`pnpm db:migrate` records applied migration filenames in `schema_migrations` and applies each new migration in a transaction.
+`pnpm db:migrate` records applied migration filenames and SHA-256 checksums in `schema_migrations`, applies each new migration in a transaction, and rejects a changed migration that was already applied.
 
 Production deployment order:
 
 ```text
 DB healthy
+  -> pre-migration snapshot
   -> build image
   -> apply additive migrations
   -> canary
@@ -55,6 +56,8 @@ DB healthy
   -> swap
 ```
 
+Before each migration, the deploy script writes a custom-format `pg_dump` to the separate `principles-postgres-backups` named volume and retains the seven newest pre-migration dumps. This is a deployment safety net, not a complete disaster-recovery policy.
+
 Phase 1 follows an expand/contract migration rule. Migration `0001_secure_platform_kernel.sql` only adds new durable structures, so the previous RAG/live-search release can be restored at the application layer without requiring a destructive database rollback.
 
 ## Rollback
@@ -63,16 +66,16 @@ If a new application release fails before promotion, the existing primary applic
 
 If failure happens during release swap, the deploy cleanup attempts to restore the renamed previous container.
 
-The persistent Postgres container and named volume are not deleted by an application rollback.
+The persistent Postgres container, data volume and backup volume are not deleted by an application rollback.
 
-Database downgrade automation is intentionally not implemented. Future migrations must remain backward-compatible until the previous application release is no longer a supported rollback target.
+Database downgrade automation is intentionally not implemented. Future migrations must remain backward-compatible until the previous application release is no longer a supported rollback target. If a migration itself must be recovered, restore from a verified pre-migration dump under an explicit operator procedure rather than automatically destroying newer data.
 
 ## Health
 
 `/api/health` is ready only when:
 
 - Postgres is configured and reachable;
-- the Phase 1 schema migration is present;
+- the Phase 1 schema migration is present with checksum tracking;
 - DeepSeek is configured;
 - RAGFlow is configured and has a production-safe endpoint;
 - Brave Search is configured when `LIVE_SEARCH_REQUIRED=true`.
@@ -112,7 +115,7 @@ For local development, `AUTH_SIGNUP_MODE=open` avoids a bootstrap setup key. Thi
 - no organization workspaces or workspace switcher;
 - no administrator UI for inviting later users;
 - no UI for changing RAGFlow dataset bindings;
-- no automated Postgres backup policy yet;
+- pre-migration snapshots exist, but there is no scheduled/off-host backup or automated restore policy yet;
 - fixed-window application rate limiting is intentionally simple;
 - session revocation exists, but there is no session-management UI;
 - Phase 1 stores kernel foundations but does not expose Goal/Reflection/Principle product workflows yet.
