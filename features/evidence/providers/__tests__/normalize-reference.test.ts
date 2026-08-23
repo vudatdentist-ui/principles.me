@@ -4,18 +4,15 @@ import { normalizeReference } from "../normalize-reference";
 
 const RETRIEVED_AT = "2026-08-21T08:00:00.000Z";
 
-test("normalizes provenance without losing provider identifiers", () => {
+test("normalizes RAG provenance without losing identifiers", () => {
   const reference = normalizeReference({
     chunkId: "chunk-1",
     datasetId: "dataset-1",
     documentId: "document-1",
     index: 0,
-    keyPrefix: "R",
     positions: [[1, 2, 3, 4]],
-    provider: "ragflow",
     retrievedAt: RETRIEVED_AT,
     score: "0.91",
-    sourceType: "ragflow",
     text: "  source excerpt  ",
     title: "  Source document  ",
   });
@@ -38,42 +35,33 @@ test("normalizes provenance without losing provider identifiers", () => {
   });
 });
 
-test("citation and source identity are stable for the same provider-local item", () => {
+test("citation identity is stable for the same RAG chunk", () => {
   const input = {
+    chunkId: "chunk-stable",
+    documentId: "doc-stable",
     index: 3,
-    keyPrefix: "W" as const,
-    provider: "web-search",
-    publishedAt: "2026-08-20T06:00:00.000Z",
-    requireUrl: true,
     retrievedAt: RETRIEVED_AT,
     score: 0.7,
-    sourceType: "web" as const,
     text: "A traceable source excerpt.",
     title: "Stable source",
-    url: "https://example.com/source",
   };
 
   const first = normalizeReference(input);
   const second = normalizeReference(input);
 
   assert.deepEqual(first, second);
-  assert.equal(first?.key, "W4");
-  assert.equal(first?.url, "https://example.com/source");
+  assert.equal(first?.key, "R4");
   assert.equal(first?.title, "Stable source");
 });
 
-test("does not return untraceable web evidence", () => {
-  assert.equal(
-    normalizeReference({
-      index: 0,
-      keyPrefix: "W",
-      provider: "web-search",
-      requireUrl: true,
-      retrievedAt: RETRIEVED_AT,
-      sourceType: "web",
-      text: "Excerpt with no source URL.",
-      title: "Missing URL",
-    }),
-    null
-  );
+test("uses document identity when a RAG chunk has no title", () => {
+  const reference = normalizeReference({
+    documentId: "document-without-title",
+    index: 0,
+    retrievedAt: RETRIEVED_AT,
+    text: "Excerpt with a traceable document id.",
+    title: null,
+  });
+
+  assert.equal(reference?.title, "Document document-wit");
 });

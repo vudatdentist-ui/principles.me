@@ -1,0 +1,284 @@
+.shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--background) 94%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 680;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.productDirection {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.workspace {
+  width: min(100% - 32px, 860px);
+  margin: 0 auto;
+  padding: 76px 0 120px;
+}
+
+.intro {
+  max-width: 680px;
+  margin-bottom: 36px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: clamp(38px, 7vw, 66px);
+  font-weight: 620;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.intro > p:last-child {
+  max-width: 640px;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.askForm,
+.answerSection,
+.sourcesSection,
+.error {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.askForm {
+  padding: 20px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 19px;
+  line-height: 1.55;
+}
+
+.textarea::placeholder {
+  color: #9b9b92;
+}
+
+.formFooter {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.status,
+.sectionHeading span,
+.sourceMeta,
+.emptySources {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.submit,
+.retry {
+  cursor: pointer;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  font-weight: 650;
+}
+
+.submit {
+  min-width: 92px;
+  padding: 11px 18px;
+}
+
+.submit:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.error {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 16px 18px;
+  color: var(--danger);
+}
+
+.error strong {
+  width: 100%;
+}
+
+.retry {
+  margin-left: auto;
+  padding: 8px 13px;
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.answerSection,
+.sourcesSection {
+  margin-top: 22px;
+  padding: 22px;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sectionHeading h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 680;
+}
+
+.answer {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  line-height: 1.72;
+}
+
+.sources {
+  display: grid;
+  gap: 10px;
+}
+
+.source {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.source summary {
+  display: flex;
+  cursor: pointer;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 15px;
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+}
+
+.source summary::-webkit-details-marker {
+  display: none;
+}
+
+.sourceKey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: var(--surface);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+}
+
+.source p {
+  margin: 0;
+  padding: 0 15px 14px;
+  color: #454540;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sourceMeta {
+  display: flex;
+  gap: 14px;
+  padding: 0 15px 14px;
+}
+
+.emptySources {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 16px;
+  }
+
+  .productDirection {
+    display: none;
+  }
+
+  .workspace {
+    width: min(100% - 24px, 860px);
+    padding: 48px 0 80px;
+  }
+
+  .askForm,
+  .answerSection,
+  .sourcesSection {
+    padding: 17px;
+  }
+
+  .formFooter,
+  .sectionHeading {
+    align-items: flex-start;
+  }
+
+  .formFooter {
+    flex-direction: column;
+  }
+
+  .submit {
+    width: 100%;
+  }
+}

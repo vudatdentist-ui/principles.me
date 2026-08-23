@@ -21,23 +21,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.32.1
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Typecheck and build
-        run: pnpm build
+      - name: Verify application
+        run: |
+          pnpm typecheck
+          pnpm test:unit
+          pnpm build
 
   deploy:
     name: Deploy to Hostinger VPS
@@ -78,7 +77,6 @@ jobs:
           VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
           VPS_USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ vars.VPS_APP_DIR }}
-          BOOTSTRAP_POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
           BOOTSTRAP_DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
           set -Eeuo pipefail
@@ -91,8 +89,7 @@ jobs:
           REMOTE_BOOTSTRAP="/tmp/principles-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.env"
           trap 'rm -f "$LOCAL_BOOTSTRAP"' EXIT
           chmod 600 "$LOCAL_BOOTSTRAP"
-          printf 'POSTGRES_URL=%s\n' "$BOOTSTRAP_POSTGRES_URL" > "$LOCAL_BOOTSTRAP"
-          printf 'DEEPSEEK_API_KEY=%s\n' "$BOOTSTRAP_DEEPSEEK_API_KEY" >> "$LOCAL_BOOTSTRAP"
+          printf 'DEEPSEEK_API_KEY=%s\n' "$BOOTSTRAP_DEEPSEEK_API_KEY" > "$LOCAL_BOOTSTRAP"
 
           scp -q -P "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
             "$LOCAL_BOOTSTRAP" "$VPS_USER@$VPS_HOST:$REMOTE_BOOTSTRAP"
@@ -131,37 +128,13 @@ jobs:
             return 0
           }
 
-          if ! grep -Eq '^POSTGRES_URL=.+$' "$ENV_FILE"; then
-            DATABASE_URL_VALUE="$(read_env DATABASE_URL "$ENV_FILE")"
-            write_env_if_missing POSTGRES_URL "$DATABASE_URL_VALUE" "$ENV_FILE" || true
-            unset DATABASE_URL_VALUE
-          fi
-
-          CONTAINER_ENV="$(mktemp)"
-          trap 'rm -f "$BOOTSTRAP_FILE" "$CONTAINER_ENV"' EXIT
-          if docker inspect principles-web >/dev/null 2>&1; then
+          if ! grep -Eq '^DEEPSEEK_API_KEY=.+$' "$ENV_FILE" && docker inspect principles-web >/dev/null 2>&1; then
+            CONTAINER_ENV="$(mktemp)"
+            trap 'rm -f "$BOOTSTRAP_FILE" "$CONTAINER_ENV"' EXIT
             docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' principles-web > "$CONTAINER_ENV"
-
-            if ! grep -Eq '^POSTGRES_URL=.+$' "$ENV_FILE"; then
-              POSTGRES_VALUE="$(read_env POSTGRES_URL "$CONTAINER_ENV")"
-              if [ -z "$POSTGRES_VALUE" ]; then
-                POSTGRES_VALUE="$(read_env DATABASE_URL "$CONTAINER_ENV")"
-              fi
-              write_env_if_missing POSTGRES_URL "$POSTGRES_VALUE" "$ENV_FILE" || true
-              unset POSTGRES_VALUE
-            fi
-
-            if ! grep -Eq '^DEEPSEEK_API_KEY=.+$' "$ENV_FILE"; then
-              DEEPSEEK_VALUE="$(read_env DEEPSEEK_API_KEY "$CONTAINER_ENV")"
-              write_env_if_missing DEEPSEEK_API_KEY "$DEEPSEEK_VALUE" "$ENV_FILE" || true
-              unset DEEPSEEK_VALUE
-            fi
-          fi
-
-          if ! grep -Eq '^POSTGRES_URL=.+$' "$ENV_FILE"; then
-            POSTGRES_VALUE="$(read_env POSTGRES_URL "$BOOTSTRAP_FILE")"
-            write_env_if_missing POSTGRES_URL "$POSTGRES_VALUE" "$ENV_FILE" || true
-            unset POSTGRES_VALUE
+            DEEPSEEK_VALUE="$(read_env DEEPSEEK_API_KEY "$CONTAINER_ENV")"
+            write_env_if_missing DEEPSEEK_API_KEY "$DEEPSEEK_VALUE" "$ENV_FILE" || true
+            unset DEEPSEEK_VALUE
           fi
 
           if ! grep -Eq '^DEEPSEEK_API_KEY=.+$' "$ENV_FILE"; then
@@ -208,7 +181,7 @@ jobs:
           : "${APP_DIR:?APP_DIR is required}"
           : "${STAGE_DIR:?STAGE_DIR is required}"
           : "${DEPLOY_SHA:?DEPLOY_SHA is required}"
-          test -f "$STAGE_DIR/scripts/deploy-production-v2.sh"
+          test -f "$STAGE_DIR/scripts/deploy-production.sh"
 
           install -d "$APP_DIR"
           test -f "$APP_DIR/.env.production"
@@ -219,10 +192,10 @@ jobs:
           rm -rf "$STAGE_DIR"
           cd "$APP_DIR"
 
-          DEPLOY_SHA="$DEPLOY_SHA" bash scripts/deploy-production-v2.sh
+          DEPLOY_SHA="$DEPLOY_SHA" bash scripts/deploy-production.sh
           REMOTE
 
-      - name: Verify deployed primary release
+      - name: Verify deployed release
         shell: bash
         env:
           DEPLOY_SHA: ${{ github.sha }}
@@ -234,7 +207,7 @@ jobs:
 
           curl --fail-with-body --silent --show-error \
             --retry 15 --retry-delay 4 --retry-all-errors --max-time 20 \
-            --output "$HEALTH_FILE" https://principles.me/api/v2/health
+            --output "$HEALTH_FILE" https://principles.me/api/health
 
           cat "$HEALTH_FILE"
           echo
@@ -243,11 +216,11 @@ jobs:
           const fs = require("node:fs");
           const health = JSON.parse(fs.readFileSync(process.env.HEALTH_FILE, "utf8"));
           if (health.status !== "ok") {
-            throw new Error(`V2 health is ${health.status ?? "unknown"}.`);
+            throw new Error(`Health is ${health.status ?? "unknown"}.`);
           }
           if (health.version !== process.env.DEPLOY_SHA) {
             throw new Error(
-              `V2 health reports ${health.version ?? "unknown"}, expected ${process.env.DEPLOY_SHA}.`
+              `Health reports ${health.version ?? "unknown"}, expected ${process.env.DEPLOY_SHA}.`
             );
           }
           NODE
@@ -271,7 +244,7 @@ jobs:
               state: success ? "success" : "failure",
               context: "production/deploy",
               description: success
-                ? "canary smoke, exact image, DB network and primary route verified"
+                ? "canary Q&A smoke, exact image and primary route verified"
                 : "production deployment failed; inspect the linked run",
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });

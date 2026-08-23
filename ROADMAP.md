@@ -1,43 +1,51 @@
-# Principles Me roadmap
+# Principles roadmap
 
-## Current baseline
+This roadmap starts from the 2026-08-23 product reset. Only RAG + AI knowledge Q&A is considered implemented. All management domains are greenfield.
 
-- Home is a landing page that leads into the workspace.
-- Thinker Machine keeps the question input and streamed synthesis in one view.
-- Each reasoning pass has an independent context; no pass is a historical personality.
-- RAGFlow is the evidence service, DeepSeek is the synthesis service, and the Brain remains the visual operating system.
+## Baseline — clean and dependable Q&A
 
-## Priority 1 — Make Thinker Machine dependable
+Current objective: keep the one finished capability reliable while the management product is being defined.
 
-1. Persist a conversation session so follow-up questions can reference the user’s prior questions without sharing module contexts.
-2. Add cancel/retry controls and explicit retrieval, reasoning and synthesis states.
-3. Store the raw evidence packet and final answer together so Sources always matches the answer that was shown.
-4. Add evaluation questions for each source collection: retrieval recall, citation correctness, unsupported-claim rate and latency.
-5. Finish the one-time RAGFlow reparse and expose document status, chunk count and index freshness in the Library.
+- Keep RAGFlow retrieval observable and source-backed.
+- Keep DeepSeek streaming errors explicit and retryable where appropriate.
+- Preserve inspectable evidence references.
+- Add focused retrieval/answer evaluations before expanding AI behavior.
+- Keep production health and canary smoke tests independent from unbuilt product domains.
 
-## Priority 2 — Build the Principles knowledge layer
+## Foundation — define the platform before domain tables
 
-1. Define the Principles graph model: source, passage, claim, principle, concept, question, decision and relationship.
-2. Link every accepted claim to an exact source passage; never create a graph edge from uncited model output.
-3. Let the Brain morph between machine state, graph state and constellation state using this native model.
-4. Add source ingestion review: approve, reject, merge duplicate sources and mark extraction problems.
+Before building personal/business modules, define:
 
-## Priority 3 — Turn answers into a personal system
+1. **Workspace model** — what a personal workspace is, what an organization workspace is, and whether a user can belong to multiple organizations.
+2. **Identity and authorization** — authentication, membership, roles, ownership, and data access rules.
+3. **Information architecture** — the primary navigation and how personal versus business context is selected.
+4. **Shared primitives** — only primitives proven necessary by the first modules; avoid speculative universal-object systems.
+5. **AI data scope** — which data can be retrieved for a user or organization and how permission filtering happens before RAG/model access.
 
-1. My Brain: save a claim, principle, open question or decision from a response.
-2. Decisions: record context, options, assumptions, evidence coverage and later outcome.
-3. Team Brain: permissions, shared sources, conflicting principles and review history.
-4. Add feedback loops so outcomes can refine principles without rewriting source evidence.
+## First management module — choose from requirements
 
-## Priority 4 — Product foundation
+The first real management domain must be selected deliberately. Possible domains include projects/tasks, notes/files, CRM, operations, goals, finance, or another user-defined area. These are candidates, not commitments.
 
-1. Connect real authentication and workspace persistence; the current Login screen is only the entry surface.
-2. Add background ingestion jobs with CPU-aware scheduling for large PDFs and EPUB conversion.
-3. Add observability for RAGFlow health, parse failures, DeepSeek latency, token usage and citation validation.
-4. Add production browser tests for landing → login → Thinker Machine → follow-up question → Sources.
+For the chosen module:
 
-## Explicit non-goals
+- write the workflow and success criteria first;
+- define the smallest durable data model;
+- add permission boundaries;
+- build the non-AI workflow before adding AI convenience;
+- expose its permitted data to Q&A only after access control is correct.
 
-- Do not model Ray Dalio, Charlie Munger, Warren Buffett or other thinkers as separate agents.
-- Do not show uncited model knowledge as evidence.
-- Do not replace the Brain renderer with a generic chatbot or a sphere.
+## Expand incrementally
+
+After the first domain proves the platform boundaries, add additional personal/business modules one at a time and extract shared infrastructure only when repetition is real.
+
+## Explicitly retired roadmap items
+
+The following old roadmap directions are not active:
+
+- Thinker Machine modes and reasoning councils;
+- Brain / constellation / Principles Graph product surfaces;
+- Decision Brief / Decision Workspace as the core product;
+- historical-thinker simulation;
+- building product modules around the old V2 decision schema.
+
+Git history preserves those experiments. They are not backlog items unless explicitly reintroduced.

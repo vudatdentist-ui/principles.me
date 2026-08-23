@@ -14,7 +14,7 @@ export default defineConfig({
   fullyParallel: true,
   projects: [
     {
-      name: "v2-chromium",
+      name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
       },
@@ -24,7 +24,7 @@ export default defineConfig({
     ? [["line"], ["html", { open: "never" }]]
     : [["html", { open: "never" }]],
   retries: process.env.CI ? 1 : 0,
-  testDir: "./tests/v2/e2e",
+  testDir: "./tests/e2e",
   testMatch: "**/*.spec.ts",
   timeout: 30_000,
   use: {
@@ -35,7 +35,7 @@ export default defineConfig({
     command: `pnpm exec next dev --turbo --hostname 127.0.0.1 --port ${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    url: `${baseURL}/v2`,
+    url: baseURL,
   },
   workers: process.env.CI ? 1 : 2,
 });

@@ -18,39 +18,20 @@ concurrency:
 jobs:
   lint:
     runs-on: [self-hosted, linux, x64, principles-ci]
-    strategy:
-      max-parallel: 1
-      matrix:
-        node-version: [20]
     steps:
       - uses: actions/checkout@v4
       - name: Validate production deploy shell
-        run: bash -n scripts/deploy-production-v2.sh
+        run: bash -n scripts/deploy-production.sh
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.32.1
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "pnpm"
+          node-version: 22
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run lint
-        run: >-
-          pnpm exec biome lint
-          app/api
-          app/v2
-          app/globals.css
-          app/layout.tsx
-          app/page.tsx
-          components/brain-scene.tsx
-          components/principles-council.tsx
-          features/decision
-          features/evidence
-          features/shared
-          lib/principles-graph.ts
-          scripts/ensure-v2-production-schema.mjs
-          scripts/verify-db-migrations.mjs
-          scripts/verify-v2-contracts.ts
+        run: pnpm lint

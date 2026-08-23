@@ -1,137 +1,123 @@
-# Principles — Thinker Machine
+# Principles
 
-Principles is a new application built from the Vercel `chatbot` Next.js base, with a visual language based on the supplied `C:\Users\Admin\Desktop\index.html`. The Brain is the `Thinker Machine` surface: one processing system with isolated reasoning contexts, not a set of simulated personalities.
+Principles is being rebuilt as a **personal and business management platform**.
 
-## Architecture
+The product is intentionally at a fresh baseline. The only application capability currently treated as implemented is **knowledge Q&A backed by RAGFlow and an AI model**. Previous product concepts such as Thinker Machine, Council, Brain, Decisions, Principles Graph, Review workflows, and the old V2 product shell are legacy and must not be used as requirements for new work.
 
-- `Next.js App Router` owns the UI and the server-side Thinker Machine endpoint.
-- `React Three Fiber + Three.js` renders the existing interactive Brain/Graph/Constellation/Council modes; the Brain renderer remains in `components/brain-scene.tsx`.
-- `RAGFlow` remains a separate service. The app only calls its `/api/v1/retrieval` HTTP API for the primary source corpus.
-- `DeepSeek` runs the reasoning modules and the final Synthesis Judge.
-- `lib/thinker-machine.ts` defines the reasoning budget and isolated processing passes.
-- `lib/principles-graph.ts` is the Principles graph model. It does not reuse GraphRAG Workbench's entity/relationship schema.
-- `public/brain.glb` is the brain mesh extracted from the supplied UI reference; the R3F renderer samples it into morphing particles and shards.
-- GraphRAG Workbench was researched for its renderer approach and interaction patterns; its application source is not included here.
+Read [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) before making product or architecture changes.
 
-### Thinker Machine pipeline
+## Current baseline
 
 ```text
-Question + optional Principles Me context
-                 │
-                 ▼
-        RAGFlow retrieval (primary)
-                 │
-                 ├── optional Web Researcher (only when enabled and needed)
-                 │
-                 ▼
-  ┌─────────────────────────────────────────────┐
-  │ Isolated reasoning contexts                  │
-  │ Evidence · First Principles · Inversion      │
-  │ Systems · Action                             │
-  └────────────────────┬────────────────────────┘
-                       ▼
-                 Synthesis Judge
-                       │
-                       ▼
-             Principles Thinker response
+User question
+    |
+    v
+RAGFlow retrieval
+    |
+    v
+Normalized evidence
+    |
+    v
+DeepSeek answer stream
+    |
+    v
+Answer + inspectable sources
 ```
 
-The Evidence Analyst receives the evidence packet. The independent passes intentionally do not receive that packet or each other's output; they get a fresh context with their own role prompt. The Synthesis Judge receives the raw evidence plus the isolated outputs. Citation keys are accepted only if they exist in the raw retrieved packet.
+Implemented today:
 
-Reasoning modes:
+- RAGFlow retrieval from configured datasets.
+- DeepSeek provider with streaming responses and typed provider errors.
+- A minimal `/api/ask` NDJSON streaming API.
+- A minimal Knowledge Q&A workspace at `/`.
+- Source display for retrieved RAG evidence.
+- RAGFlow bootstrap/seeding scripts.
+- Production health and smoke checks for the Q&A baseline.
 
-- `Adaptive`: selects three passes for a straightforward question and five for a complex one.
-- `High`: always runs all five isolated passes and synthesis.
-- `Max`: High plus a critic pass and a final synthesis revision.
+Not implemented yet:
 
-Web research is an explicit user-controlled supplement. It is never silently called, never treated as a personality, and never automatically imported into RAGFlow or Principles Me.
+- personal data model;
+- organization/workspace model;
+- authentication and authorization for the rebuilt product;
+- tasks, projects, CRM, finance, HR, operations, goals, notes, dashboards, or automation domains;
+- durable conversation/history model;
+- product-specific AI agents or decision workflows.
 
-## Local run
+Those areas start from new requirements. Do not infer their design from deleted legacy code.
 
-Requirements: Node 20+, pnpm, and Docker Desktop for RAGFlow.
+## Repository shape
 
-```powershell
+The active application architecture is intentionally small:
+
+```text
+app/
+  api/ask/       # Q&A streaming endpoint
+  api/health/    # deployment readiness
+  page.tsx       # current product surface
+features/
+  ask/            # Q&A client UI
+  evidence/       # normalized evidence + RAGFlow provider
+lib/
+  ai/providers/   # DeepSeek provider abstraction
+scripts/
+  bootstrap-ragflow.ps1
+  seed-ragflow.mjs
+  smoke-production.mjs
+  deploy-production.sh
+```
+
+Everything else should earn its way back into the repository through a current product requirement.
+
+## Local development
+
+Requirements: Node 20+, pnpm, and a reachable RAGFlow service.
+
+```bash
 pnpm install
-Copy-Item .env.example .env.local
-# Fill DEEPSEEK_API_KEY, then configure RAGFlow values in .env.local. TAVILY_API_KEY is optional.
+cp .env.example .env.local
 pnpm dev
+```
+
+Configure at minimum:
+
+```text
+DEEPSEEK_API_KEY=
+RAGFLOW_BASE_URL=http://localhost:9380
+RAGFLOW_API_KEY=
+RAGFLOW_DATASET_IDS=
 ```
 
 Open `http://localhost:3000`.
 
-If the supplied reference asset changes, regenerate the mesh with `pnpm brain:extract`.
+## RAGFlow
 
-## RAGFlow service
-
-RAGFlow is intentionally not merged into this Next.js project. To bootstrap the official pinned service locally:
+RAGFlow remains a separate service. Bootstrap the pinned upstream stack on Windows with:
 
 ```powershell
 pnpm ragflow:bootstrap
 ```
 
-The script clones the official RAGFlow repository at `v0.26.4` into `infra/ragflow/upstream` and runs its own Docker Compose stack. RAGFlow requires a Docker host with at least 4 CPU cores, 16 GB RAM and 50 GB disk; initialization can take several minutes.
-
-After the RAGFlow UI is ready:
-
-1. Create a dataset and an API key in RAGFlow.
-2. Set `RAGFLOW_API_KEY` and `RAGFLOW_DATASET_IDS` in `.env.local`.
-3. Upload a corpus (the seeder accepts one file or a directory):
+Seed a dataset with:
 
 ```powershell
-$env:RAGFLOW_API_KEY='your-ragflow-key'
+$env:RAGFLOW_API_KEY='your-key'
 $env:RAGFLOW_DATASET_ID='your-dataset-id'
-$env:RAGFLOW_DOCUMENT_DIR='C:\Users\Admin\Desktop\Source'
+$env:RAGFLOW_DOCUMENT_DIR='C:\Source'
 pnpm ragflow:seed
 ```
 
-`RAGFLOW_DOCUMENT_DIR` accepts PDF, Markdown, text, Word, PowerPoint, Excel and CSV files. The seeder uploads new files, explicitly starts RAGFlow parsing/indexing, waits for terminal document states, and preserves provenance per document. Set `RAGFLOW_REPARSE_EXISTING=true` to reparse documents already in the dataset after changing parser settings. EPUB is not a native RAGFlow input in this flow; convert it to HTML/Markdown or PDF first. Use licensed or user-owned primary sources for production research.
-
 ## Verification
 
-```powershell
-pnpm lint
-pnpm exec tsc --noEmit
-pnpm build
-```
-
-For a browser smoke test, start the app and verify:
-
-`Home → Thinker Machine → mode selection → RAGFlow → isolated passes → Synthesis Judge → Sources → Brain mode morph`
-
-When RAGFlow is not configured or returns no chunks, the UI explicitly shows the evidence gap and the API will not invent citations. Independent reasoning may still be shown, but it is not presented as source-backed fact. When DeepSeek is unavailable, the stream shows an error instead of presenting a fabricated answer.
-
-## Deploy
-
-For the current Hostinger VPS deployment, the Next.js app and RAGFlow remain separate Docker services. The app uses `docker-compose.hostinger.yml` and Traefik on the existing `coolify` network:
-
 ```bash
-docker compose -f docker-compose.hostinger.yml up -d --build
+pnpm lint
+pnpm typecheck
+pnpm test:unit
+pnpm build
+pnpm test:e2e
 ```
 
-Create these Cloudflare DNS records before requesting the TLS certificate:
+## Production
 
-- `A @` → `187.127.116.53` (proxied)
-- `A www` → `187.127.116.53` (proxied)
+`principles.me` is deployed as a Docker service behind the existing Traefik/Coolify network. The deployment health endpoint is `/api/health` and the canary smoke test exercises a real `/api/ask` request before promotion.
 
-RAGFlow is managed independently under `infra/ragflow/upstream/docker`; its API is not merged into Next.js. For a fresh VPS, bootstrap it with `pnpm ragflow:bootstrap`, enable a TEI embedding profile, create a dataset/API key, then seed with `pnpm ragflow:seed`.
-
-For Vercel deployments, configure the following project environment variables:
-
-- `DEEPSEEK_API_KEY`
-- `DEEPSEEK_MODEL` (default `deepseek-chat`)
-- `DEEPSEEK_BASE_URL` (default `https://api.deepseek.com`)
-- `DEEPSEEK_MAX_TOKENS`, `DEEPSEEK_TIMEOUT_MS`, `DEEPSEEK_SYNTHESIS_TIMEOUT_MS`
-- `RAGFLOW_BASE_URL`
-- `RAGFLOW_API_KEY`
-- `RAGFLOW_DATASET_IDS`
-- `TAVILY_API_KEY` (optional; only used when Web Research is enabled)
-
-Then:
-
-```powershell
-npx vercel --prod
-```
-
-On Windows, if the CLI reports an `EPERM` symlink error while creating `.vercel/output`, enable Windows Developer Mode (or deploy from a Linux CI runner). The local app itself does not require symlink privileges.
-
-Do not commit `.env.local` or API keys. A deployment without reachable RAGFlow will still load the visual app, but Thinker Machine will correctly report the missing evidence and keep citations empty.
+Do not commit `.env.local`, `.env.production`, API keys, or RAGFlow credentials.

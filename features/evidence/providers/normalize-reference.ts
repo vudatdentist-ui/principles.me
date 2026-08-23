@@ -1,23 +1,15 @@
-import type {
-  CitationKey,
-  EvidenceReference,
-  EvidenceSourceType,
-} from "../contracts";
+import type { CitationKey, EvidenceReference } from "../contracts";
 
 export interface NormalizeReferenceInput {
   readonly chunkId?: unknown;
   readonly datasetId?: unknown;
   readonly documentId?: unknown;
   readonly index: number;
-  readonly keyPrefix: "R" | "W";
   readonly observedAt?: unknown;
   readonly positions?: unknown;
-  readonly provider: string;
   readonly publishedAt?: unknown;
-  readonly requireUrl?: boolean;
   readonly retrievedAt: string;
   readonly score?: unknown;
-  readonly sourceType: Extract<EvidenceSourceType, "ragflow" | "web">;
   readonly text: unknown;
   readonly title: unknown;
   readonly url?: unknown;
@@ -90,10 +82,6 @@ export function normalizeReference(
   }
 
   const url = validUrl(input.url);
-  if (input.requireUrl && !url) {
-    return null;
-  }
-
   const title = traceableTitle(input, url);
   if (!title) {
     return null;
@@ -103,14 +91,14 @@ export function normalizeReference(
     chunkId: nonEmptyString(input.chunkId),
     datasetId: nonEmptyString(input.datasetId),
     documentId: nonEmptyString(input.documentId),
-    key: `${input.keyPrefix}${input.index + 1}` as CitationKey,
+    key: `R${input.index + 1}` as CitationKey,
     observedAt: nonEmptyString(input.observedAt),
     positions: normalizedPositions(input.positions),
-    provider: input.provider,
+    provider: "ragflow",
     publishedAt: nonEmptyString(input.publishedAt),
     retrievedAt: input.retrievedAt,
     score: finiteNumber(input.score),
-    sourceType: input.sourceType,
+    sourceType: "ragflow",
     text,
     title,
     url,
