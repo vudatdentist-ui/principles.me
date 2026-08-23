@@ -160,7 +160,6 @@ export async function* parseJsonSseStream(
         throw abortReason(signal);
       }
 
-      // biome-ignore lint/performance/noAwaitInLoops: ReadableStream chunks must be consumed sequentially.
       const { done, value } = await reader.read();
       if (done) {
         break;
