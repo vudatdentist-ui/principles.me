@@ -23,3 +23,16 @@ test("trusted last X-Forwarded-For hop wins over a spoofed first value", () => {
   const direct = authRateScope(request({ "x-forwarded-for": "203.0.113.4" }));
   assert.equal(spoofed, direct);
 });
+
+test("X-Forwarded-For wins over a conflicting X-Real-IP value", () => {
+  const proxied = authRateScope(
+    request({
+      "x-forwarded-for": "198.51.100.99, 203.0.113.4",
+      "x-real-ip": "192.0.2.77",
+    })
+  );
+  const expected = authRateScope(
+    request({ "x-forwarded-for": "203.0.113.4" })
+  );
+  assert.equal(proxied, expected);
+});
