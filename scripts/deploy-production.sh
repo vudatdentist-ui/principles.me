@@ -81,6 +81,14 @@ if ! grep -Eq '^POSTGRES_PASSWORD=.+$' "$ENV_FILE"; then
   printf '%s\n' 'Generated persistent Postgres credential.'
 fi
 
+if ! grep -Eq '^AUTH_BOOTSTRAP_SECRET=.+$' "$ENV_FILE"; then
+  bootstrap_secret="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
+  [ -n "$bootstrap_secret" ] || fail 'Could not generate bootstrap setup key.'
+  set_env_value AUTH_BOOTSTRAP_SECRET "$bootstrap_secret"
+  unset bootstrap_secret
+  printf '%s\n' 'Generated persistent bootstrap setup key.'
+fi
+
 set_env_if_missing POSTGRES_HOST "$DB_CONTAINER"
 set_env_if_missing POSTGRES_PORT '5432'
 set_env_if_missing POSTGRES_DB 'principles'
