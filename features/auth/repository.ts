@@ -182,7 +182,7 @@ export async function sessionContext(token: string): Promise<SessionContext | nu
     LIMIT 1
   `;
   const row = rows[0];
-  if (!row || row.workspace_kind !== "personal") {
+  if (row?.workspace_kind !== "personal") {
     return null;
   }
 
