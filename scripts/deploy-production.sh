@@ -8,6 +8,10 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.hostinger.yml}"
 SERVICE="principles"
 CONTAINER="principles-web"
 IMAGE="principles-council-principles:latest"
+DATA_NETWORK="principles-data"
+DB_CONTAINER="principles-postgres"
+DB_VOLUME="principles-postgres-data"
+DB_IMAGE="postgres:16-bookworm"
 
 fail() {
   printf '%s\n' "$1" >&2
@@ -30,10 +34,22 @@ set_env_value() {
   rm -f "$temp"
 }
 
+set_env_if_missing() {
+  local name="$1"
+  local value="$2"
+  if ! grep -Eq "^${name}=.+$" "$ENV_FILE"; then
+    set_env_value "$name" "$value"
+  fi
+}
+
 canary_container=""
 release_container=""
+migration_container=""
 old_backup=""
 cleanup() {
+  if [ -n "$migration_container" ]; then
+    docker rm -f "$migration_container" >/dev/null 2>&1 || true
+  fi
   if [ -n "$canary_container" ]; then
     docker rm -f "$canary_container" >/dev/null 2>&1 || true
   fi
@@ -51,10 +67,27 @@ trap cleanup EXIT
 test -f "$ENV_FILE" || fail "$ENV_FILE is required."
 test -f "$COMPOSE_FILE" || fail "$COMPOSE_FILE is required."
 test -f scripts/smoke-production.mjs || fail "Production smoke script is missing."
+test -f db/migrations/0001_secure_platform_kernel.sql || fail "Phase 1 migration is missing."
 
 for required_var in DEEPSEEK_API_KEY RAGFLOW_API_KEY RAGFLOW_DATASET_IDS; do
   grep -Eq "^${required_var}=.+$" "$ENV_FILE" || fail "${required_var} is required in $ENV_FILE."
 done
+
+if ! grep -Eq '^POSTGRES_PASSWORD=.+$' "$ENV_FILE"; then
+  generated_password="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+  [ -n "$generated_password" ] || fail 'Could not generate database password.'
+  set_env_value POSTGRES_PASSWORD "$generated_password"
+  unset generated_password
+  printf '%s\n' 'Generated persistent Postgres credential.'
+fi
+
+set_env_if_missing POSTGRES_HOST "$DB_CONTAINER"
+set_env_if_missing POSTGRES_PORT '5432'
+set_env_if_missing POSTGRES_DB 'principles'
+set_env_if_missing POSTGRES_USER 'principles'
+set_env_if_missing AUTH_SIGNUP_MODE 'bootstrap'
+set_env_if_missing APP_ORIGIN 'https://principles.me'
+set_env_if_missing RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS 'true'
 
 ragflow_url="$(read_env RAGFLOW_BASE_URL)"
 if [ -z "$ragflow_url" ] || printf '%s' "$ragflow_url" | grep -Eq '^http://(localhost|127\.0\.0\.1):9380/?$'; then
@@ -64,13 +97,51 @@ fi
 unset ragflow_url
 
 docker network inspect coolify >/dev/null
-APP_VERSION="$DEPLOY_SHA" docker compose -f "$COMPOSE_FILE" build "$SERVICE"
+if ! docker network inspect "$DATA_NETWORK" >/dev/null 2>&1; then
+  docker network create --internal "$DATA_NETWORK" >/dev/null
+fi
+docker volume create "$DB_VOLUME" >/dev/null
+
+postgres_user="$(read_env POSTGRES_USER)"
+postgres_db="$(read_env POSTGRES_DB)"
+postgres_password="$(read_env POSTGRES_PASSWORD)"
+[ -n "$postgres_user" ] || fail 'POSTGRES_USER is missing.'
+[ -n "$postgres_db" ] || fail 'POSTGRES_DB is missing.'
+[ -n "$postgres_password" ] || fail 'POSTGRES_PASSWORD is missing.'
+
+if ! docker inspect "$DB_CONTAINER" >/dev/null 2>&1; then
+  docker image inspect "$DB_IMAGE" >/dev/null 2>&1 || docker pull "$DB_IMAGE" >/dev/null
+  docker create \
+    --name "$DB_CONTAINER" \
+    --restart unless-stopped \
+    --network "$DATA_NETWORK" \
+    -e "POSTGRES_USER=$postgres_user" \
+    -e "POSTGRES_DB=$postgres_db" \
+    -e "POSTGRES_PASSWORD=$postgres_password" \
+    -v "$DB_VOLUME:/var/lib/postgresql/data" \
+    --health-cmd "pg_isready -U $postgres_user -d $postgres_db" \
+    --health-interval 5s \
+    --health-timeout 4s \
+    --health-retries 20 \
+    "$DB_IMAGE" >/dev/null
+fi
+unset postgres_password
+
+if [ "$(docker inspect -f '{{.State.Status}}' "$DB_CONTAINER")" != 'running' ]; then
+  docker start "$DB_CONTAINER" >/dev/null
+fi
+
+db_networks=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' "$DB_CONTAINER") "
+case "$db_networks" in
+  *" $DATA_NETWORK "*) ;;
+  *) docker network connect "$DATA_NETWORK" "$DB_CONTAINER" >/dev/null ;;
+esac
 
 wait_for_health() {
   local name="$1"
   local state=""
   local health=""
-  for _attempt in $(seq 1 45); do
+  for _attempt in $(seq 1 60); do
     state="$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null || true)"
     health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$name" 2>/dev/null || true)"
     if [ "$state" = 'running' ] && [ "$health" = 'healthy' ]; then
@@ -84,6 +155,26 @@ wait_for_health() {
   return 1
 }
 
+wait_for_health "$DB_CONTAINER" || fail 'Postgres did not become healthy.'
+printf 'DEPLOY_DATABASE_READY=1\n'
+
+APP_VERSION="$DEPLOY_SHA" docker compose -f "$COMPOSE_FILE" build "$SERVICE"
+
+short_sha="${DEPLOY_SHA:0:12}"
+migration_container="principles-migrate-${short_sha}"
+docker rm -f "$migration_container" >/dev/null 2>&1 || true
+docker create \
+  --name "$migration_container" \
+  --env-file "$ENV_FILE" \
+  --network "$DATA_NETWORK" \
+  "$IMAGE" pnpm db:migrate >/dev/null
+docker start -a "$migration_container"
+migration_exit="$(docker inspect -f '{{.State.ExitCode}}' "$migration_container")"
+[ "$migration_exit" = '0' ] || fail 'Database migration failed.'
+docker rm -f "$migration_container" >/dev/null
+migration_container=""
+printf 'DEPLOY_MIGRATIONS_READY=1\n'
+
 create_app_container() {
   local name="$1"
   shift
@@ -95,10 +186,10 @@ create_app_container() {
     --network coolify \
     "$@" \
     "$IMAGE" >/dev/null
+  docker network connect "$DATA_NETWORK" "$name" >/dev/null
   docker start "$name" >/dev/null
 }
 
-short_sha="${DEPLOY_SHA:0:12}"
 canary_container="principles-canary-${short_sha}"
 docker rm -f "$canary_container" >/dev/null 2>&1 || true
 create_app_container "$canary_container"
@@ -162,6 +253,7 @@ latest_image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
 
 app_networks=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' "$release_container") "
 case "$app_networks" in *" coolify "*) ;; *) fail 'Release container is missing the coolify network.' ;; esac
+case "$app_networks" in *" $DATA_NETWORK "*) ;; *) fail 'Release container is missing the private data network.' ;; esac
 
 if docker inspect "$CONTAINER" >/dev/null 2>&1; then
   old_backup="principles-web-old-${short_sha}"
