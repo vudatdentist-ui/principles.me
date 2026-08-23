@@ -3,7 +3,7 @@ import { z } from "zod";
 export const citationKeySchema = z
   .string()
   .trim()
-  .regex(/^R\d+$/, "Citation keys must use the R prefix.");
+  .regex(/^(R|W)\d+$/, "Citation keys must use the R or W prefix.");
 
 export const evidenceReferenceSchema = z
   .object({
@@ -13,11 +13,11 @@ export const evidenceReferenceSchema = z
     key: citationKeySchema,
     observedAt: z.string().trim().min(1).nullable(),
     positions: z.array(z.unknown()),
-    provider: z.literal("ragflow"),
+    provider: z.enum(["ragflow", "brave"]),
     publishedAt: z.string().trim().min(1).nullable(),
     retrievedAt: z.string().trim().min(1),
     score: z.number().finite().nullable(),
-    sourceType: z.literal("ragflow"),
+    sourceType: z.enum(["ragflow", "live_web"]),
     text: z.string().trim().min(1),
     title: z.string().trim().min(1),
     url: z.string().url().nullable(),
