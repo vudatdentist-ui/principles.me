@@ -53,6 +53,23 @@ jobs:
           node --version 2>/dev/null || echo "node=not-installed-on-host-path"
           npm --version 2>/dev/null || echo "npm=not-installed-on-host-path"
           pnpm --version 2>/dev/null || echo "pnpm=not-installed-on-host-path"
+          echo
+          echo "--- Unprivileged integration capabilities ---"
+          command -v psql || true
+          command -v pg_config || true
+          command -v initdb || true
+          command -v postgres || true
+          ls -d /usr/lib/postgresql/*/bin 2>/dev/null || true
+          if sudo -n true 2>/dev/null; then
+            echo "passwordless_sudo=yes"
+          else
+            echo "passwordless_sudo=no"
+          fi
+          if docker version >/dev/null 2>&1; then
+            echo "docker_daemon_access=yes"
+          else
+            echo "docker_daemon_access=no"
+          fi
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
