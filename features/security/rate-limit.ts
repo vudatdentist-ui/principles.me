@@ -42,10 +42,22 @@ export function workspaceRateScope(workspaceId: string): string {
   return `workspace:${workspaceId}`;
 }
 
-export function authRateScope(request: Request, email: string): string {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = forwarded || request.headers.get("x-real-ip") || "unknown";
-  return `auth:${createHash("sha256")
-    .update(`${ip}|${email.trim().toLowerCase()}`)
-    .digest("hex")}`;
+function requestIp(request: Request): string {
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp) {
+    return realIp;
+  }
+
+  // A trusted reverse proxy appends the immediate client to X-Forwarded-For.
+  // Use the last hop so a user-supplied first value cannot create arbitrary buckets.
+  const forwarded = request.headers
+    .get("x-forwarded-for")
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return forwarded?.at(-1) || "unknown";
+}
+
+export function authRateScope(request: Request): string {
+  return `auth-ip:${createHash("sha256").update(requestIp(request)).digest("hex")}`;
 }
