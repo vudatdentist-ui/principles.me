@@ -6,8 +6,6 @@ import { signupMode } from "@/features/auth/contracts";
 import { sessionContext, signupAvailable } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
 
-export const dynamic = "force-dynamic";
-
 export default async function HomePage() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
