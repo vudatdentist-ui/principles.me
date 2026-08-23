@@ -29,8 +29,8 @@ case "$ACTION" in
       }
     done
 
-    test "$POSTGRES_DB" = 'postgres' || {
-      printf 'CI PostgreSQL uses initdb default database postgres; got %s\n' "$POSTGRES_DB" >&2
+    [[ "$POSTGRES_DB" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || {
+      printf 'Invalid CI database name: %s\n' "$POSTGRES_DB" >&2
       exit 1
     }
 
@@ -40,6 +40,11 @@ case "$ACTION" in
       -A trust \
       --encoding=UTF8 \
       --no-locale >/dev/null
+
+    if [ "$POSTGRES_DB" != 'postgres' ]; then
+      printf 'CREATE DATABASE "%s";\n' "$POSTGRES_DB" | \
+        "$BIN_DIR/postgres" --single -D "$DATA_DIR" postgres >/dev/null
+    fi
 
     "$BIN_DIR/pg_ctl" \
       -D "$DATA_DIR" \
