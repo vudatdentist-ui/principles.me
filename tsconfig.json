@@ -20,22 +20,20 @@
     ],
     "paths": {
       "@/*": ["./*"]
-    },
-    "strictNullChecks": true
+    }
   },
   "include": [
     "next-env.d.ts",
     "app/**/*.ts",
     "app/**/*.tsx",
-    "components/brain-scene.tsx",
-    "components/principles-council.tsx",
     "features/**/*.ts",
     "features/**/*.tsx",
-    "lib/principles-graph.ts",
-    "scripts/verify-v2-contracts.ts",
+    "lib/**/*.ts",
+    "tests/**/*.ts",
+    "next.config.ts",
+    "playwright.config.ts",
     ".next/types/**/*.ts",
-    "next.config.js",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [".next", "node_modules", "infra/ragflow/upstream", "output"]
+  "exclude": [".next", "node_modules", "output"]
 }
