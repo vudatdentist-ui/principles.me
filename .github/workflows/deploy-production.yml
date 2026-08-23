@@ -16,7 +16,7 @@ permissions:
 jobs:
   verify:
     name: Verify release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, principles-ci]
     timeout-minutes: 15
     env:
       APP_ORIGIN: http://127.0.0.1:3000
@@ -24,24 +24,10 @@ jobs:
       POSTGRES_DB: principles_release_test
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PASSWORD: principles_release_test
-      POSTGRES_PORT: 5432
+      POSTGRES_PORT: 55434
       POSTGRES_USER: principles
       RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS: "true"
       RAGFLOW_DATASET_IDS: dataset-a,dataset-b
-    services:
-      postgres:
-        image: postgres:16-bookworm
-        env:
-          POSTGRES_DB: principles_release_test
-          POSTGRES_PASSWORD: principles_release_test
-          POSTGRES_USER: principles
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U principles -d principles_release_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,6 +40,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Start PostgreSQL 16
+        run: bash scripts/ci-postgres.sh start
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Verify application
@@ -63,6 +51,9 @@ jobs:
           pnpm test:unit
           pnpm test:integration
           pnpm build
+      - name: Stop PostgreSQL
+        if: always()
+        run: bash scripts/ci-postgres.sh stop
 
   deploy:
     name: Deploy to Hostinger VPS
