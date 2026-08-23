@@ -2,7 +2,7 @@
 
 Principles is being rebuilt as a **personal and business management platform**.
 
-The product is intentionally at a fresh baseline. The only application capability currently treated as implemented is **knowledge Q&A backed by RAGFlow and an AI model**. Previous product concepts such as Thinker Machine, Council, Brain, Decisions, Principles Graph, Review workflows, and the old V2 product shell are legacy and must not be used as requirements for new work.
+The current product baseline is deliberately small: **private RAG knowledge + live public search + AI Q&A**. Previous product concepts such as Thinker Machine, Council, Brain, Decisions, Principles Graph, Review workflows, and the old V2 shell are legacy and are not requirements for new work.
 
 Read [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) before making product or architecture changes.
 
@@ -12,27 +12,38 @@ Read [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) before making product or archi
 User question
     |
     v
-RAGFlow retrieval
+Retrieval policy
     |
-    v
-Normalized evidence
-    |
-    v
-DeepSeek answer stream
-    |
-    v
-Answer + inspectable sources
+    +----------+----------+
+    |                     |
+    v                     v
+RAGFlow               Brave Search
+private knowledge      current web
+[R#]                   [W#]
+    |                     |
+    +----------+----------+
+               |
+               v
+       Normalized evidence
+               |
+               v
+           DeepSeek
+               |
+               v
+      Answer + citations
 ```
 
 Implemented today:
 
-- RAGFlow retrieval from configured datasets.
-- DeepSeek provider with streaming responses and typed provider errors.
-- A minimal `/api/ask` NDJSON streaming API.
-- A minimal Knowledge Q&A workspace at `/`.
-- Source display for retrieved RAG evidence.
-- RAGFlow bootstrap/seeding scripts.
-- Production health and smoke checks for the Q&A baseline.
+- RAGFlow retrieval from configured private datasets.
+- Brave Search integration for current public web evidence.
+- `auto | always | off` live-search routing policy.
+- Parallel private/live retrieval when live search is required.
+- Shared evidence contract with private `[R#]` and live `[W#]` citations.
+- DeepSeek streaming responses with citation guardrails.
+- Minimal `/api/ask` NDJSON streaming API and Q&A workspace at `/`.
+- Inspectable source display.
+- Production health and smoke checks.
 
 Not implemented yet:
 
@@ -41,22 +52,21 @@ Not implemented yet:
 - authentication and authorization for the rebuilt product;
 - tasks, projects, CRM, finance, HR, operations, goals, notes, dashboards, or automation domains;
 - durable conversation/history model;
+- live structured business connectors;
 - product-specific AI agents or decision workflows.
 
 Those areas start from new requirements. Do not infer their design from deleted legacy code.
 
 ## Repository shape
 
-The active application architecture is intentionally small:
-
 ```text
 app/
-  api/ask/       # Q&A streaming endpoint
+  api/ask/       # Hybrid retrieval + Q&A streaming endpoint
   api/health/    # deployment readiness
   page.tsx       # current product surface
 features/
-  ask/            # Q&A client UI
-  evidence/       # normalized evidence + RAGFlow provider
+  ask/            # minimal Q&A UI
+  evidence/       # evidence contract, live-search policy, RAGFlow + Brave
 lib/
   ai/providers/   # DeepSeek provider abstraction
 scripts/
@@ -66,11 +76,9 @@ scripts/
   deploy-production.sh
 ```
 
-Everything else should earn its way back into the repository through a current product requirement.
-
 ## Local development
 
-Requirements: Node 20+, pnpm, and a reachable RAGFlow service.
+Requirements: Node 22+, pnpm, a reachable RAGFlow service, and optionally a Brave Search API key.
 
 ```bash
 pnpm install
@@ -78,7 +86,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Configure at minimum:
+Configure private knowledge:
 
 ```text
 DEEPSEEK_API_KEY=
@@ -87,24 +95,14 @@ RAGFLOW_API_KEY=
 RAGFLOW_DATASET_IDS=
 ```
 
-Open `http://localhost:3000`.
+Enable live web evidence:
 
-## RAGFlow
-
-RAGFlow remains a separate service. Bootstrap the pinned upstream stack on Windows with:
-
-```powershell
-pnpm ragflow:bootstrap
+```text
+LIVE_SEARCH_MODE=auto
+BRAVE_SEARCH_API_KEY=
 ```
 
-Seed a dataset with:
-
-```powershell
-$env:RAGFLOW_API_KEY='your-key'
-$env:RAGFLOW_DATASET_ID='your-dataset-id'
-$env:RAGFLOW_DOCUMENT_DIR='C:\Source'
-pnpm ragflow:seed
-```
+`auto` only searches questions with freshness/current-data signals. Use `always` to search every question or `off` to disable it. Live search is best-effort by default; set `LIVE_SEARCH_REQUIRED=true` only when production must fail readiness without a configured live provider.
 
 ## Verification
 
@@ -118,6 +116,6 @@ pnpm test:e2e
 
 ## Production
 
-`principles.me` is deployed as a Docker service behind the existing Traefik/Coolify network. The deployment health endpoint is `/api/health` and the canary smoke test exercises a real `/api/ask` request before promotion.
+`principles.me` is deployed as a Docker service behind the existing Traefik network. The deployment health endpoint is `/api/health` and the canary smoke test exercises `/api/ask` before promotion.
 
 Do not commit `.env.local`, `.env.production`, API keys, or RAGFlow credentials.
