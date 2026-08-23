@@ -1,6 +1,22 @@
-# Self-hosted CI runner
+# CI and deployment runners
 
-This repository uses one dedicated GitHub Actions self-hosted Linux x64 runner for CI and production deployment jobs.
+This repository intentionally uses two runner classes after Phase 1.
+
+## Disposable verification jobs
+
+Jobs that require an isolated PostgreSQL service run on GitHub-hosted `ubuntu-latest` runners:
+
+- Foundation typecheck/unit/integration/build verification;
+- Playwright browser verification;
+- the release-verification job before production deployment.
+
+This keeps database integration tests disposable and avoids granting Docker daemon access to the long-lived self-hosted CI user.
+
+Pull-request verification receives no production secrets.
+
+## Self-hosted deployment runner
+
+One dedicated GitHub Actions self-hosted Linux x64 runner remains registered for low-privilege repository jobs and deployment orchestration.
 
 Required labels:
 
@@ -11,23 +27,23 @@ x64
 principles-ci
 ```
 
-All project workflows target:
+The self-hosted runner is used for:
 
-```yaml
-runs-on: [self-hosted, linux, x64, principles-ci]
-```
+- lint/shell validation;
+- runner diagnostics;
+- the protected production deployment job after release verification passes.
 
 ## Capacity
 
-Run one `principles-ci` runner service unless the repository concurrency policy is deliberately changed. A single runner process executes one job at a time and prevents build/test workloads from competing for the same host resources.
+Run one `principles-ci` runner service unless the repository concurrency policy is deliberately changed. A single runner process executes one self-hosted job at a time.
 
 ## Security boundary
 
 Run the Actions runner as a dedicated unprivileged Linux user such as `principles-ci`.
 
-Do not run the runner as root. Do not give the CI user passwordless sudo or production application credentials. Pull-request workflows receive no production secrets. The production deployment workflow runs only after a push to `main` and uses the protected GitHub `production` environment.
+Do not run the runner as root. Do not grant passwordless sudo or Docker daemon access merely to support pull-request tests. Production credentials are available only to the protected production deployment job.
 
-If CI and production share a physical VPS, keep the CI user separate from the deploy/application user and keep `.env.production` unreadable to CI.
+If CI and production share a physical host, keep the CI user separate from the deploy/application user and keep `.env.production` unreadable to CI.
 
 ## Host prerequisites
 
@@ -40,7 +56,7 @@ sudo apt-get update
 sudo apt-get install -y ca-certificates curl git build-essential openssh-client openssl
 ```
 
-Node and pnpm are installed by Actions workflows. Provision Playwright Chromium system dependencies on the runner host once; CI downloads the matching browser binary without sudo.
+Node and pnpm are installed by Actions workflows. Playwright and PostgreSQL integration dependencies are not required on this long-lived runner because those tests use disposable hosted runners.
 
 ## Register the runner
 
@@ -58,8 +74,8 @@ Use a dedicated name and custom label, for example:
   --unattended
 ```
 
-Install the runner as a service under the dedicated `principles-ci` user and confirm it appears **Online / Idle** before relying on CI.
+Install the runner as a service under the dedicated `principles-ci` user and confirm it appears **Online / Idle** before relying on deployment orchestration.
 
 ## Production separation
 
-The runner builds and tests pull requests. Production deployment uses SSH credentials stored in the protected GitHub environment to deploy the exact `main` commit to the VPS. RAGFlow and DeepSeek credentials remain server/environment-owned and must never be copied into repository files or CI work directories.
+Release verification completes on a disposable hosted runner first. The protected deployment job then uses SSH credentials stored in GitHub's production environment to deploy the exact `main` commit to the VPS. RAGFlow, DeepSeek, database and bootstrap credentials remain server/environment-owned and must never be copied into repository files or pull-request work directories.
