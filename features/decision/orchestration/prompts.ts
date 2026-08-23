@@ -1,13 +1,39 @@
 import type { JsonSnapshot } from "../persistence";
 import type { EvidenceReference } from "../../evidence/contracts";
 import type { AiMessage } from "../../../lib/ai/providers/types";
-import type { DecisionAnalysis, DecisionAudit } from "./types";
+import type {
+  DecisionAnalysis,
+  DecisionAudit,
+  DecisionCouncilLens,
+  DecisionFitAudit,
+  DecisionPerspective,
+} from "./types";
 
-const ANALYSIS_SYSTEM_PROMPT = "You are the decision application service for Principles. Produce structured decision content, not prose commentary. Use evidence, first-principles, inversion/risk, systems, and action lenses inside one analysis pass; do not create user-facing agents. Retrieved evidence is the only authority for factual claims. Never invent citation keys. If evidence is insufficient, use inference rather than unsupported facts, lower confidence, and state the evidence gap in unknowns. Return exactly three concise reasons. Return JSON only.";
+const COUNCIL_SYSTEM_PROMPT =
+  "You are one independent decision reasoner in the Principles council. You receive the same question, user context, and evidence as the other reasoners, but you must reason independently and you must not assume or imitate any other perspective. Focus only on your assigned lens. Retrieved evidence is the only authority for factual claims. User context may support preference or constraint judgments but not external facts. Do not synthesize a final council answer. Return JSON only.";
 
-const AUDIT_SYSTEM_PROMPT = "You are a strict evidence auditor. Check the proposed decision content against the supplied evidence only. Topical similarity is not support. Mark revise when a material factual claim is unsupported, when confidence exceeds the evidence, or when the candidate is not decision-useful. Do not add new facts or citations. Return JSON only.";
+const SYNTHESIS_SYSTEM_PROMPT =
+  "You are the synthesis layer for the Principles decision council. Compare the independent perspectives, identify agreements and conflicts, and produce one decision analysis. Do not average the perspectives mechanically; resolve tradeoffs explicitly. Retrieved evidence is the only authority for factual claims. User context may support user-context reasons but not external facts. Never invent citation keys. If evidence is insufficient, use inference rather than unsupported facts, lower confidence, and state the evidence gap in unknowns. Return exactly three concise reasons. Return JSON only.";
 
-const REVISION_SYSTEM_PROMPT = "Revise decision content once using the audit instructions. Retrieved evidence remains the only authority for factual claims. Never invent citation keys or sources. Preserve useful content that passed audit, lower confidence when evidence is weak, and return exactly three concise reasons. Return JSON only.";
+const EVIDENCE_AUDIT_SYSTEM_PROMPT =
+  "You are a strict evidence auditor. Judge only whether the synthesized decision is grounded in the supplied evidence. You are intentionally not given personal context. Topical similarity is not support. Mark revise when a material factual claim is unsupported, when citation support is weak, or when confidence exceeds the evidence. Do not judge user preference fit and do not add new facts or citations. Return JSON only.";
+
+const DECISION_FIT_AUDIT_SYSTEM_PROMPT =
+  "You are a strict decision-fit auditor. Judge whether the synthesized decision is coherent, decision-useful, appropriately reversible, and aligned with explicit user context and constraints. Do not re-audit factual evidence and do not invent user preferences. If the context snapshot is empty, do not reject the answer merely because personalization is unavailable; instead check internal decision quality and whether important missing context is represented as uncertainty. Return JSON only.";
+
+const REVISION_SYSTEM_PROMPT =
+  "Revise the synthesized decision once using both audit reports. Preserve useful content that passed review, resolve conflicts between evidence-grounding and decision-fit requirements, and do not add unsupported facts. Retrieved evidence remains the only authority for factual claims. Never invent citation keys or sources. User context may support user-context reasons. Return exactly three concise reasons. Return JSON only.";
+
+const LENS_INSTRUCTIONS: Record<DecisionCouncilLens, string> = {
+  "first-principles":
+    "First-principles lens: decompose the decision into goals, assumptions, constraints, and irreducible facts. Challenge inherited framing and identify what must be true for the option to work.",
+  "risk-inversion":
+    "Risk and inversion lens: reason backward from failure. Identify downside asymmetry, irreversible failure modes, hidden fragility, and ways to preserve optionality or cap loss.",
+  systems:
+    "Systems lens: examine dependencies, feedback loops, incentives, second-order effects, bottlenecks, and how the decision changes the surrounding system over time.",
+  action:
+    "Action lens: focus on practical execution, opportunity cost, reversible experiments, sequencing, measurable next steps, and what information can be learned cheaply before committing further.",
+};
 
 function serialize(value: unknown): string {
   return JSON.stringify(value);
@@ -17,18 +43,47 @@ function analysisShape(): string {
   return `Required JSON shape: {"recommendation":"...","reasons":[{"id":"r1","kind":"fact|inference|user-context","text":"...","citationKeys":["R1"]}],"counterCase":"...","nextAction":"...","confidence":{"level":"low|medium|high","explanation":"..."},"unknowns":["..."],"review":{"trigger":"...","suggestedAt":null}}. Exactly three reasons. Do not return id, runId, schemaVersion, sources, or validAsOf; the application owns those fields.`;
 }
 
-export function buildAnalysisMessages(input: {
+function perspectiveShape(): string {
+  return 'Required JSON shape: {"position":"...","considerations":["..."],"risks":["..."],"unknowns":["..."]}. Include 2-6 considerations. Keep each item concise.';
+}
+
+export function buildCouncilPerspectiveMessages(input: {
   context: JsonSnapshot;
   evidence: readonly EvidenceReference[];
+  lens: DecisionCouncilLens;
   question: string;
 }): readonly AiMessage[] {
   return [
-    { content: ANALYSIS_SYSTEM_PROMPT, role: "system" },
+    {
+      content: `${COUNCIL_SYSTEM_PROMPT}\n\n${LENS_INSTRUCTIONS[input.lens]}`,
+      role: "system",
+    },
     {
       content: [
         `QUESTION:\n${input.question}`,
         `CONTEXT SNAPSHOT:\n${serialize(input.context)}`,
         `RETRIEVED EVIDENCE:\n${serialize(input.evidence)}`,
+        perspectiveShape(),
+      ].join("\n\n"),
+      role: "user",
+    },
+  ];
+}
+
+export function buildSynthesisMessages(input: {
+  context: JsonSnapshot;
+  evidence: readonly EvidenceReference[];
+  perspectives: readonly DecisionPerspective[];
+  question: string;
+}): readonly AiMessage[] {
+  return [
+    { content: SYNTHESIS_SYSTEM_PROMPT, role: "system" },
+    {
+      content: [
+        `QUESTION:\n${input.question}`,
+        `CONTEXT SNAPSHOT:\n${serialize(input.context)}`,
+        `RETRIEVED EVIDENCE:\n${serialize(input.evidence)}`,
+        `INDEPENDENT PERSPECTIVES:\n${serialize(input.perspectives)}`,
         analysisShape(),
       ].join("\n\n"),
       role: "user",
@@ -36,13 +91,13 @@ export function buildAnalysisMessages(input: {
   ];
 }
 
-export function buildAuditMessages(input: {
+export function buildEvidenceAuditMessages(input: {
   analysis: DecisionAnalysis;
   evidence: readonly EvidenceReference[];
   question: string;
 }): readonly AiMessage[] {
   return [
-    { content: AUDIT_SYSTEM_PROMPT, role: "system" },
+    { content: EVIDENCE_AUDIT_SYSTEM_PROMPT, role: "system" },
     {
       content: [
         `QUESTION:\n${input.question}`,
@@ -55,11 +110,32 @@ export function buildAuditMessages(input: {
   ];
 }
 
+export function buildDecisionFitAuditMessages(input: {
+  analysis: DecisionAnalysis;
+  context: JsonSnapshot;
+  question: string;
+}): readonly AiMessage[] {
+  return [
+    { content: DECISION_FIT_AUDIT_SYSTEM_PROMPT, role: "system" },
+    {
+      content: [
+        `QUESTION:\n${input.question}`,
+        `CONTEXT SNAPSHOT:\n${serialize(input.context)}`,
+        `CANDIDATE:\n${serialize(input.analysis)}`,
+        'Required JSON shape: {"verdict":"fit|mixed|misfit","decision":"accept|revise","issues":["..."],"revisionInstructions":["..."]}.',
+      ].join("\n\n"),
+      role: "user",
+    },
+  ];
+}
+
 export function buildRevisionMessages(input: {
   analysis: DecisionAnalysis;
-  audit: DecisionAudit;
   context: JsonSnapshot;
+  decisionFitAudit: DecisionFitAudit;
   evidence: readonly EvidenceReference[];
+  evidenceAudit: DecisionAudit;
+  perspectives: readonly DecisionPerspective[];
   question: string;
 }): readonly AiMessage[] {
   return [
@@ -69,8 +145,10 @@ export function buildRevisionMessages(input: {
         `QUESTION:\n${input.question}`,
         `CONTEXT SNAPSHOT:\n${serialize(input.context)}`,
         `RETRIEVED EVIDENCE:\n${serialize(input.evidence)}`,
-        `ORIGINAL CANDIDATE:\n${serialize(input.analysis)}`,
-        `AUDIT:\n${serialize(input.audit)}`,
+        `INDEPENDENT PERSPECTIVES:\n${serialize(input.perspectives)}`,
+        `SYNTHESIZED CANDIDATE:\n${serialize(input.analysis)}`,
+        `EVIDENCE AUDIT:\n${serialize(input.evidenceAudit)}`,
+        `DECISION-FIT AUDIT:\n${serialize(input.decisionFitAudit)}`,
         analysisShape(),
       ].join("\n\n"),
       role: "user",
