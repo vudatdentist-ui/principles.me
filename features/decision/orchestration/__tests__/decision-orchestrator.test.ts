@@ -303,6 +303,12 @@ function requestText(request: GenerateObjectRequest<unknown>): string {
   return request.messages.map((message) => message.content).join("\n");
 }
 
+function callAt(ai: MockAiProvider, index: number): GenerateObjectRequest<unknown> {
+  const call = ai.calls[index];
+  assert.ok(call, `Expected model call ${index + 1}.`);
+  return call;
+}
+
 test("happy path runs four independent reasoners, synthesis and two audits", async () => {
   const ai = new MockAiProvider(happyQueue());
   const { orchestrator, repository } = fixture({ ai });
@@ -344,16 +350,16 @@ test("reasoners have isolated prompts and auditors receive separated context", a
     }
   }
 
-  const synthesisText = requestText(ai.calls[4]!);
+  const synthesisText = requestText(callAt(ai, 4));
   for (const lens of DECISION_COUNCIL_LENSES) {
     assert.match(synthesisText, new RegExp(`${lens} position\\.`));
   }
 
-  const evidenceAuditText = requestText(ai.calls[5]!);
+  const evidenceAuditText = requestText(callAt(ai, 5));
   assert.doesNotMatch(evidenceAuditText, /CONTEXT SNAPSHOT:/);
   assert.doesNotMatch(evidenceAuditText, /Protect downside before scaling/);
 
-  const fitAuditText = requestText(ai.calls[6]!);
+  const fitAuditText = requestText(callAt(ai, 6));
   assert.match(fitAuditText, /CONTEXT SNAPSHOT:/);
   assert.match(fitAuditText, /Protect downside before scaling/);
 });
@@ -381,7 +387,7 @@ test("decision-fit audit can trigger exactly one revision", async () => {
   assert.equal(ai.calls.length, 8);
   assert.equal(result.revisionApplied, true);
   assert.equal(result.brief.recommendation, revised.recommendation);
-  const revisionText = requestText(ai.calls[7]!);
+  const revisionText = requestText(callAt(ai, 7));
   assert.match(revisionText, /EVIDENCE AUDIT:/);
   assert.match(revisionText, /DECISION-FIT AUDIT:/);
   assert.match(revisionText, /INDEPENDENT PERSPECTIVES:/);
