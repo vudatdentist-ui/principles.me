@@ -1,4 +1,4 @@
-name: Production duplicate router diagnostics
+name: Legacy oracle route diagnostics
 
 on:
   push:
@@ -10,12 +10,12 @@ permissions:
   statuses: write
 
 concurrency:
-  group: production-duplicate-router-diagnostics
+  group: production-oracle-route-diagnostics
   cancel-in-progress: true
 
 jobs:
   diagnostics:
-    name: Inspect duplicate domain claimers
+    name: Inspect oracle-ui routing
     runs-on: [self-hosted, linux, x64, principles-ci]
     timeout-minutes: 5
     environment: production
@@ -35,7 +35,7 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-      - name: Inspect domain claimers
+      - name: Inspect oracle-ui labels
         id: inspect
         shell: bash
         env:
@@ -50,68 +50,48 @@ jobs:
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
             -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" bash -s > "$REPORT" <<'REMOTE'
           set -Eeuo pipefail
-          count=0
-          other_name=none
-          other_image=none
-          other_project=none
-          other_service=none
-          other_running=false
-          while IFS= read -r cid; do
-            [ -n "$cid" ] || continue
-            labels="$(docker inspect -f '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' "$cid" 2>/dev/null || true)"
-            printf '%s\n' "$labels" | grep -Fq 'principles.me' || continue
-            count=$((count + 1))
-            name="$(docker inspect -f '{{.Name}}' "$cid" | sed 's#^/##')"
-            if [ "$name" != 'principles-web' ]; then
-              other_name="$name"
-              other_image="$(docker inspect -f '{{.Config.Image}}' "$cid")"
-              other_project="$(printf '%s\n' "$labels" | sed -n 's/^com.docker.compose.project=//p' | tail -n 1)"
-              other_service="$(printf '%s\n' "$labels" | sed -n 's/^com.docker.compose.service=//p' | tail -n 1)"
-              other_running="$(docker inspect -f '{{.State.Running}}' "$cid")"
-            fi
-          done <<EOF_CONTAINERS
-          $(docker ps -aq)
-          EOF_CONTAINERS
-          clean() { printf '%s' "$1" | tr -cd 'A-Za-z0-9_.:/@+-' | cut -c1-80; }
-          printf 'COUNT=%s\n' "$count"
-          printf 'OTHER_NAME=%s\n' "$(clean "$other_name")"
-          printf 'OTHER_IMAGE=%s\n' "$(clean "$other_image")"
-          printf 'OTHER_PROJECT=%s\n' "$(clean "${other_project:-none}")"
-          printf 'OTHER_SERVICE=%s\n' "$(clean "${other_service:-none}")"
-          printf 'OTHER_RUNNING=%s\n' "$other_running"
+          if ! docker inspect oracle-ui >/dev/null 2>&1; then
+            printf 'EXISTS=0\nPRINCIPLES_RULES=0\nOTHER_HOST_RULES=0\nON_COOLIFY=0\n'
+            exit 0
+          fi
+          labels="$(docker inspect -f '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' oracle-ui)"
+          rules="$(printf '%s\n' "$labels" | grep -E '^traefik\.http\.routers\..*\.rule=' || true)"
+          principles_rules="$(printf '%s\n' "$rules" | grep -Fc 'principles.me' || true)"
+          other_host_rules="$(printf '%s\n' "$rules" | grep -vF 'principles.me' | grep -Fc 'Host(' || true)"
+          on_coolify=0
+          if docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}}{{"\n"}}{{end}}' oracle-ui | grep -Fxq coolify; then on_coolify=1; fi
+          printf 'EXISTS=1\n'
+          printf 'PRINCIPLES_RULES=%s\n' "$principles_rules"
+          printf 'OTHER_HOST_RULES=%s\n' "$other_host_rules"
+          printf 'ON_COOLIFY=%s\n' "$on_coolify"
+          printf '%s\n' "$rules" | sed -E 's/[[:space:]]+/ /g' | cut -c1-240
           REMOTE
-
           cat "$REPORT"
           while IFS='=' read -r key value; do
             case "$key" in
-              COUNT) echo "count=$value" >> "$GITHUB_OUTPUT" ;;
-              OTHER_NAME) echo "other_name=$value" >> "$GITHUB_OUTPUT" ;;
-              OTHER_IMAGE) echo "other_image=$value" >> "$GITHUB_OUTPUT" ;;
-              OTHER_PROJECT) echo "other_project=$value" >> "$GITHUB_OUTPUT" ;;
-              OTHER_SERVICE) echo "other_service=$value" >> "$GITHUB_OUTPUT" ;;
-              OTHER_RUNNING) echo "other_running=$value" >> "$GITHUB_OUTPUT" ;;
+              EXISTS) echo "exists=$value" >> "$GITHUB_OUTPUT" ;;
+              PRINCIPLES_RULES) echo "principles_rules=$value" >> "$GITHUB_OUTPUT" ;;
+              OTHER_HOST_RULES) echo "other_host_rules=$value" >> "$GITHUB_OUTPUT" ;;
+              ON_COOLIFY) echo "on_coolify=$value" >> "$GITHUB_OUTPUT" ;;
             esac
           done < "$REPORT"
 
-      - name: Publish sanitized router identity
+      - name: Publish sanitized routing summary
         if: always()
         uses: actions/github-script@v7
         env:
-          COUNT: ${{ steps.inspect.outputs.count || '0' }}
-          OTHER_NAME: ${{ steps.inspect.outputs.other_name || 'none' }}
-          OTHER_IMAGE: ${{ steps.inspect.outputs.other_image || 'none' }}
-          OTHER_PROJECT: ${{ steps.inspect.outputs.other_project || 'none' }}
-          OTHER_SERVICE: ${{ steps.inspect.outputs.other_service || 'none' }}
-          OTHER_RUNNING: ${{ steps.inspect.outputs.other_running || 'false' }}
+          EXISTS: ${{ steps.inspect.outputs.exists || '0' }}
+          PRINCIPLES_RULES: ${{ steps.inspect.outputs.principles_rules || '0' }}
+          OTHER_HOST_RULES: ${{ steps.inspect.outputs.other_host_rules || '0' }}
+          ON_COOLIFY: ${{ steps.inspect.outputs.on_coolify || '0' }}
         with:
           script: |
-            const description = `count=${process.env.COUNT} other=${process.env.OTHER_NAME} image=${process.env.OTHER_IMAGE} project=${process.env.OTHER_PROJECT} service=${process.env.OTHER_SERVICE} running=${process.env.OTHER_RUNNING}`.slice(0, 140);
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.sha,
               state: "success",
-              context: "production/router-identity",
-              description,
+              context: "production/oracle-routing",
+              description: `exists=${process.env.EXISTS} principlesRules=${process.env.PRINCIPLES_RULES} otherHostRules=${process.env.OTHER_HOST_RULES} coolify=${process.env.ON_COOLIFY}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
