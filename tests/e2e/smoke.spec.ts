@@ -18,7 +18,7 @@ const source = {
 };
 
 function ndjson(answer: string): string {
-  return [
+  return `${[
     {
       message: "Searching the knowledge base…",
       stage: "retrieving",
@@ -34,7 +34,7 @@ function ndjson(answer: string): string {
     { type: "done" },
   ]
     .map((event) => JSON.stringify(event))
-    .join("\n") + "\n";
+    .join("\n")}\n`;
 }
 
 test("knowledge Q&A is the clean root baseline", async ({ page }) => {
@@ -47,14 +47,18 @@ test("knowledge Q&A is the clean root baseline", async ({ page }) => {
   });
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Ask your knowledge base." })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Ask your knowledge base." })
+  ).toBeVisible();
   await expect(page.getByText("Current baseline · RAG + AI Q&A")).toBeVisible();
 
   await page.getByLabel("Question").fill("What does my knowledge base say?");
   await page.getByRole("button", { name: "Ask" }).click();
 
   await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
-  await expect(page.getByText("The knowledge base supports this answer [R1].")).toBeVisible();
+  await expect(
+    page.getByText("The knowledge base supports this answer [R1].")
+  ).toBeVisible();
   await expect(page.getByText("Knowledge source")).toBeVisible();
   await expect(page.getByText("Answer complete.")).toBeVisible();
 });
@@ -62,7 +66,8 @@ test("knowledge Q&A is the clean root baseline", async ({ page }) => {
 test("long answers use normal document scrolling", async ({ page }) => {
   const longAnswer = Array.from(
     { length: 80 },
-    (_, index) => `Paragraph ${index + 1}: a deliberately long answer for scrolling verification.`
+    (_, index) =>
+      `Paragraph ${index + 1}: a deliberately long answer for scrolling verification.`
   ).join("\n\n");
 
   await page.route("**/api/ask", async (route) => {
@@ -86,6 +91,8 @@ test("long answers use normal document scrolling", async ({ page }) => {
   expect(scrollState.height).toBeGreaterThan(scrollState.viewport);
   expect(scrollState.overflow).not.toBe("hidden");
 
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.evaluate(() =>
+    window.scrollTo(0, document.documentElement.scrollHeight)
+  );
   await expect(page.getByText("Knowledge source")).toBeInViewport();
 });
