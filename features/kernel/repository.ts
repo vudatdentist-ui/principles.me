@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/client";
+import type { JsonObject } from "./json";
 
 export interface GoalRecord {
   readonly desiredState: string;
@@ -63,7 +64,7 @@ export async function createAiSuggestion(input: {
   kind: string;
   modelName?: string | null;
   modelProvider?: string | null;
-  payload: Record<string, unknown>;
+  payload: JsonObject;
   requestedByUserId?: string | null;
   workspaceId: string;
 }): Promise<string> {
