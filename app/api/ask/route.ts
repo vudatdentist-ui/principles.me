@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { assertTrustedOrigin, UntrustedOriginError } from "@/features/auth/origin";
+import { workspaceRagDatasetIds } from "@/features/auth/repository";
+import { requireSession, UnauthorizedError } from "@/features/auth/session";
+import { recordActivity } from "@/features/kernel/activity";
+import { projectEvidenceForClient } from "@/features/evidence/client-reference";
 import type { EvidenceReference } from "@/features/evidence/contracts";
 import {
   liveSearchMode,
@@ -6,6 +11,10 @@ import {
 } from "@/features/evidence/live-search-policy";
 import { BraveSearchEvidenceProvider } from "@/features/evidence/providers/brave-search-provider";
 import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
+import {
+  consumeRateLimit,
+  workspaceRateScope,
+} from "@/features/security/rate-limit";
 import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
 import { AiProviderError } from "@/lib/ai/providers/provider-error";
 
@@ -15,10 +24,11 @@ const requestSchema = z.object({
   question: z.string().trim().min(3).max(4000),
 });
 
-type LiveRetrievalState = "disabled" | "empty" | "ok" | "unavailable";
+type RetrievalState = "disabled" | "empty" | "ok" | "unavailable";
 
 type RetrievalResult = {
-  live: LiveRetrievalState;
+  live: RetrievalState;
+  private: RetrievalState;
   references: EvidenceReference[];
 };
 
@@ -62,7 +72,6 @@ function createCitationGuard(allowedKeys: ReadonlySet<string>) {
 
   const push = (chunk: string): string => {
     let output = "";
-
     for (const character of chunk) {
       if (!pending) {
         if (character === "[") {
@@ -88,7 +97,6 @@ function createCitationGuard(allowedKeys: ReadonlySet<string>) {
         pending = "";
       }
     }
-
     return output;
   };
 
@@ -103,6 +111,7 @@ function createCitationGuard(allowedKeys: ReadonlySet<string>) {
 
 async function retrieveEvidence(
   question: string,
+  datasetIds: readonly string[],
   signal: AbortSignal
 ): Promise<RetrievalResult> {
   const mode = liveSearchMode(process.env.LIVE_SEARCH_MODE);
@@ -110,13 +119,10 @@ async function retrieveEvidence(
   const liveConfigured = Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim());
   const useLive = wantsLive && liveConfigured;
 
-  const ragflow = new RagflowEvidenceProvider();
-  const brave = new BraveSearchEvidenceProvider();
-
   const [ragResult, liveResult] = await Promise.allSettled([
-    ragflow.retrieve({ question }, signal),
+    new RagflowEvidenceProvider().retrieve({ datasetIds, question }, signal),
     useLive
-      ? brave.retrieve({ question }, signal)
+      ? new BraveSearchEvidenceProvider().retrieve({ question }, signal)
       : Promise.resolve(null),
   ]);
 
@@ -125,15 +131,17 @@ async function retrieveEvidence(
   }
 
   const references: EvidenceReference[] = [];
+  let privateState: RetrievalState = datasetIds.length === 0 ? "empty" : "unavailable";
   if (ragResult.status === "fulfilled") {
     references.push(...ragResult.value.references);
+    privateState = ragResult.value.references.length > 0 ? "ok" : "empty";
   } else {
     console.error(
       JSON.stringify({ event: "ask_retrieval_failed", provider: "ragflow" })
     );
   }
 
-  let live: LiveRetrievalState = "disabled";
+  let live: RetrievalState = "disabled";
   if (wantsLive && !liveConfigured) {
     live = "unavailable";
   } else if (useLive && liveResult.status === "fulfilled" && liveResult.value) {
@@ -146,7 +154,7 @@ async function retrieveEvidence(
     );
   }
 
-  return { live, references };
+  return { live, private: privateState, references };
 }
 
 function safeError(error: unknown): {
@@ -170,7 +178,6 @@ function safeError(error: unknown): {
       retryable: error.retryable,
     };
   }
-
   return {
     code: "internal_error",
     message: "The Q&A request could not be completed.",
@@ -179,13 +186,39 @@ function safeError(error: unknown): {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const parsed = requestSchema.safeParse(
-    await request.json().catch(() => null)
-  );
+  let session;
+  try {
+    assertTrustedOrigin(request);
+    session = await requireSession(request);
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return Response.json({ error: "Authentication required." }, { status: 401 });
+    }
+    if (error instanceof UntrustedOriginError) {
+      return Response.json({ error: "Request rejected." }, { status: 403 });
+    }
+    throw error;
+  }
+
+  const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: "Question is invalid." }, { status: 400 });
   }
 
+  const quota = await consumeRateLimit({
+    action: "ai.ask",
+    limit: Number(process.env.ASK_RATE_LIMIT_PER_HOUR || 30),
+    scopeKey: workspaceRateScope(session.workspace.id),
+    windowSeconds: 60 * 60,
+  });
+  if (!quota.allowed) {
+    return Response.json(
+      { error: "Usage limit reached." },
+      { headers: { "retry-after": String(quota.retryAfterSeconds) }, status: 429 }
+    );
+  }
+
+  const datasetIds = await workspaceRagDatasetIds(session.workspace.id);
   const { question } = parsed.data;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -194,26 +227,22 @@ export async function POST(request: Request): Promise<Response> {
         controller.enqueue(encoder.encode(line(event)));
       };
 
+      let completed = false;
+      let retrievalSummary: RetrievalResult | null = null;
       try {
-        write({
-          message: "Searching knowledge and current sources…",
-          stage: "retrieving",
-          type: "status",
-        });
+        write({ message: "Searching…", stage: "retrieving", type: "status" });
 
-        const retrieval = await retrieveEvidence(question, request.signal);
+        const retrieval = await retrieveEvidence(question, datasetIds, request.signal);
+        retrievalSummary = retrieval;
         const references = retrieval.references;
 
         write({
           live: retrieval.live,
-          references,
+          private: retrieval.private,
+          references: references.map(projectEvidenceForClient),
           type: "sources",
         });
-        write({
-          message: "Preparing the answer…",
-          stage: "answering",
-          type: "status",
-        });
+        write({ message: "Preparing…", stage: "answering", type: "status" });
 
         const allowedKeys = new Set(references.map((reference) => reference.key));
         const citationGuard = createCitationGuard(allowedKeys);
@@ -225,11 +254,11 @@ export async function POST(request: Request): Promise<Response> {
           messages: [
             {
               content:
-                "You are the intelligence layer inside Principles. Build one concise, practical answer from private RAG evidence and current public web evidence. [R#] sources are private knowledge-base evidence and are authoritative for claims about the user's own documents, policies, and internal knowledge. [W#] sources are live public web evidence and should be preferred for time-sensitive public facts. Cite every material sourced claim with the exact source key. Never invent citation keys, quotes, document details, URLs, dates, or evidence. If private evidence and live web evidence conflict, explicitly surface the conflict and distinguish internal knowledge from current public information instead of silently choosing one. If the question needs current information but LIVE SEARCH STATUS is unavailable or empty, say that current public evidence could not be verified. If evidence is absent, clearly separate unsourced general guidance from verified source-backed information. Keep the answer direct and low-noise.",
+                "You are the intelligence layer inside Principles. Build one concise, practical answer from private RAG evidence and current public web evidence. [R#] sources are private knowledge-base evidence and are authoritative for claims about the user's own documents, policies, and internal knowledge. [W#] sources are live public web evidence and should be preferred for time-sensitive public facts. Cite every material sourced claim with the exact source key. Never invent citation keys, quotes, document details, URLs, dates, or evidence. If private evidence and live web evidence conflict, explicitly surface the conflict and distinguish internal knowledge from current public information instead of silently choosing one. If the question needs current information but live search is unavailable or empty, say that current public evidence could not be verified. If evidence is absent, clearly separate unsourced general guidance from verified source-backed information. Keep the answer direct and low-noise.",
               role: "system",
             },
             {
-              content: `QUESTION:\n${question}\n\nLIVE SEARCH STATUS: ${retrieval.live}\n\nEVIDENCE:\n${evidence}`,
+              content: `QUESTION:\n${question}\n\nPRIVATE KNOWLEDGE STATUS: ${retrieval.private}\nLIVE SEARCH STATUS: ${retrieval.live}\n\nEVIDENCE:\n${evidence}`,
               role: "user",
             },
           ],
@@ -247,6 +276,7 @@ export async function POST(request: Request): Promise<Response> {
           write({ token: tail, type: "token" });
         }
         write({ type: "done" });
+        completed = true;
       } catch (error) {
         if (!request.signal.aborted) {
           const safe = safeError(error);
@@ -261,6 +291,21 @@ export async function POST(request: Request): Promise<Response> {
         }
       } finally {
         controller.close();
+        if (completed) {
+          void recordActivity({
+            actorUserId: session.user.id,
+            eventType: "ai.ask.completed",
+            metadata: {
+              live: retrievalSummary?.live ?? "unknown",
+              private: retrievalSummary?.private ?? "unknown",
+              sourceCount: retrievalSummary?.references.length ?? 0,
+            },
+            subjectType: "ask",
+            workspaceId: session.workspace.id,
+          }).catch(() =>
+            console.error(JSON.stringify({ event: "ask_activity_write_failed" }))
+          );
+        }
       }
     },
   });
