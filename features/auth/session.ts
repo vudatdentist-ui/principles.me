@@ -22,7 +22,14 @@ export function sessionTokenFromCookieHeader(header: string | null): string | nu
     const [name, ...rest] = item.trim().split("=");
     if (name === SESSION_COOKIE) {
       const value = rest.join("=");
-      return value ? decodeURIComponent(value) : null;
+      if (!value) {
+        return null;
+      }
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return null;
+      }
     }
   }
   return null;
