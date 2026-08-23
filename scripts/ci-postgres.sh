@@ -10,7 +10,7 @@ LOG_FILE="$ROOT/postgres.log"
 BIN_DIR="$PACKAGE_DIR/native/bin"
 POSTGRES_PORT="${POSTGRES_PORT:-55432}"
 POSTGRES_USER="${POSTGRES_USER:-principles}"
-POSTGRES_DB="${POSTGRES_DB:-principles_test}"
+POSTGRES_DB="${POSTGRES_DB:-postgres}"
 
 case "$ACTION" in
   start)
@@ -22,12 +22,17 @@ case "$ACTION" in
     tar -xzf "$ROOT/$archive" -C "$ROOT"
     node "$PACKAGE_DIR/scripts/hydrate-symlinks.js"
 
-    for binary in initdb pg_ctl postgres createdb; do
+    for binary in initdb pg_ctl postgres; do
       test -x "$BIN_DIR/$binary" || {
         printf 'Missing embedded PostgreSQL binary: %s\n' "$binary" >&2
         exit 1
       }
     done
+
+    test "$POSTGRES_DB" = 'postgres' || {
+      printf 'CI PostgreSQL uses initdb default database postgres; got %s\n' "$POSTGRES_DB" >&2
+      exit 1
+    }
 
     "$BIN_DIR/initdb" \
       -D "$DATA_DIR" \
@@ -41,12 +46,6 @@ case "$ACTION" in
       -l "$LOG_FILE" \
       -o "-h 127.0.0.1 -p $POSTGRES_PORT" \
       -w start >/dev/null
-
-    "$BIN_DIR/createdb" \
-      -h 127.0.0.1 \
-      -p "$POSTGRES_PORT" \
-      -U "$POSTGRES_USER" \
-      "$POSTGRES_DB"
 
     "$BIN_DIR/postgres" --version
     printf 'CI_POSTGRES_READY=1 port=%s database=%s\n' "$POSTGRES_PORT" "$POSTGRES_DB"
