@@ -18,25 +18,23 @@ test.beforeEach(async ({ page }) => {
   await blockExternalNetwork(page);
 });
 
-test("renders the V2 product shell without legacy dashboard concepts", async ({
-  page,
-}) => {
-  const response = await page.goto("/v2");
+test("renders the primary product shell on the domain root", async ({ page }) => {
+  const response = await page.goto("/");
 
   expect(response?.ok()).toBe(true);
   await expect(
     page.getByRole("link", { exact: true, name: "Principles" })
-  ).toHaveAttribute("href", "/v2");
+  ).toHaveAttribute("href", "/");
 
   const navigation = page.getByRole("navigation", {
     name: "Primary navigation",
   });
   await expect(
     navigation.getByRole("link", { exact: true, name: "History" })
-  ).toHaveAttribute("href", "/v2/history");
+  ).toHaveAttribute("href", "/history");
   await expect(
     navigation.getByRole("link", { exact: true, name: "Brain" })
-  ).toHaveAttribute("href", "/v2/brain");
+  ).toHaveAttribute("href", "/brain");
 
   const workspace = page.getByRole("combobox", { name: "Workspace" });
   await expect(workspace).toHaveValue("personal");
@@ -55,14 +53,20 @@ test("renders the V2 product shell without legacy dashboard concepts", async ({
   );
 });
 
-test("streams a mocked Decision Brief through the V2 workspace", async ({
+test("redirects the old V2 root to the primary domain root", async ({ page }) => {
+  await page.goto("/v2");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByLabel("Decision question")).toBeVisible();
+});
+
+test("streams a mocked Decision Brief through the primary workspace", async ({
   page,
 }) => {
   await installMockDecisionTransport(page, {
     endpoint: "**/api/v2/decisions",
     events: successfulDecisionEvents,
   });
-  await page.goto("/v2");
+  await page.goto("/");
 
   await page.getByLabel("Decision question").fill(decisionQuestion);
   await page.getByRole("button", { name: "Decide" }).click();
@@ -80,7 +84,7 @@ test("streams a mocked Decision Brief through the V2 workspace", async ({
   await expect(page.getByText("Pilot readiness review", { exact: true })).toBeVisible();
 });
 
-test("scrolls long Decision Briefs inside the V2 shell on desktop", async ({
+test("scrolls long Decision Briefs with normal document scrolling", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 720, width: 1280 });
@@ -88,7 +92,7 @@ test("scrolls long Decision Briefs inside the V2 shell on desktop", async ({
     endpoint: "**/api/v2/decisions",
     events: successfulDecisionEvents,
   });
-  await page.goto("/v2");
+  await page.goto("/");
 
   await page.getByLabel("Decision question").fill(decisionQuestion);
   await page.getByRole("button", { name: "Decide" }).click();
@@ -96,36 +100,33 @@ test("scrolls long Decision Briefs inside the V2 shell on desktop", async ({
     page.getByRole("heading", { name: decisionBriefFixture.recommendation })
   ).toBeVisible();
 
-  const bodyOverflow = await page.locator("body").evaluate((element) =>
-    getComputedStyle(element).overflow
+  const bodyOverflowY = await page.locator("body").evaluate(
+    (element) => getComputedStyle(element).overflowY
   );
-  expect(bodyOverflow).toBe("hidden");
+  expect(bodyOverflowY).not.toBe("hidden");
 
-  const shell = page.locator(".v2-shell");
-  const metrics = await shell.evaluate((element) => ({
-    clientHeight: element.clientHeight,
-    scrollHeight: element.scrollHeight,
+  const metrics = await page.evaluate(() => ({
+    scrollHeight: document.documentElement.scrollHeight,
+    viewportHeight: window.innerHeight,
   }));
-  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+  expect(metrics.scrollHeight).toBeGreaterThan(metrics.viewportHeight);
 
-  await shell.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
-  });
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(page.getByText("Valid as of", { exact: false })).toBeInViewport();
 });
 
-test("keeps V2 navigation available across History and Brain", async ({ page }) => {
-  await page.goto("/v2");
+test("keeps primary navigation available across History and Brain", async ({ page }) => {
+  await page.goto("/");
 
   await page.getByRole("link", { exact: true, name: "History" }).click();
-  await expect(page).toHaveURL(/\/v2\/history$/);
+  await expect(page).toHaveURL(/\/history$/);
   await expect(
     page.getByRole("link", { exact: true, name: "Principles" })
   ).toBeVisible();
 
   await page.getByRole("link", { exact: true, name: "Principles" }).click();
   await page.getByRole("link", { exact: true, name: "Brain" }).click();
-  await expect(page).toHaveURL(/\/v2\/brain$/);
+  await expect(page).toHaveURL(/\/brain$/);
   await expect(
     page.getByRole("link", { exact: true, name: "Principles" })
   ).toBeVisible();

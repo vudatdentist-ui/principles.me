@@ -1,5 +1,5 @@
-import { V2DecisionClient } from "./decision-client";
+import { redirect } from "next/navigation";
 
 export default function V2HomePage() {
-  return <V2DecisionClient />;
+  redirect("/");
 }

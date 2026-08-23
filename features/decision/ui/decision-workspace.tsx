@@ -77,6 +77,7 @@ export function DecisionWorkspace({
           <StatusText role="alert">
             {decisionErrorDisplayMessage(state.error)}
           </StatusText>
+          <p className="v2-type-eyebrow">Reference: {state.error.code}</p>
           {state.error.retryable && onRetry ? (
             <div className={styles.retryAction}>
               <Button onClick={onRetry} variant="secondary">

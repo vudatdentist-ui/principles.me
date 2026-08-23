@@ -34,8 +34,13 @@ export type DecisionOrchestratorErrorCode =
   | "internal_error"
   | "invalid_model_output"
   | "invalid_request"
+  | "invalid_response"
   | "model_failed"
   | "persistence_failed"
+  | "provider_error"
+  | "rate_limited"
+  | "timeout"
+  | "unauthorized"
   | "unsupported_citation";
 
 export class DecisionOrchestratorError extends Error {
@@ -91,6 +96,27 @@ async function emitProgress(
   });
 }
 
+function aiErrorMessage(code: AiProviderError["code"]): string {
+  switch (code) {
+    case "aborted":
+      return "Decision run was aborted.";
+    case "invalid_model_output":
+      return "AI model output was invalid.";
+    case "invalid_response":
+      return "AI provider returned an invalid response.";
+    case "provider_error":
+      return "AI provider request failed.";
+    case "rate_limited":
+      return "AI provider rate limit was reached.";
+    case "timeout":
+      return "AI provider request timed out.";
+    case "unauthorized":
+      return "AI provider authorization failed.";
+    default:
+      return "AI model request failed.";
+  }
+}
+
 function normalizeError(
   error: unknown,
   signal: AbortSignal
@@ -113,21 +139,9 @@ function normalizeError(
     );
   }
   if (error instanceof AiProviderError) {
-    const code =
-      error.code === "aborted"
-        ? "aborted"
-        : error.code === "invalid_model_output"
-          ? "invalid_model_output"
-          : "model_failed";
-    return new DecisionOrchestratorError(
-      code,
-      code === "aborted"
-        ? "Decision run was aborted."
-        : code === "invalid_model_output"
-          ? "AI model output was invalid."
-          : "AI model request failed.",
-      { cause: error }
-    );
+    return new DecisionOrchestratorError(error.code, aiErrorMessage(error.code), {
+      cause: error,
+    });
   }
   if (signal.aborted) {
     return new DecisionOrchestratorError("aborted", "Decision run was aborted.", {

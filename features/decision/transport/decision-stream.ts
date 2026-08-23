@@ -3,6 +3,7 @@ import {
   errorEvent,
   progressEvents,
   startedEvent,
+  toSafeDecisionError,
   type DecisionTransportProgress,
   type DecisionTransportRunner,
 } from "./event-adapter";
@@ -14,6 +15,18 @@ export type DecisionStreamInput = {
   signal: AbortSignal;
   userId: string;
 };
+
+function writeFailureLog(runId: string, error: unknown): void {
+  const safe = toSafeDecisionError(error);
+  process.stderr.write(
+    `${JSON.stringify({
+      code: safe.code,
+      event: "decision_run_failed",
+      retryable: safe.retryable,
+      runId: runId || null,
+    })}\n`
+  );
+}
 
 export function createDecisionStream({
   question,
@@ -90,6 +103,7 @@ export function createDecisionStream({
         }
         close();
       } catch (error) {
+        writeFailureLog(startedRunId, error);
         if (!failureEmitted && !closed) {
           failureEmitted = true;
           enqueue(encodeDecisionStreamEvent(errorEvent(error)));

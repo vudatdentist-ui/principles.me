@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { ShellBrand, ShellNavigationItem } from "./shell-types";
 
 const defaultBrand: ShellBrand = {
-  href: "/v2",
+  href: "/",
   label: "Principles",
 };
 

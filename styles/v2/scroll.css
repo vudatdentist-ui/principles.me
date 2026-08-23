@@ -1,7 +1,17 @@
-.v2-shell {
-  block-size: 100dvh;
+html:has(.v2-shell) {
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+body:has(.v2-shell) {
+  min-block-size: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+}
+
+.v2-shell {
+  min-block-size: 100dvh;
+  overflow: visible;
 }

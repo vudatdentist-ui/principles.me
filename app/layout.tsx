@@ -3,9 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  description: "Principles — a grounded council for thinking with the greats.",
-  metadataBase: new URL("https://principles-council.vercel.app"),
-  title: "Principles — Human Wisdom OS",
+  description: "Principles — focused decision intelligence with inspectable evidence.",
+  metadataBase: new URL("https://principles.me"),
+  title: "Principles — Decision Intelligence",
 };
 
 export const viewport = {

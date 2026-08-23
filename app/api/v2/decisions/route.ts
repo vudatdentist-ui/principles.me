@@ -5,6 +5,7 @@ import {
   createOrchestratorTransportRunner,
 } from "@/features/decision/transport";
 import { resolveDecisionSession } from "@/features/decision/transport/server-session";
+import { createBestEffortEvidenceProvider } from "@/features/evidence/providers/best-effort-provider";
 import type { EvidenceProvider } from "@/features/evidence/providers/evidence-provider";
 import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
 import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
@@ -26,7 +27,7 @@ function configuredEvidenceProviders(): EvidenceProvider[] {
     .filter(Boolean);
 
   return ragflowApiKey && ragflowDatasetIds.length > 0
-    ? [new RagflowEvidenceProvider()]
+    ? [createBestEffortEvidenceProvider(new RagflowEvidenceProvider())]
     : [];
 }
 
@@ -85,6 +86,9 @@ export async function POST(request: Request): Promise<Response> {
     return withSessionCookie(response, setCookie);
   } catch (error) {
     if (error instanceof DecisionSessionUnavailableError) {
+      process.stderr.write(
+        `${JSON.stringify({ event: "decision_session_unavailable" })}\n`
+      );
       return sessionUnavailableResponse();
     }
     throw error;

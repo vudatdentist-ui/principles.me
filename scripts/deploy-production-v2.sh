@@ -31,9 +31,23 @@ set_env_value() {
 }
 
 cleanup_files=()
+canary_container=""
+release_container=""
+old_backup=""
 cleanup() {
   if [ "${#cleanup_files[@]}" -gt 0 ]; then
     rm -f -- "${cleanup_files[@]}"
+  fi
+  if [ -n "$canary_container" ]; then
+    docker rm -f "$canary_container" >/dev/null 2>&1 || true
+  fi
+  if [ -n "$release_container" ]; then
+    docker rm -f "$release_container" >/dev/null 2>&1 || true
+  fi
+  if [ -n "$old_backup" ] && docker inspect "$old_backup" >/dev/null 2>&1; then
+    if ! docker inspect "$CONTAINER" >/dev/null 2>&1; then
+      docker rename "$old_backup" "$CONTAINER" >/dev/null 2>&1 || true
+    fi
   fi
 }
 trap cleanup EXIT
@@ -41,6 +55,7 @@ trap cleanup EXIT
 test -f "$ENV_FILE" || fail "$ENV_FILE is required."
 test -f "$COMPOSE_FILE" || fail "$COMPOSE_FILE is required."
 test -f scripts/ensure-v2-production-schema.mjs || fail "V2 schema repair script is missing."
+test -f scripts/smoke-v2-production.mjs || fail "V2 production smoke script is missing."
 
 for required_var in POSTGRES_URL DEEPSEEK_API_KEY; do
   grep -Eq "^${required_var}=.+$" "$ENV_FILE" || fail "${required_var} is required in $ENV_FILE."
@@ -52,7 +67,6 @@ if ! grep -Eq '^AUTH_SECRET=.+$' "$ENV_FILE"; then
   unset session_secret
 fi
 
-# localhost inside the app container points back to itself, not to the VPS host.
 ragflow_url="$(read_env RAGFLOW_BASE_URL)"
 if [ -z "$ragflow_url" ] || printf '%s' "$ragflow_url" | grep -Eq '^http://(localhost|127\.0\.0\.1):9380/?$'; then
   set_env_value RAGFLOW_BASE_URL 'http://host.docker.internal:9380'
@@ -61,11 +75,8 @@ fi
 unset ragflow_url
 
 docker network inspect coolify >/dev/null
-
-# Build the exact source before doing anything that could replace the running app.
 APP_VERSION="$DEPLOY_SHA" docker compose -f "$COMPOSE_FILE" build "$SERVICE"
 
-# Read only the hostname from the configured URL inside the built image; never print the URL.
 db_host="$(docker run --rm --env-file "$ENV_FILE" --entrypoint node "$IMAGE" -e '
   try {
     const value = process.env.POSTGRES_URL || "";
@@ -157,65 +168,125 @@ networks:
     name: "$db_network"
 EOF_OVERRIDE
 
-# Provision only the additive V2 table, on the same network used by the real DB hostname.
 APP_VERSION="$DEPLOY_SHA" \
   docker compose -f "$COMPOSE_FILE" -f "$override_file" run --rm --no-deps \
     "$SERVICE" node scripts/ensure-v2-production-schema.mjs
 
-# A mutable `latest` tag does not guarantee Compose recreates a running container.
-# Force recreation, then prove the running container uses the exact image just built.
-APP_VERSION="$DEPLOY_SHA" \
-  docker compose -f "$COMPOSE_FILE" -f "$override_file" up -d --no-build \
-    --force-recreate --remove-orphans "$SERVICE"
+wait_for_health() {
+  local name="$1"
+  local state=""
+  local health=""
+  for _attempt in $(seq 1 45); do
+    state="$(docker inspect -f '{{.State.Status}}' "$name" 2>/dev/null || true)"
+    health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$name" 2>/dev/null || true)"
+    if [ "$state" = 'running' ] && [ "$health" = 'healthy' ]; then
+      return 0
+    fi
+    if [ "$state" = 'exited' ] || [ "$state" = 'dead' ]; then
+      return 1
+    fi
+    sleep 2
+  done
+  return 1
+}
 
-test "$(docker inspect -f '{{.State.Running}}' "$CONTAINER")" = 'true' || fail 'Production app is not running.'
-running_image_id="$(docker inspect -f '{{.Image}}' "$CONTAINER")"
-latest_image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
-[ "$running_image_id" = "$latest_image_id" ] || fail 'Running container is not using the image that was just built.'
+create_app_container() {
+  local name="$1"
+  shift
+  docker create \
+    --name "$name" \
+    --env-file "$ENV_FILE" \
+    -e "APP_VERSION=$DEPLOY_SHA" \
+    --add-host 'host.docker.internal:host-gateway' \
+    --network coolify \
+    "$@" \
+    "$IMAGE" >/dev/null
+  docker network connect "$db_network" "$name"
+  docker start "$name" >/dev/null
+}
 
-running_version="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$CONTAINER" | sed -n 's/^APP_VERSION=//p' | tail -n 1)"
-[ "$running_version" = "$DEPLOY_SHA" ] || fail 'Running container does not report the deployed SHA.'
+short_sha="${DEPLOY_SHA:0:12}"
+canary_container="principles-canary-${short_sha}"
+docker rm -f "$canary_container" >/dev/null 2>&1 || true
+create_app_container "$canary_container"
+wait_for_health "$canary_container" || fail 'Canary container did not become healthy.'
+docker exec "$canary_container" \
+  node scripts/smoke-v2-production.mjs http://127.0.0.1:3000
+printf 'DEPLOY_CANARY_SMOKE=1\n'
+docker rm -f "$canary_container" >/dev/null
+canary_container=""
 
-app_networks=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' "$CONTAINER") "
-case "$app_networks" in *" coolify "*) ;; *) fail 'Production app is missing the coolify network.' ;; esac
-case "$app_networks" in *" $db_network "*) ;; *) fail 'Production app is missing its database network.' ;; esac
+current_priority=""
+if docker inspect "$CONTAINER" >/dev/null 2>&1; then
+  current_priority="$(docker inspect -f '{{index .Config.Labels "principles.deploy.priority"}}' "$CONTAINER" 2>/dev/null || true)"
+fi
+if [[ "$current_priority" =~ ^[0-9]+$ ]]; then
+  next_priority=$((current_priority + 1))
+else
+  next_priority=1000
+fi
 
-health_status=0
-health_ok=0
-health_version=0
-for _attempt in $(seq 1 20); do
-  health_result="$(docker exec "$CONTAINER" node -e '
-    const expected = process.env.APP_VERSION;
-    fetch("http://127.0.0.1:3000/api/v2/health", { cache: "no-store" })
-      .then(async response => {
-        let payload = null;
-        try { payload = await response.json(); } catch {}
-        console.log(`STATUS=${response.status}`);
-        console.log(`OK=${response.ok && payload?.status === "ok" ? 1 : 0}`);
-        console.log(`VERSION=${payload?.version === expected ? 1 : 0}`);
-      })
-      .catch(() => {
-        console.log("STATUS=0");
-        console.log("OK=0");
-        console.log("VERSION=0");
-      });
-  ' 2>/dev/null || true)"
-  health_status="$(printf '%s\n' "$health_result" | sed -n 's/^STATUS=//p' | tail -n 1)"
-  health_ok="$(printf '%s\n' "$health_result" | sed -n 's/^OK=//p' | tail -n 1)"
-  health_version="$(printf '%s\n' "$health_result" | sed -n 's/^VERSION=//p' | tail -n 1)"
-  health_status="${health_status:-0}"
-  health_ok="${health_ok:-0}"
-  health_version="${health_version:-0}"
-  if [ "$health_status" = '200' ] && [ "$health_ok" = '1' ] && [ "$health_version" = '1' ]; then
+router="principles-${short_sha}"
+service="principles-${short_sha}"
+redirect="principles-${short_sha}-https-redirect"
+release_container="principles-web-next-${short_sha}"
+docker rm -f "$release_container" >/dev/null 2>&1 || true
+create_app_container "$release_container" \
+  --restart unless-stopped \
+  --label 'traefik.enable=true' \
+  --label 'traefik.docker.network=coolify' \
+  --label "principles.deploy.priority=${next_priority}" \
+  --label "traefik.http.routers.${router}-http.rule=Host(\`principles.me\`) || Host(\`www.principles.me\`)" \
+  --label "traefik.http.routers.${router}-http.entrypoints=http" \
+  --label "traefik.http.routers.${router}-http.priority=${next_priority}" \
+  --label "traefik.http.routers.${router}-http.middlewares=${redirect}" \
+  --label "traefik.http.middlewares.${redirect}.redirectscheme.scheme=https" \
+  --label "traefik.http.routers.${router}-https.rule=Host(\`principles.me\`) || Host(\`www.principles.me\`)" \
+  --label "traefik.http.routers.${router}-https.entrypoints=https" \
+  --label "traefik.http.routers.${router}-https.priority=${next_priority}" \
+  --label "traefik.http.routers.${router}-https.tls=true" \
+  --label "traefik.http.routers.${router}-https.tls.certresolver=letsencrypt" \
+  --label "traefik.http.routers.${router}-https.service=${service}" \
+  --label "traefik.http.services.${service}.loadbalancer.server.port=3000"
+
+wait_for_health "$release_container" || fail 'Release container did not become healthy.'
+
+public_ready=0
+for _attempt in $(seq 1 30); do
+  public_health="$(curl --fail --silent --show-error --max-time 10 https://principles.me/api/v2/health 2>/dev/null || true)"
+  if printf '%s' "$public_health" | grep -Fq '"status":"ok"' && \
+     printf '%s' "$public_health" | grep -Fq "\"version\":\"$DEPLOY_SHA\""; then
+    public_ready=1
     break
   fi
   sleep 2
 done
+[ "$public_ready" = '1' ] || fail 'Traefik did not route public traffic to the healthy release.'
 
-if [ "$health_status" != '200' ] || [ "$health_ok" != '1' ] || [ "$health_version" != '1' ]; then
-  fail "Internal V2 health failed after deployment (HTTP ${health_status})."
+running_image_id="$(docker inspect -f '{{.Image}}' "$release_container")"
+latest_image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
+[ "$running_image_id" = "$latest_image_id" ] || fail 'Release container is not using the image that was just built.'
+
+app_networks=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' "$release_container") "
+case "$app_networks" in *" coolify "*) ;; *) fail 'Release container is missing the coolify network.' ;; esac
+case "$app_networks" in *" $db_network "*) ;; *) fail 'Release container is missing its database network.' ;; esac
+
+if docker inspect "$CONTAINER" >/dev/null 2>&1; then
+  old_backup="principles-web-old-${short_sha}"
+  docker rm -f "$old_backup" >/dev/null 2>&1 || true
+  docker rename "$CONTAINER" "$old_backup"
+fi
+
+docker rename "$release_container" "$CONTAINER"
+release_container=""
+
+if [ -n "$old_backup" ]; then
+  docker rm -f "$old_backup" >/dev/null
+  old_backup=""
 fi
 
 printf 'DEPLOY_IMAGE_READY=1\n'
 printf 'DEPLOY_DB_NETWORK_READY=1\n'
 printf 'DEPLOY_INTERNAL_HEALTH=1\n'
+printf 'DEPLOY_PUBLIC_ROUTE_READY=1\n'
+printf 'DEPLOY_ZERO_DOWNTIME_SWAP=1\n'

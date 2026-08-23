@@ -19,11 +19,11 @@ const workspaceOptions: readonly ShellWorkspaceOption[] = [
 ];
 
 export const metadata: Metadata = {
-  description: "A minimal decision workspace backed by a typed evidence system.",
+  description: "A focused decision workspace backed by inspectable evidence.",
   title: "Principles",
 };
 
-export default function V2Layout({ children }: { children: ReactNode }) {
+export default function PrimaryProductLayout({ children }: { children: ReactNode }) {
   return (
     <ProductShell
       navigation={navigation}

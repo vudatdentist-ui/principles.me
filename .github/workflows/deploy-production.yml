@@ -213,7 +213,6 @@ jobs:
           install -d "$APP_DIR"
           test -f "$APP_DIR/.env.production"
 
-          # Keep only the server-owned environment file between exact-source releases.
           find "$APP_DIR" -mindepth 1 -maxdepth 1 \
             ! -name '.env.production' -exec rm -rf -- {} +
           cp -a "$STAGE_DIR/." "$APP_DIR/"
@@ -223,7 +222,7 @@ jobs:
           DEPLOY_SHA="$DEPLOY_SHA" bash scripts/deploy-production-v2.sh
           REMOTE
 
-      - name: Verify deployed V2 release
+      - name: Verify deployed primary release
         shell: bash
         env:
           DEPLOY_SHA: ${{ github.sha }}
@@ -255,7 +254,7 @@ jobs:
 
           curl --fail --silent --show-error \
             --retry 10 --retry-delay 3 --retry-all-errors --max-time 20 \
-            https://principles.me/v2 >/dev/null
+            https://principles.me/ >/dev/null
 
       - name: Report production deployment status
         if: always()
@@ -272,7 +271,7 @@ jobs:
               state: success ? "success" : "failure",
               context: "production/deploy",
               description: success
-                ? "exact image, DB network, schema and public V2 health verified"
+                ? "canary smoke, exact image, DB network and primary route verified"
                 : "production deployment failed; inspect the linked run",
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
