@@ -11,7 +11,9 @@ IMAGE="principles-council-principles:latest"
 DATA_NETWORK="principles-data"
 DB_CONTAINER="principles-postgres"
 DB_VOLUME="principles-postgres-data"
+DB_BACKUP_VOLUME="principles-postgres-backups"
 DB_IMAGE="postgres:16-bookworm"
+short_sha="${DEPLOY_SHA:0:12}"
 
 fail() {
   printf '%s\n' "$1" >&2
@@ -89,12 +91,15 @@ if ! grep -Eq '^AUTH_BOOTSTRAP_SECRET=.+$' "$ENV_FILE"; then
   printf '%s\n' 'Generated persistent bootstrap setup key.'
 fi
 
-set_env_if_missing POSTGRES_HOST "$DB_CONTAINER"
-set_env_if_missing POSTGRES_PORT '5432'
-set_env_if_missing POSTGRES_DB 'principles'
-set_env_if_missing POSTGRES_USER 'principles'
-set_env_if_missing AUTH_SIGNUP_MODE 'bootstrap'
-set_env_if_missing APP_ORIGIN 'https://principles.me'
+# Phase 1 owns a dedicated Postgres topology. Clear/replace legacy V2 database
+# routing so stale server env cannot silently point the new kernel at an old DB.
+set_env_value DATABASE_URL ''
+set_env_value POSTGRES_HOST "$DB_CONTAINER"
+set_env_value POSTGRES_PORT '5432'
+set_env_value POSTGRES_DB 'principles'
+set_env_value POSTGRES_USER 'principles'
+set_env_value AUTH_SIGNUP_MODE 'bootstrap'
+set_env_value APP_ORIGIN 'https://principles.me'
 set_env_if_missing RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS 'true'
 
 ragflow_url="$(read_env RAGFLOW_BASE_URL)"
@@ -109,6 +114,7 @@ if ! docker network inspect "$DATA_NETWORK" >/dev/null 2>&1; then
   docker network create --internal "$DATA_NETWORK" >/dev/null
 fi
 docker volume create "$DB_VOLUME" >/dev/null
+docker volume create "$DB_BACKUP_VOLUME" >/dev/null
 
 postgres_user="$(read_env POSTGRES_USER)"
 postgres_db="$(read_env POSTGRES_DB)"
@@ -133,7 +139,6 @@ if ! docker inspect "$DB_CONTAINER" >/dev/null 2>&1; then
     --health-retries 20 \
     "$DB_IMAGE" >/dev/null
 fi
-unset postgres_password
 
 if [ "$(docker inspect -f '{{.State.Status}}' "$DB_CONTAINER")" != 'running' ]; then
   docker start "$DB_CONTAINER" >/dev/null
@@ -166,9 +171,24 @@ wait_for_health() {
 wait_for_health "$DB_CONTAINER" || fail 'Postgres did not become healthy.'
 printf 'DEPLOY_DATABASE_READY=1\n'
 
+# Snapshot the durable store before each migration. Keep seven pre-migration
+# dumps in a separate named volume so application rollback never deletes them.
+docker run --rm \
+  --network "$DATA_NETWORK" \
+  -e "PGPASSWORD=$postgres_password" \
+  -v "$DB_BACKUP_VOLUME:/backups" \
+  "$DB_IMAGE" \
+  pg_dump -h "$DB_CONTAINER" -U "$postgres_user" -d "$postgres_db" \
+    -Fc -f "/backups/pre-${short_sha}.dump"
+docker run --rm \
+  -v "$DB_BACKUP_VOLUME:/backups" \
+  "$DB_IMAGE" \
+  sh -c 'ls -1t /backups/pre-*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f'
+unset postgres_password
+printf 'DEPLOY_DATABASE_BACKUP_READY=1\n'
+
 APP_VERSION="$DEPLOY_SHA" docker compose -f "$COMPOSE_FILE" build "$SERVICE"
 
-short_sha="${DEPLOY_SHA:0:12}"
 migration_container="principles-migrate-${short_sha}"
 docker rm -f "$migration_container" >/dev/null 2>&1 || true
 docker create \
