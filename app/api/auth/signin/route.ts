@@ -25,7 +25,7 @@ export async function POST(request: Request): Promise<Response> {
     const rate = await consumeRateLimit({
       action: "auth.signin",
       limit: Number(process.env.AUTH_ATTEMPTS_PER_15_MINUTES || 10),
-      scopeKey: authRateScope(request, parsed.data.email),
+      scopeKey: authRateScope(request),
       windowSeconds: 15 * 60,
     });
     if (!rate.allowed) {
