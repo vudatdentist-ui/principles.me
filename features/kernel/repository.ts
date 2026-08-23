@@ -89,8 +89,15 @@ export async function createAiSuggestion(input: {
     const suggestionId = String(rows[0]?.id);
     for (const evidenceId of input.evidenceIds ?? []) {
       await transaction`
-        INSERT INTO ai_suggestion_evidence (suggestion_id, evidence_id)
-        VALUES (${suggestionId}::uuid, ${evidenceId}::uuid)
+        INSERT INTO ai_suggestion_evidence (
+          workspace_id,
+          suggestion_id,
+          evidence_id
+        ) VALUES (
+          ${input.workspaceId}::uuid,
+          ${suggestionId}::uuid,
+          ${evidenceId}::uuid
+        )
         ON CONFLICT DO NOTHING
       `;
     }
