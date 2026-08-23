@@ -18,6 +18,29 @@ concurrency:
 jobs:
   test:
     runs-on: [self-hosted, linux, x64, principles-ci]
+    env:
+      APP_ORIGIN: http://127.0.0.1:3000
+      AUTH_SIGNUP_MODE: open
+      POSTGRES_DB: principles_e2e
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PASSWORD: principles_e2e
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: principles
+      RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS: "false"
+    services:
+      postgres:
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_DB: principles_e2e
+          POSTGRES_PASSWORD: principles_e2e
+          POSTGRES_USER: principles
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U principles -d principles_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - name: Install pnpm
@@ -30,6 +53,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Apply database migrations
+        run: pnpm db:migrate
       - name: Install Chromium browser
         run: pnpm exec playwright install chromium
       - name: Run browser smoke tests
