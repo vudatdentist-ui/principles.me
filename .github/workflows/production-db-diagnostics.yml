@@ -1,4 +1,4 @@
-name: Production V2 decision smoke
+name: Production duplicate router diagnostics
 
 on:
   push:
@@ -7,122 +7,62 @@ on:
 
 permissions:
   contents: read
-  statuses: write
 
 concurrency:
-  group: production-v2-decision-smoke
+  group: production-duplicate-router-diagnostics
   cancel-in-progress: true
 
 jobs:
-  smoke:
-    name: Verify live decision stream
+  diagnostics:
+    name: Inspect duplicate domain claimers
     runs-on: [self-hosted, linux, x64, principles-ci]
     timeout-minutes: 5
+    environment: production
     steps:
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          node-version: 22
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
 
-      - name: Execute one live decision request
-        id: smoke
+      - name: Configure known hosts
         shell: bash
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           set -Eeuo pipefail
-          BODY="$(mktemp)"
-          HEADERS="$(mktemp)"
-          trap 'rm -f "$BODY" "$HEADERS"' EXIT
-          export BODY HEADERS
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
 
-          STATUS="$(curl --silent --show-error --max-time 120 \
-            --dump-header "$HEADERS" --output "$BODY" --write-out '%{http_code}' \
-            -H 'content-type: application/json' \
-            --data '{"question":"Should I prioritize finishing the current integration work before adding new features?"}' \
-            https://principles.me/api/v2/decisions || true)"
-          printf 'HTTP_STATUS=%s\n' "$STATUS"
-
-          CONTENT_TYPE="$(awk 'BEGIN{IGNORECASE=1} /^content-type:/ {sub(/^[^:]+:[[:space:]]*/, ""); gsub(/\r/, ""); value=$0} END{print value}' "$HEADERS")"
-          case "$CONTENT_TYPE" in application/x-ndjson*) NDJSON=1 ;; *) NDJSON=0 ;; esac
-          printf 'NDJSON=%s\n' "$NDJSON"
-
-          export HTTP_STATUS="$STATUS"
-          export NDJSON
-          node <<'NODE'
-          const fs = require("node:fs");
-          const body = fs.readFileSync(process.env.BODY, "utf8");
-          const status = Number(process.env.HTTP_STATUS || 0);
-          const ndjson = process.env.NDJSON === "1";
-          const types = [];
-          let errorCode = "none";
-          let retryable = "0";
-          let brief = 0;
-          let done = 0;
-
-          if (ndjson) {
-            for (const line of body.split("\n")) {
-              if (!line.trim()) continue;
-              try {
-                const event = JSON.parse(line);
-                if (typeof event?.type === "string") types.push(event.type);
-                if (event?.type === "brief") brief += 1;
-                if (event?.type === "done") done += 1;
-                if (event?.type === "error") {
-                  errorCode = String(event.code || "unknown").replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 60);
-                  retryable = event.retryable ? "1" : "0";
-                }
-              } catch {
-                errorCode = "invalid_ndjson";
-              }
-            }
-          } else {
-            try {
-              const payload = JSON.parse(body);
-              if (payload?.error?.code) {
-                errorCode = String(payload.error.code).replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 60);
-              }
-            } catch {}
-          }
-
-          const uniqueTypes = [...new Set(types)].join(",").slice(0, 100) || "none";
-          console.log(`EVENT_TYPES=${uniqueTypes}`);
-          console.log(`ERROR_CODE=${errorCode}`);
-          console.log(`RETRYABLE=${retryable}`);
-          console.log(`BRIEF=${brief}`);
-          console.log(`DONE=${done}`);
-
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `http_status=${status}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `ndjson=${ndjson ? 1 : 0}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `event_types=${uniqueTypes}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `error_code=${errorCode}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `retryable=${retryable}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `brief=${brief}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `done=${done}\n`);
-
-          if (status !== 200 || !ndjson || errorCode !== "none" || brief !== 1 || done !== 1) {
-            process.exit(1);
-          }
-          NODE
-
-      - name: Publish smoke status
-        if: always()
-        uses: actions/github-script@v7
+      - name: Inspect domain claimers
+        shell: bash
         env:
-          JOB_STATUS: ${{ job.status }}
-          HTTP: ${{ steps.smoke.outputs.http_status || '0' }}
-          NDJSON: ${{ steps.smoke.outputs.ndjson || '0' }}
-          TYPES: ${{ steps.smoke.outputs.event_types || 'none' }}
-          ERROR_CODE: ${{ steps.smoke.outputs.error_code || 'unknown' }}
-          BRIEF: ${{ steps.smoke.outputs.brief || '0' }}
-          DONE: ${{ steps.smoke.outputs.done || '0' }}
-        with:
-          script: |
-            const success = process.env.JOB_STATUS === "success";
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: success ? "success" : "failure",
-              context: "production/v2-decision-smoke",
-              description: `http=${process.env.HTTP} ndjson=${process.env.NDJSON} types=${process.env.TYPES} err=${process.env.ERROR_CODE} brief=${process.env.BRIEF} done=${process.env.DONE}`.slice(0, 140),
-              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            });
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -Eeuo pipefail
+          VPS_PORT="${VPS_PORT:-22}"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" bash -s <<'REMOTE'
+          set -Eeuo pipefail
+          count=0
+          while IFS= read -r cid; do
+            [ -n "$cid" ] || continue
+            labels="$(docker inspect -f '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' "$cid" 2>/dev/null || true)"
+            printf '%s\n' "$labels" | grep -Fq 'principles.me' || continue
+            count=$((count + 1))
+            name="$(docker inspect -f '{{.Name}}' "$cid" | sed 's#^/##')"
+            image="$(docker inspect -f '{{.Config.Image}}' "$cid")"
+            created="$(docker inspect -f '{{.Created}}' "$cid" | cut -c1-19)"
+            running="$(docker inspect -f '{{.State.Running}}' "$cid")"
+            project="$(printf '%s\n' "$labels" | sed -n 's/^com.docker.compose.project=//p' | tail -n 1)"
+            service="$(printf '%s\n' "$labels" | sed -n 's/^com.docker.compose.service=//p' | tail -n 1)"
+            networks="$(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}},{{end}}' "$cid")"
+            printf 'CLAIMER_%s name=%s image=%s created=%s running=%s project=%s service=%s networks=%s\n' \
+              "$count" "$name" "$image" "$created" "$running" "${project:-none}" "${service:-none}" "$networks"
+          done <<EOF_CONTAINERS
+          $(docker ps -aq)
+          EOF_CONTAINERS
+          printf 'CLAIMER_COUNT=%s\n' "$count"
+          REMOTE
