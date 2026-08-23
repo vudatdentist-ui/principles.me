@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   verify:
@@ -68,6 +69,220 @@ jobs:
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Recover server-owned production config
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+          BOOTSTRAP_POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          BOOTSTRAP_DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$VPS_HOST"
+          test -n "$VPS_USER"
+          VPS_PORT="${VPS_PORT:-22}"
+          APP_DIR="${APP_DIR:-/opt/principles-council}"
+
+          LOCAL_BOOTSTRAP="$(mktemp)"
+          REMOTE_BOOTSTRAP="/tmp/principles-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.env"
+          trap 'rm -f "$LOCAL_BOOTSTRAP"' EXIT
+          chmod 600 "$LOCAL_BOOTSTRAP"
+          printf 'POSTGRES_URL=%s\n' "$BOOTSTRAP_POSTGRES_URL" > "$LOCAL_BOOTSTRAP"
+          printf 'DEEPSEEK_API_KEY=%s\n' "$BOOTSTRAP_DEEPSEEK_API_KEY" >> "$LOCAL_BOOTSTRAP"
+
+          scp -q -P "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$LOCAL_BOOTSTRAP" "$VPS_USER@$VPS_HOST:$REMOTE_BOOTSTRAP"
+
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' BOOTSTRAP_FILE='$REMOTE_BOOTSTRAP' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          : "${APP_DIR:?APP_DIR is required}"
+          : "${BOOTSTRAP_FILE:?BOOTSTRAP_FILE is required}"
+          trap 'rm -f "$BOOTSTRAP_FILE"' EXIT
+          chmod 600 "$BOOTSTRAP_FILE"
+
+          ENV_FILE="$APP_DIR/.env.production"
+          test -f "$ENV_FILE"
+
+          read_env() {
+            local name="$1"
+            local file="$2"
+            sed -n "s/^${name}=//p" "$file" | tail -n 1
+          }
+
+          write_env_if_missing() {
+            local name="$1"
+            local value="$2"
+            local file="$3"
+            if [ -z "$value" ] || grep -Eq "^${name}=.+$" "$file"; then
+              return 1
+            fi
+            local temp
+            temp="$(mktemp)"
+            grep -v "^${name}=" "$file" > "$temp" || true
+            printf '%s=%s\n' "$name" "$value" >> "$temp"
+            cat "$temp" > "$file"
+            rm -f "$temp"
+            return 0
+          }
+
+          if ! grep -Eq '^POSTGRES_URL=.+$' "$ENV_FILE"; then
+            DATABASE_URL_VALUE="$(read_env DATABASE_URL "$ENV_FILE")"
+            if write_env_if_missing POSTGRES_URL "$DATABASE_URL_VALUE" "$ENV_FILE"; then
+              echo 'Recovered POSTGRES_URL from the existing DATABASE_URL alias.'
+            fi
+            unset DATABASE_URL_VALUE
+          fi
+
+          CONTAINER_ENV="$(mktemp)"
+          trap 'rm -f "$BOOTSTRAP_FILE" "$CONTAINER_ENV"' EXIT
+          if docker inspect principles-web >/dev/null 2>&1; then
+            docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' principles-web > "$CONTAINER_ENV"
+
+            if ! grep -Eq '^POSTGRES_URL=.+$' "$ENV_FILE"; then
+              POSTGRES_VALUE="$(read_env POSTGRES_URL "$CONTAINER_ENV")"
+              if [ -z "$POSTGRES_VALUE" ]; then
+                POSTGRES_VALUE="$(read_env DATABASE_URL "$CONTAINER_ENV")"
+              fi
+              if write_env_if_missing POSTGRES_URL "$POSTGRES_VALUE" "$ENV_FILE"; then
+                echo 'Recovered POSTGRES_URL from the currently running application container.'
+              fi
+              unset POSTGRES_VALUE
+            fi
+
+            if ! grep -Eq '^DEEPSEEK_API_KEY=.+$' "$ENV_FILE"; then
+              DEEPSEEK_VALUE="$(read_env DEEPSEEK_API_KEY "$CONTAINER_ENV")"
+              if write_env_if_missing DEEPSEEK_API_KEY "$DEEPSEEK_VALUE" "$ENV_FILE"; then
+                echo 'Recovered DEEPSEEK_API_KEY from the currently running application container.'
+              fi
+              unset DEEPSEEK_VALUE
+            fi
+          fi
+
+          if ! grep -Eq '^POSTGRES_URL=.+$' "$ENV_FILE"; then
+            POSTGRES_VALUE="$(read_env POSTGRES_URL "$BOOTSTRAP_FILE")"
+            if write_env_if_missing POSTGRES_URL "$POSTGRES_VALUE" "$ENV_FILE"; then
+              echo 'Recovered POSTGRES_URL from the GitHub production environment.'
+            fi
+            unset POSTGRES_VALUE
+          fi
+
+          if ! grep -Eq '^DEEPSEEK_API_KEY=.+$' "$ENV_FILE"; then
+            DEEPSEEK_VALUE="$(read_env DEEPSEEK_API_KEY "$BOOTSTRAP_FILE")"
+            if write_env_if_missing DEEPSEEK_API_KEY "$DEEPSEEK_VALUE" "$ENV_FILE"; then
+              echo 'Recovered DEEPSEEK_API_KEY from the GitHub production environment.'
+            fi
+            unset DEEPSEEK_VALUE
+          fi
+          REMOTE
+
+      - name: Inspect production preflight
+        id: preflight
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$VPS_HOST"
+          test -n "$VPS_USER"
+          VPS_PORT="${VPS_PORT:-22}"
+          APP_DIR="${APP_DIR:-/opt/principles-council}"
+          REPORT="$(mktemp)"
+          trap 'rm -f "$REPORT"' EXIT
+
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' bash -s" > "$REPORT" <<'REMOTE'
+          set -Eeuo pipefail
+          : "${APP_DIR:?APP_DIR is required}"
+          ENV_FILE="$APP_DIR/.env.production"
+
+          ENV_FILE_READY=0
+          POSTGRES_READY=0
+          DATABASE_ALIAS_READY=0
+          DEEPSEEK_READY=0
+          AUTH_READY=0
+          CONTAINER_RUNNING=0
+          CONTAINER_POSTGRES_READY=0
+          CONTAINER_DATABASE_ALIAS_READY=0
+          CURRENT_VERSION=unknown
+
+          if [ -f "$ENV_FILE" ]; then
+            ENV_FILE_READY=1
+            grep -Eq '^POSTGRES_URL=.+$' "$ENV_FILE" && POSTGRES_READY=1 || true
+            grep -Eq '^DATABASE_URL=.+$' "$ENV_FILE" && DATABASE_ALIAS_READY=1 || true
+            grep -Eq '^DEEPSEEK_API_KEY=.+$' "$ENV_FILE" && DEEPSEEK_READY=1 || true
+            grep -Eq '^AUTH_SECRET=.+$' "$ENV_FILE" && AUTH_READY=1 || true
+          fi
+
+          if docker inspect principles-web >/dev/null 2>&1; then
+            [ "$(docker inspect -f '{{.State.Running}}' principles-web 2>/dev/null || true)" = 'true' ] && CONTAINER_RUNNING=1
+            CONTAINER_ENV="$(mktemp)"
+            trap 'rm -f "$CONTAINER_ENV"' EXIT
+            docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' principles-web > "$CONTAINER_ENV"
+            grep -Eq '^POSTGRES_URL=.+$' "$CONTAINER_ENV" && CONTAINER_POSTGRES_READY=1 || true
+            grep -Eq '^DATABASE_URL=.+$' "$CONTAINER_ENV" && CONTAINER_DATABASE_ALIAS_READY=1 || true
+            CURRENT_VERSION="$(sed -n 's/^APP_VERSION=//p' "$CONTAINER_ENV" | head -n 1 | tr -cd 'A-Za-z0-9._-' || true)"
+            CURRENT_VERSION="${CURRENT_VERSION:-unknown}"
+          fi
+
+          POSTGRES_CONTAINERS="$(docker ps --format '{{.Image}}' 2>/dev/null | grep -Eic 'postgres|postgresql' || true)"
+
+          printf 'ENV_FILE=%s\n' "$ENV_FILE_READY"
+          printf 'POSTGRES_URL=%s\n' "$POSTGRES_READY"
+          printf 'DATABASE_URL=%s\n' "$DATABASE_ALIAS_READY"
+          printf 'DEEPSEEK_API_KEY=%s\n' "$DEEPSEEK_READY"
+          printf 'AUTH_SECRET=%s\n' "$AUTH_READY"
+          printf 'CONTAINER_RUNNING=%s\n' "$CONTAINER_RUNNING"
+          printf 'CONTAINER_POSTGRES_URL=%s\n' "$CONTAINER_POSTGRES_READY"
+          printf 'CONTAINER_DATABASE_URL=%s\n' "$CONTAINER_DATABASE_ALIAS_READY"
+          printf 'POSTGRES_CONTAINERS=%s\n' "$POSTGRES_CONTAINERS"
+          printf 'CURRENT_VERSION=%s\n' "$CURRENT_VERSION"
+          REMOTE
+
+          cat "$REPORT"
+          while IFS='=' read -r key value; do
+            case "$key" in
+              ENV_FILE) echo "env_file=$value" >> "$GITHUB_OUTPUT" ;;
+              POSTGRES_URL) echo "postgres_url=$value" >> "$GITHUB_OUTPUT" ;;
+              DATABASE_URL) echo "database_url=$value" >> "$GITHUB_OUTPUT" ;;
+              DEEPSEEK_API_KEY) echo "deepseek_api_key=$value" >> "$GITHUB_OUTPUT" ;;
+              AUTH_SECRET) echo "auth_secret=$value" >> "$GITHUB_OUTPUT" ;;
+              CONTAINER_RUNNING) echo "container_running=$value" >> "$GITHUB_OUTPUT" ;;
+              CONTAINER_POSTGRES_URL) echo "container_postgres_url=$value" >> "$GITHUB_OUTPUT" ;;
+              CONTAINER_DATABASE_URL) echo "container_database_url=$value" >> "$GITHUB_OUTPUT" ;;
+              POSTGRES_CONTAINERS) echo "postgres_containers=$value" >> "$GITHUB_OUTPUT" ;;
+              CURRENT_VERSION) echo "current_version=$value" >> "$GITHUB_OUTPUT" ;;
+            esac
+          done < "$REPORT"
+
+      - name: Require production configuration
+        shell: bash
+        env:
+          ENV_FILE: ${{ steps.preflight.outputs.env_file }}
+          POSTGRES_URL_READY: ${{ steps.preflight.outputs.postgres_url }}
+          DEEPSEEK_READY: ${{ steps.preflight.outputs.deepseek_api_key }}
+        run: |
+          set -Eeuo pipefail
+          if [ "$ENV_FILE" != '1' ]; then
+            echo '.env.production is required on the VPS.' >&2
+            exit 1
+          fi
+          if [ "$POSTGRES_URL_READY" != '1' ]; then
+            echo 'POSTGRES_URL is still missing after safe recovery attempts.' >&2
+            exit 1
+          fi
+          if [ "$DEEPSEEK_READY" != '1' ]; then
+            echo 'DEEPSEEK_API_KEY is still missing after safe recovery attempts.' >&2
+            exit 1
+          fi
 
       - name: Upload and deploy exact commit to VPS
         shell: bash
@@ -214,3 +429,43 @@ jobs:
           curl --fail --silent --show-error \
             --retry 10 --retry-delay 3 --retry-all-errors \
             --max-time 20 https://principles.me/v2 >/dev/null
+
+      - name: Report sanitized production status
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          ENV_FILE: ${{ steps.preflight.outputs.env_file || '0' }}
+          POSTGRES_URL_READY: ${{ steps.preflight.outputs.postgres_url || '0' }}
+          DATABASE_URL_READY: ${{ steps.preflight.outputs.database_url || '0' }}
+          DEEPSEEK_READY: ${{ steps.preflight.outputs.deepseek_api_key || '0' }}
+          AUTH_READY: ${{ steps.preflight.outputs.auth_secret || '0' }}
+          CONTAINER_RUNNING: ${{ steps.preflight.outputs.container_running || '0' }}
+          CONTAINER_POSTGRES_READY: ${{ steps.preflight.outputs.container_postgres_url || '0' }}
+          CONTAINER_DATABASE_READY: ${{ steps.preflight.outputs.container_database_url || '0' }}
+          POSTGRES_CONTAINERS: ${{ steps.preflight.outputs.postgres_containers || '0' }}
+          CURRENT_VERSION: ${{ steps.preflight.outputs.current_version || 'unknown' }}
+        with:
+          script: |
+            const state = process.env.JOB_STATUS === "success" ? "success" : "failure";
+            const description = [
+              `env=${process.env.ENV_FILE}`,
+              `db=${process.env.POSTGRES_URL_READY}`,
+              `dbAlias=${process.env.DATABASE_URL_READY}`,
+              `ds=${process.env.DEEPSEEK_READY}`,
+              `auth=${process.env.AUTH_READY}`,
+              `app=${process.env.CONTAINER_RUNNING}`,
+              `appDb=${process.env.CONTAINER_POSTGRES_READY}`,
+              `pg=${process.env.POSTGRES_CONTAINERS}`,
+              `current=${process.env.CURRENT_VERSION}`,
+            ].join(" ").slice(0, 140);
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state,
+              context: "production/deploy",
+              description,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
