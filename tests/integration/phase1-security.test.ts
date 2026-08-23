@@ -23,6 +23,15 @@ async function resetDatabase() {
   await db()`TRUNCATE TABLE users, rate_limit_buckets RESTART IDENTITY CASCADE`;
 }
 
+function isForeignKeyViolation(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: unknown }).code === "23503"
+  );
+}
+
 test("Phase 1 keeps durable private state scoped to the authenticated workspace", async () => {
   process.env.AUTH_SIGNUP_MODE = "open";
   process.env.RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS = "true";
@@ -128,7 +137,7 @@ test("Phase 1 keeps durable private state scoped to the authenticated workspace"
       false
     );
 
-    const evidenceRows = await db()`
+    const evidenceRowsA = await db()`
       INSERT INTO evidence_records (
         workspace_id,
         created_by_user_id,
@@ -146,9 +155,41 @@ test("Phase 1 keeps durable private state scoped to the authenticated workspace"
       )
       RETURNING id
     `;
-    const evidenceId = String(evidenceRows[0]?.id);
+    const evidenceIdA = String(evidenceRowsA[0]?.id);
+
+    const evidenceRowsB = await db()`
+      INSERT INTO evidence_records (
+        workspace_id,
+        created_by_user_id,
+        source_type,
+        provider,
+        title,
+        content
+      ) VALUES (
+        ${accountB.workspaceId}::uuid,
+        ${accountB.userId}::uuid,
+        'user_statement',
+        'user',
+        'Other private evidence',
+        'Evidence owned by a different workspace.'
+      )
+      RETURNING id
+    `;
+    const evidenceIdB = String(evidenceRowsB[0]?.id);
+
+    await assert.rejects(
+      createAiSuggestion({
+        evidenceIds: [evidenceIdB],
+        kind: "principle_candidate",
+        payload: { rule: "This provenance must be rejected." },
+        requestedByUserId: accountA.userId,
+        workspaceId: accountA.workspaceId,
+      }),
+      isForeignKeyViolation
+    );
+
     const suggestionId = await createAiSuggestion({
-      evidenceIds: [evidenceId],
+      evidenceIds: [evidenceIdA],
       kind: "principle_candidate",
       modelName: "test-model",
       modelProvider: "test",
@@ -164,11 +205,12 @@ test("Phase 1 keeps durable private state scoped to the authenticated workspace"
     `;
     assert.equal(suggestions[0]?.acceptance_state, "pending");
     const suggestionEvidence = await db()`
-      SELECT evidence_id
+      SELECT workspace_id, evidence_id
       FROM ai_suggestion_evidence
       WHERE suggestion_id = ${suggestionId}::uuid
     `;
-    assert.equal(String(suggestionEvidence[0]?.evidence_id), evidenceId);
+    assert.equal(String(suggestionEvidence[0]?.workspace_id), accountA.workspaceId);
+    assert.equal(String(suggestionEvidence[0]?.evidence_id), evidenceIdA);
 
     const activities = await db()`
       SELECT event_type
