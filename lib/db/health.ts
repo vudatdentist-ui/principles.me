@@ -10,7 +10,9 @@ export async function databaseHealth(): Promise<{
     const migrations = await sql`
       SELECT id
       FROM schema_migrations
-      WHERE id = '0001_secure_platform_kernel.sql'
+      WHERE
+        id = '0001_secure_platform_kernel.sql'
+        AND checksum IS NOT NULL
       LIMIT 1
     `;
     return { reachable: true, schemaReady: migrations.length === 1 };
