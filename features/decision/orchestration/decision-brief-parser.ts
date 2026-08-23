@@ -3,7 +3,13 @@ import {
   type DecisionBrief,
 } from "../contracts";
 import type { EvidenceReference } from "../../evidence/contracts";
-import type { DecisionAnalysis, DecisionAudit } from "./types";
+import type {
+  DecisionAnalysis,
+  DecisionAudit,
+  DecisionCouncilLens,
+  DecisionFitAudit,
+  DecisionPerspective,
+} from "./types";
 
 export type DecisionModelOutputErrorCode =
   | "invalid_model_output"
@@ -37,15 +43,36 @@ function requiredString(value: unknown, field: string): string {
   return value.trim();
 }
 
-function stringArray(value: unknown, field: string, max: number): string[] {
-  if (!Array.isArray(value) || value.length > max) {
-    throw invalidOutput(`${field} must be an array with at most ${max} items.`);
+function stringArray(
+  value: unknown,
+  field: string,
+  max: number,
+  min = 0
+): string[] {
+  if (!Array.isArray(value) || value.length > max || value.length < min) {
+    throw invalidOutput(
+      `${field} must be an array with between ${min} and ${max} items.`
+    );
   }
   return value.map((item, index) => requiredString(item, `${field}[${index}]`));
 }
 
 function invalidOutput(message: string): DecisionModelOutputError {
   return new DecisionModelOutputError("invalid_model_output", message);
+}
+
+export function parseDecisionPerspective(
+  value: unknown,
+  lens: DecisionCouncilLens
+): DecisionPerspective {
+  const input = requiredRecord(value, "perspective");
+  return {
+    considerations: stringArray(input.considerations, "perspective.considerations", 6, 2),
+    lens,
+    position: requiredString(input.position, "perspective.position"),
+    risks: stringArray(input.risks, "perspective.risks", 6),
+    unknowns: stringArray(input.unknowns, "perspective.unknowns", 6),
+  };
 }
 
 export function parseDecisionAnalysis(value: unknown): DecisionAnalysis {
@@ -125,6 +152,32 @@ export function parseDecisionAudit(value: unknown): DecisionAudit {
     revisionInstructions: stringArray(
       input.revisionInstructions,
       "audit.revisionInstructions",
+      12
+    ),
+    verdict,
+  };
+}
+
+export function parseDecisionFitAudit(value: unknown): DecisionFitAudit {
+  const input = requiredRecord(value, "decisionFitAudit");
+  const { decision } = input;
+  if (decision !== "accept" && decision !== "revise") {
+    throw invalidOutput("decisionFitAudit.decision is invalid.");
+  }
+  const { verdict } = input;
+  if (verdict !== "fit" && verdict !== "mixed" && verdict !== "misfit") {
+    throw invalidOutput("decisionFitAudit.verdict is invalid.");
+  }
+  if (verdict === "misfit" && decision !== "revise") {
+    throw invalidOutput("Misfit audits must request revision.");
+  }
+
+  return {
+    decision,
+    issues: stringArray(input.issues, "decisionFitAudit.issues", 12),
+    revisionInstructions: stringArray(
+      input.revisionInstructions,
+      "decisionFitAudit.revisionInstructions",
       12
     ),
     verdict,
