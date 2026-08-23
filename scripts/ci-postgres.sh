@@ -13,6 +13,18 @@ POSTGRES_PORT="${POSTGRES_PORT:-55432}"
 POSTGRES_USER="${POSTGRES_USER:-principles}"
 POSTGRES_DB="${POSTGRES_DB:-postgres}"
 
+hydrate_abi_links() {
+  local versioned base abi
+  for versioned in "$LIB_DIR"/*.so.*.*; do
+    [ -e "$versioned" ] || continue
+    base="$(basename "$versioned")"
+    abi="${base%.*}"
+    if [ ! -e "$LIB_DIR/$abi" ]; then
+      ln -s "$base" "$LIB_DIR/$abi"
+    fi
+  done
+}
+
 case "$ACTION" in
   start)
     rm -rf "$ROOT"
@@ -28,16 +40,7 @@ case "$ACTION" in
       exit 1
     }
 
-    if [ ! -e "$LIB_DIR/libpq.so.5" ]; then
-      libpq_target="$(find "$LIB_DIR" -maxdepth 1 -type f -name 'libpq.so.5.*' | sort -V | tail -n 1)"
-      test -n "$libpq_target" || {
-        printf 'Missing embedded PostgreSQL libpq runtime.\n' >&2
-        find "$LIB_DIR" -maxdepth 1 \( -type f -o -type l \) 2>/dev/null | sort >&2 || true
-        exit 1
-      }
-      ln -s "$(basename "$libpq_target")" "$LIB_DIR/libpq.so.5"
-    fi
-
+    hydrate_abi_links
     export LD_LIBRARY_PATH="$LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
     for binary in initdb pg_ctl postgres; do
@@ -46,6 +49,14 @@ case "$ACTION" in
         exit 1
       }
     done
+
+    if command -v ldd >/dev/null 2>&1; then
+      missing_libraries="$(ldd "$BIN_DIR/initdb" 2>/dev/null | grep 'not found' || true)"
+      if [ -n "$missing_libraries" ]; then
+        printf 'Embedded PostgreSQL has unresolved shared libraries:\n%s\n' "$missing_libraries" >&2
+        exit 1
+      fi
+    fi
 
     [[ "$POSTGRES_DB" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || {
       printf 'Invalid CI database name: %s\n' "$POSTGRES_DB" >&2
@@ -75,8 +86,9 @@ case "$ACTION" in
     ;;
 
   stop)
-    if [ -d "$PACKAGE_DIR/native/lib" ]; then
-      export LD_LIBRARY_PATH="$PACKAGE_DIR/native/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    if [ -d "$LIB_DIR" ]; then
+      hydrate_abi_links
+      export LD_LIBRARY_PATH="$LIB_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     fi
     if [ -x "$BIN_DIR/pg_ctl" ] && [ -d "$DATA_DIR" ]; then
       "$BIN_DIR/pg_ctl" -D "$DATA_DIR" -m fast -w stop >/dev/null 2>&1 || true
