@@ -17,15 +17,16 @@ const reference: EvidenceReference = {
   sourceType: "ragflow",
   text: `secret ${"private evidence ".repeat(40)}`,
   title: "Internal source",
-  url: null,
+  url: "https://internal.example/document?token=private-token",
 };
 
-test("client evidence projection strips private retrieval metadata and full text", () => {
+test("client evidence projection strips private retrieval metadata, URLs and full text", () => {
   const projected = projectEvidenceForClient(reference);
   const serialized = JSON.stringify(projected);
 
   assert.equal(projected.key, "R1");
   assert.equal(projected.title, "Internal source");
+  assert.equal(projected.url, null);
   assert.ok(projected.snippet.length <= 360);
   assert.equal("text" in projected, false);
   assert.equal("datasetId" in projected, false);
@@ -36,5 +37,20 @@ test("client evidence projection strips private retrieval metadata and full text
   assert.equal(serialized.includes("private-dataset-id"), false);
   assert.equal(serialized.includes("private-document-id"), false);
   assert.equal(serialized.includes("private-chunk-id"), false);
+  assert.equal(serialized.includes("private-token"), false);
   assert.equal(serialized.includes(reference.text), false);
+});
+
+test("client evidence projection preserves public live-search URLs", () => {
+  const live = projectEvidenceForClient({
+    ...reference,
+    chunkId: null,
+    datasetId: null,
+    documentId: null,
+    key: "W1",
+    provider: "brave",
+    sourceType: "live_web",
+    url: "https://example.com/public",
+  });
+  assert.equal(live.url, "https://example.com/public");
 });
