@@ -61,6 +61,15 @@ function numberEnv(
   return options.integer ? Math.trunc(candidate) : candidate;
 }
 
+function configuredDatasetIds(
+  env: Readonly<Record<string, string | undefined>>
+): string[] {
+  return (env.RAGFLOW_DATASET_IDS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 function extractChunks(payload: unknown): unknown[] | null {
   if (!isRecord(payload)) {
     return null;
@@ -112,12 +121,18 @@ export class RagflowEvidenceProvider implements EvidenceProvider {
       });
     }
 
-    const apiKey = this.env.RAGFLOW_API_KEY?.trim();
-    const datasetIds = (this.env.RAGFLOW_DATASET_IDS || "")
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean);
+    const datasetIds = request.datasetIds
+      ? request.datasetIds.map((value) => value.trim()).filter(Boolean)
+      : configuredDatasetIds(this.env);
+    const retrievedAt = this.now().toISOString();
 
+    // An explicitly supplied empty scope is a valid, secure "no private evidence"
+    // result. It must never fall back to globally configured datasets.
+    if (request.datasetIds && datasetIds.length === 0) {
+      return { references: [], retrievedAt };
+    }
+
+    const apiKey = this.env.RAGFLOW_API_KEY?.trim();
     if (!apiKey || datasetIds.length === 0) {
       throw new EvidenceProviderError(this.id, "provider_error", {
         message: "The RAGFlow evidence provider is not configured.",
@@ -191,7 +206,6 @@ export class RagflowEvidenceProvider implements EvidenceProvider {
         throw new EvidenceProviderError(this.id, "invalid_response");
       }
 
-      const retrievedAt = this.now().toISOString();
       const references = chunks.flatMap((rawChunk, index) => {
         if (!isRecord(rawChunk)) {
           return [];
