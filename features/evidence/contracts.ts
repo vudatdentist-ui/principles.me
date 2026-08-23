@@ -3,14 +3,7 @@ import { z } from "zod";
 export const citationKeySchema = z
   .string()
   .trim()
-  .regex(/^(?:R|W|M|C)\d+$/, "Citation keys must use R, W, M, or C prefixes.");
-
-export const evidenceSourceTypeSchema = z.enum([
-  "ragflow",
-  "web",
-  "market",
-  "user-context",
-]);
+  .regex(/^(R|W)\d+$/, "Citation keys must use the R or W prefix.");
 
 export const evidenceReferenceSchema = z
   .object({
@@ -20,11 +13,11 @@ export const evidenceReferenceSchema = z
     key: citationKeySchema,
     observedAt: z.string().trim().min(1).nullable(),
     positions: z.array(z.unknown()),
-    provider: z.string().trim().min(1),
+    provider: z.enum(["ragflow", "brave"]),
     publishedAt: z.string().trim().min(1).nullable(),
     retrievedAt: z.string().trim().min(1),
     score: z.number().finite().nullable(),
-    sourceType: evidenceSourceTypeSchema,
+    sourceType: z.enum(["ragflow", "live_web"]),
     text: z.string().trim().min(1),
     title: z.string().trim().min(1),
     url: z.string().url().nullable(),
@@ -54,4 +47,3 @@ export const evidencePacketSchema = z
 export type CitationKey = z.infer<typeof citationKeySchema>;
 export type EvidencePacket = z.infer<typeof evidencePacketSchema>;
 export type EvidenceReference = z.infer<typeof evidenceReferenceSchema>;
-export type EvidenceSourceType = z.infer<typeof evidenceSourceTypeSchema>;

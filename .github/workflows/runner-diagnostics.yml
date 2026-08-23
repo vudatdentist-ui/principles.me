@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - integration/self-hosted-ci
+      - main
     paths:
       - ".github/workflows/runner-diagnostics.yml"
       - "docs/SELF_HOSTED_RUNNER.md"
   pull_request:
-    branches: [main]
+    branches:
+      - main
     paths:
       - ".github/workflows/runner-diagnostics.yml"
       - "docs/SELF_HOSTED_RUNNER.md"
@@ -58,10 +59,10 @@ jobs:
         with:
           version: 10.32.1
 
-      - name: Use Node.js 20
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: CI runtime versions
         shell: bash

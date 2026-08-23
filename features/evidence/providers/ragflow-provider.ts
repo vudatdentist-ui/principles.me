@@ -69,15 +69,12 @@ function extractChunks(payload: unknown): unknown[] | null {
   if (Array.isArray(payload.chunks)) {
     return payload.chunks;
   }
-
   if (Array.isArray(payload.data)) {
     return payload.data;
   }
-
   if (isRecord(payload.data) && Array.isArray(payload.data.chunks)) {
     return payload.data.chunks;
   }
-
   return null;
 }
 
@@ -206,12 +203,9 @@ export class RagflowEvidenceProvider implements EvidenceProvider {
           datasetId: rawChunk.dataset_id,
           documentId,
           index,
-          keyPrefix: "R",
           positions: rawChunk.positions,
-          provider: this.id,
           retrievedAt,
           score: rawChunk.similarity,
-          sourceType: "ragflow",
           text:
             rawChunk.content ??
             rawChunk.content_with_weight ??

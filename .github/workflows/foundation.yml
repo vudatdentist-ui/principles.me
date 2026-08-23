@@ -1,4 +1,4 @@
-name: Playwright
+name: Foundation
 
 on:
   pull_request:
@@ -13,10 +13,10 @@ permissions:
 
 concurrency:
   cancel-in-progress: true
-  group: playwright-${{ github.head_ref || github.ref_name }}
+  group: foundation-${{ github.head_ref || github.ref_name }}
 
 jobs:
-  test:
+  verify:
     runs-on: [self-hosted, linux, x64, principles-ci]
     steps:
       - uses: actions/checkout@v4
@@ -27,17 +27,13 @@ jobs:
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
+          cache: pnpm
           node-version: 22
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Chromium browser
-        run: pnpm exec playwright install chromium
-      - name: Run browser smoke tests
-        run: pnpm test:e2e
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test:unit
+      - name: Build
+        run: pnpm build
