@@ -1,12 +1,52 @@
 # Principles
 
-Principles is being rebuilt as a **personal and business management platform**.
+Principles is being built as an **evolution system for people first and organizations second**.
 
-The current product baseline is deliberately small: **private RAG knowledge + live public search + AI Q&A**. Previous product concepts such as Thinker Machine, Council, Brain, Decisions, Principles Graph, Review workflows, and the old V2 shell are legacy and are not requirements for new work.
+The current production-code baseline is deliberately small: **private RAG knowledge + live public search + AI Q&A**. The next product work follows the Principles Kernel rather than rebuilding conventional task, OKR, CRM, or legacy V2 concepts.
 
-Read [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) before making product or architecture changes.
+Read these before making product or architecture changes:
 
-## Current baseline
+- [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) — current source of truth, phase progress, and active boundaries.
+- [`docs/product/PRINCIPLES_KERNEL_SPEC_V1.md`](./docs/product/PRINCIPLES_KERNEL_SPEC_V1.md) — product philosophy, domain language, AI and Reality model.
+- [`docs/product/UI_PRINCIPLES.md`](./docs/product/UI_PRINCIPLES.md) — minimal-interface constraints.
+- [`docs/product/PHASE_PLAN.md`](./docs/product/PHASE_PLAN.md) — sequential major phases, Definition of Done, and expected outcomes.
+
+## Product direction
+
+The kernel is the loop:
+
+```text
+Goal
+  ↓
+Reality
+  ↓
+Problem
+  ↓
+Diagnosis
+  ↓
+Design
+  ↓
+Execution
+  ↓
+Outcome
+  ↓
+Reflection
+  ↓
+Principle
+  ↓
+Evolve
+  ↺
+```
+
+The product is grounded in three connected ideas from Ray Dalio's *Principles*:
+
+- Dreams + Reality + Determination;
+- the 5-Step Process;
+- Pain + Reflection = Progress.
+
+Principles for People is built first. Principles for Organizations will later extend the same kernel from a personal machine to a collective machine of people and culture.
+
+## Current implemented baseline
 
 ```text
 User question
@@ -45,17 +85,21 @@ Implemented today:
 - Inspectable source display.
 - Production health and smoke checks.
 
-Not implemented yet:
+The Q&A stack is now considered the first implementation of the future **Reality Engine**, not the final product surface.
 
-- personal data model;
-- organization/workspace model;
-- authentication and authorization for the rebuilt product;
-- tasks, projects, CRM, finance, HR, operations, goals, notes, dashboards, or automation domains;
-- durable conversation/history model;
-- live structured business connectors;
-- product-specific AI agents or decision workflows.
+## Not implemented yet
 
-Those areas start from new requirements. Do not infer their design from deleted legacy code.
+- identity/session and Personal Workspace;
+- durable Principles Kernel domain state;
+- Activity Event history;
+- Goal Discovery, Problem, Reflection, and living Principle flows;
+- self-model and longitudinal learning;
+- Design/Execution loop;
+- organization workspace, roles, culture, governance, or believability;
+- CRM, finance, HR, or other management domain products;
+- live structured business connectors.
+
+Do not infer these from deleted legacy code.
 
 ## Repository shape
 
@@ -69,12 +113,26 @@ features/
   evidence/       # evidence contract, live-search policy, RAGFlow + Brave
 lib/
   ai/providers/   # DeepSeek provider abstraction
+docs/product/
+  PRINCIPLES_KERNEL_SPEC_V1.md
+  UI_PRINCIPLES.md
+  PHASE_PLAN.md
 scripts/
   bootstrap-ragflow.ps1
   seed-ragflow.mjs
   smoke-production.mjs
   deploy-production.sh
 ```
+
+## UI constraint
+
+The interface stays minimal even as the system becomes intelligent and structurally deep.
+
+Core rule:
+
+> **Do not use small explanatory text to compensate for unclear structure or to fill empty space.**
+
+Prefer fewer visible items, stronger state, direct actions, progressive disclosure, and evidence on demand.
 
 ## Local development
 
