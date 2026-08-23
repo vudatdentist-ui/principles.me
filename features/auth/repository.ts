@@ -178,6 +178,7 @@ export async function sessionContext(token: string): Promise<SessionContext | nu
       AND s.revoked_at IS NULL
       AND s.expires_at > now()
       AND w.kind = 'personal'
+      AND w.created_by_user_id = u.id
     ORDER BY w.created_at ASC
     LIMIT 1
   `;
