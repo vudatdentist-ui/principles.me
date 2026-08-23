@@ -1,9 +1,10 @@
 import { db } from "@/lib/db/client";
+import type { JsonObject } from "./json";
 
 export async function recordActivity(input: {
   actorUserId?: string | null;
   eventType: string;
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
   subjectId?: string | null;
   subjectType?: string | null;
   workspaceId: string;
