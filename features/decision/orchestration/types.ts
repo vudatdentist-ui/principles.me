@@ -7,7 +7,16 @@ import type { EvidenceProvider } from "../../evidence/providers/evidence-provide
 import type { EvidenceReference } from "../../evidence/contracts";
 import type { AiProvider } from "../../../lib/ai/providers/ai-provider";
 
-export const DECISION_ORCHESTRATOR_PROMPT_VERSION = "v2-201.1";
+export const DECISION_ORCHESTRATOR_PROMPT_VERSION = "v2-201.2";
+
+export const DECISION_COUNCIL_LENSES = [
+  "first-principles",
+  "risk-inversion",
+  "systems",
+  "action",
+] as const;
+
+export type DecisionCouncilLens = (typeof DECISION_COUNCIL_LENSES)[number];
 
 export type DecisionProgressStage =
   | "context"
@@ -44,15 +53,27 @@ export type DecisionOrchestratorResult = {
 
 export type DecisionOrchestratorDependencies = {
   readonly aiProvider: AiProvider;
+  readonly auditProvider?: AiProvider;
   readonly evidenceProviders: readonly EvidenceProvider[];
   readonly model?: string;
   readonly now?: () => Date;
+  readonly reasonerProvider?: AiProvider;
   readonly repository: DecisionRepository;
+  readonly revisionProvider?: AiProvider;
+  readonly synthesisProvider?: AiProvider;
 };
 
 export interface DecisionOrchestrator {
   run: (request: DecisionOrchestratorRequest) => Promise<DecisionOrchestratorResult>;
 }
+
+export type DecisionPerspective = {
+  readonly considerations: readonly string[];
+  readonly lens: DecisionCouncilLens;
+  readonly position: string;
+  readonly risks: readonly string[];
+  readonly unknowns: readonly string[];
+};
 
 export type DecisionAnalysis = {
   readonly confidence: {
@@ -80,6 +101,13 @@ export type DecisionAudit = {
   readonly issues: readonly string[];
   readonly revisionInstructions: readonly string[];
   readonly verdict: "grounded" | "mixed" | "ungrounded";
+};
+
+export type DecisionFitAudit = {
+  readonly decision: "accept" | "revise";
+  readonly issues: readonly string[];
+  readonly revisionInstructions: readonly string[];
+  readonly verdict: "fit" | "mixed" | "misfit";
 };
 
 export type RetrievalPlan = {
