@@ -1,4 +1,4 @@
-name: Production DB diagnostics
+name: Production DB network repair
 
 on:
   push:
@@ -10,16 +10,22 @@ permissions:
   statuses: write
 
 concurrency:
-  group: production-db-diagnostics
+  group: production-db-repair
   cancel-in-progress: true
 
 jobs:
-  diagnostics:
-    name: Inspect production DB network
+  repair:
+    name: Repair production DB network
     runs-on: [self-hosted, linux, x64, principles-ci]
-    timeout-minutes: 10
+    timeout-minutes: 20
     environment: production
     steps:
+      - name: Checkout exact main release
+        uses: actions/checkout@v4
+        with:
+          ref: 6cfd4ace168343b21fa45fa74ecdd955d950f739
+          fetch-depth: 1
+
       - name: Configure SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -36,70 +42,66 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-      - name: Inspect database topology
-        id: db
+      - name: Repair network and deploy exact release
+        id: repair
         shell: bash
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+          TARGET_SHA: 6cfd4ace168343b21fa45fa74ecdd955d950f739
         run: |
           set -Eeuo pipefail
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
           VPS_PORT="${VPS_PORT:-22}"
-          REPORT="$(mktemp)"
-          trap 'rm -f "$REPORT"' EXIT
+          APP_DIR="${APP_DIR:-/opt/principles-council}"
+          STAGE_DIR="/tmp/principles-repair-${TARGET_SHA}"
 
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
-            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" bash -s > "$REPORT" <<'REMOTE'
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "STAGE_DIR='$STAGE_DIR' bash -s" <<'REMOTE_PREP'
           set -Eeuo pipefail
+          rm -rf "$STAGE_DIR"
+          install -d "$STAGE_DIR"
+          REMOTE_PREP
 
-          PG_CONTAINERS=0
-          APP_DB_CANDIDATES=0
-          APP_DB_NETWORKS=0
-          APP_SHARED_NETWORKS=0
-          HOST_ALIAS_MATCHES=0
-          DB_DNS=0
-          DB_CONNECT=0
-          DB_ERROR=unknown
-          DB_HOST=""
-          APP_NETWORKS=""
+          git archive --format=tar "$TARGET_SHA" | gzip -1 | \
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+              -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+              "tar -xzf - -C '$STAGE_DIR'"
 
-          if docker inspect principles-web >/dev/null 2>&1; then
-            APP_NETWORKS=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' principles-web) "
-            DB_HOST="$(docker exec principles-web node -e 'try { const value = process.env.POSTGRES_URL || ""; process.stdout.write(value ? new URL(value).hostname : ""); } catch {}')"
+          REPORT="$(mktemp)"
+          trap 'rm -f "$REPORT"' EXIT
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='$APP_DIR' STAGE_DIR='$STAGE_DIR' TARGET_SHA='$TARGET_SHA' bash -s" \
+            > "$REPORT" <<'REMOTE'
+          set -Eeuo pipefail
+          : "${APP_DIR:?APP_DIR is required}"
+          : "${STAGE_DIR:?STAGE_DIR is required}"
+          : "${TARGET_SHA:?TARGET_SHA is required}"
+          ENV_FILE="$APP_DIR/.env.production"
+          test -f "$ENV_FILE"
+          test -f "$STAGE_DIR/docker-compose.hostinger.yml"
+          test -f "$STAGE_DIR/scripts/ensure-v2-production-schema.mjs"
+          grep -Fq 'Tap Decide to submit.' "$STAGE_DIR/features/decision/ui/ask-form.tsx"
 
-            if [ -n "$DB_HOST" ]; then
-              if docker exec principles-web node -e '
-                const dns = require("node:dns").promises;
-                const host = new URL(process.env.POSTGRES_URL).hostname;
-                dns.lookup(host).then(() => process.exit(0)).catch(() => process.exit(1));
-              ' >/dev/null 2>&1; then
-                DB_DNS=1
-              fi
-
-              DB_RESULT="$(docker exec principles-web node --input-type=module -e '
-                import postgres from "postgres";
-                const sql = postgres(process.env.POSTGRES_URL, { max: 1, connect_timeout: 5, idle_timeout: 5 });
-                try {
-                  await sql.unsafe("select 1");
-                  console.log("CONNECT=1");
-                  console.log("ERROR=none");
-                } catch (error) {
-                  const raw = String(error?.code || error?.name || "unknown");
-                  console.log("CONNECT=0");
-                  console.log(`ERROR=${raw.replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 40)}`);
-                } finally {
-                  await sql.end();
-                }
-              ' 2>/dev/null || true)"
-              DB_CONNECT="$(printf '%s\n' "$DB_RESULT" | sed -n 's/^CONNECT=//p' | tail -n 1)"
-              DB_ERROR="$(printf '%s\n' "$DB_RESULT" | sed -n 's/^ERROR=//p' | tail -n 1)"
-              DB_CONNECT="${DB_CONNECT:-0}"
-              DB_ERROR="${DB_ERROR:-unknown}"
-            fi
+          if ! docker inspect principles-web >/dev/null 2>&1; then
+            echo 'The existing principles-web container is required for safe DB host discovery.' >&2
+            exit 1
           fi
+
+          DB_HOST="$(docker exec principles-web node -e 'try { const value = process.env.POSTGRES_URL || ""; process.stdout.write(value ? new URL(value).hostname : ""); } catch {}')"
+          if [ -z "$DB_HOST" ]; then
+            echo 'Could not derive the configured database hostname.' >&2
+            exit 1
+          fi
+
+          APP_DB_CANDIDATES=0
+          MATCH_NETWORKS=0
+          DB_NETWORK=""
 
           while IFS= read -r cid; do
             [ -n "$cid" ] || continue
@@ -109,7 +111,6 @@ jobs:
               *) continue ;;
             esac
 
-            PG_CONTAINERS=$((PG_CONTAINERS + 1))
             env_dump="$(mktemp)"
             docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$cid" > "$env_dump"
             pg_user="$(sed -n 's/^POSTGRES_USER=//p' "$env_dump" | tail -n 1)"
@@ -124,40 +125,31 @@ jobs:
               "SELECT CASE WHEN to_regclass('public.\"User\"') IS NOT NULL AND to_regclass('public.\"Decision\"') IS NOT NULL THEN 1 ELSE 0 END;" \
               2>/dev/null || true)"
             unset pg_password
-
-            if [ "$base_schema" != "1" ]; then
-              continue
-            fi
+            [ "$base_schema" = '1' ] || continue
 
             APP_DB_CANDIDATES=$((APP_DB_CANDIDATES + 1))
             container_name="$(docker inspect -f '{{.Name}}' "$cid" | sed 's#^/##')"
 
             while IFS='|' read -r network aliases; do
               [ -n "$network" ] || continue
-              APP_DB_NETWORKS=$((APP_DB_NETWORKS + 1))
+              alias_match=0
+              if [ "$container_name" = "$DB_HOST" ]; then
+                alias_match=1
+              else
+                old_ifs="$IFS"
+                IFS=','
+                for alias in $aliases; do
+                  if [ -n "$alias" ] && [ "$alias" = "$DB_HOST" ]; then
+                    alias_match=1
+                    break
+                  fi
+                done
+                IFS="$old_ifs"
+              fi
 
-              case "$APP_NETWORKS" in
-                *" $network "*) APP_SHARED_NETWORKS=$((APP_SHARED_NETWORKS + 1)) ;;
-              esac
-
-              if [ -n "$DB_HOST" ]; then
-                alias_match=0
-                if [ "$container_name" = "$DB_HOST" ]; then
-                  alias_match=1
-                else
-                  old_ifs="$IFS"
-                  IFS=','
-                  for alias in $aliases; do
-                    if [ -n "$alias" ] && [ "$alias" = "$DB_HOST" ]; then
-                      alias_match=1
-                      break
-                    fi
-                  done
-                  IFS="$old_ifs"
-                fi
-                if [ "$alias_match" = "1" ]; then
-                  HOST_ALIAS_MATCHES=$((HOST_ALIAS_MATCHES + 1))
-                fi
+              if [ "$alias_match" = '1' ]; then
+                MATCH_NETWORKS=$((MATCH_NETWORKS + 1))
+                DB_NETWORK="$network"
               fi
             done <<EOF_NETWORKS
           $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}}|{{range $cfg.Aliases}}{{.}},{{end}}{{println}}{{end}}' "$cid")
@@ -166,61 +158,161 @@ jobs:
           $(docker ps -q)
           EOF_CONTAINERS
 
-          printf 'PG_CONTAINERS=%s\n' "$PG_CONTAINERS"
-          printf 'APP_DB_CANDIDATES=%s\n' "$APP_DB_CANDIDATES"
-          printf 'APP_DB_NETWORKS=%s\n' "$APP_DB_NETWORKS"
-          printf 'APP_SHARED_NETWORKS=%s\n' "$APP_SHARED_NETWORKS"
-          printf 'HOST_ALIAS_MATCHES=%s\n' "$HOST_ALIAS_MATCHES"
-          printf 'DB_DNS=%s\n' "$DB_DNS"
-          printf 'DB_CONNECT=%s\n' "$DB_CONNECT"
-          printf 'DB_ERROR=%s\n' "$(printf '%s' "$DB_ERROR" | tr -cd 'A-Za-z0-9_.-' | cut -c1-40)"
+          if [ "$APP_DB_CANDIDATES" != '1' ] || [ "$MATCH_NETWORKS" != '1' ]; then
+            echo "Refusing DB network repair: expected one app database and one matching network; got appDb=$APP_DB_CANDIDATES matchingNetworks=$MATCH_NETWORKS." >&2
+            exit 1
+          fi
+          case "$DB_NETWORK" in
+            ''|*[!A-Za-z0-9_.-]*)
+              echo 'Resolved database network name is not safe for compose interpolation.' >&2
+              exit 1
+              ;;
+          esac
+
+          APP_NETWORKS=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' principles-web) "
+          case "$APP_NETWORKS" in
+            *" $DB_NETWORK "*) ;;
+            *)
+              docker network connect "$DB_NETWORK" principles-web
+              echo 'Connected the existing app container to its uniquely matched database network.'
+              ;;
+          esac
+
+          if ! docker exec principles-web node --input-type=module -e '
+            import postgres from "postgres";
+            const sql = postgres(process.env.POSTGRES_URL, { max: 1, connect_timeout: 5, idle_timeout: 5 });
+            try { await sql.unsafe("select 1"); } finally { await sql.end(); }
+          ' >/dev/null; then
+            echo 'Database connectivity is still unavailable after the network repair.' >&2
+            exit 1
+          fi
+
+          set_env_value() {
+            local name="$1"
+            local value="$2"
+            local file="$3"
+            local temp
+            temp="$(mktemp)"
+            grep -v "^${name}=" "$file" > "$temp" || true
+            printf '%s=%s\n' "$name" "$value" >> "$temp"
+            cat "$temp" > "$file"
+            rm -f "$temp"
+          }
+          set_env_value PRINCIPLES_DB_NETWORK "$DB_NETWORK" "$ENV_FILE"
+
+          find "$APP_DIR" -mindepth 1 -maxdepth 1 \
+            ! -name '.env.production' -exec rm -rf -- {} +
+          cp -a "$STAGE_DIR/." "$APP_DIR/"
+          rm -rf "$STAGE_DIR"
+          cd "$APP_DIR"
+
+          OVERRIDE_FILE="$(mktemp)"
+          trap 'rm -f "$OVERRIDE_FILE"' EXIT
+          cat > "$OVERRIDE_FILE" <<EOF_OVERRIDE
+          services:
+            principles:
+              networks:
+                - coolify
+                - principles-db
+          networks:
+            principles-db:
+              external: true
+              name: "$DB_NETWORK"
+          EOF_OVERRIDE
+
+          APP_VERSION="$TARGET_SHA" \
+            docker compose -f docker-compose.hostinger.yml -f "$OVERRIDE_FILE" build principles
+
+          APP_VERSION="$TARGET_SHA" \
+            docker compose -f docker-compose.hostinger.yml -f "$OVERRIDE_FILE" \
+              run --rm --no-deps principles node scripts/ensure-v2-production-schema.mjs
+
+          APP_VERSION="$TARGET_SHA" \
+            docker compose -f docker-compose.hostinger.yml -f "$OVERRIDE_FILE" \
+              up -d --no-build --remove-orphans
+
+          test "$(docker inspect -f '{{.State.Running}}' principles-web)" = 'true'
+
+          APP_NETWORKS=" $(docker inspect -f '{{range $net, $cfg := .NetworkSettings.Networks}}{{$net}} {{end}}' principles-web) "
+          case "$APP_NETWORKS" in
+            *" $DB_NETWORK "*) ;;
+            *) echo 'Recreated app container is missing the database network.' >&2; exit 1 ;;
+          esac
+
+          if ! docker exec principles-web node --input-type=module -e '
+            import postgres from "postgres";
+            const sql = postgres(process.env.POSTGRES_URL, { max: 1, connect_timeout: 5, idle_timeout: 5 });
+            try {
+              const [row] = await sql`SELECT to_regclass(${"public.\"DecisionRun\""}) IS NOT NULL AS ready`;
+              if (!row?.ready) process.exit(2);
+            } finally { await sql.end(); }
+          ' >/dev/null; then
+            echo 'DecisionRun verification failed after deployment.' >&2
+            exit 1
+          fi
+
+          printf 'DB_NETWORK_REPAIRED=1\n'
+          printf 'DB_CONNECT=1\n'
+          printf 'SCHEMA_READY=1\n'
+          printf 'CONTAINER_RUNNING=1\n'
           REMOTE
 
           cat "$REPORT"
           while IFS='=' read -r key value; do
             case "$key" in
-              PG_CONTAINERS) echo "pg_containers=$value" >> "$GITHUB_OUTPUT" ;;
-              APP_DB_CANDIDATES) echo "app_db_candidates=$value" >> "$GITHUB_OUTPUT" ;;
-              APP_DB_NETWORKS) echo "app_db_networks=$value" >> "$GITHUB_OUTPUT" ;;
-              APP_SHARED_NETWORKS) echo "app_shared_networks=$value" >> "$GITHUB_OUTPUT" ;;
-              HOST_ALIAS_MATCHES) echo "host_alias_matches=$value" >> "$GITHUB_OUTPUT" ;;
-              DB_DNS) echo "db_dns=$value" >> "$GITHUB_OUTPUT" ;;
+              DB_NETWORK_REPAIRED) echo "network_repaired=$value" >> "$GITHUB_OUTPUT" ;;
               DB_CONNECT) echo "db_connect=$value" >> "$GITHUB_OUTPUT" ;;
-              DB_ERROR) echo "db_error=$value" >> "$GITHUB_OUTPUT" ;;
+              SCHEMA_READY) echo "schema_ready=$value" >> "$GITHUB_OUTPUT" ;;
+              CONTAINER_RUNNING) echo "container_running=$value" >> "$GITHUB_OUTPUT" ;;
             esac
           done < "$REPORT"
 
-      - name: Publish sanitized diagnostics
+      - name: Verify public V2 release
+        shell: bash
+        env:
+          TARGET_SHA: 6cfd4ace168343b21fa45fa74ecdd955d950f739
+        run: |
+          set -Eeuo pipefail
+          HEALTH_FILE="$(mktemp)"
+          trap 'rm -f "$HEALTH_FILE"' EXIT
+          export HEALTH_FILE TARGET_SHA
+
+          curl --fail-with-body --silent --show-error \
+            --retry 15 --retry-delay 4 --retry-all-errors --max-time 20 \
+            --output "$HEALTH_FILE" https://principles.me/api/v2/health
+          cat "$HEALTH_FILE"
+          echo
+
+          node <<'NODE'
+          const fs = require("node:fs");
+          const health = JSON.parse(fs.readFileSync(process.env.HEALTH_FILE, "utf8"));
+          if (health.status !== "ok") throw new Error(`V2 health is ${health.status ?? "unknown"}.`);
+          if (health.version !== process.env.TARGET_SHA) {
+            throw new Error(`V2 health reports ${health.version ?? "unknown"}, expected ${process.env.TARGET_SHA}.`);
+          }
+          NODE
+
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 \
+            --retry-all-errors --max-time 20 https://principles.me/v2 >/dev/null
+
+      - name: Publish repair status
         if: always()
         uses: actions/github-script@v7
         env:
-          PG: ${{ steps.db.outputs.pg_containers || '0' }}
-          CANDIDATES: ${{ steps.db.outputs.app_db_candidates || '0' }}
-          DB_NETWORKS: ${{ steps.db.outputs.app_db_networks || '0' }}
-          SHARED: ${{ steps.db.outputs.app_shared_networks || '0' }}
-          ALIAS_MATCHES: ${{ steps.db.outputs.host_alias_matches || '0' }}
-          DNS: ${{ steps.db.outputs.db_dns || '0' }}
-          CONNECT: ${{ steps.db.outputs.db_connect || '0' }}
-          DB_ERROR: ${{ steps.db.outputs.db_error || 'unknown' }}
+          JOB_STATUS: ${{ job.status }}
+          NETWORK: ${{ steps.repair.outputs.network_repaired || '0' }}
+          DB: ${{ steps.repair.outputs.db_connect || '0' }}
+          SCHEMA: ${{ steps.repair.outputs.schema_ready || '0' }}
+          APP: ${{ steps.repair.outputs.container_running || '0' }}
         with:
           script: |
-            const description = [
-              `pg=${process.env.PG}`,
-              `appDb=${process.env.CANDIDATES}`,
-              `nets=${process.env.DB_NETWORKS}`,
-              `shared=${process.env.SHARED}`,
-              `alias=${process.env.ALIAS_MATCHES}`,
-              `dns=${process.env.DNS}`,
-              `connect=${process.env.CONNECT}`,
-              `err=${process.env.DB_ERROR}`,
-            ].join(" ").slice(0, 140);
-
+            const success = process.env.JOB_STATUS === "success";
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.sha,
-              state: "success",
-              context: "production/db-diagnostics",
-              description,
+              state: success ? "success" : "failure",
+              context: "production/db-repair",
+              description: `network=${process.env.NETWORK} db=${process.env.DB} schema=${process.env.SCHEMA} app=${process.env.APP}`,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });
