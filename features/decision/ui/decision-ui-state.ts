@@ -37,8 +37,8 @@ export type DecisionBriefActionCallbacks = {
 };
 
 const STAGE_STATUS: Record<DecisionStage, string> = {
-  analysis: "Weighing the tradeoffs.",
-  audit: "Checking support and uncertainty.",
+  analysis: "Weighing independent perspectives.",
+  audit: "Checking evidence and decision fit.",
   context: "Reading your decision context.",
   "live-data": "Checking current context.",
   persistence: "Saving the decision record.",
