@@ -16,7 +16,14 @@ import {
   createDecisionOrchestrator,
   DecisionOrchestratorError,
 } from "../decision-orchestrator";
-import type { DecisionAnalysis, DecisionAudit } from "../types";
+import {
+  DECISION_COUNCIL_LENSES,
+  type DecisionAnalysis,
+  type DecisionAudit,
+  type DecisionCouncilLens,
+  type DecisionFitAudit,
+  type DecisionPerspective,
+} from "../types";
 
 const NOW = new Date("2026-08-21T12:00:00.000Z");
 const QUESTION = "Should we run the pilot?";
@@ -39,6 +46,22 @@ function evidence(key = "R1"): EvidenceReference {
     title: "Evidence source",
     url: null,
   };
+}
+
+function perspective(lens: DecisionCouncilLens): Omit<DecisionPerspective, "lens"> {
+  return {
+    considerations: [
+      `${lens} consideration one.`,
+      `${lens} consideration two.`,
+    ],
+    position: `${lens} position.`,
+    risks: [`${lens} risk.`],
+    unknowns: [`${lens} unknown.`],
+  };
+}
+
+function councilOutputs(): Omit<DecisionPerspective, "lens">[] {
+  return DECISION_COUNCIL_LENSES.map((lens) => perspective(lens));
 }
 
 function analysis(overrides: Partial<DecisionAnalysis> = {}): DecisionAnalysis {
@@ -79,12 +102,28 @@ function analysis(overrides: Partial<DecisionAnalysis> = {}): DecisionAnalysis {
   };
 }
 
-const ACCEPT_AUDIT: DecisionAudit = {
+const ACCEPT_EVIDENCE_AUDIT: DecisionAudit = {
   decision: "accept",
   issues: [],
   revisionInstructions: [],
   verdict: "grounded",
 };
+
+const ACCEPT_FIT_AUDIT: DecisionFitAudit = {
+  decision: "accept",
+  issues: [],
+  revisionInstructions: [],
+  verdict: "fit",
+};
+
+function happyQueue(synthesized = analysis()): unknown[] {
+  return [
+    ...councilOutputs(),
+    synthesized,
+    ACCEPT_EVIDENCE_AUDIT,
+    ACCEPT_FIT_AUDIT,
+  ];
+}
 
 class MockAiProvider implements AiProvider {
   readonly calls: GenerateObjectRequest<unknown>[] = [];
@@ -253,12 +292,19 @@ async function rejectsWithCode(
   });
 }
 
-function run(orchestrator: ReturnType<typeof createDecisionOrchestrator>, signal?: AbortSignal) {
+function run(
+  orchestrator: ReturnType<typeof createDecisionOrchestrator>,
+  signal?: AbortSignal
+) {
   return orchestrator.run({ question: QUESTION, signal, userId: USER_ID });
 }
 
-test("happy path uses one analysis and one audit call without revision", async () => {
-  const ai = new MockAiProvider([analysis(), ACCEPT_AUDIT]);
+function requestText(request: GenerateObjectRequest<unknown>): string {
+  return request.messages.map((message) => message.content).join("\n");
+}
+
+test("happy path runs four independent reasoners, synthesis and two audits", async () => {
+  const ai = new MockAiProvider(happyQueue());
   const { orchestrator, repository } = fixture({ ai });
   const stages: string[] = [];
 
@@ -270,52 +316,80 @@ test("happy path uses one analysis and one audit call without revision", async (
     userId: USER_ID,
   });
 
-  assert.equal(ai.calls.length, 2);
+  assert.equal(ai.calls.length, 7);
   assert.equal(result.revisionApplied, false);
   assert.equal(repository.state.completeCalls, 1);
   assert.equal(repository.state.failCalls, 0);
   assert.deepEqual(stages, ["context", "retrieval", "analysis", "audit", "persistence"]);
 });
 
-test("audit-triggered revision performs exactly one additional model call", async () => {
+test("reasoners have isolated prompts and auditors receive separated context", async () => {
+  const ai = new MockAiProvider(happyQueue());
+  const { orchestrator } = fixture({ ai });
+
+  await orchestrator.run({
+    context: { goal: "Protect downside before scaling." },
+    question: QUESTION,
+    userId: USER_ID,
+  });
+
+  const reasonerCalls = ai.calls.slice(0, 4);
+  assert.equal(reasonerCalls.length, 4);
+  for (const call of reasonerCalls) {
+    const text = requestText(call);
+    assert.match(text, /same question, user context, and evidence/i);
+    assert.doesNotMatch(text, /INDEPENDENT PERSPECTIVES:/);
+    for (const lens of DECISION_COUNCIL_LENSES) {
+      assert.doesNotMatch(text, new RegExp(`${lens} position\\.`));
+    }
+  }
+
+  const synthesisText = requestText(ai.calls[4]!);
+  for (const lens of DECISION_COUNCIL_LENSES) {
+    assert.match(synthesisText, new RegExp(`${lens} position\\.`));
+  }
+
+  const evidenceAuditText = requestText(ai.calls[5]!);
+  assert.doesNotMatch(evidenceAuditText, /CONTEXT SNAPSHOT:/);
+  assert.doesNotMatch(evidenceAuditText, /Protect downside before scaling/);
+
+  const fitAuditText = requestText(ai.calls[6]!);
+  assert.match(fitAuditText, /CONTEXT SNAPSHOT:/);
+  assert.match(fitAuditText, /Protect downside before scaling/);
+});
+
+test("decision-fit audit can trigger exactly one revision", async () => {
   const revised = analysis({ recommendation: "Proceed after one safeguard." });
-  const audit: DecisionAudit = {
+  const fitAudit: DecisionFitAudit = {
     decision: "revise",
-    issues: ["Add a safeguard."],
-    revisionInstructions: ["Make the safeguard explicit."],
+    issues: ["The next step commits too much capital."],
+    revisionInstructions: ["Make the next step more reversible."],
     verdict: "mixed",
   };
-  const ai = new MockAiProvider([analysis(), audit, revised]);
+  const ai = new MockAiProvider([
+    ...councilOutputs(),
+    analysis(),
+    ACCEPT_EVIDENCE_AUDIT,
+    fitAudit,
+    revised,
+    new Error("A ninth call must never occur."),
+  ]);
   const { orchestrator } = fixture({ ai });
 
   const result = await run(orchestrator);
 
-  assert.equal(ai.calls.length, 3);
+  assert.equal(ai.calls.length, 8);
   assert.equal(result.revisionApplied, true);
   assert.equal(result.brief.recommendation, revised.recommendation);
-});
-
-test("revision path never runs a second audit or second revision", async () => {
-  const ai = new MockAiProvider([
-    analysis(),
-    {
-      decision: "revise",
-      issues: ["Revise once."],
-      revisionInstructions: ["Tighten confidence."],
-      verdict: "mixed",
-    } satisfies DecisionAudit,
-    analysis({ confidence: { explanation: "Still uncertain.", level: "medium" } }),
-    new Error("A fourth call must never occur."),
-  ]);
-  const { orchestrator } = fixture({ ai });
-
-  await run(orchestrator);
-  assert.equal(ai.calls.length, 3);
+  const revisionText = requestText(ai.calls[7]!);
+  assert.match(revisionText, /EVIDENCE AUDIT:/);
+  assert.match(revisionText, /DECISION-FIT AUDIT:/);
+  assert.match(revisionText, /INDEPENDENT PERSPECTIVES:/);
 });
 
 test("retrieved evidence and citation keys are preserved in the brief", async () => {
   const source = evidence();
-  const ai = new MockAiProvider([analysis(), ACCEPT_AUDIT]);
+  const ai = new MockAiProvider(happyQueue());
   const { orchestrator, repository } = fixture({ ai, provider: providerWith([source]) });
 
   const result = await run(orchestrator);
@@ -325,7 +399,7 @@ test("retrieved evidence and citation keys are preserved in the brief", async ()
   assert.deepEqual(repository.state.lastBrief?.sources, [source]);
 });
 
-test("unsupported citation is rejected and marks the run failed", async () => {
+test("unsupported synthesized citation is rejected before audits", async () => {
   const bad = analysis({
     reasons: [
       { citationKeys: ["R99"], id: "r1", kind: "fact", text: "Unsupported." },
@@ -333,16 +407,16 @@ test("unsupported citation is rejected and marks the run failed", async () => {
       { citationKeys: [], id: "r3", kind: "inference", text: "Inference." },
     ],
   });
-  const ai = new MockAiProvider([bad]);
+  const ai = new MockAiProvider([...councilOutputs(), bad]);
   const { orchestrator, repository } = fixture({ ai });
 
   await rejectsWithCode(run(orchestrator), "unsupported_citation");
-  assert.equal(ai.calls.length, 1);
+  assert.equal(ai.calls.length, 5);
   assert.equal(repository.state.completeCalls, 0);
   assert.equal(repository.state.lastFailCode, "unsupported_citation");
 });
 
-test("empty evidence lowers confidence and preserves unknowns", async () => {
+test("empty evidence lowers synthesized confidence and preserves unknowns", async () => {
   const noEvidence = analysis({
     confidence: { explanation: "Model confidence before policy.", level: "high" },
     reasons: [
@@ -352,7 +426,7 @@ test("empty evidence lowers confidence and preserves unknowns", async () => {
     ],
     unknowns: ["Market response is unknown."],
   });
-  const ai = new MockAiProvider([noEvidence, ACCEPT_AUDIT]);
+  const ai = new MockAiProvider(happyQueue(noEvidence));
   const { orchestrator } = fixture({ ai, provider: providerWith([]) });
 
   const result = await run(orchestrator);
@@ -381,11 +455,17 @@ test("provider failure marks the run failed without model calls", async () => {
   assert.equal(repository.state.failCalls, 1);
 });
 
-test("invalid model output marks the run failed", async () => {
-  const ai = new MockAiProvider([{ recommendation: "Incomplete" }]);
+test("invalid perspective output marks the run failed before synthesis", async () => {
+  const ai = new MockAiProvider([
+    { position: "Incomplete" },
+    perspective("risk-inversion"),
+    perspective("systems"),
+    perspective("action"),
+  ]);
   const { orchestrator, repository } = fixture({ ai });
 
   await rejectsWithCode(run(orchestrator), "invalid_model_output");
+  assert.equal(ai.calls.length, 4);
   assert.equal(repository.state.failCalls, 1);
   assert.equal(repository.state.completeCalls, 0);
 });
@@ -419,7 +499,7 @@ test("completion persistence failure attempts failRun but preserves original err
     completeError: new Error("database write failed"),
     failError: new Error("terminal transition already won"),
   });
-  const ai = new MockAiProvider([analysis(), ACCEPT_AUDIT]);
+  const ai = new MockAiProvider(happyQueue());
   const { orchestrator } = fixture({ ai, repository });
 
   await rejectsWithCode(run(orchestrator), "persistence_failed");
@@ -427,22 +507,40 @@ test("completion persistence failure attempts failRun but preserves original err
   assert.equal(repository.state.failCalls, 1);
 });
 
-test("snapshots capture initial/revised analysis, audit and evidence", async () => {
+test("snapshots capture council, synthesis, dual audits and revision", async () => {
   const initial = analysis();
   const revised = analysis({ confidence: { explanation: "Revised.", level: "medium" } });
-  const audit: DecisionAudit = {
+  const evidenceAudit: DecisionAudit = {
     decision: "revise",
     issues: ["Confidence too high."],
     revisionInstructions: ["Lower confidence."],
     verdict: "mixed",
   };
-  const ai = new MockAiProvider([initial, audit, revised]);
+  const ai = new MockAiProvider([
+    ...councilOutputs(),
+    initial,
+    evidenceAudit,
+    ACCEPT_FIT_AUDIT,
+    revised,
+  ]);
   const { orchestrator, repository } = fixture({ ai });
 
   await run(orchestrator);
 
-  assert.deepEqual(repository.state.lastAnalysis, { initial, revised });
-  assert.deepEqual(repository.state.lastAudit, { audit, revisionApplied: true });
+  const expectedCouncil = DECISION_COUNCIL_LENSES.map((lens) => ({
+    ...perspective(lens),
+    lens,
+  }));
+  assert.deepEqual(repository.state.lastAnalysis, {
+    council: expectedCouncil,
+    initial,
+    revised,
+  });
+  assert.deepEqual(repository.state.lastAudit, {
+    audit: evidenceAudit,
+    decisionFitAudit: ACCEPT_FIT_AUDIT,
+    revisionApplied: true,
+  });
   assert.ok(repository.state.lastEvidence);
   assert.equal(repository.state.lastCreate?.question, QUESTION);
 });
