@@ -1,11 +1,13 @@
 # Phase 3 — Design + Execution
 
-**Status:** Active implementation contract  
+**Status:** **Ready**  
 **Started:** 2026-08-24  
+**Readiness closeout:** 2026-08-24  
 **Branch:** `phase/3-design-execution`  
+**Pull request:** #57  
 **Base:** Phase 0–2 Complete on `main`
 
-This document is the implementation, audit and acceptance contract for Phase 3.
+This document is the implementation, acceptance and audit contract for Phase 3.
 
 Phase 3 continues the 5-Step Process from a recognized Problem into an observed machine change:
 
@@ -18,355 +20,240 @@ Problem
   → Review / Reflection
 ```
 
-The objective is not to add project-management breadth. The objective is to prove that Principles can turn a recognized gap into a reasoned change to the user's machine, execute the minimum required commitments, observe what actually happened, and learn from the difference between expectation and reality.
+The objective is not project-management breadth. It is to prove that Principles can turn a recognized gap into a reasoned machine change, execute only the commitments needed to test that change, observe what actually happened, and learn from the difference between expectation and Reality.
 
-## 1. Product invariants
+## 1. Product invariants — achieved
 
 ### Diagnosis is not a solution
 
-A Diagnosis is a cause-and-effect hypothesis explaining why a recognized Problem exists.
+Diagnosis is a user-reviewed cause-and-effect hypothesis. It preserves:
 
-It must preserve:
-
-- the visible symptom;
-- a proximate cause;
-- a root-cause hypothesis;
-- evidence that supports the hypothesis;
-- evidence that contradicts or weakens it;
+- visible symptom;
+- proximate cause;
+- root-cause hypothesis;
+- supporting evidence;
+- contradicting evidence;
 - plausible alternatives;
 - uncertainty;
-- confidence.
+- optional confidence.
 
-The product must be able to say that evidence is insufficient. AI output remains a proposal until the user confirms or revises it.
-
-The system must not collapse:
-
-```text
-Problem → task
-```
-
-into the primary workflow.
+The Diagnosis AI prompt explicitly forbids remedy/task proposals and tells the model to admit insufficient evidence rather than manufacture certainty. AI output remains pending until user confirmation or revision.
 
 ### Design changes the machine
 
-A Design is a proposed change to the system that repeatedly produces the outcome.
+Design represents a proposed change to the system producing the outcome. It retains:
 
-For Principles for People, the machine may include habits, routines, environment, relationships, capabilities, resources, decision rules and constraints.
-
-A Design must retain:
-
-- the machine change;
-- why that change addresses the accepted Diagnosis;
-- the expected result;
-- a success signal that can later be compared with Reality.
-
-A Design may contain Actions, but it is not reducible to an Action list.
-
-### Actions exist only to execute a Design
-
-Phase 3 adds only the minimum execution primitive required by the loop:
-
-- a concise commitment;
-- pending/completed/cancelled state;
-- completion time when completed.
-
-There is no generic inbox, assignee matrix, kanban board, sprint, dependency graph, estimate system or project-management shell in this phase.
-
-### Outcome is Reality, not completion
-
-Completing Actions does not prove the Design worked.
-
-Outcome records:
-
-- the expected result snapshot from the Design;
-- what actually happened;
-- a user-owned comparison: `improved`, `mixed`, `worse`, or `unclear`;
-- durable Evidence + accepted Observation representing the reported result.
-
-The Outcome must stay linked to the same Goal, Problem, Diagnosis and Design chain.
-
-### Review closes the learning loop
-
-After Outcome, the user completes a short Review/Reflection.
-
-The UI should ask only what is still valuable, normally:
-
-- what surprised you about the result?;
-- what did this result teach you?
-
-Expected and actual result are prefilled from the Outcome rather than asked again.
-
-The resulting Reflection is durably linked to the Outcome and therefore can become evidence for later Principle revision and Phase 4 longitudinal learning.
-
-## 2. Durable Phase 3 slice
-
-Migration 0003 may add only the schema justified by this loop.
-
-### Diagnosis
-
-Required durable fields:
-
-- workspace;
-- Goal;
-- Problem;
-- optional origin AI Suggestion;
-- symptom;
-- proximate cause;
-- root-cause hypothesis;
-- supporting evidence summary;
-- contradicting evidence summary;
-- alternative hypotheses;
-- uncertainty;
-- optional confidence;
-- acceptance state (`accepted` or `revised`).
-
-A single AI suggestion may create at most one Diagnosis.
-
-### Design
-
-Required durable fields:
-
-- workspace;
-- Goal;
-- Problem;
-- Diagnosis;
-- optional origin AI Suggestion;
 - machine change;
-- rationale;
+- cause-and-effect rationale;
 - expected result;
 - success signal;
-- acceptance state (`accepted` or `revised`);
-- lifecycle state (`active`, `evaluated`, `retired`).
+- 1–5 minimal Actions needed to execute the change.
 
-A single AI suggestion may create at most one Design.
+Actions are subordinate to Design. No generic Projects, kanban, sprint, assignment or task-management shell was introduced.
 
-### Action
+### Outcome is Reality, not task completion
 
-Required fields:
+Action completion never marks a Design successful. A Design stays `active` until a valid Outcome is recorded.
 
-- workspace;
-- Design;
-- concise commitment;
-- status (`pending`, `completed`, `cancelled`);
-- completed timestamp when completed.
+Outcome atomically stores:
 
-Phase 3 Actions are owned implicitly by the Personal Workspace user. Do not introduce organization assignment concepts early.
-
-### Outcome
-
-Required fields:
-
-- workspace;
-- Goal;
-- Problem;
-- Diagnosis;
-- Design;
-- expected result snapshot;
+- expected-result snapshot;
 - actual result;
-- comparison (`improved`, `mixed`, `worse`, `unclear`);
-- linked Evidence;
-- linked accepted Observation;
-- observed timestamp.
+- user comparison: `improved`, `mixed`, `worse`, or `unclear`;
+- direct-user Evidence;
+- accepted Goal-scoped Observation.
 
-Outcome persistence must be atomic with its Evidence + Observation provenance.
+After evaluation, the Design becomes `evaluated` and its Actions become immutable. Phase 3 v1 permits one Outcome per Design.
 
-### Reflection extension
+### Review closes the loop
 
-Reflection may gain an optional `outcome_id`.
+A post-Outcome Review asks only:
 
-Database constraints must make it impossible to link an Outcome Review to a different Goal or Problem inside the same workspace.
+```text
+What surprised you about the result?
+What did this result teach you?
+```
 
-## 3. AI boundary
+The resulting completed Reflection retains expected versus actual context and is linked to the matching Outcome, Goal and Problem.
 
-AI is allowed to:
+## 2. Durable implementation
 
-- propose a Diagnosis from the selected Goal, Problem, Reality evidence and existing Reflection;
-- propose a machine Design from an accepted Diagnosis;
-- propose a small set of execution Actions as part of the Design proposal.
+Migration `0003_design_execution.sql` adds only the schema required by the loop:
 
-AI is not allowed to:
+- `diagnoses`;
+- `diagnosis_evidence`;
+- `designs`;
+- `execution_actions`;
+- `outcomes`;
+- `outcome_reflections`;
+- composite tenant/semantic keys;
+- AI-suggestion replay constraints;
+- one Outcome per Design;
+- database trigger preventing Action mutation after Design evaluation.
 
-- persist an accepted Diagnosis without user confirmation;
-- silently convert a Diagnosis into a remedy;
-- invent supporting evidence;
-- mark an Action complete;
-- decide whether an Outcome improved Reality;
-- auto-promote a Principle to trusted.
+Database constraints enforce the same Workspace + Goal + Problem + Diagnosis + Design chain rather than relying only on API checks.
 
-Every Phase 3 AI mutation endpoint must preserve the Phase 1/2 boundary:
+## 3. AI and security boundary — achieved
 
-1. trusted same-origin mutation context;
+Phase 3 AI may:
+
+- propose Diagnosis from Goal + Problem + selected Evidence + Reflection;
+- propose one machine Design from an accepted Diagnosis;
+- propose 1–5 minimal execution Actions.
+
+It may not persist accepted Diagnosis/Design state, invent supporting evidence, mark work complete, judge the Outcome for the user, or promote Principles to trusted.
+
+Every Phase 3 AI mutation preserves the existing boundary:
+
+1. trusted same-origin mutation;
 2. authenticated owned Personal Workspace;
 3. durable workspace AI quota before provider work;
-4. private context loaded server-side and workspace-scoped;
-5. structured model output validated before persistence;
-6. internal workspace/evidence identifiers excluded from browser projection;
-7. durable user confirmation/revision before accepted Diagnosis or Design state.
+4. private context loaded server-side with workspace scope;
+5. structured model output validated before use;
+6. Workspace IDs, Evidence UUIDs and AI provenance IDs excluded from browser projection;
+7. explicit user confirmation/revision before accepted durable Diagnosis/Design state.
 
-## 4. Primary UI
+Repeated `Try another` requests supersede older pending Diagnosis/Design proposals for the same context so later confirmation cannot silently consume stale AI state.
 
-The interface remains sparse.
+## 4. Primary UI — achieved
 
-Phase 2's completed Goal / Reality / Problem / Reflection / Principle state stays compact. Once the initial learning loop has been reviewed, the active change loop is:
+Phase 2 remains the understanding/learning surface. After a reviewed Principle exists, the sparse change loop is:
 
 ```text
 Diagnose → Design → Do → Outcome → Review
 ```
 
-Only one primary next action should dominate the page.
+The interface emphasizes one next action at a time:
 
-### Diagnosis UI
+- Diagnosis shows the root-cause hypothesis first; evidence/alternatives/uncertainty stay behind progressive disclosure;
+- Design shows machine change and expected result first;
+- Do shows only Actions belonging to the active Design;
+- Outcome asks what actually happened and how it compares with expectation;
+- Review asks one reflection question at a time.
 
-Default state:
+No filler dashboard, small explanatory microcopy wall or generic project-management navigation was added.
 
-```text
-Diagnose
-[ Diagnose root cause ]
-```
+## 5. Acceptance result
 
-A proposal emphasizes the root-cause hypothesis. Symptom, evidence against/for, alternatives and uncertainty are progressively disclosed. The user can confirm or edit before persistence.
+### End-to-end behavior — passed
 
-### Design UI
+Browser verification proves a real authenticated user can:
 
-Default state:
+1. complete the Phase 2 Goal → Reality → Problem → Reflection → reviewed Principle path;
+2. request and confirm a Diagnosis;
+3. request and confirm a machine Design;
+4. complete the Design Actions;
+5. record actual Outcome Reality and compare it with expectation;
+6. complete Outcome Review/Reflection;
+7. reload and recover the durable chain.
 
-```text
-Design
-[ Design the machine ]
-```
+### Diagnosis integrity — passed
 
-The proposal emphasizes the machine change and expected result. Actions appear as a short editable execution list, not a task-management view.
+Real-Postgres verification covers:
 
-### Do UI
+- cross-workspace rejection;
+- same-workspace wrong-Goal/Problem rejection;
+- Evidence provenance scoping;
+- AI-suggestion replay prevention;
+- accepted versus revised state;
+- persisted contradictory evidence, alternatives, uncertainty and confidence.
 
-Show only the Actions for the active Design. Completion is a direct interaction. No dashboard filler.
+### Design integrity — passed
 
-### Outcome UI
+Real-Postgres verification covers:
 
-Once executable Actions are completed or cancelled, ask:
+- matching Goal + Problem + Diagnosis chain;
+- cross-workspace rejection;
+- AI-suggestion replay prevention;
+- atomic Design + Action persistence;
+- accepted versus revised state.
 
-```text
-What actually happened?
-```
+### Execution and Outcome integrity — passed
 
-Then require one comparison choice:
+Real-Postgres verification covers:
 
-```text
-Improved / Mixed / Worse / Unclear
-```
+- cross-workspace Action mutation rejection;
+- durable completion timestamps;
+- Outcome blocked while Actions remain pending;
+- cancelled Actions are not counted as completed but allow evaluation once none remain pending;
+- Action completion alone leaves Design `active`;
+- Outcome + Evidence + Observation atomicity;
+- same-workspace semantic mismatch rollback;
+- cross-workspace Outcome rejection;
+- valid Outcome moves Design to `evaluated`;
+- evaluated Design Actions cannot be reopened/changed;
+- only one Outcome can evaluate a Design in Phase 3 v1.
 
-The expected result remains visible for comparison.
+### Review integrity — passed
 
-### Review UI
+Real-Postgres verification covers:
 
-Ask one short question at a time. Do not display a journal form or explanatory paragraphs.
+- Outcome Review linked to the same Goal + Problem;
+- wrong-Goal linkage rejection at DB layer;
+- duplicate Review rejection;
+- expected and actual context preserved in Reflection;
+- Phase 2 Reflection remains distinguishable because Phase 3 Review has an explicit Outcome link.
 
-## 5. Acceptance criteria
+### Client/privacy boundary — passed
 
-Phase 3 is Ready only if all of the following pass audit.
+Projection tests prove the browser does not receive internal Workspace IDs, Diagnosis Evidence UUIDs, Outcome Evidence UUIDs or Observation UUIDs.
 
-### End-to-end behavior
+## 6. Audit → fix → re-audit findings
 
-A real authenticated browser flow can:
+The required loop materially changed the implementation. Findings corrected include:
 
-1. begin from the durable Phase 2 Goal → Reality → Problem → Reflection → reviewed Principle state;
-2. request a Diagnosis proposal;
-3. inspect and confirm or revise the root-cause hypothesis;
-4. request a Design proposal tied to that accepted Diagnosis;
-5. confirm or revise the machine change and its small Action set;
-6. complete the required Actions;
-7. record actual Outcome Reality and compare it to the Design expectation;
-8. complete a post-Outcome Review/Reflection;
-9. reload and recover the complete durable chain.
+- async React context narrowing that failed typecheck;
+- browser verification coupled to duplicate Outcome text instead of the Execution surface;
+- missing explicit cross-workspace Design/Outcome proof;
+- missing Design revision proof;
+- Action completion potentially being confused with Design success;
+- Actions remaining mutable after an Outcome had evaluated the Design;
+- multiple Outcomes being structurally possible for one Design;
+- stale pending AI proposals after `Try another`;
+- editable Action inputs using unstable array-index React keys.
 
-### Diagnosis integrity
+The fixes strengthened durable semantics rather than weakening tests.
 
-Real-Postgres tests prove:
+## 7. Verification before readiness
 
-- cross-workspace Problem/Goal/Evidence identifiers cannot create or read a Diagnosis;
-- same-workspace wrong-Goal Problem pairing is rejected;
-- AI suggestion replay cannot create duplicate Diagnoses;
-- accepted/revised state reflects whether user text differs from the proposal;
-- Diagnosis can represent uncertainty and contradictory evidence rather than pretending certainty.
+Re-audit code head `3d590dd05cc4faa21fa9629f57060a9edac57b87` passed:
 
-### Design integrity
+- Foundation #149 ✅ — PostgreSQL 16, migrations 0001–0003, typecheck, unit tests, serial real-Postgres integration tests, production build;
+- Playwright #251 ✅ — authentication boundary, complete Phase 2 + Phase 3 browser loop, Outcome Review + reload, safe Knowledge projection, normal scrolling;
+- Lint #484 ✅ — shell validation + Biome.
 
-Real-Postgres tests prove:
+A final gate must run again on the documentation closeout head before merge.
 
-- Design must link to the same Goal + Problem + Diagnosis chain;
-- cross-workspace links fail;
-- one AI suggestion cannot create multiple Designs;
-- Design + initial Actions persist atomically;
-- user revision is recorded distinctly from accepting the AI proposal unchanged.
+## 8. Expected versus actual outcome
 
-### Execution integrity
+**Expected:** Principles can take one meaningful recognized Problem, form a user-reviewed root-cause hypothesis, redesign the relevant personal machine, execute a minimal set of commitments, observe whether Reality actually changed, and convert the result into new Reflection.
 
-Real-Postgres tests prove:
+**Actual:** achieved on PR #57. Principles now has a durable path from understanding → machine change → execution → observed Reality → learning. It does not equate completed Actions with success.
 
-- Actions cannot cross workspace/Design boundaries;
-- completion state is durable and records completion time;
-- Outcome cannot be recorded while active Actions remain pending;
-- cancelled Actions do not falsely count as completed work, but do allow the design to proceed to evaluation when no pending Actions remain.
+## 9. Known limitations
 
-### Outcome integrity
+Intentional limitations carried forward:
 
-Real-Postgres tests prove:
+- the Phase 3 change surface becomes available from the next normal server render/navigation after the Phase 2 Principle is reviewed; the two client surfaces do not yet share a live state store;
+- one active v1 execution chain is surfaced for the current selected Goal/Problem; no portfolio/project navigation exists;
+- one Outcome per Design in Phase 3 v1;
+- no reminders, recurring tasks, scheduling or generic project management;
+- no longitudinal pattern learning or Self Model yet;
+- no Organization Workspace collaboration;
+- no structured business connectors;
+- existing platform limitations such as password recovery and automated off-host restore remain outside this Phase.
 
-- Outcome is tied to the matching Goal + Problem + Diagnosis + Design;
-- Outcome + Evidence + Observation persist atomically;
-- cross-workspace or same-workspace semantic mismatches roll back;
-- the Design becomes `evaluated` only after a valid Outcome;
-- Action completion alone never marks the Design successful.
+## 10. Next boundary
 
-### Review integrity
+**Phase 4 — Learning Engine + Self Model remains Planned and has not started.**
 
-Real-Postgres tests prove:
+Phase 4 may use the longitudinal Goal, Problem, Diagnosis, Design, Action, Outcome, Reflection and Principle history created by Phases 2–3. Any inferred pattern must remain evidence-backed, inspectable and correctable.
 
-- Outcome Review Reflection must point to the matching Goal + Problem;
-- wrong-Goal/wrong-Problem links fail at the database layer;
-- post-Outcome Reflection persists the expected/actual comparison context;
-- Phase 2 pre-execution Reflection remains distinguishable from Phase 3 Outcome Review.
+## 11. Completion rule
 
-### Client/privacy boundary
+Phase 3 is **Ready**, not Complete, until PR #57 is merged to `main` and source-of-truth closeout records the merge SHA and Phase 4 boundary.
 
-The browser receives the minimum durable state required to render the loop. Internal workspace IDs, Evidence UUIDs and AI provenance IDs remain server-side.
-
-### UI
-
-Browser verification proves:
-
-- the full Phase 2 + Phase 3 path works without database editing or developer intervention;
-- normal document scrolling remains intact;
-- no explanatory microcopy wall or generic task-management shell is introduced;
-- reload recovers the current active stage.
-
-## 6. Explicit non-goals
-
-Phase 3 does not add:
-
-- generic Projects;
-- kanban/list/calendar task products;
-- teams or action assignment;
-- recurring task automation;
-- notifications/reminders;
-- Diagnosis knowledge graph;
-- multi-agent Council behavior;
-- organization permissions;
-- longitudinal Self Model;
-- automatic Principle trust promotion;
-- CRM/HR/Finance modules.
-
-These remain future work only when a later phase requires them.
-
-## 7. Expected outcome
-
-**Expected:** Principles can take one recognized meaningful Problem, form a user-reviewed root-cause hypothesis, redesign the relevant personal machine, execute a minimal set of commitments, observe whether Reality actually changed, and convert the result into a new Reflection.
-
-If successful, the product will no longer stop at insight. It will have a durable path from understanding to changed behavior/system and back to learning.
-
-## 8. Audit protocol
-
-This Phase must execute:
+Required process:
 
 ```text
 Understand requirements
@@ -379,5 +266,3 @@ Understand requirements
   → merge
   → report
 ```
-
-Phase 3 becomes Complete only after merge to `main` and source-of-truth closeout records actual outcome, limitations, verification evidence and the Phase 4 boundary.
