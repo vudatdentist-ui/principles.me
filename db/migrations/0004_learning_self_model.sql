@@ -96,15 +96,28 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   case_count integer;
+  distinct_problem_count integer;
+  pattern_kind text;
 BEGIN
-  SELECT count(*)::integer
-    INTO case_count
+  SELECT count(*)::integer, count(DISTINCT problem_id)::integer
+    INTO case_count, distinct_problem_count
   FROM learning_pattern_cases
   WHERE pattern_id = target_pattern
     AND workspace_id = target_workspace;
 
   IF case_count < 2 THEN
     RAISE EXCEPTION 'Learning Patterns require at least two distinct Reflection cases'
+      USING ERRCODE = '23514';
+  END IF;
+
+  SELECT kind
+    INTO pattern_kind
+  FROM learning_patterns
+  WHERE id = target_pattern
+    AND workspace_id = target_workspace;
+
+  IF pattern_kind = 'recurring_pattern' AND distinct_problem_count < 2 THEN
+    RAISE EXCEPTION 'Recurring Learning Patterns require at least two distinct Problems'
       USING ERRCODE = '23514';
   END IF;
 END;
