@@ -56,21 +56,34 @@ export type GeneratedLearningPattern = ResolvedLearningResult & {
   modelProvider: string;
 };
 
+function clip(value: string | null, limit = 700): string | null {
+  if (value === null) {
+    return null;
+  }
+  return value.length > limit ? `${value.slice(0, limit)}…` : value;
+}
+
 function safeCase(caseRecord: LearningCaseRecord, key: string) {
   return {
-    diagnosis: caseRecord.diagnosis,
-    design: caseRecord.design,
-    expected: caseRecord.expected,
-    goal: caseRecord.goal,
-    happened: caseRecord.happened,
+    diagnosis: clip(caseRecord.diagnosis),
+    design: clip(caseRecord.design),
+    expected: clip(caseRecord.expected),
+    goal: clip(caseRecord.goal, 500),
+    happened: clip(caseRecord.happened),
     key,
-    learning: caseRecord.learning,
-    outcome: caseRecord.outcome,
+    learning: clip(caseRecord.learning),
+    outcome: caseRecord.outcome
+      ? {
+          actualResult: clip(caseRecord.outcome.actualResult),
+          comparison: caseRecord.outcome.comparison,
+          expectedResult: clip(caseRecord.outcome.expectedResult),
+        }
+      : null,
     phase: caseRecord.phase,
-    problem: caseRecord.problem,
-    recurrenceNote: caseRecord.recurrenceNote,
+    problem: clip(caseRecord.problem, 700),
+    recurrenceNote: clip(caseRecord.recurrenceNote),
     recurring: caseRecord.recurring,
-    surprise: caseRecord.surprise,
+    surprise: clip(caseRecord.surprise),
   };
 }
 
@@ -169,9 +182,9 @@ export async function generateLearningPattern(input: {
           cases: [...caseMap.entries()].map(([key, item]) => safeCase(item, key)),
           principles: [...principleMap.entries()].map(([key, item]) => ({
             key,
-            rationale: item.rationale,
-            rule: item.rule,
-            trigger: item.trigger,
+            rationale: clip(item.rationale),
+            rule: clip(item.rule),
+            trigger: clip(item.trigger),
           })),
         }),
       },
