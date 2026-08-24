@@ -79,6 +79,32 @@ function completionFor(body) {
         "For two weeks, routine operating decisions proceed without founder intervention.",
     };
   }
+  if (system.includes("Learning Pattern capability")) {
+    return {
+      caseKeys: ["C1", "C2"],
+      confidence: 0.78,
+      contradictingEvidence:
+        "The history covers one Problem before and after one intervention, so it does not prove a broad recurring trait.",
+      implication:
+        "When a recurring decision depends on you, change the default authority rule and observe behavior instead of relying on role discussion alone.",
+      kind: "design_learning",
+      principleRevision: {
+        principleKey: "P1",
+        proposedRationale:
+          "The before/after cases show that explicit default authority changed behavior while discussing responsibilities alone did not.",
+        proposedRule:
+          "Name the decision owner and their default authority before the next routine case, then verify the next real outcome.",
+        proposedTrigger:
+          "When routine decisions wait for me after responsibilities have already been discussed",
+      },
+      statement:
+        "Explicit default authority changed behavior where discussing responsibilities alone had not.",
+      supportingEvidence:
+        "Before the machine change, routine decisions waited for founder input; after the authority rule, the next cases moved without waiting.",
+      uncertainty:
+        "This is one before/after cycle, so the causal interpretation should remain a hypothesis and be tested again.",
+    };
+  }
   if (system.includes("Reflect capability")) {
     return {
       confidence: 0.72,
@@ -112,9 +138,9 @@ const server = http.createServer((request, response) => {
     const content = JSON.stringify(completionFor(body));
     json(response, 200, {
       choices: [{ message: { content, role: "assistant" } }],
-      id: "mock-deepseek-phase3",
+      id: "mock-deepseek-phase4",
       model: "mock-deepseek",
-      usage: { completion_tokens: 50, prompt_tokens: 50, total_tokens: 100 },
+      usage: { completion_tokens: 70, prompt_tokens: 70, total_tokens: 140 },
     });
   });
 });
