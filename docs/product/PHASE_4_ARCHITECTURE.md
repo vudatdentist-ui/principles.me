@@ -1,431 +1,170 @@
 # Phase 4 — Learning Engine + Self Model
 
-**Status:** Active implementation contract  
+**Status:** **Ready — verified on branch, not merged**  
 **Started:** 2026-08-24  
 **Branch:** `phase/4-learning-self-model`  
-**Base:** Phase 0–3 Complete on `main`
+**Base:** Phases 0–3 Complete on `main`
 
-This document is the implementation, audit and acceptance contract for Phase 4.
-
-Phase 4 adds a longitudinal learning layer on top of the durable People history already produced by Phases 2 and 3:
+Phase 4 adds a longitudinal learning layer:
 
 ```text
 History
   → Pattern hypothesis
   → inspect cases / counter-evidence / uncertainty
   → accept / revise / reject
-  → revise a Principle when useful
+  → optionally revise a Principle
   → test again in future Reality
 ```
 
-The objective is not to produce a personality profile, insight feed or psychological score. The objective is to let Principles form a small number of evidence-backed, user-correctable hypotheses about recurring machine behavior and use those hypotheses to improve future Principles.
+The Self Model is **not** a personality profile. It is the current set of user-accepted/revised Learning Pattern hypotheses supported by durable history.
 
-## 1. Product invariants
+## Product invariants
 
-### Self Model means correctable hypotheses, not identity labels
+- Pattern ≠ immutable identity label.
+- AI must not present personality, moral-worth, demographic or clinical/mental-health inference as fact.
+- A proposal requires at least two distinct completed Reflection cases from the same Workspace.
+- `recurring_pattern` requires cases from at least two distinct Problems; a same-Problem before/after cycle may support `design_learning` or `principle_effectiveness`, but not recurrence.
+- Observation and inference remain separate: the Pattern is an inference over durable Goal/Problem/Reflection/Diagnosis/Design/Outcome history.
+- Every Pattern retains supporting evidence, counter-evidence, uncertainty, optional confidence and exact Reflection cases.
+- AI output remains pending until the user accepts or revises it.
+- Rejected proposals create no durable Self Model Pattern row.
+- Learning-driven Principle revision requires explicit user confirmation, preserves before/after wording and returns the Principle to `revised + testing`; it never creates `trusted` state.
+- No charts, scores, trait feeds, streaks or generic analytics dashboard.
 
-The Self Model is the current set of accepted/revised Learning Patterns. A Learning Pattern describes something the available history suggests about cause-and-effect, behavior, machine constraints, Design effectiveness or Principle effectiveness.
+## Delivered durable slice
 
-It is not a statement of immutable identity.
-
-The product must not turn observations into labels such as:
-
-- "you are lazy";
-- "you are a bad leader";
-- personality-type claims presented as fact;
-- clinical or mental-health diagnoses;
-- demographic or other sensitive-attribute inference.
-
-A valid pattern is phrased as a revisable hypothesis about observed situations, choices, machine behavior or outcomes.
-
-### Longitudinal means more than one durable case
-
-AI may not create a Phase 4 Pattern proposal from a single Reflection.
-
-A proposal requires at least two distinct completed Reflections in the same Workspace. The model must be told whether those Reflections belong to:
-
-- the same Problem observed at different times; or
-- different Problems/cases.
-
-It must not claim cross-case recurrence when the evidence only shows one Problem before/after an intervention.
-
-### Observation and inference remain separate
-
-The source history remains durable Reality state: Goals, Problems, Diagnoses, Designs, Outcomes, Reflections and Principles.
-
-A Learning Pattern is an inference over that history. It must preserve:
-
-- a concise pattern statement;
-- an implication for future behavior or machine design;
-- evidence that supports the hypothesis;
-- evidence that weakens or contradicts it;
-- uncertainty;
-- optional confidence;
-- the exact durable Reflection cases used to justify it.
-
-AI output remains a proposal until the user accepts or revises it.
-
-### The user can correct the model
-
-The user must be able to:
-
-- inspect the cases behind a proposal;
-- edit the pattern before accepting it;
-- reject a bad proposal;
-- retain the edited wording as `revised`, distinct from accepting AI wording unchanged.
-
-Rejected AI proposals remain auditable as rejected AI Suggestions; they do not become Self Model entries.
-
-### Learning must have a behavioral use
-
-An accepted/revised Pattern is not valuable merely because it sounds insightful.
-
-Phase 4 must provide one concrete use path: an accepted/revised Pattern can inform a user-reviewed revision of an existing Principle.
-
-Applying a learning-driven Principle revision must:
-
-- require explicit user confirmation;
-- preserve the previous Principle wording in durable revision history;
-- link the revision to the Learning Pattern that informed it;
-- move the revised Principle back into `testing`, because a changed Principle has to earn trust again;
-- never mark a Principle `trusted` automatically.
-
-### No analytics dashboard
-
-Phase 4 does not add charts, scores, streaks, trait radar diagrams, insight feeds or a generic dashboard.
-
-The primary Learning surface should answer one question:
-
-```text
-What is your history teaching you?
-```
-
-Only evidence-backed Patterns deserve visible space.
-
-## 2. Durable Phase 4 slice
-
-Migration 0004 may add only schema justified by the vertical slice.
+Migration `0004_learning_self_model.sql` adds:
 
 ### Learning Pattern
 
-Required fields:
+- Workspace + creator + optional AI provenance;
+- kinds: `recurring_pattern`, `design_learning`, `principle_effectiveness`, `constraint_hypothesis`;
+- statement, implication, evidence for/against, uncertainty, optional confidence;
+- acceptance `accepted | revised`;
+- lifecycle `active | applied | challenged | retired`;
+- one durable Pattern per AI Suggestion.
 
-- workspace;
-- creator;
-- optional origin AI Suggestion;
-- `kind`;
-- pattern statement;
-- implication;
-- supporting-evidence summary;
-- contradicting-evidence summary;
-- uncertainty;
-- optional confidence;
-- acceptance state (`accepted` or `revised`);
-- lifecycle state (`active`, `applied`, `challenged`, `retired`);
-- applied timestamp when a Principle revision is applied.
+### Pattern cases
 
-Phase 4 v1 Pattern kinds:
+`learning_pattern_cases` links each Pattern to completed Reflections with Workspace + Goal + Problem semantics.
 
-- `recurring_pattern` — a repeated pattern across distinct cases;
-- `design_learning` — what changed or persisted across a before/after Design cycle;
-- `principle_effectiveness` — evidence about whether a Principle appears to help;
-- `constraint_hypothesis` — a revisable hypothesis about a recurring personal machine constraint.
+Deferred PostgreSQL constraints enforce:
 
-A single AI Suggestion may create at most one durable Learning Pattern.
+- at least two distinct Reflection cases per durable Pattern;
+- `recurring_pattern` uses at least two distinct Problems;
+- deleting/relinking cases cannot silently invalidate a Pattern.
 
-### Pattern Cases
+### Principle revision history
 
-Each accepted/revised Pattern must link to at least two distinct completed Reflection cases.
+`principle_learning_revisions` preserves:
 
-The join must retain Workspace + Goal + Problem semantics so a case cannot be attached from another tenant or from the wrong Goal/Problem chain.
+- Pattern and Principle provenance;
+- previous trigger/rule/rationale;
+- revised trigger/rule/rationale;
+- actor and timestamp.
 
-Client projection may expose a safe case summary and Reflection ID already used by existing People UI, but must not expose Evidence UUIDs, Workspace IDs or AI provenance IDs.
+Only an active accepted/revised Pattern can drive the revision. Applying it marks the Pattern `applied` and the Principle `revised + testing`.
 
-### Principle Revision History
+## AI boundary
 
-Learning-driven Principle changes require durable history rather than silent in-place mutation with no record of the previous rule.
+The model never receives durable Reflection/Principle UUIDs. Server-side history is mapped to ephemeral `C1…C8` case keys and `P1…` Principle keys. Unknown/invented keys are rejected before persistence.
 
-Each revision record keeps:
+Each proposal considers the **8 most recent completed Reflection cases**, returned to the model in chronological order. Model-facing text is bounded to prevent prompt/context growth with long history.
 
-- workspace;
-- Principle;
-- Learning Pattern;
-- previous trigger / rule / rationale;
-- revised trigger / rule / rationale;
-- actor;
-- timestamp.
+`Try another` rejects the previous pending Learning Suggestion before storing the replacement, preventing stale replay.
 
-The Principle itself becomes the revised wording and returns to `testing`.
+## UI
 
-A Pattern may inform at most one revision of the same Principle in Phase 4 v1. Repeated future revisions may be added deliberately later when longitudinal revision UX is proven.
-
-## 3. Learning case model
-
-The Learning Engine loads completed Reflections server-side and enriches them from the existing durable chain when available.
-
-A safe model-facing case may include:
-
-```text
-case key
-Goal desired Reality
-Problem statement
-Reflection happened / expected / surprise / learning
-whether the case is an Outcome Review
-Diagnosis root-cause hypothesis, if available
-Design machine change, if available
-Outcome expected / actual / comparison, if available
-```
-
-Internal UUIDs are mapped to ephemeral keys such as `C1`, `C2`, `P1` before model generation.
-
-The AI response refers only to those keys. The server resolves keys back to Workspace-scoped durable IDs before persistence.
-
-The model must never invent a case key.
-
-## 4. AI boundary
-
-AI is allowed to:
-
-- compare longitudinal durable cases;
-- propose one Pattern hypothesis at a time;
-- identify evidence for and against the hypothesis;
-- explicitly state uncertainty;
-- propose an implication;
-- optionally propose a revision to one existing non-rejected/non-retired Principle when the historical cases actually support that link.
-
-AI is not allowed to:
-
-- generate a Pattern from fewer than two completed Reflections;
-- infer immutable identity/personality as fact;
-- make clinical/mental-health diagnoses;
-- invent events, evidence or case keys;
-- persist an accepted Pattern without user review;
-- revise a Principle without user confirmation;
-- auto-promote a Principle to trusted;
-- use another Workspace's history.
-
-Every Phase 4 AI mutation endpoint preserves the established boundary:
-
-1. trusted same-origin mutation context;
-2. authenticated owned Personal Workspace;
-3. durable Workspace AI quota before provider work;
-4. private history loaded server-side and Workspace-scoped;
-5. structured model output validated before persistence;
-6. model-facing ephemeral case/principle keys resolved server-side;
-7. no internal Workspace/Evidence/AI provenance identifiers in browser projection;
-8. durable user acceptance/revision before Pattern enters the Self Model.
-
-## 5. Proposal lifecycle
-
-```text
-request Pattern
-   ↓
-server loads ≥2 completed cases
-   ↓
-old pending learning proposal superseded
-   ↓
-AI Suggestion: pending
-   ↓
-proposal shown with cases / uncertainty
-   ├─ reject → AI Suggestion rejected, no Pattern row
-   ├─ accept → Pattern accepted / active
-   └─ edit   → Pattern revised / active
-```
-
-A pending proposal must be one-time consumable. Replay must not create duplicate Patterns.
-
-`Try another` supersedes the previous pending Learning Suggestion so an old proposal cannot later be replayed accidentally.
-
-## 6. Principle improvement lifecycle
-
-When an accepted/revised Pattern includes a relevant existing Principle:
-
-```text
-Pattern active
-  ↓
-proposed Principle revision
-  ↓
-user inspect/edit
-  ↓
-confirm
-  ↓
-Principle revision history row
-  + Pattern ↔ Principle provenance
-  + Principle wording updated
-  + lifecycle → testing
-  + acceptance_state → revised
-  + Pattern lifecycle → applied
-```
-
-If the Pattern has no defensible Principle target, the Pattern may still be accepted. The product should not force a revision for every insight.
-
-## 7. Primary UI
-
-Phase 4 adds a secondary authenticated `/learning` surface and one `Learning` navigation item alongside People and Knowledge.
-
-The page remains sparse.
-
-### Empty / insufficient-history state
-
-Do not fabricate value.
-
-If fewer than two completed Reflections exist:
-
-```text
-Learning
-Not enough history yet.
-```
-
-No AI request button is shown until the minimum history exists.
-
-### Ready state
+Authenticated `/learning` is intentionally sparse:
 
 ```text
 Learning
 What is your history teaching you?
-[ Find a pattern ]
 ```
 
-### Proposal state
+- fewer than two completed Reflections → `Not enough history yet.` and no AI action;
+- ready → `Find a pattern`;
+- proposal → hypothesis + implication, with cases/evidence/counter-evidence/uncertainty behind progressive disclosure;
+- user actions → Keep, Edit, Reject, Try another;
+- accepted/revised Patterns render as compact Self Model hypotheses;
+- relevant Patterns may expose `Revise this principle` with an explicit editable confirmation form.
 
-Emphasize only the hypothesis and implication.
+No personality score, analytics dashboard or generic memory surface was added.
 
-Cases, supporting evidence, counter-evidence, uncertainty and confidence are progressively disclosed.
+## Acceptance result
 
-Actions:
+### Longitudinal integrity — passed
 
-```text
-Keep this pattern
-Edit
-Reject
-Try another
-```
+Verified that:
 
-### Accepted Self Model state
+- fewer than two completed Reflections do not expose pattern generation in the browser and the API rejects insufficient history;
+- only Workspace-scoped history is loaded;
+- ephemeral case/Principle keys resolve only to supplied durable records;
+- unknown or duplicate case keys fail;
+- same-Problem `recurring_pattern` fails both model resolution and PostgreSQL persistence;
+- a recurring Pattern across two distinct Problems succeeds;
+- stale pending proposals are superseded.
 
-Show accepted/revised Patterns as compact durable hypotheses, newest first.
+### Pattern persistence / correctability — passed
 
-Do not call them traits.
+Real-Postgres and browser tests prove:
 
-If a Pattern contains a defensible Principle revision target, show one next action:
+- minimum two-case invariant;
+- cross-Workspace and wrong Goal/Problem case links fail;
+- one AI Suggestion cannot create multiple Patterns;
+- replay fails;
+- unchanged proposal → `accepted`;
+- user-edited proposal → `revised`;
+- rejection creates no Pattern and records rejected AI Suggestion;
+- user can inspect cases, correct a Pattern, reload and recover it.
 
-```text
-Revise this principle
-```
+### Principle improvement — passed
 
-The Principle revision form exposes trigger, rule and rationale and requires explicit confirmation.
+Verified that:
 
-## 8. Acceptance criteria
+- only active accepted/revised Patterns may revise a Principle;
+- Pattern and Principle cannot cross Workspace boundaries;
+- previous wording is preserved;
+- Pattern→Principle provenance is durable;
+- updated Principle becomes `revised + testing`, never `trusted`;
+- replay of an already-applied Pattern revision fails;
+- browser reload recovers the revised testing Principle.
 
-Phase 4 is Ready only if all criteria pass audit.
+### Privacy — passed
 
-### Longitudinal proposal integrity
+Learning browser projection excludes Workspace IDs, Evidence UUIDs, AI Suggestion IDs and internal Goal/Problem join IDs. Safe authorized Reflection IDs and case summaries remain available for inspectability.
 
-Real-Postgres and AI-boundary tests prove:
+## Audit findings corrected
 
-- fewer than two completed Reflections cannot request a Pattern proposal;
-- only same-Workspace history is loaded;
-- a proposal can distinguish same-Problem before/after learning from recurrence across distinct Problems;
-- model case keys resolve only to the supplied Workspace-scoped cases;
-- unknown/invented case keys are rejected;
-- stale pending proposals are superseded on retry.
+The self-reinforcing loop found and fixed:
 
-### Pattern persistence integrity
+1. TypeScript inferred ephemeral Maps as template-literal keys and rejected validated runtime strings; Maps now explicitly use string keys while runtime validation remains strict.
+2. AI validation alone could not prevent a malicious/edited client from relabeling same-Problem cases as `recurring_pattern`; the semantic rule is now also enforced by a deferred PostgreSQL constraint and real-Postgres boundary test.
+3. Initial history loading could eventually prefer the oldest 40 Reflections and miss newer learning; proposal generation now uses the 8 most recent completed Reflection cases in chronological order with bounded model-facing excerpts.
 
-Real-Postgres tests prove:
+## Verification
 
-- accepted/revised Pattern requires at least two distinct completed Reflections;
-- Pattern cases cannot cross Workspace boundaries;
-- Pattern cases cannot use the wrong Goal/Problem semantics for a Reflection;
-- a single AI Suggestion cannot create multiple Patterns;
-- proposal replay fails;
-- accepting unchanged AI wording records `accepted`;
-- editing material Pattern wording records `revised`;
-- rejection creates no Self Model Pattern row and marks the AI Suggestion rejected.
+Final runtime head before source-of-truth closeout: `4ae0d5cefc51b8137f943720f68bbac86175ac30`
 
-### Correctability
+- Foundation #163 ✅ — PostgreSQL 16, migrations 0001–0004, typecheck, Learning unit tests, serial real-Postgres integration tests, production build;
+- Lint #498 ✅;
+- Playwright #265 ✅ — authentication boundary, insufficient-history state, full Phase 2 + 3 + 4 browser path, Pattern correction, Principle revision, reload/rejection, Knowledge privacy and normal scrolling.
 
-Browser verification proves the user can:
+## Expected versus actual outcome
 
-- inspect the cases behind a proposal;
-- edit and save a corrected Pattern;
-- reject a proposal;
-- reload and recover accepted/revised Patterns.
+**Expected:** durable personal history produces one evidence-backed, inspectable and correctable longitudinal Pattern that can improve a Principle without pretending the inference is fixed truth.
 
-No Pattern becomes durable accepted Self Model state solely because AI proposed it.
+**Actual:** achieved on the branch. A real browser flow can create the two historical Reflection cases through normal product use, generate a Pattern, inspect evidence/counter-evidence/uncertainty, correct the hypothesis, keep it as revised Self Model state, use it to revise a Principle back into testing, reload that state, and reject a later bad proposal.
 
-### Principle improvement integrity
+## Known limitations
 
-Real-Postgres tests prove:
+- Pattern discovery is user-triggered; there are no proactive notifications or scheduled learning jobs.
+- Each proposal considers the 8 most recent completed Reflection cases rather than performing semantic retrieval over an unlimited history.
+- Phase 4 v1 applies one Pattern to at most one Principle revision; richer multi-revision history is deferred.
+- Learning is a secondary `/learning` surface rather than a shared live state store with the People loop.
+- No generic conversation memory, personality scoring, organization learning or structured business connectors.
+- Existing platform gaps such as password recovery and automated off-host restore remain.
 
-- only accepted/revised active Patterns may drive Principle revision;
-- Pattern and Principle must belong to the same Workspace;
-- previous Principle wording is preserved in revision history;
-- Pattern→Principle linkage is durable;
-- the updated Principle becomes `revised` + `testing`;
-- learning-driven revision never creates `trusted` state;
-- replay of the same Pattern→Principle revision is rejected or idempotently prevented.
+## Merge boundary
 
-Browser verification proves a user can inspect/edit a proposed Principle revision, confirm it and reload the revised testing Principle.
-
-### Privacy / client projection
-
-Browser-facing Learning state excludes:
-
-- Workspace IDs;
-- Evidence UUIDs;
-- AI Suggestion IDs;
-- raw database metadata.
-
-Safe case summaries may include Goal/Problem/Reflection/Outcome content already authorized to that user.
-
-### UI
-
-Browser verification proves:
-
-- People, Knowledge and Learning navigation remains small;
-- `/learning` shows no pattern-generation action before enough history exists;
-- proposal details use progressive disclosure;
-- no personality score/dashboard/trait feed is introduced;
-- normal document scrolling remains intact.
-
-## 9. Explicit non-goals
-
-Phase 4 does not add:
-
-- personality tests or psychometric scoring;
-- mental-health diagnosis;
-- immutable trait labels;
-- gamification/streaks/XP;
-- charts or analytics dashboards;
-- proactive notifications/reminders;
-- generic conversation memory;
-- vectorized personal memory outside existing RAGFlow;
-- autonomous Principle trust promotion;
-- automated machine redesign without user confirmation;
-- Organization/team models;
-- CRM/finance/HR connectors;
-- generic Projects or task-management breadth.
-
-## 10. Expected outcome
-
-**Expected:** Principles can take a real user's durable history, surface one evidence-backed and correctable longitudinal Pattern, show exactly which cases support it, preserve counter-evidence/uncertainty, and let the user use accepted learning to revise a Principle that must be tested again.
-
-If successful, Principles starts compounding value from history without pretending that AI has discovered a fixed truth about the person.
-
-## 11. Audit protocol
-
-This Phase executes:
-
-```text
-Understand requirements
-  → define acceptance criteria
-  → implement
-  → audit
-  → fix
-  → re-audit
-  → final output check
-  → report
-```
-
-The current user request does not include merge. Phase 4 may become **Ready** on its branch/PR after final verification; it becomes **Complete** only after a later explicit merge and source-of-truth closeout on `main`.
+The current user request did **not** ask to merge. Phase 4 is therefore **Ready**, not Complete. It becomes Complete only after a later explicit merge to `main` and post-merge source-of-truth closeout.
