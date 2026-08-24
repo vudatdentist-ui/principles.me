@@ -20,8 +20,8 @@ jobs:
     runs-on: [self-hosted, linux, x64, principles-ci]
     steps:
       - uses: actions/checkout@v4
-      - name: Validate production deploy shell
-        run: bash -n scripts/deploy-production.sh
+      - name: Validate shell scripts
+        run: bash -n scripts/deploy-production.sh scripts/ci-postgres.sh
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:

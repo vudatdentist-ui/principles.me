@@ -1,0 +1,91 @@
+.shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px 20px;
+}
+
+.panel {
+  width: min(100%, 420px);
+}
+
+.panel h1 {
+  margin: 0 0 44px;
+  font-size: clamp(44px, 9vw, 68px);
+  font-weight: 620;
+  letter-spacing: -0.055em;
+  line-height: 0.96;
+}
+
+.mode {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.mode button {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 10px 15px;
+  font-size: 15px;
+  font-weight: 620;
+}
+
+.mode .activeMode {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.panel form {
+  display: grid;
+  gap: 12px;
+}
+
+.panel label {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 620;
+}
+
+.panel input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+  padding: 15px 16px;
+  font: inherit;
+  font-size: 17px;
+}
+
+.panel input:focus {
+  border-color: #9c9c93;
+}
+
+.error {
+  margin-top: 8px;
+  color: var(--danger);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.submit {
+  cursor: pointer;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  padding: 13px 18px;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.submit:disabled {
+  cursor: default;
+  opacity: 0.45;
+}

@@ -1,3 +1,6 @@
+import { databaseConfigured } from "@/lib/db/config";
+import { databaseHealth } from "@/lib/db/health";
+
 function isLocalhostUrl(value: string): boolean {
   try {
     const hostname = new URL(value).hostname.toLowerCase();
@@ -16,22 +19,27 @@ function booleanEnv(name: string, fallback: boolean): boolean {
 }
 
 export async function GET(): Promise<Response> {
+  const dbConfigured = databaseConfigured();
+  const dbHealth = dbConfigured
+    ? await databaseHealth()
+    : { reachable: false, schemaReady: false };
   const deepseekConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
-  const ragflowConfigured = Boolean(
-    process.env.RAGFLOW_API_KEY?.trim() &&
-      process.env.RAGFLOW_DATASET_IDS?.trim()
+  const ragflowConfigured = Boolean(process.env.RAGFLOW_API_KEY?.trim());
+  const ragflowBootstrapDatasetsConfigured = Boolean(
+    process.env.RAGFLOW_DATASET_IDS?.trim()
   );
   const ragflowBaseUrl = (
     process.env.RAGFLOW_BASE_URL ?? "http://localhost:9380"
   ).trim();
   const ragflowEndpointReady =
     process.env.NODE_ENV !== "production" || !isLocalhostUrl(ragflowBaseUrl);
-  const liveSearchConfigured = Boolean(
-    process.env.BRAVE_SEARCH_API_KEY?.trim()
-  );
+  const liveSearchConfigured = Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim());
   const liveSearchRequired = booleanEnv("LIVE_SEARCH_REQUIRED", false);
   const liveSearchReady = !liveSearchRequired || liveSearchConfigured;
   const ready =
+    dbConfigured &&
+    dbHealth.reachable &&
+    dbHealth.schemaReady &&
     deepseekConfigured &&
     ragflowConfigured &&
     ragflowEndpointReady &&
@@ -41,9 +49,13 @@ export async function GET(): Promise<Response> {
   return Response.json(
     {
       checks: {
+        databaseConfigured: dbConfigured,
+        databaseReady: dbHealth.reachable,
+        databaseSchemaReady: dbHealth.schemaReady,
         deepseekConfigured,
         liveSearchConfigured,
         liveSearchReady,
+        ragflowBootstrapDatasetsConfigured,
         ragflowConfigured,
         ragflowEndpointReady,
       },

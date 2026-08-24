@@ -21,6 +21,8 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/db ./db
+COPY --from=builder /app/scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=builder /app/scripts/smoke-production.mjs ./scripts/smoke-production.mjs
 EXPOSE 3000
 HEALTHCHECK --interval=5s --timeout=4s --start-period=8s --retries=12 CMD node -e "fetch('http://127.0.0.1:3000/api/health',{cache:'no-store'}).then(async r=>{const p=await r.json();process.exit(r.ok&&p.status==='ok'&&p.version===process.env.APP_VERSION?0:1)}).catch(()=>process.exit(1))"

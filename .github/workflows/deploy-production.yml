@@ -18,6 +18,16 @@ jobs:
     name: Verify release
     runs-on: [self-hosted, linux, x64, principles-ci]
     timeout-minutes: 15
+    env:
+      APP_ORIGIN: http://127.0.0.1:3000
+      AUTH_SIGNUP_MODE: open
+      POSTGRES_DB: principles_release_test
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PASSWORD: principles_release_test
+      POSTGRES_PORT: 55434
+      POSTGRES_USER: principles
+      RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS: "true"
+      RAGFLOW_DATASET_IDS: dataset-a,dataset-b
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,13 +40,20 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Start PostgreSQL 16
+        run: bash scripts/ci-postgres.sh start
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Verify application
         run: |
+          pnpm db:migrate
           pnpm typecheck
           pnpm test:unit
+          pnpm test:integration
           pnpm build
+      - name: Stop PostgreSQL
+        if: always()
+        run: bash scripts/ci-postgres.sh stop
 
   deploy:
     name: Deploy to Hostinger VPS
@@ -244,7 +261,7 @@ jobs:
               state: success ? "success" : "failure",
               context: "production/deploy",
               description: success
-                ? "canary Q&A smoke, exact image and primary route verified"
+                ? "database, auth boundary, canary and primary route verified"
                 : "production deployment failed; inspect the linked run",
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             });

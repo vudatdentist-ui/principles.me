@@ -2,15 +2,20 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import type { EvidenceReference } from "@/features/evidence/contracts";
+import type { ClientEvidenceReference } from "@/features/evidence/client-reference";
 import styles from "./ask-workspace.module.css";
 
 type AskPhase = "idle" | "submitting" | "done" | "error";
-type LiveState = "disabled" | "empty" | "ok" | "unavailable";
+type RetrievalState = "disabled" | "empty" | "ok" | "unavailable";
 
 type StreamEvent =
   | { type: "status"; message: string; stage: "retrieving" | "answering" }
-  | { type: "sources"; references: EvidenceReference[]; live?: LiveState }
+  | {
+      type: "sources";
+      references: ClientEvidenceReference[];
+      live?: RetrievalState;
+      private?: RetrievalState;
+    }
   | { type: "token"; token: string }
   | { type: "error"; code: string; message: string; retryable: boolean }
   | { type: "done" };
@@ -20,7 +25,6 @@ function parseEvent(line: string): StreamEvent | null {
   if (!trimmed) {
     return null;
   }
-
   try {
     const value = JSON.parse(trimmed) as StreamEvent;
     return value && typeof value === "object" && "type" in value ? value : null;
@@ -29,11 +33,17 @@ function parseEvent(line: string): StreamEvent | null {
   }
 }
 
-export function AskWorkspace() {
+export function AskWorkspace({
+  email,
+  workspaceName,
+}: {
+  email: string;
+  workspaceName: string;
+}) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [sources, setSources] = useState<EvidenceReference[]>([]);
-  const [status, setStatus] = useState("Ask across knowledge and the live web.");
+  const [sources, setSources] = useState<ClientEvidenceReference[]>([]);
+  const [status, setStatus] = useState("Ready");
   const [phase, setPhase] = useState<AskPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const lastQuestion = useRef("");
@@ -41,13 +51,18 @@ export function AskWorkspace() {
   const canSubmit = question.trim().length >= 3 && phase !== "submitting";
   const sourceLabel = useMemo(() => {
     if (phase === "submitting" && sources.length === 0) {
-      return "Searching sources…";
+      return "Searching…";
     }
     if (sources.length === 0) {
-      return "No sources retrieved";
+      return "No sources";
     }
     return `${sources.length} source${sources.length === 1 ? "" : "s"}`;
   }, [phase, sources.length]);
+
+  async function signOut() {
+    await fetch("/api/auth/signout", { method: "POST" });
+    window.location.reload();
+  }
 
   async function runAsk(rawQuestion: string) {
     const trimmed = rawQuestion.trim();
@@ -60,7 +75,7 @@ export function AskWorkspace() {
     setAnswer("");
     setSources([]);
     setError(null);
-    setStatus("Searching knowledge and current sources…");
+    setStatus("Searching…");
 
     try {
       const response = await fetch("/api/ask", {
@@ -69,8 +84,15 @@ export function AskWorkspace() {
         method: "POST",
       });
 
+      if (response.status === 401) {
+        window.location.reload();
+        return;
+      }
+      if (response.status === 429) {
+        throw new Error("Limit reached. Try later.");
+      }
       if (!response.ok || !response.body) {
-        throw new Error("The Q&A service is unavailable.");
+        throw new Error("Request failed.");
       }
 
       const reader = response.body.getReader();
@@ -83,7 +105,6 @@ export function AskWorkspace() {
         if (done) {
           break;
         }
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split(/\r?\n/);
         buffer = lines.pop() ?? "";
@@ -93,7 +114,6 @@ export function AskWorkspace() {
           if (!event) {
             continue;
           }
-
           if (event.type === "status") {
             setStatus(event.message);
           } else if (event.type === "sources") {
@@ -104,11 +124,11 @@ export function AskWorkspace() {
             terminal = true;
             setError(event.message);
             setPhase("error");
-            setStatus(event.retryable ? "You can try again." : "Request failed.");
+            setStatus(event.retryable ? "Try again" : "Failed");
           } else if (event.type === "done") {
             terminal = true;
             setPhase("done");
-            setStatus("Answer complete.");
+            setStatus("Complete");
           }
         }
       }
@@ -117,21 +137,20 @@ export function AskWorkspace() {
       if (tail?.type === "done") {
         terminal = true;
         setPhase("done");
-        setStatus("Answer complete.");
+        setStatus("Complete");
       } else if (tail?.type === "error") {
         terminal = true;
         setError(tail.message);
         setPhase("error");
-        setStatus(tail.retryable ? "You can try again." : "Request failed.");
+        setStatus(tail.retryable ? "Try again" : "Failed");
       }
-
       if (!terminal) {
-        throw new Error("The answer stream ended unexpectedly.");
+        throw new Error("Stream ended unexpectedly.");
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The request failed.");
+      setError(cause instanceof Error ? cause.message : "Request failed.");
       setPhase("error");
-      setStatus("You can try again.");
+      setStatus("Try again");
     }
   }
 
@@ -146,14 +165,19 @@ export function AskWorkspace() {
         <a className={styles.brand} href="/" aria-label="Principles home">
           Principles
         </a>
-        <span className={styles.productDirection}>Personal + business management</span>
+        <div className={styles.account}>
+          <span>{workspaceName}</span>
+          <span>{email}</span>
+          <button onClick={() => void signOut()} type="button">
+            Sign out
+          </button>
+        </div>
       </header>
 
       <section className={styles.workspace}>
         <div className={styles.intro}>
           <p className={styles.eyebrow}>Knowledge · Live · AI</p>
           <h1>Ask anything.</h1>
-          <p>Private knowledge and current public evidence, one answer.</p>
         </div>
 
         <form className={styles.askForm} onSubmit={onSubmit}>
@@ -182,7 +206,7 @@ export function AskWorkspace() {
 
         {error ? (
           <section className={styles.error} role="alert">
-            <strong>Could not finish the answer.</strong>
+            <strong>Could not finish.</strong>
             <span>{error}</span>
             {lastQuestion.current ? (
               <button
@@ -203,7 +227,7 @@ export function AskWorkspace() {
               <span>{sourceLabel}</span>
             </div>
             <article className={styles.answer}>
-              {answer || "Preparing an answer…"}
+              {answer || "Preparing…"}
             </article>
           </section>
         ) : null}
@@ -222,15 +246,12 @@ export function AskWorkspace() {
                       <span className={styles.sourceKey}>{source.key}</span>
                       <span>{source.title}</span>
                     </summary>
-                    <p>{source.text}</p>
+                    <p>{source.snippet}</p>
                     <div className={styles.sourceMeta}>
                       <span>{source.sourceType === "live_web" ? "LIVE" : "RAG"}</span>
-                      {source.score === null ? null : (
-                        <span>score {source.score.toFixed(3)}</span>
-                      )}
                       {source.url ? (
                         <a href={source.url} rel="noreferrer" target="_blank">
-                          open
+                          Open
                         </a>
                       ) : null}
                     </div>
@@ -238,7 +259,7 @@ export function AskWorkspace() {
                 ))}
               </div>
             ) : (
-              <p className={styles.emptySources}>No sources retrieved.</p>
+              <p className={styles.emptySources}>No sources.</p>
             )}
           </section>
         ) : null}

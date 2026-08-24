@@ -1,6 +1,7 @@
 import type { EvidencePacket } from "../contracts";
 
 export interface EvidenceQuery {
+  readonly datasetIds?: readonly string[];
   readonly question: string;
 }
 

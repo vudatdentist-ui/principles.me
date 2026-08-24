@@ -6,16 +6,19 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "biome lint app features/ask features/evidence lib/ai/providers scripts/smoke-production.mjs tests/e2e playwright.config.ts next.config.ts",
+    "lint": "biome lint app features lib scripts tests db playwright.config.ts next.config.ts",
     "typecheck": "tsc --noEmit",
+    "db:migrate": "node scripts/migrate.mjs",
     "ragflow:bootstrap": "powershell -ExecutionPolicy Bypass -File scripts/bootstrap-ragflow.ps1",
     "ragflow:seed": "node scripts/seed-ragflow.mjs",
-    "test:unit": "tsx --test features/evidence/providers/__tests__/*.test.ts lib/ai/providers/__tests__/*.test.ts",
+    "test:unit": "tsx --test features/auth/__tests__/*.test.ts features/evidence/__tests__/*.test.ts features/evidence/providers/__tests__/*.test.ts features/security/__tests__/*.test.ts lib/ai/providers/__tests__/*.test.ts",
+    "test:integration": "tsx --test tests/integration/*.test.ts",
     "test:e2e": "playwright test",
-    "test": "pnpm test:unit"
+    "test": "pnpm test:unit && pnpm test:integration"
   },
   "dependencies": {
     "next": "16.2.10",
+    "postgres": "^3.4.7",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "zod": "^4.4.3"
