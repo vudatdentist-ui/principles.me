@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { AskWorkspace } from "@/features/ask/ask-workspace";
 import { signupNeedsBootstrapSecret } from "@/features/auth/bootstrap";
 import { AuthScreen } from "@/features/auth/auth-screen";
 import { signupMode } from "@/features/auth/contracts";
 import { sessionContext, signupAvailable } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
+import { PeopleWorkspace } from "@/features/people/people-workspace";
+import { projectPeopleState } from "@/features/people/projection";
+import { loadPeopleState } from "@/features/people/repository";
 
 async function WorkspaceEntry() {
   const cookieStore = await cookies();
@@ -22,9 +24,13 @@ async function WorkspaceEntry() {
     );
   }
 
+  const initialState = projectPeopleState(
+    await loadPeopleState(session.workspace.id)
+  );
   return (
-    <AskWorkspace
+    <PeopleWorkspace
       email={session.user.email}
+      initialState={initialState}
       workspaceName={session.workspace.name}
     />
   );
