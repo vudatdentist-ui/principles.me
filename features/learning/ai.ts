@@ -35,22 +35,25 @@ const patternSchema = z.object({
   uncertainty: z.string().trim().min(3).max(1400),
 });
 
-type GeneratedRaw = z.infer<typeof patternSchema>;
+export type LearningModelResult = z.infer<typeof patternSchema>;
 
-export type GeneratedLearningPattern = Omit<
-  GeneratedRaw,
+type ResolvedLearningResult = Omit<
+  LearningModelResult,
   "caseKeys" | "principleRevision"
 > & {
   caseReflectionIds: string[];
   confidence: number | null;
-  modelName: string | null;
-  modelProvider: string;
   principleRevision: {
     principleId: string;
     proposedRationale: string;
     proposedRule: string;
     proposedTrigger: string;
   } | null;
+};
+
+export type GeneratedLearningPattern = ResolvedLearningResult & {
+  modelName: string | null;
+  modelProvider: string;
 };
 
 function safeCase(caseRecord: LearningCaseRecord, key: string) {
@@ -68,6 +71,65 @@ function safeCase(caseRecord: LearningCaseRecord, key: string) {
     recurrenceNote: caseRecord.recurrenceNote,
     recurring: caseRecord.recurring,
     surprise: caseRecord.surprise,
+  };
+}
+
+export function resolveLearningModelResult(input: {
+  cases: LearningCaseRecord[];
+  principles: LearningPrincipleOption[];
+  result: LearningModelResult;
+}): ResolvedLearningResult {
+  const caseMap = new Map(
+    input.cases.map((item, index) => [`C${index + 1}`, item] as const)
+  );
+  const principleMap = new Map(
+    input.principles.map((item, index) => [`P${index + 1}`, item] as const)
+  );
+
+  const uniqueCaseKeys = [...new Set(input.result.caseKeys)];
+  if (uniqueCaseKeys.length < 2) {
+    throw new Error("Learning proposal must cite at least two distinct cases.");
+  }
+  const resolvedCases = uniqueCaseKeys.map((key) => {
+    const item = caseMap.get(key);
+    if (!item) {
+      throw new Error("Learning proposal cited an unknown case.");
+    }
+    return item;
+  });
+  if (
+    input.result.kind === "recurring_pattern" &&
+    new Set(resolvedCases.map((item) => item.problemId)).size < 2
+  ) {
+    throw new Error(
+      "A recurring pattern requires evidence from at least two distinct Problems."
+    );
+  }
+
+  let principleRevision: ResolvedLearningResult["principleRevision"] = null;
+  if (input.result.principleRevision) {
+    const principle = principleMap.get(input.result.principleRevision.principleKey);
+    if (!principle) {
+      throw new Error("Learning proposal cited an unknown Principle.");
+    }
+    principleRevision = {
+      principleId: principle.id,
+      proposedRationale: input.result.principleRevision.proposedRationale,
+      proposedRule: input.result.principleRevision.proposedRule,
+      proposedTrigger: input.result.principleRevision.proposedTrigger,
+    };
+  }
+
+  return {
+    caseReflectionIds: resolvedCases.map((item) => item.reflectionId),
+    confidence: input.result.confidence ?? null,
+    contradictingEvidence: input.result.contradictingEvidence,
+    implication: input.result.implication,
+    kind: input.result.kind as LearningPatternKind,
+    principleRevision,
+    statement: input.result.statement,
+    supportingEvidence: input.result.supportingEvidence,
+    uncertainty: input.result.uncertainty,
   };
 }
 
@@ -115,52 +177,15 @@ export async function generateLearningPattern(input: {
     signal: input.signal,
     temperature: 0.15,
   });
-
-  const uniqueCaseKeys = [...new Set(result.caseKeys)];
-  if (uniqueCaseKeys.length < 2) {
-    throw new Error("Learning proposal must cite at least two distinct cases.");
-  }
-  const resolvedCases = uniqueCaseKeys.map((key) => {
-    const item = caseMap.get(key);
-    if (!item) {
-      throw new Error("Learning proposal cited an unknown case.");
-    }
-    return item;
+  const resolved = resolveLearningModelResult({
+    cases: input.cases,
+    principles: input.principles,
+    result,
   });
-  if (
-    result.kind === "recurring_pattern" &&
-    new Set(resolvedCases.map((item) => item.problemId)).size < 2
-  ) {
-    throw new Error(
-      "A recurring pattern requires evidence from at least two distinct Problems."
-    );
-  }
-
-  let principleRevision: GeneratedLearningPattern["principleRevision"] = null;
-  if (result.principleRevision) {
-    const principle = principleMap.get(result.principleRevision.principleKey);
-    if (!principle) {
-      throw new Error("Learning proposal cited an unknown Principle.");
-    }
-    principleRevision = {
-      principleId: principle.id,
-      proposedRationale: result.principleRevision.proposedRationale,
-      proposedRule: result.principleRevision.proposedRule,
-      proposedTrigger: result.principleRevision.proposedTrigger,
-    };
-  }
 
   return {
-    caseReflectionIds: resolvedCases.map((item) => item.reflectionId),
-    confidence: result.confidence ?? null,
-    contradictingEvidence: result.contradictingEvidence,
-    implication: result.implication,
-    kind: result.kind as LearningPatternKind,
+    ...resolved,
     modelName: metadata?.model ?? process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
     modelProvider: provider.id,
-    principleRevision,
-    statement: result.statement,
-    supportingEvidence: result.supportingEvidence,
-    uncertainty: result.uncertainty,
   };
 }
