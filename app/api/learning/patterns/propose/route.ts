@@ -5,9 +5,9 @@ import {
   requireLearningMutation,
 } from "@/features/learning/api";
 import { generateLearningPattern } from "@/features/learning/ai";
+import { loadLearningProposalCases } from "@/features/learning/history";
 import { projectLearningCase } from "@/features/learning/projection";
 import {
-  loadLearningCases,
   loadLearningPrinciples,
   persistLearningSuggestion,
 } from "@/features/learning/repository";
@@ -16,7 +16,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const context = await requireLearningMutation(request);
     const [cases, principles] = await Promise.all([
-      loadLearningCases(context.workspace.id),
+      loadLearningProposalCases(context.workspace.id),
       loadLearningPrinciples(context.workspace.id),
     ]);
     if (cases.length < 2) {
