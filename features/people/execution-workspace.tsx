@@ -486,7 +486,33 @@ function DesignCapture({
           <label>Expected result<textarea className={styles.textarea} rows={3} value={draft.expectedResult} onChange={(event) => onChange({ ...draft, expectedResult: event.target.value })} /></label>
           <label>Success signal<textarea className={styles.textarea} rows={3} value={draft.successSignal} onChange={(event) => onChange({ ...draft, successSignal: event.target.value })} /></label>
           {draft.actions.map((action, index) => (
-            <label key={`action-${index + 1}`}>Action {index + 1}<input className={styles.input} value={action} onChange={(event) => onChange({ ...draft, actions: draft.actions.map((item, itemIndex) => itemIndex === index ? event.target.value : item) })} /></label>
+            <label key={action}>
+              Action {index + 1}
+              <input
+                className={styles.input}
+                defaultValue={action}
+                onBlur={(event) => {
+                  const next = event.target.value.trim();
+                  if (!next || next === action) {
+                    event.target.value = action;
+                    return;
+                  }
+                  const duplicate = draft.actions.some(
+                    (item, itemIndex) => itemIndex !== index && item === next
+                  );
+                  if (duplicate) {
+                    event.target.value = action;
+                    return;
+                  }
+                  onChange({
+                    ...draft,
+                    actions: draft.actions.map((item, itemIndex) =>
+                      itemIndex === index ? next : item
+                    ),
+                  });
+                }}
+              />
+            </label>
           ))}
         </div>
         <div className={styles.buttonRow}>
