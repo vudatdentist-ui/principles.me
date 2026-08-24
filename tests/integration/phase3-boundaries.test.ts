@@ -209,6 +209,37 @@ test("Phase 3 rejects cross-workspace Design/Outcome and records revised Designs
       "completing Actions alone must not imply the Design worked"
     );
 
+    const outcomeA = await createOutcome({
+      actualResult: "Routine decisions now proceed without founder approval.",
+      comparison: "improved",
+      designId: revised.design.id,
+      userId: accountA.userId,
+      workspaceId: accountA.workspaceId,
+    });
+    assert.ok(outcomeA.id);
+    assert.equal(
+      (await getDesign(accountA.workspaceId, revised.design.id))?.lifecycleState,
+      "evaluated"
+    );
+    const completedAction = revised.actions[0];
+    assert.ok(completedAction);
+    await assert.rejects(
+      setActionStatus({
+        actionId: completedAction.id,
+        status: "pending",
+        userId: accountA.userId,
+        workspaceId: accountA.workspaceId,
+      })
+    );
+    const persistedAction = await db()`
+      SELECT status, completed_at
+      FROM execution_actions
+      WHERE id = ${completedAction.id}::uuid
+        AND workspace_id = ${accountA.workspaceId}::uuid
+    `;
+    assert.equal(persistedAction[0]?.status, "completed");
+    assert.ok(persistedAction[0]?.completed_at);
+
     const activities = await db()`
       SELECT event_type
       FROM activity_events
