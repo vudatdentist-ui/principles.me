@@ -2,30 +2,12 @@
 
 Principles is an **evolution system for people first and organizations second**.
 
-**Current baseline:** Phases 0–3 Complete on `main`.  
-**Next:** Phase 4 — Learning Engine + Self Model — Planned.
+**`main`:** Phases 0–3 Complete.  
+**This branch:** Phase 4 — Learning Engine + Self Model — **Ready, not merged**.
 
 ```text
-Goal
-  ↓
-Reality
-  ↓
-Problem
-  ↓
-Diagnosis
-  ↓
-Design
-  ↓
-Actions
-  ↓
-Outcome
-  ↓
-Reflection
-  ↓
-Principle
-  ↓
-Evolve
-  ↺
+Goal → Reality → Problem → Diagnosis → Design → Actions → Outcome
+  → Reflection → Principle → Learning Pattern → Evolve ↺
 ```
 
 Read first:
@@ -34,82 +16,71 @@ Read first:
 - [`docs/product/PRINCIPLES_KERNEL_SPEC_V1.md`](./docs/product/PRINCIPLES_KERNEL_SPEC_V1.md) — philosophy/domain language.
 - [`docs/product/UI_PRINCIPLES.md`](./docs/product/UI_PRINCIPLES.md) — interface constraints.
 - [`docs/product/PHASE_PLAN.md`](./docs/product/PHASE_PLAN.md) — phase program.
-- [`docs/product/PHASE_1_ARCHITECTURE.md`](./docs/product/PHASE_1_ARCHITECTURE.md) — secure substrate.
-- [`docs/product/PHASE_2_ARCHITECTURE.md`](./docs/product/PHASE_2_ARCHITECTURE.md) — first learning loop.
-- [`docs/product/PHASE_3_ARCHITECTURE.md`](./docs/product/PHASE_3_ARCHITECTURE.md) — Design + Execution closeout.
+- [`docs/product/PHASE_4_ARCHITECTURE.md`](./docs/product/PHASE_4_ARCHITECTURE.md) — current Phase 4 closeout and verification.
 
-## People experience
+## People
 
-### Learning loop
+The durable learning/change path now spans:
 
 ```text
-Goal → Reality → Problem → Reflect → Principle
+Goal Discovery → Reality → Problem → Reflection → Principle
+                           ↓
+                    Diagnose → Design → Do → Outcome → Review
+                                                        ↓
+                                         Learning Pattern → Principle revision
 ```
 
-Goal Discovery is progressive; measures are optional. Reality is Goal-scoped. Problems remain user-confirmed. Reflection is structured. AI Principle candidates can be tested/rejected/revised but are not automatically trusted.
+Phase 2 keeps Goals, Reality, Problems, Reflections and Principles user-owned. Phase 3 turns a recognized Problem into a reviewed Diagnosis, machine Design, minimal Actions, observed Outcome and post-Outcome Reflection. Action completion never substitutes for observed Reality.
 
-### Change loop
+## Learning — `/learning`
+
+Phase 4 adds a sparse authenticated learning surface:
 
 ```text
-Diagnose → Design → Do → Outcome → Review
+History
+  → Pattern hypothesis
+  → inspect cases / evidence / counter-evidence / uncertainty
+  → Keep / Edit / Reject
+  → optional Principle revision
+  → testing again
 ```
 
-Phase 3 adds:
+Important rules:
 
-- Diagnosis separating symptom, proximate cause and root-cause hypothesis;
-- evidence for/against, alternatives, uncertainty and optional confidence;
-- user-confirmed/revised Diagnosis;
-- machine Design with rationale, expected result and success signal;
-- 1–5 minimal Actions belonging only to the Design;
-- durable Action completion/cancellation;
-- Outcome blocked while Actions remain pending;
-- Action completion does not imply Design success;
-- atomic Outcome + direct-user Evidence + accepted Goal-scoped Observation;
-- expected-vs-actual comparison (`improved | mixed | worse | unclear`);
-- post-Outcome Review persisted as Reflection;
-- database-enforced Workspace/Goal/Problem/Diagnosis/Design chain;
-- no generic Projects/kanban/assignment product.
-
-A normal server render/navigation currently exposes the Phase 3 surface after a Phase 2 Principle is reviewed; the two client surfaces do not yet share one live state store.
+- Self Model means accepted/revised hypotheses, not personality traits or clinical labels;
+- fewer than two completed Reflections → no Pattern generation;
+- proposal generation uses the 8 most recent completed Reflection cases in chronological order;
+- model-facing case/Principle identifiers are ephemeral `C#` / `P#` keys, never durable UUIDs;
+- model-facing historical text is bounded;
+- `recurring_pattern` requires cases from at least two distinct Problems and is enforced in PostgreSQL;
+- Pattern cases preserve Workspace + Goal + Problem + Reflection semantics;
+- rejected proposal creates no Pattern row;
+- safe client projection excludes Workspace/Evidence/AI provenance/internal semantic join IDs;
+- accepted/revised Pattern can drive one explicit Principle revision;
+- previous Principle wording is preserved and revised Principle returns to `revised + testing`, never automatically trusted;
+- no scores, charts, streaks, trait feed or analytics dashboard.
 
 ## Knowledge — `/knowledge`
 
 ```text
 Private workspace knowledge → RAGFlow ──┐
 Current public web → Brave Search ──────┼→ normalized Evidence → DeepSeek
-                                       │
 Direct observations / Outcomes ─────────┘
 ```
 
-Public live search receives only the public query, never private RAG excerpts. Browser source projection strips private internal identifiers/full chunks/internal URLs.
+Public live search receives only the public query, never private RAG excerpts. Browser projection strips private internal evidence identifiers/full chunks/internal URLs.
 
 ## Platform substrate
 
-- first-party identity/session;
-- one owned Personal Workspace;
-- PostgreSQL 16 system of record;
-- workspace-scoped authorization/retrieval/quota;
+- first-party identity/session and one owned Personal Workspace;
+- PostgreSQL 16 durable system of record;
+- Workspace authorization/provenance constraints;
 - Activity Events and AI Suggestions;
+- durable provider/rate controls;
 - safe client projections;
 - checksum-bound migrations and DB-aware health;
 - production Postgres/canary/rollback foundations;
-- real-Postgres and browser verification.
-
-## Phase 3 durability rules
-
-Migration `0003_design_execution.sql` adds Diagnosis, Design, execution Actions, Outcome and Outcome→Reflection linkage.
-
-Important invariants:
-
-- tenant and semantic mismatches fail;
-- one AI suggestion cannot create multiple Diagnoses/Designs;
-- retries supersede stale pending execution proposals;
-- Design + Actions are atomic;
-- Outcome + Evidence + Observation are atomic;
-- Actions cannot mutate after Design evaluation;
-- one Outcome evaluates one Design in Phase 3 v1;
-- Outcome Review must match Goal + Problem;
-- client execution state excludes internal Workspace/Evidence/AI provenance identifiers.
+- real-Postgres integration and authenticated browser verification.
 
 ## Repository shape
 
@@ -119,20 +90,17 @@ app/
   api/auth/
   api/me/
   api/people/
-    goal-discovery/ goals/ reality/ problems/
-    reflections/ principles/
-    diagnoses/ designs/ actions/
-    outcomes/ outcome-reviews/
-    execution/state/
-  api/health/
+  api/learning/
   knowledge/page.tsx
+  learning/page.tsx
   page.tsx
 db/migrations/
   0001_secure_platform_kernel.sql
   0002_people_first_loop.sql
   0003_design_execution.sql
+  0004_learning_self_model.sql
 features/
-  ask/ auth/ evidence/ kernel/ people/ security/
+  ask/ auth/ evidence/ kernel/ people/ learning/ security/
 lib/
   ai/providers/
   db/
@@ -141,9 +109,9 @@ docs/product/
   UI_PRINCIPLES.md
   PHASE_PLAN.md
   PHASE_1_ARCHITECTURE.md
-  PHASE_1_OPERATIONS.md
   PHASE_2_ARCHITECTURE.md
   PHASE_3_ARCHITECTURE.md
+  PHASE_4_ARCHITECTURE.md
 ```
 
 ## Verification
@@ -159,7 +127,11 @@ pnpm lint
 pnpm test:e2e
 ```
 
-Final Phase 3 pre-merge verification: Foundation #154 ✅, Lint #489 ✅, Playwright #256 ✅.
+Final Phase 4 runtime re-audit before documentation closeout:
+
+- Foundation #163 ✅
+- Lint #498 ✅
+- Playwright #265 ✅
 
 ## UI constraint
 
@@ -167,6 +139,6 @@ Final Phase 3 pre-merge verification: Foundation #154 ✅, Lint #489 ✅, Playwr
 
 Prefer fewer visible items, stronger state, direct actions, progressive disclosure and inspectable evidence.
 
-## Not implemented yet
+## Not implemented / intentionally deferred
 
-Phase 4 has not started. There is no longitudinal Self Model/pattern engine, generic project/task product, Organization Workspace collaboration, CRM/finance/HR domain product, structured business connectors, password recovery/OAuth/passkeys, RAG-binding administration UI or automated off-host restore system.
+Phase 4 is not merged yet. There is no proactive/scheduled Learning, unlimited-history semantic Pattern retrieval, personality/psychometric scoring, generic conversation memory, organization collaboration, generic project/task product, CRM/finance/HR product, structured business connectors, password recovery/OAuth/passkeys, RAG-binding administration UI or automated off-host restore system.
