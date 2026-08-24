@@ -21,6 +21,8 @@ jobs:
     env:
       APP_ORIGIN: http://127.0.0.1:3000
       AUTH_SIGNUP_MODE: open
+      DEEPSEEK_API_KEY: phase2-e2e-key
+      DEEPSEEK_BASE_URL: http://127.0.0.1:4111
       POSTGRES_DB: postgres
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PASSWORD: principles_e2e
@@ -43,6 +45,14 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Apply database migrations
         run: pnpm db:migrate
+      - name: Start deterministic DeepSeek fixture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node scripts/mock-deepseek.mjs > /tmp/principles-mock-deepseek.log 2>&1 &
+          echo $! > /tmp/principles-mock-deepseek.pid
+          sleep 1
+          grep -q 'MOCK_DEEPSEEK_READY=1' /tmp/principles-mock-deepseek.log
       - name: Install Chromium browser
         run: pnpm exec playwright install chromium
       - name: Run browser smoke tests
@@ -54,6 +64,14 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+      - name: Stop deterministic DeepSeek fixture
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/principles-mock-deepseek.pid ]; then
+            kill "$(cat /tmp/principles-mock-deepseek.pid)" 2>/dev/null || true
+            rm -f /tmp/principles-mock-deepseek.pid
+          fi
       - name: Stop PostgreSQL
         if: always()
         run: bash scripts/ci-postgres.sh stop

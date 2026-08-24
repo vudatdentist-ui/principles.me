@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+const password = "a strong browser test password";
+
 const ragSource = {
   key: "R1",
   provider: "ragflow",
   publishedAt: null,
-  retrievedAt: "2026-08-23T10:00:00.000Z",
+  retrievedAt: "2026-08-24T01:00:00.000Z",
   snippet: "A safe, bounded excerpt from private knowledge.",
   sourceType: "ragflow",
   title: "Knowledge source",
@@ -14,8 +16,8 @@ const ragSource = {
 const liveSource = {
   key: "W1",
   provider: "brave",
-  publishedAt: "2026-08-23T09:30:00.000Z",
-  retrievedAt: "2026-08-23T10:00:00.000Z",
+  publishedAt: "2026-08-24T00:30:00.000Z",
+  retrievedAt: "2026-08-24T01:00:00.000Z",
   snippet: "A current public source excerpt.",
   sourceType: "live_web",
   title: "Live source",
@@ -40,26 +42,36 @@ function ndjson(answer: string): string {
 }
 
 async function createAccount(page: import("@playwright/test").Page) {
-  const email = `phase1-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+  const email = `phase2-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Principles" })).toBeVisible();
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("a strong browser test password");
+  await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).last().click();
-  await expect(page.getByRole("heading", { name: "Ask anything." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
   await expect(page.getByText("Personal")).toBeVisible();
   return email;
+}
+
+async function answerGoalQuestion(
+  page: import("@playwright/test").Page,
+  value: string
+) {
+  await page.getByLabel("Goal discovery answer").fill(value);
+  await page.getByRole("button", { name: "Continue" }).click();
 }
 
 test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", async ({
   page,
   request,
 }) => {
-  const unauthenticated = await request.post("/api/ask", {
+  const unauthenticatedAsk = await request.post("/api/ask", {
     data: { question: "What is private?" },
   });
-  expect(unauthenticated.status()).toBe(401);
+  expect(unauthenticatedAsk.status()).toBe(401);
+  const unauthenticatedPeople = await request.get("/api/people/state");
+  expect(unauthenticatedPeople.status()).toBe(401);
 
   const email = await createAccount(page);
   const me = await page.evaluate(async () => {
@@ -74,16 +86,110 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
   const signInMode = page.getByRole("button", { name: "Sign in" });
   await expect(signInMode).toBeVisible();
   await signInMode.click();
-
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("a strong browser test password");
+  await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).last().click();
-  await expect(page.getByRole("heading", { name: "Ask anything." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
 });
 
-test("authenticated Q&A renders only the safe source projection", async ({ page }) => {
+test("one person completes Goal → Reality → Problem → Reflection → Principle and reloads it", async ({
+  page,
+}) => {
   await createAccount(page);
+
+  await answerGoalQuestion(
+    page,
+    "Build a company that operates without depending on me day to day."
+  );
+  await expect(page.getByText("Why does this matter", { exact: false })).toBeVisible();
+  await answerGoalQuestion(
+    page,
+    "I want the company to compound without making me its bottleneck."
+  );
+  await expect(page.getByText("What would make you say", { exact: false })).toBeVisible();
+  await answerGoalQuestion(
+    page,
+    "The team makes routine operating decisions without waiting for me."
+  );
+  await expect(page.getByText("What are you willing to give up", { exact: false })).toBeVisible();
+  await answerGoalQuestion(page, "I will deprioritize low-value side projects.");
+  await expect(page.getByText("What boundary must remain true", { exact: false })).toBeVisible();
+  await answerGoalQuestion(page, "Protect health and family time.");
+
+  await expect(page.getByRole("button", { name: "Choose this goal" })).toBeVisible();
+  await page.getByRole("button", { name: "Choose this goal" }).click();
+  await expect(page.getByLabel("Reality observation")).toBeVisible();
+
+  await page
+    .getByLabel("Reality observation")
+    .fill("Three routine operating decisions waited for me this week.");
+  await page.getByRole("button", { name: "Record observation" }).click();
+  await expect(page.getByText("Three routine operating decisions waited for me this week.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Recognize the gap" }).click();
+  await expect(page.getByLabel("Problem")).toHaveValue(
+    "The founder remains a routine operating bottleneck."
+  );
+  await page.getByRole("button", { name: "This is the problem" }).click();
+  await expect(page.getByText("The founder remains a routine operating bottleneck.")).toBeVisible();
+
+  await page.getByLabel("Reflection answer").fill("Decisions waited until I answered.");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page
+    .getByLabel("Reflection answer")
+    .fill("The team would make routine operating decisions without me.");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page
+    .getByLabel("Reflection answer")
+    .fill("The same dependency appeared even after responsibilities were discussed.");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Yes" }).click();
+  await page
+    .getByLabel("Reflection answer")
+    .fill("This happened in three separate operating decisions.");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page
+    .getByLabel("Reflection answer")
+    .fill("If routine decisions still wait for me, ownership is not explicit enough.");
+  await page.getByRole("button", { name: "Complete reflection" }).click();
+  await expect(
+    page.getByText("If routine decisions still wait for me, ownership is not explicit enough.")
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Propose a principle" }).click();
+  await expect(
+    page.getByText("Make the decision owner and default authority explicit before the next routine case.")
+  ).toBeVisible();
+  await expect(page.getByText("AI confidence 72%")).toBeVisible();
+  await page.getByRole("button", { name: "Test this principle" }).click();
+  await expect(page.getByText("Testing", { exact: true })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
+  await expect(
+    page.getByText("Build a company that operates without depending on me day to day.")
+  ).toBeVisible();
+  await expect(
+    page.locator("strong").filter({
+      hasText: "Three routine operating decisions waited for me this week.",
+    })
+  ).toBeVisible();
+  await expect(page.getByText("The founder remains a routine operating bottleneck.")).toBeVisible();
+  await expect(
+    page.getByText("If routine decisions still wait for me, ownership is not explicit enough.")
+  ).toBeVisible();
+  await expect(
+    page.getByText("Make the decision owner and default authority explicit before the next routine case.")
+  ).toBeVisible();
+  await expect(page.getByText("Testing", { exact: true })).toBeVisible();
+});
+
+test("Knowledge remains authenticated and renders only the safe source projection", async ({ page }) => {
+  await createAccount(page);
+  await page.goto("/knowledge");
+  await expect(page.getByRole("heading", { name: "Ask anything." })).toBeVisible();
+
   await page.route("**/api/ask", async (route) => {
     await route.fulfill({
       body: ndjson(
@@ -96,7 +202,6 @@ test("authenticated Q&A renders only the safe source projection", async ({ page 
 
   await page.getByLabel("Question").fill("What is true right now?");
   await page.getByRole("button", { name: "Ask" }).click();
-
   await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
   await expect(
     page.getByText(
@@ -105,19 +210,17 @@ test("authenticated Q&A renders only the safe source projection", async ({ page 
   ).toBeVisible();
   await expect(page.getByText("Knowledge source")).toBeVisible();
   await expect(page.getByText("Live source")).toBeVisible();
-  await expect(page.getByText("Complete")).toBeVisible();
-
   await page.getByText("Knowledge source").click();
   await expect(page.getByText(ragSource.snippet)).toBeVisible();
   await expect(page.getByText("private-dataset-id")).toHaveCount(0);
 });
 
-test("long answers use normal document scrolling", async ({ page }) => {
+test("long Knowledge answers keep normal document scrolling", async ({ page }) => {
   await createAccount(page);
+  await page.goto("/knowledge");
   const longAnswer = Array.from(
     { length: 80 },
-    (_, index) =>
-      `Paragraph ${index + 1}: a deliberately long answer for scrolling verification.`
+    (_, index) => `Paragraph ${index + 1}: a deliberately long answer for scrolling verification.`
   ).join("\n\n");
 
   await page.route("**/api/ask", async (route) => {
@@ -127,7 +230,6 @@ test("long answers use normal document scrolling", async ({ page }) => {
       status: 200,
     });
   });
-
   await page.getByLabel("Question").fill("Give me the full long answer.");
   await page.getByRole("button", { name: "Ask" }).click();
   await expect(page.getByText("Paragraph 80:", { exact: false })).toBeVisible();
@@ -139,9 +241,6 @@ test("long answers use normal document scrolling", async ({ page }) => {
   }));
   expect(scrollState.height).toBeGreaterThan(scrollState.viewport);
   expect(scrollState.overflow).not.toBe("hidden");
-
-  await page.evaluate(() =>
-    window.scrollTo(0, document.documentElement.scrollHeight)
-  );
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await expect(page.getByText("Live source")).toBeInViewport();
 });
