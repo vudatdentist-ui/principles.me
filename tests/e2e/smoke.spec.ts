@@ -42,7 +42,7 @@ function ndjson(answer: string): string {
 }
 
 async function createAccount(page: import("@playwright/test").Page) {
-  const email = `phase3-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+  const email = `phase4-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Principles" })).toBeVisible();
   await page.getByLabel("Email").fill(email);
@@ -62,7 +62,7 @@ async function answerGoalQuestion(
   await page.getByRole("button", { name: "Continue" }).click();
 }
 
-test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", async ({
+test("unauthenticated private APIs are blocked and Learning waits for real history", async ({
   page,
   request,
 }) => {
@@ -74,6 +74,8 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
   expect(unauthenticatedPeople.status()).toBe(401);
   const unauthenticatedExecution = await request.get("/api/people/execution/state");
   expect(unauthenticatedExecution.status()).toBe(401);
+  const unauthenticatedLearning = await request.get("/api/learning/state");
+  expect(unauthenticatedLearning.status()).toBe(401);
 
   const email = await createAccount(page);
   const me = await page.evaluate(async () => {
@@ -83,6 +85,16 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
   expect(me.status).toBe(200);
   expect(me.body.user.email).toBe(email);
   expect(me.body.workspace.kind).toBe("personal");
+
+  await page.goto("/learning");
+  await expect(
+    page.getByRole("heading", { name: "What is your history teaching you?" })
+  ).toBeVisible();
+  await expect(page.getByText("Not enough history yet.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Find a pattern" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "People" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Knowledge" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Learning" })).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out" }).click();
   const signInMode = page.getByRole("button", { name: "Sign in" });
@@ -95,13 +107,17 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
   await expect(page.getByText(email)).toBeVisible();
 });
 
-test("one person moves from Goal to machine change, Outcome Review, and reloads the durable chain", async ({
+test("one person evolves from Goal through Outcome into a corrected Pattern and revised testing Principle", async ({
   page,
 }) => {
   const actualOutcome =
     "The next three routine operating decisions were made by the named owner without waiting for me.";
   const outcomeLearning =
     "Changing default decision authority changed behavior; discussing responsibilities alone had not.";
+  const correctedPattern =
+    "The observed cycle suggests explicit default authority changed behavior where role discussion alone had not.";
+  const revisedRule =
+    "Name the decision owner and default authority before the next routine case, then verify the next real outcome.";
 
   await createAccount(page);
 
@@ -219,27 +235,67 @@ test("one person moves from Goal to machine change, Outcome Review, and reloads 
   await expect(execution.getByText("Loop complete")).toBeVisible();
 
   await page.reload();
-  await expect(
-    page.getByText(
-      "Build a company that operates without depending on me day to day."
-    )
-  ).toBeVisible();
   const reloadedExecution = page.getByLabel("Design and execution");
-  await expect(
-    reloadedExecution.locator("strong").filter({
-      hasText:
-        "Routine decisions have no explicit default owner with authority to act without founder approval.",
-    })
-  ).toBeVisible();
-  await expect(
-    reloadedExecution.locator("strong").filter({
-      hasText:
-        "Assign one explicit decision owner and a default authority boundary for routine operating decisions.",
-    })
-  ).toBeVisible();
   await expect(reloadedExecution.locator("strong").filter({ hasText: actualOutcome })).toBeVisible();
   await expect(reloadedExecution.locator("strong").filter({ hasText: outcomeLearning })).toBeVisible();
   await expect(reloadedExecution.getByText("Loop complete")).toBeVisible();
+
+  await page.goto("/learning");
+  await expect(
+    page.getByRole("heading", { name: "What is your history teaching you?" })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Find a pattern" })).toBeVisible();
+  await page.getByRole("button", { name: "Find a pattern" }).click();
+  await expect(
+    page.getByText(
+      "Explicit default authority changed behavior where discussing responsibilities alone had not."
+    )
+  ).toBeVisible();
+  await page.getByText("Inspect the evidence").click();
+  await expect(page.getByText("Case 1 · Reflection")).toBeVisible();
+  await expect(page.getByText("Case 2 · Outcome review")).toBeVisible();
+  await expect(
+    page.getByText(
+      "This is one before/after cycle, so the causal interpretation should remain a hypothesis and be tested again."
+    )
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByLabel("Pattern statement").fill(correctedPattern);
+  await page.getByRole("button", { name: "Save corrected pattern" }).click();
+  await expect(page.getByText(correctedPattern)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Revise this principle" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Revise this principle" }).click();
+  await expect(page.getByLabel("Revised principle rule")).toHaveValue(
+    "Name the decision owner and their default authority before the next routine case, then verify the next real outcome."
+  );
+  await page.getByLabel("Revised principle rule").fill(revisedRule);
+  await page.getByRole("button", { name: "Revise and test" }).click();
+  await expect(page.getByText("Principle revised · testing")).toBeVisible();
+  await expect(page.getByText(revisedRule)).toBeVisible();
+
+  const peopleState = await page.evaluate(async () => {
+    const response = await fetch("/api/people/state");
+    return response.json();
+  });
+  const revisedPrinciple = peopleState.principles.find(
+    (item: { rule: string }) => item.rule === revisedRule
+  );
+  expect(revisedPrinciple?.acceptanceState).toBe("revised");
+  expect(revisedPrinciple?.lifecycleState).toBe("testing");
+  expect(revisedPrinciple?.lifecycleState).not.toBe("trusted");
+
+  await page.reload();
+  await expect(page.getByText(correctedPattern)).toBeVisible();
+  await expect(page.getByText("Principle revised · testing")).toBeVisible();
+  await expect(page.getByText(revisedRule)).toBeVisible();
+
+  await page.getByRole("button", { name: "Find a pattern" }).click();
+  await expect(page.getByRole("button", { name: "Reject" })).toBeVisible();
+  await page.getByRole("button", { name: "Reject" }).click();
+  await expect(page.getByRole("button", { name: "Reject" })).toHaveCount(0);
+  await expect(page.getByText(correctedPattern)).toBeVisible();
 });
 
 test("Knowledge remains authenticated and renders only the safe source projection", async ({ page }) => {
