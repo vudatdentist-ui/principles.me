@@ -107,6 +107,31 @@ CREATE TABLE IF NOT EXISTS execution_actions (
 CREATE INDEX IF NOT EXISTS execution_actions_workspace_design_idx
   ON execution_actions (workspace_id, design_id, position);
 
+CREATE OR REPLACE FUNCTION prevent_evaluated_design_action_change()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM designs
+    WHERE id = NEW.design_id
+      AND workspace_id = NEW.workspace_id
+      AND lifecycle_state <> 'active'
+  ) THEN
+    RAISE EXCEPTION 'Actions are immutable after Design evaluation'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS execution_actions_require_active_design ON execution_actions;
+CREATE TRIGGER execution_actions_require_active_design
+BEFORE UPDATE OF status, completed_at ON execution_actions
+FOR EACH ROW
+EXECUTE FUNCTION prevent_evaluated_design_action_change();
+
 CREATE UNIQUE INDEX IF NOT EXISTS observations_id_workspace_goal_unique
   ON observations (id, workspace_id, goal_id);
 
@@ -128,6 +153,7 @@ CREATE TABLE IF NOT EXISTS outcomes (
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (id, workspace_id),
   UNIQUE (id, workspace_id, goal_id, problem_id),
+  UNIQUE (workspace_id, design_id),
   FOREIGN KEY (design_id, workspace_id, goal_id, problem_id, diagnosis_id)
     REFERENCES designs(id, workspace_id, goal_id, problem_id, diagnosis_id),
   FOREIGN KEY (evidence_id, workspace_id)
