@@ -44,6 +44,41 @@ function completionFor(body) {
       statement: "The founder remains a routine operating bottleneck.",
     };
   }
+  if (system.includes("You are the Diagnose capability inside Principles")) {
+    return {
+      alternativeHypotheses:
+        "Workload or capability gaps could also delay decisions; current evidence does not rule them out.",
+      confidence: 0.68,
+      contradictingEvidence:
+        "Responsibilities were discussed, so role awareness exists even though authority remains ambiguous.",
+      proximateCause:
+        "Decision ownership is discussed but default authority is not explicit.",
+      rootCauseHypothesis:
+        "Routine decisions have no explicit default owner with authority to act without founder approval.",
+      supportingEvidence:
+        "Repeated routine decisions waited for founder input across separate cases.",
+      symptom: "Routine operating decisions wait for the founder.",
+      uncertainty:
+        "No direct measure yet proves which mechanism dominates; this is the strongest current hypothesis.",
+    };
+  }
+  if (system.includes("You are the Design capability inside Principles")) {
+    return {
+      actions: [
+        "Name the decision owner and authority boundary.",
+        "Publish the rule where the team handles routine work.",
+        "Run the next three routine decisions under the new rule.",
+      ],
+      expectedResult:
+        "Routine operating decisions are made without waiting for founder approval.",
+      machineChange:
+        "Assign one explicit decision owner and a default authority boundary for routine operating decisions.",
+      rationale:
+        "The design removes ambiguity at the point where routine decisions currently wait for founder approval.",
+      successSignal:
+        "For two weeks, routine operating decisions proceed without founder intervention.",
+    };
+  }
   if (system.includes("Reflect capability")) {
     return {
       confidence: 0.72,
@@ -77,9 +112,9 @@ const server = http.createServer((request, response) => {
     const content = JSON.stringify(completionFor(body));
     json(response, 200, {
       choices: [{ message: { content, role: "assistant" } }],
-      id: "mock-deepseek-phase2",
+      id: "mock-deepseek-phase3",
       model: "mock-deepseek",
-      usage: { completion_tokens: 30, prompt_tokens: 30, total_tokens: 60 },
+      usage: { completion_tokens: 50, prompt_tokens: 50, total_tokens: 100 },
     });
   });
 });

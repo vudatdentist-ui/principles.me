@@ -2,14 +2,13 @@
 
 **Status:** execution plan  
 **Date:** 2026-08-24  
-**Current completed baseline:** Phases 0–2  
-**Next phase:** Phase 3 — Design + Execution — Planned
+**Merged baseline:** Phases 0–2 Complete  
+**Current ready phase:** Phase 3 — Design + Execution — PR #57  
+**Next after Phase 3 merge:** Phase 4 — Learning Engine + Self Model — Planned
 
-This plan converts the Principles Kernel into sequential major product outcomes. A phase is not Complete because code exists; it is Complete only after the behavior works, boundaries are verified, actual outcome is recorded and the work is merged.
+A phase is not Complete because code exists. It becomes Complete only after the intended behavior works, boundaries are verified, actual outcome is recorded and the work is merged.
 
 ## Phase execution protocol
-
-Every phase follows:
 
 ```text
 Understand requirements
@@ -19,36 +18,29 @@ Understand requirements
   → fix
   → re-audit
   → final output check
+  → merge
   → report
 ```
 
-Phase closeout must record:
-
-- scope actually delivered;
-- Definition of Done result;
-- expected outcome;
-- actual outcome;
-- verification evidence;
-- known limitations;
-- next-phase boundary.
+Closeout records scope delivered, Definition of Done result, expected versus actual outcome, verification evidence, known limitations and next-phase boundary.
 
 ## Progress states
 
 - **Planned** — defined but not started.
 - **Active** — current major implementation focus.
-- **Ready** — implementation/re-audit complete on a branch and awaiting merge.
+- **Ready** — implementation/re-audit complete on a branch and awaiting final verification/merge.
 - **Complete** — merged and source-of-truth updated with actual outcome.
-- **Blocked** — cannot responsibly proceed without a named dependency or decision.
+- **Blocked** — cannot responsibly continue without a named dependency/decision.
 
 ## Program view
 
-| Phase | Name | Status | Expected outcome |
+| Phase | Name | Status | Outcome |
 | --- | --- | --- | --- |
 | 0 | Kernel Definition | **Complete** | Shared product language, philosophical invariants, UI constraints and execution rules. |
 | 1 | Secure Platform + Durable Kernel | **Complete** | A user safely owns durable private Principles state with provenance and bounded provider usage. |
-| 2 | Principles for People — First Complete Loop | **Complete** | One person completes Goal → Reality → Problem → Reflection → Principle and preserves the learning durably. |
-| 3 | Design + Execution | Planned | A diagnosed problem changes the personal machine through design, action, outcome and review. |
-| 4 | Learning Engine + Self Model | Planned | Longitudinal evidence produces useful, correctable patterns and improving principles. |
+| 2 | Principles for People — First Complete Loop | **Complete** | Goal → Reality → Problem → Reflection → Principle produces durable user-owned learning. |
+| 3 | Design + Execution | **Ready** | Diagnosis → machine Design → Actions → Outcome → Review works end-to-end and passes re-audit; awaiting merge. |
+| 4 | Learning Engine + Self Model | Planned | Longitudinal evidence produces useful, correctable patterns and improving Principles. |
 | 5 | Principles for Organizations | Planned | The proven kernel supports collective people/culture machines, governance and domain-specific believability. |
 
 ---
@@ -57,26 +49,7 @@ Phase closeout must record:
 
 **Status:** Complete
 
-## Objective
-
-Prevent Principles from becoming conventional productivity software with Ray Dalio terminology layered on top.
-
-## Delivered
-
-- Principles Kernel specification;
-- Goal as chosen desired reality rather than KPI CRUD;
-- Reality/evidence distinction;
-- Problem / Diagnosis / Design / Outcome / Reflection / Principle definitions;
-- person and organization as machines that can be observed and redesigned;
-- AI roles: Observe, Challenge, Diagnose, Design, Reflect;
-- People-first / Organizations-later thesis;
-- minimal UI principles;
-- no-filler-microcopy constraint;
-- sequential phase governance.
-
-## Actual outcome
-
-Engineering and AI contributors have one explicit product model and no longer inherit the retired Council/V2 architecture as implicit requirements.
+Established the Principles Kernel, Goal as chosen desired Reality rather than KPI CRUD, Evidence/interpretation distinction, Problem/Diagnosis/Design/Outcome/Reflection/Principle language, person/organization as redesignable machines, AI roles, People-first thesis, minimal UI and phase governance.
 
 ---
 
@@ -85,45 +58,9 @@ Engineering and AI contributors have one explicit product model and no longer in
 **Status:** Complete  
 **Merge:** `ce332d64db54c45d2c95a10c01aee50156e711d0`
 
-## Objective
+Delivered identity/session, owned Personal Workspace, PostgreSQL 16, workspace isolation/provenance, Activity Events, AI Suggestions, RAGFlow bindings, authenticated Knowledge Q&A, Brave + DeepSeek, provider controls, client evidence projection and migration/health/canary/rollback foundations.
 
-Create the smallest secure substrate on which personal Principles state can exist safely and durably.
-
-## Delivered
-
-- first-party email/password identity;
-- scrypt password storage and opaque hashed sessions;
-- one owned Personal Workspace per user;
-- PostgreSQL 16 durable system of record;
-- checksum-bound additive migrations;
-- workspace as authorization/retrieval/quota boundary;
-- database-level cross-workspace provenance constraints;
-- Goal/Evidence/Observation/Reflection/Principle foundations;
-- AI Suggestions with acceptance state;
-- Activity Events;
-- workspace-scoped RAGFlow bindings;
-- authenticated hybrid Knowledge Q&A;
-- Brave live search + DeepSeek synthesis;
-- safe client evidence projection;
-- durable auth/provider usage controls;
-- DB-aware health, pre-migration snapshots, canary and rollback foundations;
-- real-Postgres integration and browser tests.
-
-## Expected outcome
-
-Principles can safely begin learning about a real person without ambiguous ownership, privacy, provenance or uncontrolled provider-cost debt.
-
-## Actual outcome
-
-Achieved and merged. Security/audit work corrected session ownership ambiguity, proxy/rate-limit scope, evidence leakage, cross-workspace provenance, migration drift, malformed cookies, bootstrap behavior and CI/PostgreSQL assumptions before merge.
-
-## Limitations carried forward
-
-- no password reset/email verification/OAuth/passkeys;
-- no organization workspace product;
-- no longitudinal self-model;
-- no structured business connectors;
-- no scheduled/off-host DB backup/restore automation.
+**Actual outcome:** Principles can safely own private durable state and run retrieval/AI behind an authenticated Workspace boundary.
 
 ---
 
@@ -132,11 +69,7 @@ Achieved and merged. Security/audit work corrected session ownership ambiguity, 
 **Status:** Complete  
 **Merge:** `601e0ef442bb3edc92bb3869c93ef1caa5089f81`
 
-## Objective
-
-Prove that Principles is an evolution system rather than only an authenticated knowledge assistant.
-
-## Delivered loop
+Delivered:
 
 ```text
 Goal Discovery
@@ -146,131 +79,21 @@ Goal Discovery
   → Principle Candidate
 ```
 
-## Goal Discovery — achieved
+Goal Discovery is progressive; measures are optional. Direct Reality persists Evidence + accepted Observation atomically and is Goal-scoped. Problems are AI-assisted but user-confirmed. Reflection is progressive and linked to matching Goal + Problem. Principle candidates retain provenance, can be accepted to testing/rejected/revised and cannot become trusted automatically.
 
-- Goal remains a chosen desired reality, not KPI CRUD;
-- progressive one-question-at-a-time interaction;
-- desired state, why, success conditions, trade-offs and non-negotiables;
-- optional measures;
-- deterministic fallback when provider work is unavailable;
-- provider call skipped when required discovery is already complete.
+Final pre-merge verification: Foundation #135 ✅, Lint #470 ✅, Playwright #237 ✅.
 
-## Reality — achieved
-
-- direct user Reality statement creates durable Evidence + accepted Observation atomically;
-- Observation is explicitly tied to Goal;
-- evidence/internal workspace identifiers are removed from browser state;
-- private RAG/live search remain separate authenticated Knowledge capabilities.
-
-## Problem — achieved
-
-- Problem is explicitly tied to Goal;
-- AI proposal is constrained to selected Goal + Reality and remains only a proposal;
-- user can confirm/edit before durable creation;
-- selected evidence provenance is retained;
-- cross-workspace and AI-suggestion replay constraints are enforced.
-
-## Reflection — achieved
-
-Progressive prompts cover:
-
-```text
-What happened?
-What did you expect?
-What surprised or hurt?
-Is this recurring?
-What might this teach you?
-```
-
-Reflection links to both Goal and Problem. The DB ensures the Problem belongs to the same Goal, not only the same workspace.
-
-## Principle candidate — achieved
-
-A Principle candidate retains:
-
-- trigger;
-- rule;
-- rationale;
-- optional confidence;
-- Reflection origin;
-- evidence provenance;
-- explicit acceptance state.
-
-Lifecycle:
-
-```text
-AI candidate
-  → pending / candidate
-  → accept → testing
-  → reject
-  → revise
-```
-
-No Phase 2 path can automatically create a trusted Principle.
-
-## UI — achieved
-
-Authenticated root is organized around:
-
-```text
-Goal → Reality → Problem → Reflect → Principle
-```
-
-Knowledge Q&A remains secondary at `/knowledge`. No Phase 3 dashboard/task shell was added.
-
-## Audit findings corrected
-
-The self-reinforcing audit loop corrected:
-
-- composite-FK semantics;
-- Evidence UUID exposure;
-- one suggestion producing multiple durable rows;
-- Reality not tied to Goal;
-- optional measures acting like required KPI fields;
-- Goal/Reality semantic mismatch;
-- non-atomic Principle persistence;
-- same-workspace wrong-Goal Reflection linkage;
-- integration test races from destructive shared setup;
-- missing reject/revise/trusted-prevention verification.
-
-## Final verification before merge
-
-After Phase 1 was merged, Phase 2 was re-parented onto the real `main` Phase 1 commit, retargeted to `main`, stacked-only CI triggers were removed, and the main-target head passed:
-
-- Foundation #135 ✅
-- Lint #470 ✅
-- Playwright #237 ✅
-
-## Expected outcome
-
-Principles begins accumulating coherent, user-owned learning instead of only answering questions.
-
-## Actual outcome
-
-Achieved and merged. A real browser flow can complete Goal → Reality → Problem → Reflection → Principle, explicitly place a candidate into testing, reload and recover the durable state. PostgreSQL integration tests prove isolation, semantic consistency, replay protection and rollback behavior.
-
-## Limitations carried forward
-
-Phase 2 intentionally does not implement:
-
-- Diagnosis;
-- machine Design;
-- Actions/Projects;
-- Outcome comparison;
-- longitudinal pattern learning;
-- Organization collaboration.
+**Actual outcome:** Principles accumulates one coherent unit of user-owned learning instead of resetting to stateless Q&A.
 
 ---
 
 # Phase 3 — Design + Execution
 
-**Status:** Planned
+**Status:** **Ready on PR #57**
 
 ## Objective
 
-Continue the 5-Step Process from recognized Problem to changed machine and observed Outcome.
-
-Target loop:
+Continue the 5-Step Process from recognized Problem to changed machine and observed Reality:
 
 ```text
 Problem
@@ -281,76 +104,112 @@ Problem
   → Review / Reflection
 ```
 
-## Required product distinctions
+## Delivered
 
 ### Diagnosis
 
-Must distinguish:
-
-- symptom;
-- proximate cause;
-- root-cause hypothesis;
-- evidence supporting/contradicting the hypothesis;
-- uncertainty.
-
-Do not jump from Problem directly to task creation.
+- user-reviewed cause-and-effect hypothesis;
+- symptom, proximate cause and root-cause hypothesis remain separate;
+- supporting/contradicting evidence, alternatives, uncertainty and optional confidence;
+- AI explicitly prohibited from jumping to remedy/task;
+- accepted/revised semantics with server-side AI provenance;
+- replay and tenant/semantic constraints.
 
 ### Design
 
-A Design represents a proposed change to the machine producing the outcome. It is not merely a checklist.
+- machine change, cause-and-effect rationale, expected result and success signal;
+- user confirmation/revision;
+- 1–5 Actions persisted atomically with the Design;
+- no generic Projects/kanban/assignment/sprint model.
 
-### Actions
+### Execution
 
-Actions/tasks exist to execute a Design. Add only the execution primitives required by the loop; do not become an Asana/Jira clone.
+- only pending/completed/cancelled Actions required by the Design;
+- completion timestamps are durable;
+- Action completion alone leaves Design `active`;
+- Action mutation is blocked after Design evaluation.
 
 ### Outcome
 
-Record expected versus actual Reality so the design can be evaluated rather than marked successful because tasks were completed.
+- cannot be recorded while Actions remain pending;
+- atomically creates Outcome + direct-user Evidence + accepted Goal-scoped Observation;
+- stores expected snapshot, actual result and user comparison (`improved | mixed | worse | unclear`);
+- matching Workspace + Goal + Problem + Diagnosis + Design chain enforced;
+- one Outcome per Design in Phase 3 v1;
+- valid Outcome changes Design lifecycle to `evaluated`.
 
-### Review / Reflection
+### Review
 
-Observed Outcome must feed back into Reflection and future Principle evidence.
+- one short prompt at a time;
+- expected/actual context inherited from Outcome;
+- completed Reflection linked to matching Outcome + Goal + Problem;
+- ready as longitudinal evidence for Phase 4.
 
-## UI direction
+### UI
 
-A sparse Today/attention surface may become useful here, but it should show only the few items that truly require attention.
+Once Phase 2 learning is reviewed, the change loop is:
 
-## Definition of Done
+```text
+Diagnose → Design → Do → Outcome → Review
+```
 
-A person can take one meaningful recognized Problem, diagnose a root-cause hypothesis, design a machine change, execute the necessary actions, record an Outcome and compare it with the expected result.
+The root-cause hypothesis/machine change are primary; evidence, alternatives and uncertainty use progressive disclosure. No dashboard filler or generic task-management shell was introduced.
 
-## Expected outcome
+## Audit findings corrected
 
-Principles turns learning into changed behavior/system and observes whether the machine actually improved.
+- async UI context narrowing/type failure;
+- E2E locator tied to duplicate Outcome text;
+- missing cross-workspace Design/Outcome proof;
+- missing Design revision proof;
+- Action completion versus Design-success ambiguity;
+- Action mutability after evaluation;
+- multiple Outcomes per Design;
+- stale pending AI proposals after retries;
+- unstable editable Action React keys.
+
+## Re-audit result
+
+Code head `3d590dd05cc4faa21fa9629f57060a9edac57b87` passed:
+
+- Foundation #149 ✅ — PostgreSQL 16, migrations 0001–0003, typecheck, unit, serial real-Postgres integration, production build;
+- Playwright #251 ✅ — full Phase 2 + Phase 3 browser loop through Outcome Review and reload;
+- Lint #484 ✅.
+
+A final gate will run on the documentation closeout head before merge.
+
+## Expected versus actual outcome
+
+**Expected:** one meaningful Problem can become a reviewed root-cause hypothesis, a machine change, execution, observed Outcome and new Reflection.
+
+**Actual:** achieved on PR #57. Principles no longer treats task completion as success; actual Reality must be observed before the Design is evaluated.
+
+## Known limitations
+
+- Phase 3 activation follows a normal server render/navigation after the Phase 2 Principle is reviewed; no shared live client state across the two surfaces yet;
+- one v1 execution chain is surfaced for the selected Goal/Problem;
+- one Outcome per Design;
+- no generic Projects, assignment, recurrence, reminders or scheduling;
+- no longitudinal Self Model/pattern engine yet;
+- no Organization collaboration or structured business connectors.
 
 ---
 
 # Phase 4 — Learning Engine + Self Model
 
-**Status:** Planned
+**Status:** Planned — not started
 
-## Objective
+Use longitudinal evidence from Goals, Problems, Diagnoses, Designs, Actions, Outcomes, Reflections and Principles to detect/test:
 
-Use longitudinal evidence to make Principles more useful over time.
-
-Potential capabilities:
-
-- repeated Problem/Pain detection;
-- 5-Step failure-pattern analysis;
-- stated-priority versus observed-behavior tensions;
-- Principle effectiveness;
+- recurring Problems/Pain;
+- repeated 5-Step failure points;
+- stated priorities versus observed behavior;
 - recurring diagnosis/design failures;
+- Principle effectiveness;
 - evolving strength/constraint hypotheses.
 
 Every pattern must remain evidence-backed, inspectable and correctable.
 
-## Definition of Done
-
-Principles surfaces at least one useful longitudinal pattern that the user can trace to cases, correct if wrong and use to change future behavior or a Principle.
-
-## Expected outcome
-
-Compounding value from the person's own history.
+**Definition of Done:** Principles surfaces at least one useful longitudinal pattern that the user can trace to cases, correct if wrong and use to change future behavior or a Principle.
 
 ---
 
@@ -358,40 +217,19 @@ Compounding value from the person's own history.
 
 **Status:** Planned
 
-## Objective
-
-Extend the proven People kernel to a collective machine without weakening privacy, governance or truth-seeking.
-
-New dimensions may include:
-
-- Organization Workspace;
-- people / roles / responsibilities / teams;
-- culture signals;
-- issues / disagreements;
-- decision rights and governance;
-- domain-specific believability.
-
-Believability is contextual and evidence-backed, never a global human-worth score. Radical Transparency must coexist with permissions and accountability.
-
-## Definition of Done
-
-A small real team can share a Goal, surface a meaningful Problem/disagreement, inspect permitted evidence, diagnose and design a machine change, observe an Outcome, reflect and update an organizational Principle.
-
-## Expected outcome
-
-A collective evolution system built on the same kernel proven for individuals.
+Extend the proven People kernel with Organization Workspace, people/roles/responsibilities/teams, culture signals, issues/disagreements, governance and domain-specific evidence-backed believability. Radical Transparency must coexist with permissions/accountability.
 
 ---
 
 # Cross-phase invariants
 
-All future phases must preserve:
+All future phases preserve:
 
-- workspace authorization before private retrieval/AI work;
+- authorization before private retrieval/AI;
 - evidence/provenance boundaries;
-- explicit distinction between observation and inference;
-- AI suggestions are not automatically truth;
+- observation ≠ inference;
+- AI suggestion ≠ truth;
 - public live search never receives private RAG excerpts;
-- minimal UI without explanatory microcopy filler;
-- database-level tenant invariants where practical;
-- no resurrection of retired Council/V2 architecture without explicit product decision.
+- minimal UI without explanatory filler;
+- database-level tenant/semantic invariants where practical;
+- no resurrection of retired Council/V2 architecture without an explicit decision.

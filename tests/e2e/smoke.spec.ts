@@ -42,7 +42,7 @@ function ndjson(answer: string): string {
 }
 
 async function createAccount(page: import("@playwright/test").Page) {
-  const email = `phase2-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+  const email = `phase3-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Principles" })).toBeVisible();
   await page.getByLabel("Email").fill(email);
@@ -72,6 +72,8 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
   expect(unauthenticatedAsk.status()).toBe(401);
   const unauthenticatedPeople = await request.get("/api/people/state");
   expect(unauthenticatedPeople.status()).toBe(401);
+  const unauthenticatedExecution = await request.get("/api/people/execution/state");
+  expect(unauthenticatedExecution.status()).toBe(401);
 
   const email = await createAccount(page);
   const me = await page.evaluate(async () => {
@@ -93,9 +95,14 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
   await expect(page.getByText(email)).toBeVisible();
 });
 
-test("one person completes Goal → Reality → Problem → Reflection → Principle and reloads it", async ({
+test("one person moves from Goal to machine change, Outcome Review, and reloads the durable chain", async ({
   page,
 }) => {
+  const actualOutcome =
+    "The next three routine operating decisions were made by the named owner without waiting for me.";
+  const outcomeLearning =
+    "Changing default decision authority changed behavior; discussing responsibilities alone had not.";
+
   await createAccount(page);
 
   await answerGoalQuestion(
@@ -167,22 +174,72 @@ test("one person completes Goal → Reality → Problem → Reflection → Princ
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Diagnose root cause" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Diagnose root cause" }).click();
   await expect(
-    page.getByText("Build a company that operates without depending on me day to day.")
+    page.getByText(
+      "Routine decisions have no explicit default owner with authority to act without founder approval."
+    )
   ).toBeVisible();
+  await page.getByRole("button", { name: "Use this diagnosis" }).click();
+
+  await expect(page.getByRole("button", { name: "Design the machine" })).toBeVisible();
+  await page.getByRole("button", { name: "Design the machine" }).click();
   await expect(
-    page.locator("strong").filter({
-      hasText: "Three routine operating decisions waited for me this week.",
+    page.getByText(
+      "Assign one explicit decision owner and a default authority boundary for routine operating decisions."
+    )
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Use this design" }).click();
+
+  await expect(page.getByLabel("Complete action 1")).toBeVisible();
+  await page.getByLabel("Complete action 1").click();
+  await expect(page.getByLabel("Complete action 2")).toBeVisible();
+  await page.getByLabel("Complete action 2").click();
+  await expect(page.getByLabel("Complete action 3")).toBeVisible();
+  await page.getByLabel("Complete action 3").click();
+
+  await expect(page.getByLabel("Outcome result")).toBeVisible();
+  await page.getByLabel("Outcome result").fill(actualOutcome);
+  await page.getByRole("button", { name: "Improved" }).click();
+  await page.getByRole("button", { name: "Record outcome" }).click();
+  const execution = page.getByLabel("Design and execution");
+  await expect(execution.locator("strong").filter({ hasText: actualOutcome })).toBeVisible();
+
+  await expect(page.getByText("What surprised you about the result?")).toBeVisible();
+  await page
+    .getByLabel("Outcome review answer")
+    .fill("A small authority rule removed more waiting than another discussion did.");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("What did this result teach you?")).toBeVisible();
+  await page.getByLabel("Outcome review answer").fill(outcomeLearning);
+  await page.getByRole("button", { name: "Complete review" }).click();
+  await expect(execution.locator("strong").filter({ hasText: outcomeLearning })).toBeVisible();
+  await expect(execution.getByText("Loop complete")).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByText(
+      "Build a company that operates without depending on me day to day."
+    )
+  ).toBeVisible();
+  const reloadedExecution = page.getByLabel("Design and execution");
+  await expect(
+    reloadedExecution.locator("strong").filter({
+      hasText:
+        "Routine decisions have no explicit default owner with authority to act without founder approval.",
     })
   ).toBeVisible();
-  await expect(page.getByText("The founder remains a routine operating bottleneck.")).toBeVisible();
   await expect(
-    page.getByText("If routine decisions still wait for me, ownership is not explicit enough.")
+    reloadedExecution.locator("strong").filter({
+      hasText:
+        "Assign one explicit decision owner and a default authority boundary for routine operating decisions.",
+    })
   ).toBeVisible();
-  await expect(
-    page.getByText("Make the decision owner and default authority explicit before the next routine case.")
-  ).toBeVisible();
-  await expect(page.getByText("Testing", { exact: true })).toBeVisible();
+  await expect(reloadedExecution.locator("strong").filter({ hasText: actualOutcome })).toBeVisible();
+  await expect(reloadedExecution.locator("strong").filter({ hasText: outcomeLearning })).toBeVisible();
+  await expect(reloadedExecution.getByText("Loop complete")).toBeVisible();
 });
 
 test("Knowledge remains authenticated and renders only the safe source projection", async ({ page }) => {
