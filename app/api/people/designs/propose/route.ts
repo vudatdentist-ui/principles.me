@@ -8,6 +8,7 @@ import {
 } from "@/features/people/api";
 import { generateDesignProposal } from "@/features/people/execution-ai";
 import { getDiagnosis } from "@/features/people/execution-repository";
+import { supersedePendingExecutionSuggestions } from "@/features/people/execution-suggestions";
 import { getGoal, getProblem } from "@/features/people/repository";
 
 const schema = z.object({ diagnosisId: z.string().uuid() });
@@ -39,6 +40,12 @@ export async function POST(request: Request): Promise<Response> {
       goal,
       problem,
       signal: request.signal,
+    });
+    await supersedePendingExecutionSuggestions({
+      contextId: diagnosis.id,
+      contextKey: "diagnosisId",
+      kind: "design_candidate",
+      workspaceId: context.workspace.id,
     });
     await createAiSuggestion({
       evidenceIds: diagnosis.evidenceIds,
