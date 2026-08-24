@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      - phase/1-secure-platform-durable-kernel
   push:
     branches:
       - main
