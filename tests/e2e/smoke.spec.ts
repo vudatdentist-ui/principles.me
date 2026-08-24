@@ -98,6 +98,11 @@ test("unauthenticated AI is blocked and a Personal Workspace survives sign-in", 
 test("one person moves from Goal to machine change, Outcome Review, and reloads the durable chain", async ({
   page,
 }) => {
+  const actualOutcome =
+    "The next three routine operating decisions were made by the named owner without waiting for me.";
+  const outcomeLearning =
+    "Changing default decision authority changed behavior; discussing responsibilities alone had not.";
+
   await createAccount(page);
 
   await answerGoalQuestion(
@@ -167,8 +172,6 @@ test("one person moves from Goal to machine change, Outcome Review, and reloads 
   await page.getByRole("button", { name: "Test this principle" }).click();
   await expect(page.getByText("Testing", { exact: true })).toBeVisible();
 
-  // Phase 3 is intentionally a separate change loop. Reload proves the Phase 2
-  // learning state is durable and makes it available as the Phase 3 starting point.
   await page.reload();
   await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Diagnose root cause" })).toBeVisible();
@@ -198,16 +201,11 @@ test("one person moves from Goal to machine change, Outcome Review, and reloads 
   await page.getByLabel("Complete action 3").click();
 
   await expect(page.getByLabel("Outcome result")).toBeVisible();
-  await page
-    .getByLabel("Outcome result")
-    .fill("The next three routine operating decisions were made by the named owner without waiting for me.");
+  await page.getByLabel("Outcome result").fill(actualOutcome);
   await page.getByRole("button", { name: "Improved" }).click();
   await page.getByRole("button", { name: "Record outcome" }).click();
-  await expect(
-    page.getByText(
-      "The next three routine operating decisions were made by the named owner without waiting for me."
-    )
-  ).toBeVisible();
+  const execution = page.getByLabel("Design and execution");
+  await expect(execution.locator("strong").filter({ hasText: actualOutcome })).toBeVisible();
 
   await expect(page.getByText("What surprised you about the result?")).toBeVisible();
   await page
@@ -215,16 +213,10 @@ test("one person moves from Goal to machine change, Outcome Review, and reloads 
     .fill("A small authority rule removed more waiting than another discussion did.");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("What did this result teach you?")).toBeVisible();
-  await page
-    .getByLabel("Outcome review answer")
-    .fill("Changing default decision authority changed behavior; discussing responsibilities alone had not.");
+  await page.getByLabel("Outcome review answer").fill(outcomeLearning);
   await page.getByRole("button", { name: "Complete review" }).click();
-  await expect(
-    page.getByText(
-      "Changing default decision authority changed behavior; discussing responsibilities alone had not."
-    )
-  ).toBeVisible();
-  await expect(page.getByText("Loop complete")).toBeVisible();
+  await expect(execution.locator("strong").filter({ hasText: outcomeLearning })).toBeVisible();
+  await expect(execution.getByText("Loop complete")).toBeVisible();
 
   await page.reload();
   await expect(
@@ -232,27 +224,22 @@ test("one person moves from Goal to machine change, Outcome Review, and reloads 
       "Build a company that operates without depending on me day to day."
     )
   ).toBeVisible();
+  const reloadedExecution = page.getByLabel("Design and execution");
   await expect(
-    page.getByText(
-      "Routine decisions have no explicit default owner with authority to act without founder approval."
-    )
+    reloadedExecution.locator("strong").filter({
+      hasText:
+        "Routine decisions have no explicit default owner with authority to act without founder approval.",
+    })
   ).toBeVisible();
   await expect(
-    page.getByText(
-      "Assign one explicit decision owner and a default authority boundary for routine operating decisions."
-    )
+    reloadedExecution.locator("strong").filter({
+      hasText:
+        "Assign one explicit decision owner and a default authority boundary for routine operating decisions.",
+    })
   ).toBeVisible();
-  await expect(
-    page.getByText(
-      "The next three routine operating decisions were made by the named owner without waiting for me."
-    )
-  ).toBeVisible();
-  await expect(
-    page.getByText(
-      "Changing default decision authority changed behavior; discussing responsibilities alone had not."
-    )
-  ).toBeVisible();
-  await expect(page.getByText("Loop complete")).toBeVisible();
+  await expect(reloadedExecution.locator("strong").filter({ hasText: actualOutcome })).toBeVisible();
+  await expect(reloadedExecution.locator("strong").filter({ hasText: outcomeLearning })).toBeVisible();
+  await expect(reloadedExecution.getByText("Loop complete")).toBeVisible();
 });
 
 test("Knowledge remains authenticated and renders only the safe source projection", async ({ page }) => {
