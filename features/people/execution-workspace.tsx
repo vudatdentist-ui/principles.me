@@ -74,8 +74,9 @@ export function ExecutionWorkspace({
   if (!context) {
     return null;
   }
+  const problemId = context.problem.id;
 
-  const diagnosis = state.diagnoses.find((item) => item.problemId === context.problem.id);
+  const diagnosis = state.diagnoses.find((item) => item.problemId === problemId);
   const design = diagnosis
     ? state.designs.find((item) => item.diagnosisId === diagnosis.id)
     : undefined;
@@ -131,7 +132,7 @@ export function ExecutionWorkspace({
       const proposal = await jsonRequest<DiagnosisProposal>(
         "/api/people/diagnoses/propose",
         {
-          body: JSON.stringify({ problemId: context.problem.id }),
+          body: JSON.stringify({ problemId }),
           method: "POST",
         }
       );
@@ -146,7 +147,7 @@ export function ExecutionWorkspace({
     }
     await run("diagnosis", async () => {
       await jsonRequest("/api/people/diagnoses", {
-        body: JSON.stringify({ ...diagnosisDraft, problemId: context.problem.id }),
+        body: JSON.stringify({ ...diagnosisDraft, problemId }),
         method: "POST",
       });
       setDiagnosisDraft(null);
