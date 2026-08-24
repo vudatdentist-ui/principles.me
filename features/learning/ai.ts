@@ -74,17 +74,27 @@ function safeCase(caseRecord: LearningCaseRecord, key: string) {
   };
 }
 
+function learningCaseMap(cases: LearningCaseRecord[]): Map<string, LearningCaseRecord> {
+  return new Map<string, LearningCaseRecord>(
+    cases.map((item, index) => [`C${index + 1}`, item])
+  );
+}
+
+function learningPrincipleMap(
+  principles: LearningPrincipleOption[]
+): Map<string, LearningPrincipleOption> {
+  return new Map<string, LearningPrincipleOption>(
+    principles.map((item, index) => [`P${index + 1}`, item])
+  );
+}
+
 export function resolveLearningModelResult(input: {
   cases: LearningCaseRecord[];
   principles: LearningPrincipleOption[];
   result: LearningModelResult;
 }): ResolvedLearningResult {
-  const caseMap = new Map(
-    input.cases.map((item, index) => [`C${index + 1}`, item] as const)
-  );
-  const principleMap = new Map(
-    input.principles.map((item, index) => [`P${index + 1}`, item] as const)
-  );
+  const caseMap = learningCaseMap(input.cases);
+  const principleMap = learningPrincipleMap(input.principles);
 
   const uniqueCaseKeys = [...new Set(input.result.caseKeys)];
   if (uniqueCaseKeys.length < 2) {
@@ -142,12 +152,8 @@ export async function generateLearningPattern(input: {
     throw new Error("At least two completed Reflections are required.");
   }
 
-  const caseMap = new Map(
-    input.cases.map((item, index) => [`C${index + 1}`, item] as const)
-  );
-  const principleMap = new Map(
-    input.principles.map((item, index) => [`P${index + 1}`, item] as const)
-  );
+  const caseMap = learningCaseMap(input.cases);
+  const principleMap = learningPrincipleMap(input.principles);
   let metadata: AiResponseMetadata | undefined;
   const provider = new DeepSeekProvider({ maxTokens: 950 });
   const result = await provider.generateObject({
