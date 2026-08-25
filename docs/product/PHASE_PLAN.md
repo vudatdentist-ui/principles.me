@@ -2,19 +2,21 @@
 
 **Status:** execution plan  
 **Date:** 2026-08-25  
-**Completed on `main`:** Phases 0–4  
-**Next major phase:** Phase 5 — Principles for Organizations — **Planned, not started**
+**Completed on `main`:** Phases 0–5  
+**Next major phase:** **Not defined; requires an explicit product decision**
 
 ## Phase execution protocol
 
 ```text
 Understand requirements
-  → define acceptance criteria
+  → lock goal / acceptance criteria
   → implement
   → audit
-  → fix
+  → compare against goal
+  → fix gaps
   → re-audit
-  → final output check
+  → production verification
+  → close source of truth
   → report
 ```
 
@@ -29,7 +31,7 @@ Understand requirements
 | 2 | Principles for People — First Complete Loop | **Complete** | Goal → Reality → Problem → Reflection → Principle produces durable user-owned learning. |
 | 3 | Design + Execution | **Complete** | Diagnosis → machine Design → Actions → Outcome → Review turns learning into observed machine change. |
 | 4 | Learning Engine + Self Model | **Complete** | Longitudinal history produces useful, inspectable and correctable Pattern hypotheses that can improve a Principle. |
-| 5 | Principles for Organizations | **Planned** | The proven kernel supports collective machines, governance and contextual believability. |
+| 5 | Principles for Organizations | **Complete** | A governed collective machine makes responsibilities, reality, disagreement and contextual track record explicit without people scoring. |
 
 ---
 
@@ -78,7 +80,7 @@ Diagnosis separates symptom/proximate/root-cause hypothesis and preserves eviden
 
 # Phase 4 — Learning Engine + Self Model
 
-**Status:** **Complete**  
+**Status:** Complete  
 **Merge:** `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`  
 **Production deploy:** run `32838276392`
 
@@ -95,88 +97,114 @@ History
   → test again
 ```
 
-## Delivered
+Delivered a correctable Self Model, bounded recent-history retrieval, ephemeral model keys, PostgreSQL recurring-pattern semantics, safe client projection and explicit Pattern→Principle revision that returns a Principle to testing.
 
-### Correctable Self Model
-
-- Self Model is the set of accepted/revised Learning Pattern hypotheses, not traits or personality labels;
-- Pattern requires at least two completed Reflection cases;
-- user can inspect supporting cases, counter-evidence and uncertainty;
-- unchanged AI wording records `accepted`; correction records `revised`; reject creates no Pattern row;
-- stale pending proposals are superseded.
-
-### Longitudinal integrity
-
-- model receives ephemeral `C#` case keys and `P#` Principle keys rather than durable UUIDs;
-- unknown/duplicate model keys fail;
-- same-Problem before/after learning may be `design_learning` but not `recurring_pattern`;
-- `recurring_pattern` requires at least two distinct Problems in AI validation and deferred PostgreSQL constraints;
-- Pattern cases retain Workspace + Goal + Problem + Reflection semantics;
-- each proposal considers the 8 most recent completed Reflection cases, presented chronologically;
-- model-facing history text is bounded so context/cost does not grow without limit.
-
-### Principle improvement
-
-- accepted/revised active Pattern may propose one relevant Principle revision;
-- user explicitly reviews/edits trigger, rule and rationale;
-- before/after Principle wording is stored durably;
-- Pattern→Principle provenance is retained;
-- revised Principle returns to `revised + testing`, never trusted automatically;
-- an already-applied Pattern revision cannot replay.
-
-### UI / privacy
-
-Authenticated `/learning` remains sparse: insufficient history, Find a pattern, progressive evidence disclosure, correction/rejection and compact durable Pattern hypotheses. No scorecard, chart, streak, trait feed or analytics dashboard.
-
-Browser projection excludes Workspace IDs, Evidence UUIDs, AI Suggestion IDs and internal Goal/Problem join IDs.
-
-## Audit findings corrected
-
-- TypeScript ephemeral-key Map inference;
-- client relabeling of same-Problem cases as recurring Pattern after AI validation;
-- history selection that would eventually favor old cases;
-- unbounded model-facing history text.
-
-## Verification
-
-Final synchronized pre-merge head `a6f21a8dbd66b64c98e61a6e151be5828ea1f2b8`:
-
-- Lint #515 ✅;
-- Playwright #282 ✅;
-- Foundation #180 ✅ — PostgreSQL 16, migrations 0001–0004, typecheck, unit, serial real-Postgres integration and production build.
-
-Post-merge main `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`:
-
-- Foundation #181 ✅;
-- Lint #516 ✅;
-- Playwright #283 ✅;
-- production deploy run `32838276392` ✅;
-- `MIGRATION_APPLIED=0004_learning_self_model.sql` ✅;
-- canary health/smoke, public exact-SHA verification and zero-downtime swap ✅.
-
-## Expected versus actual outcome
-
-**Expected:** at least one useful longitudinal Pattern can be traced to real cases, corrected by the user and used to improve future behavior or a Principle.
-
-**Actual:** achieved, merged and production-verified. A real browser path generates history through normal product use, creates an inspectable Pattern, corrects it, persists it as revised Self Model state, uses it to revise a Principle back into testing, reloads the state and rejects a later proposal.
-
-## Limitations carried forward
-
-- user-triggered learning only; no scheduled/proactive learning;
-- 8 most recent completed Reflection cases per proposal rather than semantic retrieval over unlimited history;
-- one Pattern→Principle revision in v1;
-- Learning remains a secondary `/learning` surface;
-- no personality testing, generic memory, organization learning or structured business connectors.
+Final pre-merge: Foundation #180 ✅ · Lint #515 ✅ · Playwright #282 ✅.  
+Post-merge: Foundation #181 ✅ · Lint #516 ✅ · Playwright #283 ✅ · production `32838276392` ✅.
 
 ---
 
 # Phase 5 — Principles for Organizations
 
-**Status:** Planned, not started
+**Status:** **Complete**  
+**Merge:** `0fa12577636715437f3208e8289d71931433aa61`  
+**Production deploy:** run `32844721161`
 
-Potential scope: Organization Workspace, people/roles/responsibilities/teams, culture signals, issues/disagreements, permissions/governance and contextual evidence-backed believability. Radical Transparency must coexist with authorization and accountability.
+## Objective
 
-Phase 5 starts only as a new explicitly scoped major phase with its own architecture, acceptance criteria and audit loop. It must preserve the proven People kernel, privacy boundaries and user-correctable inference model.
+Extend the proven People kernel from a personal machine to a collective machine without turning Principles into HR software, a generic org chart, project-management software or a people-scoring product.
+
+```text
+Organization
+  → People / Roles / Responsibilities / Teams
+  → observed Issues
+  → explicit Disagreements
+  → contextual track-record evidence
+  → accountable resolution
+```
+
+## Delivered
+
+### Account entry
+
+- Setup key removed from normal signup UI and API;
+- signup is open unless `AUTH_SIGNUP_MODE=disabled`;
+- legacy `AUTH_SIGNUP_MODE=bootstrap` behaves as open instead of requiring a hidden secret;
+- Personal Workspace creation, first-workspace RAG bootstrap behavior, origin checks, password rules, rate limits and session security remain intact.
+
+### Organization boundary and governance
+
+- authenticated user can create an Organization Workspace and becomes owner;
+- safe `org_...` handle is projected instead of Workspace UUID;
+- organization reads require membership;
+- owner manages members, roles, responsibilities, role assignments, teams and team assignments;
+- ordinary members cannot mutate machine structure;
+- cross-organization role/team/member references are rejected by PostgreSQL constraints.
+
+### Collective Reality
+
+- any member can record an attributable Issue as observed reality + tension;
+- any member can raise an attributable Disagreement tied to an Issue;
+- owner can resolve Issues and Disagreements while preserving original statements;
+- members can record context-specific evidence for/against another member's relevant track record;
+- culture in v1 is represented through attributable Issues, Disagreements and contextual evidence rather than anonymous sentiment scoring.
+
+### Believability boundary
+
+Contextual evidence is evidence about a person **in a specific context**. It does not create a global score, ranking, personality label, clinical inference or fixed identity judgment.
+
+### UI
+
+`/organization` is an authenticated sparse secondary surface with progressive disclosure for Organization creation/selection, machine structure, Issues/Disagreements and contextual evidence. People, Knowledge and Learning keep their Personal Workspace behavior.
+
+## Audit findings corrected
+
+- stale Setup-key unit coverage importing the removed bootstrap module;
+- organization switcher accessibility semantics rejected by lint rules;
+- new Phase 5 CSS warning debt;
+- an ambiguous browser assertion matching both a visible member and a role-assignment option.
+
+## Verification
+
+Final pre-merge head `424764e8855d37c4b961ab968386dc409e0d7b85`:
+
+- Foundation #189 ✅ — PostgreSQL 16, migrations 0001–0005, typecheck, unit tests, real-Postgres integration and production build;
+- Lint #524 ✅;
+- Playwright #291 ✅ — Setup-key-free signup, two-account organization collaboration, member governance denial, Issue → Disagreement → contextual evidence → owner resolution and existing browser smoke.
+
+Post-merge main `0fa12577636715437f3208e8289d71931433aa61`:
+
+- Foundation #190 ✅;
+- Lint #525 ✅;
+- Playwright #292 ✅;
+- production deploy run `32844721161` ✅;
+- `MIGRATION_APPLIED=0005_organizations.sql` ✅;
+- backup, migration, canary, internal health, public route, exact-SHA health and zero-downtime swap ✅.
+
+## Expected versus actual outcome
+
+**Expected:** a real group can make its collective machine explicit, surface reality/disagreement and preserve accountable decision rights without reducing people to scores.
+
+**Actual:** achieved, merged and production-verified. A browser path creates two accounts without Setup key, creates an Organization, adds a member, proves owner/member permission separation, records an Issue and Disagreement, records contextual evidence, and lets the owner resolve the collective reality while preserving attribution.
+
+## Limitations carried forward
+
+- owner adds an existing Principles account by email; no invitation email/magic-link delivery;
+- owner/member authorization only; no arbitrary permission matrix;
+- `/organization` remains a secondary surface rather than a global workspace shell;
+- no anonymous culture survey or culture score;
+- no global people ranking;
+- no organization-wide AI Pattern generation across unlimited history;
+- no SSO/SCIM, compensation/performance-management workflows or structured business connectors;
+- no generic project/task management.
+
+---
+
+# Next major phase
+
+**Status:** Not defined.
+
+Do not infer Phase 6. A new major phase requires an explicit product decision, a new goal/acceptance contract and the same execution/audit loop.
 
 ---
 
@@ -186,6 +214,8 @@ Phase 5 starts only as a new explicitly scoped major phase with its own architec
 - evidence/provenance boundaries;
 - observation ≠ inference;
 - AI suggestion ≠ truth;
+- contextual track record ≠ identity-level people score;
+- Radical Transparency does not bypass authorization;
 - public live search never receives private RAG excerpts;
 - minimal UI without explanatory filler;
 - database tenant/semantic invariants where practical;
