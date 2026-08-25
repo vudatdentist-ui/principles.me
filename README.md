@@ -2,8 +2,8 @@
 
 Principles is an **evolution system for people first and organizations second**.
 
-**`main`:** Phases 0–3 Complete.  
-**This branch:** Phase 4 — Learning Engine + Self Model — **Ready, not merged**.
+**`main`:** Phases 0–4 **Complete**.  
+**Next major phase:** Phase 5 — Principles for Organizations — **Planned, not started**.
 
 ```text
 Goal → Reality → Problem → Diagnosis → Design → Actions → Outcome
@@ -15,12 +15,12 @@ Read first:
 - [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) — source of truth.
 - [`docs/product/PRINCIPLES_KERNEL_SPEC_V1.md`](./docs/product/PRINCIPLES_KERNEL_SPEC_V1.md) — philosophy/domain language.
 - [`docs/product/UI_PRINCIPLES.md`](./docs/product/UI_PRINCIPLES.md) — interface constraints.
-- [`docs/product/PHASE_PLAN.md`](./docs/product/PHASE_PLAN.md) — phase program.
-- [`docs/product/PHASE_4_ARCHITECTURE.md`](./docs/product/PHASE_4_ARCHITECTURE.md) — current Phase 4 closeout and verification.
+- [`docs/product/PHASE_PLAN.md`](./docs/product/PHASE_PLAN.md) — major phase program.
+- [`docs/product/PHASE_4_ARCHITECTURE.md`](./docs/product/PHASE_4_ARCHITECTURE.md) — completed Learning Engine + Self Model architecture and verification.
 
 ## People
 
-The durable learning/change path now spans:
+The durable learning/change path spans:
 
 ```text
 Goal Discovery → Reality → Problem → Reflection → Principle
@@ -34,7 +34,7 @@ Phase 2 keeps Goals, Reality, Problems, Reflections and Principles user-owned. P
 
 ## Learning — `/learning`
 
-Phase 4 adds a sparse authenticated learning surface:
+Phase 4 is merged and production-verified. It adds a sparse authenticated learning surface:
 
 ```text
 History
@@ -79,7 +79,8 @@ Public live search receives only the public query, never private RAG excerpts. B
 - durable provider/rate controls;
 - safe client projections;
 - checksum-bound migrations and DB-aware health;
-- production Postgres/canary/rollback foundations;
+- self-contained production Node runtime with direct Node migrations;
+- pre-migration DB backup, internal-only data network, canary health/smoke and exact-SHA public deployment verification;
 - real-Postgres integration and authenticated browser verification.
 
 ## Repository shape
@@ -127,11 +128,22 @@ pnpm lint
 pnpm test:e2e
 ```
 
-Final Phase 4 runtime re-audit before documentation closeout:
+Phase 4 merge: `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`.
 
-- Foundation #163 ✅
-- Lint #498 ✅
-- Playwright #265 ✅
+Final pre-merge re-audit:
+
+- Lint #515 ✅
+- Playwright #282 ✅
+- Foundation #180 ✅
+
+Post-merge main verification:
+
+- Foundation #181 ✅
+- Lint #516 ✅
+- Playwright #283 ✅
+- production deploy run `32838276392` ✅
+- `MIGRATION_APPLIED=0004_learning_self_model.sql` ✅
+- public `/api/health` exact version `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d` ✅
 
 ## UI constraint
 
@@ -141,4 +153,4 @@ Prefer fewer visible items, stronger state, direct actions, progressive disclosu
 
 ## Not implemented / intentionally deferred
 
-Phase 4 is not merged yet. There is no proactive/scheduled Learning, unlimited-history semantic Pattern retrieval, personality/psychometric scoring, generic conversation memory, organization collaboration, generic project/task product, CRM/finance/HR product, structured business connectors, password recovery/OAuth/passkeys, RAG-binding administration UI or automated off-host restore system.
+Phase 5 is not started. There is no proactive/scheduled Learning, unlimited-history semantic Pattern retrieval, personality/psychometric scoring, generic conversation memory, organization collaboration, generic project/task product, CRM/finance/HR product, structured business connectors, password recovery/OAuth/passkeys, RAG-binding administration UI or automated off-host restore system.
