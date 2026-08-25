@@ -1,15 +1,16 @@
 # Phase 5 Architecture — Principles for Organizations
 
-**Status:** In progress  
+**Status:** Complete  
 **Date:** 2026-08-25  
-**Branch:** `phase/5-organizations`  
-**Baseline:** Phases 0–4 Complete on `main`
+**Merge:** `0fa12577636715437f3208e8289d71931433aa61`  
+**Production deploy:** run `32844721161`  
+**Baseline:** Phases 0–5 Complete on `main`
 
-## 1. Goal
+## 1. Goal achieved
 
-Extend the proven People kernel from a personal machine to a collective machine without turning Principles into HR software, a generic project manager, an org chart, or a people-scoring product.
+Phase 5 extends the proven People kernel from a personal machine to a governed collective machine without turning Principles into HR software, a generic project manager, an org chart, or a people-scoring product.
 
-The completed Phase 5 must let a real group establish a bounded Organization Workspace, make its machine explicit, surface reality and disagreement, and preserve accountable governance:
+A real group can now establish a bounded Organization Workspace, make its machine explicit, surface reality and disagreement, and preserve accountable governance:
 
 ```text
 Organization
@@ -17,7 +18,7 @@ Organization
   → observed Issues
   → explicit Disagreements
   → contextual track-record evidence
-  → machine changes with clear decision rights
+  → accountable resolution
 ```
 
 The philosophical kernel remains:
@@ -29,59 +30,51 @@ Goal → Reality → Problem → Diagnosis → Design → Actions
 
 Phase 5 adds collective actors and governance; it does not replace that loop.
 
-## 2. Acceptance contract
+## 2. Acceptance outcome
 
-Phase 5 is Ready only when all of the following are true.
-
-### Account entry
+### Account entry — achieved
 
 - normal account creation no longer exposes or accepts a Setup key;
-- legacy `AUTH_SIGNUP_MODE=bootstrap` does not leave production stuck behind a hidden secret; only explicit `disabled` closes signup;
-- signup still creates one owned Personal Workspace and preserves the first-workspace RAG bootstrap behavior;
+- only explicit `AUTH_SIGNUP_MODE=disabled` closes signup;
+- legacy `AUTH_SIGNUP_MODE=bootstrap` behaves as open instead of leaving production behind a hidden secret;
+- signup still creates one owned Personal Workspace and preserves first-workspace RAG bootstrap behavior;
 - origin checks, password requirements, rate limiting and session security remain intact.
 
-### Organization boundary
+### Organization boundary — achieved
 
-- an authenticated user can create an Organization Workspace and becomes its owner;
-- organization browser/API identifiers do not expose the underlying Workspace UUID;
-- a user can only read an organization in which they hold membership;
-- all structural writes are checked against membership before mutation;
+- authenticated user can create an Organization Workspace and becomes its owner;
+- browser/API identifiers use a safe `org_...` handle and do not expose the underlying Workspace UUID;
+- a user can read only organizations in which they hold membership;
+- structural writes are authorized before mutation;
 - cross-organization role/team/member references are rejected by PostgreSQL constraints, not only application code.
 
-### Collective machine
+### Collective machine — achieved
 
-- an owner can add an existing Principles account by email;
-- an owner can define roles with purpose and decision scope;
-- an owner can attach responsibilities to roles and assign roles to members;
-- an owner can create teams and assign members to teams;
+- owner can add an existing Principles account by email;
+- owner can define roles with purpose and decision scope;
+- owner can attach responsibilities to roles and assign roles to members;
+- owner can create teams and assign members to teams;
 - ordinary members cannot mutate membership, roles, responsibilities, role assignments, teams or team assignments.
 
-### Reality, disagreement and contextual believability
+### Reality, disagreement and contextual believability — achieved
 
-- any organization member can record an Issue as observed reality plus the tension it creates;
+- any organization member can record an Issue as observed reality plus tension;
 - any organization member can raise an attributable Disagreement against an Issue;
-- owners can resolve Issues and Disagreements while preserving the original statements;
-- organization members can record attributable, context-specific evidence about a member's relevant track record;
-- contextual evidence stores evidence-for, evidence-against and observation text; it never produces a global score, ranking, personality label or fixed identity judgment.
+- owners can resolve Issues and Disagreements while preserving original statements;
+- members can record attributable, context-specific evidence about a member's relevant track record;
+- contextual evidence stores observation, evidence-for and evidence-against and never produces a global score, ranking, personality label or fixed identity judgment;
+- culture in v1 is observable through attributable Issues, Disagreements and contextual evidence rather than anonymous culture scoring.
 
-### Client projection / UI
+### Client projection / UI — achieved
 
 - `/organization` is authenticated and sparse;
-- the UI supports create/select organization, machine structure, issues/disagreements and contextual evidence without becoming a dashboard;
+- UI supports create/select organization, machine structure, issues/disagreements and contextual evidence without becoming a dashboard;
 - Workspace UUIDs and User UUIDs are not projected to the browser; organization handles and member emails are used for client actions;
-- People, Knowledge and Learning remain available and keep their existing private Personal Workspace behavior.
-
-### Verification
-
-- migration `0005_organizations.sql` applies on PostgreSQL 16 after migrations 0001–0004;
-- unit/type/lint/build checks pass;
-- real-Postgres integration tests prove owner/member authorization and cross-workspace constraints;
-- Playwright proves no Setup key, multi-account organization collaboration, member governance denial, issue/disagreement flow and normal reload;
-- after merge, production deploy applies migration 0005, canary/smoke pass, and public `/api/health` reports the exact merge SHA.
+- People, Knowledge and Learning retain their existing private Personal Workspace behavior.
 
 ## 3. Domain model
 
-The Organization Workspace remains a row in `workspaces(kind = 'organization')` so ownership, activity history and future kernel records keep the existing workspace boundary.
+The Organization Workspace remains a row in `workspaces(kind = 'organization')` so ownership, Activity Events and future kernel records keep the existing workspace boundary.
 
 Phase 5 adds:
 
@@ -127,25 +120,74 @@ A contextual evidence record means only:
 
 It does not mean:
 
-> B is an 8.2/10 person, has a fixed trait, or should be trusted everywhere.
+> B has a universal numeric quality, fixed trait, or should be trusted in every context.
 
-The model is designed so future decision support can retrieve relevant track record by context while keeping the underlying evidence inspectable and correctable.
+This leaves room for future context-aware decision support while keeping evidence inspectable, attributable and correctable.
 
-## 6. Scope limits
+## 6. Audit findings and fixes
 
-Deferred beyond Phase 5 v1:
+The requested self-reinforcing loop found and corrected:
+
+1. obsolete Setup-key unit coverage still importing the removed bootstrap module;
+2. organization-switcher ARIA semantics rejected by repository lint/accessibility rules;
+3. new Phase 5 CSS `!important` warning debt;
+4. a Playwright locator that ambiguously matched both the visible member and a role-assignment `<option>`.
+
+No review threads or review blockers remained at final merge.
+
+## 7. Verification
+
+Final pre-merge head `424764e8855d37c4b961ab968386dc409e0d7b85`:
+
+- Foundation #189 ✅ — PostgreSQL 16, migrations 0001–0005, typecheck, unit tests, real-Postgres integration tests and production build;
+- Lint #524 ✅;
+- Playwright #291 ✅ — no Setup key, two-account Organization collaboration, member governance denial, Issue → Disagreement → contextual evidence → owner resolution, plus existing browser smoke.
+
+Post-merge main `0fa12577636715437f3208e8289d71931433aa61`:
+
+- Foundation #190 ✅;
+- Lint #525 ✅;
+- Playwright #292 ✅;
+- production deploy run `32844721161` ✅.
+
+Production proof:
+
+- `DEPLOY_DATABASE_READY=1`;
+- `DEPLOY_DATABASE_BACKUP_READY=1`;
+- `MIGRATION_APPLIED=0005_organizations.sql`;
+- `DEPLOY_MIGRATIONS_READY=1`;
+- `AUTH_BOUNDARY_SMOKE=1`;
+- `DEPLOY_CANARY_SMOKE=1`;
+- `DEPLOY_INTERNAL_HEALTH=1`;
+- `DEPLOY_PUBLIC_ROUTE_READY=1`;
+- `DEPLOY_ZERO_DOWNTIME_SWAP=1`;
+- public `/api/health` returned `status: ok` and exact version `0fa12577636715437f3208e8289d71931433aa61`.
+
+## 8. Expected versus actual outcome
+
+**Expected:** a real group can make its collective machine explicit, surface reality/disagreement and preserve accountable decision rights without reducing people to scores.
+
+**Actual:** achieved. A real browser path creates two accounts without Setup key, creates an Organization, adds a member, proves owner/member permission separation, records an Issue and Disagreement, records contextual evidence, and lets the owner resolve the collective reality while preserving attribution. Real-Postgres tests separately prove cross-workspace constraints.
+
+## 9. Scope limits after Phase 5
+
+Deferred:
 
 - email invite delivery / magic invitation links;
 - SSO/SCIM and enterprise directory sync;
 - arbitrary custom permission matrices;
-- anonymous surveys or employee engagement scoring;
+- anonymous surveys or employee engagement/culture scoring;
 - compensation/performance-management workflows;
 - global people rankings;
 - organizational AI pattern generation across unlimited history;
 - Slack/CRM/finance/HR connectors;
 - generic project/task management.
 
-## 7. Execution loop
+## 10. Next boundary
+
+No next major phase is implied by completion of Phase 5. A future major phase requires an explicit product decision, a new goal/acceptance contract and the same execution/audit loop.
+
+## 11. Execution loop used
 
 ```text
 Understand requirements
