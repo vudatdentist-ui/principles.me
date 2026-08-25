@@ -174,7 +174,7 @@ export function OrganizationWorkspace({
 
         <section className={styles.organizationBar}>
           {state.organizations.length > 0 ? (
-            <div className={styles.switcher} aria-label="Organizations" role="group">
+            <div className={styles.switcher}>
               {state.organizations.map((organization) => (
                 <button
                   aria-pressed={active?.handle === organization.handle}
