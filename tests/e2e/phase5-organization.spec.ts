@@ -69,7 +69,7 @@ test("Phase 5 removes Setup key and supports governed organization collaboration
   });
   await addMember.locator('input[name="email"]').fill(memberEmail);
   await addMember.getByRole("button", { name: "Add member" }).click();
-  await expect(page.getByText(memberEmail, { exact: true })).toBeVisible();
+  await expect(page.getByRole("list").getByText(memberEmail, { exact: true })).toBeVisible();
 
   await page.getByText("New role", { exact: true }).click();
   const roleForm = page.locator("details").filter({
@@ -194,5 +194,5 @@ test("Phase 5 removes Setup key and supports governed organization collaboration
   const issueResolution = ownerIssueCard.locator('input[name="resolution"]').last();
   await issueResolution.fill("Keep routine sequencing delegated and clarify acceptance criteria.");
   await ownerIssueCard.getByRole("button", { name: "Resolve" }).last().click();
-  await expect(ownerIssueCard.getByText("resolved", { exact: true })).toBeVisible();
+  await expect(ownerIssueCard.getByText("resolved", { exact: true }).first()).toBeVisible();
 });
