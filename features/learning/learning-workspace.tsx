@@ -159,6 +159,7 @@ export function LearningWorkspace({
           <a href="/">People</a>
           <a href="/knowledge">Knowledge</a>
           <a aria-current="page" href="/learning">Learning</a>
+          <a href="/organization">Organization</a>
         </nav>
         <div className={styles.account}>
           <span>{workspaceName}</span>

@@ -55,7 +55,19 @@ test("Phase 1 keeps durable private state scoped to the authenticated workspace"
       "dataset-a",
       "dataset-b",
     ]);
-    assert.deepEqual(await workspaceRagDatasetIds(accountA.workspaceId), []);
+    assert.deepEqual(await workspaceRagDatasetIds(accountA.workspaceId), [
+      "dataset-a",
+      "dataset-b",
+    ]);
+
+    await db()`
+      DELETE FROM workspace_evidence_sources
+      WHERE workspace_id = ${accountA.workspaceId}::uuid
+    `;
+    assert.deepEqual(await workspaceRagDatasetIds(accountA.workspaceId), [
+      "dataset-a",
+      "dataset-b",
+    ]);
 
     process.env.AUTH_SIGNUP_MODE = "disabled";
     await assert.rejects(

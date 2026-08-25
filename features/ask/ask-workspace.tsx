@@ -33,6 +33,25 @@ function parseEvent(line: string): StreamEvent | null {
   }
 }
 
+function retrievalLabel(
+  state: RetrievalState | null,
+  kind: "private" | "live"
+): string {
+  if (state === "ok") {
+    return "Connected";
+  }
+  if (state === "empty") {
+    return "No matching evidence";
+  }
+  if (state === "unavailable") {
+    return "Unavailable";
+  }
+  if (state === "disabled") {
+    return "Off";
+  }
+  return kind === "private" ? "Not checked" : "Not requested";
+}
+
 export function AskWorkspace({
   email,
   workspaceName,
@@ -43,6 +62,8 @@ export function AskWorkspace({
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState<ClientEvidenceReference[]>([]);
+  const [privateState, setPrivateState] = useState<RetrievalState | null>(null);
+  const [liveState, setLiveState] = useState<RetrievalState | null>(null);
   const [status, setStatus] = useState("Ready");
   const [phase, setPhase] = useState<AskPhase>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +95,8 @@ export function AskWorkspace({
     setPhase("submitting");
     setAnswer("");
     setSources([]);
+    setPrivateState(null);
+    setLiveState(null);
     setError(null);
     setStatus("Searching…");
 
@@ -118,6 +141,8 @@ export function AskWorkspace({
             setStatus(event.message);
           } else if (event.type === "sources") {
             setSources(event.references);
+            setPrivateState(event.private ?? null);
+            setLiveState(event.live ?? null);
           } else if (event.type === "token") {
             setAnswer((current) => current + event.token);
           } else if (event.type === "error") {
@@ -165,6 +190,12 @@ export function AskWorkspace({
         <a className={styles.brand} href="/" aria-label="Principles home">
           Principles
         </a>
+        <nav className={styles.nav} aria-label="Primary">
+          <a href="/">People</a>
+          <a aria-current="page" href="/knowledge">Knowledge</a>
+          <a href="/learning">Learning</a>
+          <a href="/organization">Organization</a>
+        </nav>
         <div className={styles.account}>
           <span>{workspaceName}</span>
           <span>{email}</span>
@@ -238,6 +269,19 @@ export function AskWorkspace({
               <h2>Sources</h2>
               <span>{sourceLabel}</span>
             </div>
+            <fieldset
+              aria-label="Retrieval status"
+              className={styles.retrievalGrid}
+            >
+              <div className={styles.retrievalCard}>
+                <span>Private knowledge</span>
+                <strong>{retrievalLabel(privateState, "private")}</strong>
+              </div>
+              <div className={styles.retrievalCard}>
+                <span>Live search</span>
+                <strong>{retrievalLabel(liveState, "live")}</strong>
+              </div>
+            </fieldset>
             {sources.length > 0 ? (
               <div className={styles.sources}>
                 {sources.map((source) => (
@@ -259,7 +303,13 @@ export function AskWorkspace({
                 ))}
               </div>
             ) : (
-              <p className={styles.emptySources}>No sources.</p>
+              <p className={styles.emptySources}>
+                {privateState === "unavailable"
+                  ? "Private knowledge could not be reached. Check the RAGFlow connection."
+                  : privateState === "empty"
+                    ? "No private document matched this question."
+                    : "No sources were returned."}
+              </p>
             )}
           </section>
         ) : null}

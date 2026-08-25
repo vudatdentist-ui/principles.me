@@ -75,7 +75,7 @@ same-origin check
   -> model
 ```
 
-Configured `RAGFLOW_DATASET_IDS` may be assigned to the first Personal Workspace only. An explicit empty workspace dataset scope never falls back to global RAG dataset IDs.
+Configured `RAGFLOW_DATASET_IDS` is bound to each Personal Workspace while bootstrap assignment is enabled. On retrieval, missing bindings from older releases are repaired idempotently; stored workspace sources are never replaced or removed. An explicitly disabled bootstrap scope never falls back to global RAG dataset IDs.
 
 Public live search receives only the user's public query; private RAG excerpts are never forwarded to Brave Search.
 

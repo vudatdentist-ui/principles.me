@@ -45,6 +45,10 @@ async function createAccount(page: import("@playwright/test").Page) {
   const email = `phase4-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Principles" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  );
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).last().click();
@@ -316,6 +320,12 @@ test("Knowledge remains authenticated and renders only the safe source projectio
   await page.getByLabel("Question").fill("What is true right now?");
   await page.getByRole("button", { name: "Ask" }).click();
   await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
+  await expect(
+    page.getByText("Private knowledge").locator("..").getByText("Connected")
+  ).toBeVisible();
+  await expect(
+    page.getByText("Live search").locator("..").getByText("Connected")
+  ).toBeVisible();
   await expect(
     page.getByText(
       "Private knowledge [R1] and current evidence [W1] support this answer."

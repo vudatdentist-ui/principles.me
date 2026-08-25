@@ -55,8 +55,6 @@ export async function createAccount(input: {
         throw new SignupClosedError();
       }
 
-      const counts = await transaction`SELECT count(*)::int AS count FROM users`;
-      const userCount = Number(counts[0]?.count ?? 0);
       const users = await transaction`
         INSERT INTO users (email, email_normalized, password_hash)
         VALUES (${input.email.trim()}, ${normalizedEmail(input.email)}, ${input.passwordHash})
@@ -76,14 +74,12 @@ export async function createAccount(input: {
         VALUES (${workspaceId}::uuid, ${userId}::uuid, 'owner')
       `;
 
-      if (userCount === 0) {
-        for (const datasetId of configuredBootstrapDatasets()) {
-          await transaction`
-            INSERT INTO workspace_evidence_sources (workspace_id, provider, external_id)
-            VALUES (${workspaceId}::uuid, 'ragflow', ${datasetId})
-            ON CONFLICT DO NOTHING
-          `;
-        }
+      for (const datasetId of configuredBootstrapDatasets()) {
+        await transaction`
+          INSERT INTO workspace_evidence_sources (workspace_id, provider, external_id)
+          VALUES (${workspaceId}::uuid, 'ragflow', ${datasetId})
+          ON CONFLICT DO NOTHING
+        `;
       }
 
       await transaction`
@@ -188,6 +184,22 @@ export async function sessionContext(token: string): Promise<SessionContext | nu
 }
 
 export async function workspaceRagDatasetIds(workspaceId: string): Promise<string[]> {
+  // Keep deployment bootstrap configuration durable for workspaces created by
+  // older releases. This repairs a missing binding without replacing any
+  // workspace-specific sources that are already stored.
+  for (const datasetId of configuredBootstrapDatasets()) {
+    await db()`
+      INSERT INTO workspace_evidence_sources (workspace_id, provider, external_id)
+      SELECT ${workspaceId}::uuid, 'ragflow', ${datasetId}
+      WHERE EXISTS (
+        SELECT 1
+        FROM workspaces
+        WHERE id = ${workspaceId}::uuid AND kind = 'personal'
+      )
+      ON CONFLICT DO NOTHING
+    `;
+  }
+
   const rows = await db()`
     SELECT external_id
     FROM workspace_evidence_sources

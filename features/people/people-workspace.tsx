@@ -305,6 +305,8 @@ export function PeopleWorkspace({
         <nav className={styles.nav} aria-label="Primary">
           <a aria-current="page" href="/">People</a>
           <a href="/knowledge">Knowledge</a>
+          <a href="/learning">Learning</a>
+          <a href="/organization">Organization</a>
         </nav>
         <div className={styles.account}>
           <span>{workspaceName}</span>

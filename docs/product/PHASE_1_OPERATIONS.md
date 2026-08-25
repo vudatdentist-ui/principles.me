@@ -77,10 +77,10 @@ Database downgrade automation is intentionally not implemented. Future migration
 - Postgres is configured and reachable;
 - the Phase 1 schema migration is present with checksum tracking;
 - DeepSeek is configured;
-- RAGFlow is configured and has a production-safe endpoint;
+- RAGFlow is configured, has a production-safe endpoint, and a real retrieval probe succeeds against the configured dataset;
 - Brave Search is configured when `LIVE_SEARCH_REQUIRED=true`.
 
-The presence of bootstrap RAG dataset IDs is reported separately because dataset ownership becomes workspace state after account creation.
+The presence of effective bootstrap RAG dataset IDs is reported separately because bindings become workspace state after account creation and are repaired for legacy Personal Workspaces during retrieval.
 
 ## Smoke behavior
 
@@ -89,7 +89,7 @@ Production canary smoke always verifies:
 - health is ready;
 - unauthenticated `/api/ask` returns `401`.
 
-If dedicated `SMOKE_EMAIL` and `SMOKE_PASSWORD` are configured, smoke also signs in and exercises the full streamed Q&A path. Do not use a primary human password for automated smoke.
+Dedicated `SMOKE_EMAIL` and `SMOKE_PASSWORD` are required in production. Smoke signs in and exercises the full streamed Q&A path, requiring `private: ok` and at least one private RAG source. Do not use a primary human password for automated smoke.
 
 ## Local verification
 

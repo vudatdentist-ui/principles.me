@@ -7,7 +7,7 @@ import styles from "./auth-screen.module.css";
 type Mode = "signin" | "signup";
 
 export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
-  const [mode, setMode] = useState<Mode>(signupAvailable ? "signup" : "signin");
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
