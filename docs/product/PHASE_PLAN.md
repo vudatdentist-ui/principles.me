@@ -1,9 +1,9 @@
 # Principles Major Phase Plan
 
 **Status:** execution plan  
-**Date:** 2026-08-24  
-**Completed on `main`:** Phases 0–3  
-**Current branch:** Phase 4 — Learning Engine + Self Model — **Ready, not merged**
+**Date:** 2026-08-25  
+**Completed on `main`:** Phases 0–4  
+**Next major phase:** Phase 5 — Principles for Organizations — **Planned, not started**
 
 ## Phase execution protocol
 
@@ -18,7 +18,7 @@ Understand requirements
   → report
 ```
 
-`Complete` means the phase is accepted/merged and source-of-truth reflects the actual outcome. `Ready` means implementation and verification are complete on a branch but merge has not happened.
+`Complete` means the phase is accepted/merged, production is verified when applicable, and source-of-truth reflects the actual outcome. `Ready` means implementation and verification are complete on a branch but merge has not happened.
 
 ## Program view
 
@@ -28,8 +28,8 @@ Understand requirements
 | 1 | Secure Platform + Durable Kernel | **Complete** | Safe durable private state with authorization, provenance and bounded provider usage. |
 | 2 | Principles for People — First Complete Loop | **Complete** | Goal → Reality → Problem → Reflection → Principle produces durable user-owned learning. |
 | 3 | Design + Execution | **Complete** | Diagnosis → machine Design → Actions → Outcome → Review turns learning into observed machine change. |
-| 4 | Learning Engine + Self Model | **Ready** | Longitudinal history produces useful, inspectable and correctable Pattern hypotheses that can improve a Principle. |
-| 5 | Principles for Organizations | Planned | The proven kernel supports collective machines, governance and contextual believability. |
+| 4 | Learning Engine + Self Model | **Complete** | Longitudinal history produces useful, inspectable and correctable Pattern hypotheses that can improve a Principle. |
+| 5 | Principles for Organizations | **Planned** | The proven kernel supports collective machines, governance and contextual believability. |
 
 ---
 
@@ -74,14 +74,13 @@ Problem → Diagnosis → Design → Actions → Outcome → Review / Reflection
 
 Diagnosis separates symptom/proximate/root-cause hypothesis and preserves evidence/uncertainty. Design changes the machine rather than becoming a task list. Actions only execute Design. Outcome compares expected vs actual Reality and evaluates the Design only after observed Reality exists. Post-Outcome Review becomes a linked Reflection.
 
-Final pre-merge verification: Foundation #154 ✅, Lint #489 ✅, Playwright #256 ✅.
-
 ---
 
 # Phase 4 — Learning Engine + Self Model
 
-**Status:** **Ready — verified, not merged**  
-**Branch:** `phase/4-learning-self-model`
+**Status:** **Complete**  
+**Merge:** `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`  
+**Production deploy:** run `32838276392`
 
 ## Objective
 
@@ -140,17 +139,26 @@ Browser projection excludes Workspace IDs, Evidence UUIDs, AI Suggestion IDs and
 
 ## Verification
 
-Runtime head `4ae0d5cefc51b8137f943720f68bbac86175ac30`:
+Final synchronized pre-merge head `a6f21a8dbd66b64c98e61a6e151be5828ea1f2b8`:
 
-- Foundation #163 ✅ — PostgreSQL 16, migrations 0001–0004, typecheck, unit, serial real-Postgres integration, production build;
-- Lint #498 ✅;
-- Playwright #265 ✅ — authentication/insufficient-history boundary, full Phase 2 + 3 + 4 browser path, Pattern correction, Principle revision/reload/rejection, Knowledge privacy and normal scrolling.
+- Lint #515 ✅;
+- Playwright #282 ✅;
+- Foundation #180 ✅ — PostgreSQL 16, migrations 0001–0004, typecheck, unit, serial real-Postgres integration and production build.
+
+Post-merge main `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`:
+
+- Foundation #181 ✅;
+- Lint #516 ✅;
+- Playwright #283 ✅;
+- production deploy run `32838276392` ✅;
+- `MIGRATION_APPLIED=0004_learning_self_model.sql` ✅;
+- canary health/smoke, public exact-SHA verification and zero-downtime swap ✅.
 
 ## Expected versus actual outcome
 
 **Expected:** at least one useful longitudinal Pattern can be traced to real cases, corrected by the user and used to improve future behavior or a Principle.
 
-**Actual:** achieved on branch. A real browser path generates history through normal product use, creates an inspectable Pattern, corrects it, persists it as revised Self Model state, uses it to revise a Principle back into testing, reloads the state and rejects a later proposal.
+**Actual:** achieved, merged and production-verified. A real browser path generates history through normal product use, creates an inspectable Pattern, corrects it, persists it as revised Self Model state, uses it to revise a Principle back into testing, reloads the state and rejects a later proposal.
 
 ## Limitations carried forward
 
@@ -160,15 +168,15 @@ Runtime head `4ae0d5cefc51b8137f943720f68bbac86175ac30`:
 - Learning remains a secondary `/learning` surface;
 - no personality testing, generic memory, organization learning or structured business connectors.
 
-Phase 4 remains Ready because this request did not include merge.
-
 ---
 
 # Phase 5 — Principles for Organizations
 
-**Status:** Planned
+**Status:** Planned, not started
 
-Begin only after Phase 4 is explicitly accepted/merged. Potential scope: Organization Workspace, people/roles/responsibilities/teams, culture signals, issues/disagreements, permissions/governance and contextual evidence-backed believability. Radical Transparency must coexist with authorization and accountability.
+Potential scope: Organization Workspace, people/roles/responsibilities/teams, culture signals, issues/disagreements, permissions/governance and contextual evidence-backed believability. Radical Transparency must coexist with authorization and accountability.
+
+Phase 5 starts only as a new explicitly scoped major phase with its own architecture, acceptance criteria and audit loop. It must preserve the proven People kernel, privacy boundaries and user-correctable inference model.
 
 ---
 
