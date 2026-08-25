@@ -1,0 +1,28 @@
+http:
+  middlewares:
+    ragflow-lib-redirect:
+      redirectScheme:
+        scheme: https
+  routers:
+    ragflow-lib-http:
+      rule: "Host(`lib.principles.me`)"
+      entryPoints:
+        - http
+      middlewares:
+        - ragflow-lib-redirect
+      service: ragflow-lib
+      priority: 1100
+    ragflow-lib-https:
+      rule: "Host(`lib.principles.me`)"
+      entryPoints:
+        - https
+      service: ragflow-lib
+      priority: 1100
+      tls:
+        certResolver: letsencrypt
+  services:
+    ragflow-lib:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://host.docker.internal:9080"
