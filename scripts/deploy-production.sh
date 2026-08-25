@@ -253,9 +253,13 @@ create_app_container "$release_container" \
   --label "traefik.http.routers.${router}-http.priority=${next_priority}" \
   --label "traefik.http.routers.${router}-http.middlewares=${redirect}" \
   --label "traefik.http.middlewares.${redirect}.redirectscheme.scheme=https" \
+  --label "traefik.http.middlewares.${router}-www-redirect.redirectregex.regex=^https://www\\.principles\\.me/(.*)" \
+  --label "traefik.http.middlewares.${router}-www-redirect.redirectregex.replacement=https://principles.me/\$\${1}" \
+  --label "traefik.http.middlewares.${router}-www-redirect.redirectregex.permanent=true" \
   --label "traefik.http.routers.${router}-https.rule=Host(\`principles.me\`) || Host(\`www.principles.me\`)" \
   --label "traefik.http.routers.${router}-https.entrypoints=https" \
   --label "traefik.http.routers.${router}-https.priority=${next_priority}" \
+  --label "traefik.http.routers.${router}-https.middlewares=${router}-www-redirect" \
   --label "traefik.http.routers.${router}-https.tls=true" \
   --label "traefik.http.routers.${router}-https.tls.certresolver=letsencrypt" \
   --label "traefik.http.routers.${router}-https.service=${service}" \
