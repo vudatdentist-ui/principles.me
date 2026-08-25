@@ -1,5 +1,7 @@
 import { db } from "./client";
 
+const REQUIRED_SCHEMA_MIGRATION = "0006_organization_kernel_loop.sql";
+
 export async function databaseHealth(): Promise<{
   reachable: boolean;
   schemaReady: boolean;
@@ -11,7 +13,7 @@ export async function databaseHealth(): Promise<{
       SELECT id
       FROM schema_migrations
       WHERE
-        id = '0001_secure_platform_kernel.sql'
+        id = ${REQUIRED_SCHEMA_MIGRATION}
         AND checksum IS NOT NULL
       LIMIT 1
     `;

@@ -1,0 +1,25 @@
+.launch {
+  position: fixed;
+  right: clamp(1rem, 3vw, 2.5rem);
+  bottom: clamp(1rem, 3vw, 2.5rem);
+  z-index: 20;
+}
+
+.launch a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: var(--background, #fff);
+  color: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 8%);
+}
+
+.launch a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
