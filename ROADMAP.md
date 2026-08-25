@@ -1,15 +1,15 @@
 # Principles Roadmap
 
 **Date:** 2026-08-25  
-**`main` baseline:** Phases 0–4 **Complete**  
-**Next major phase:** Phase 5 — Principles for Organizations — **Planned, not started**
+**`main` baseline:** Phases 0–5 **Complete**  
+**Next major phase:** **Not defined; requires an explicit product decision**
 
 Principles is an **evolution system for people first and organizations second**.
 
 ## Build rule
 
 ```text
-Understand → Criteria → Build → Audit → Fix → Re-audit → Final check → Report
+Understand → Goal / Criteria → Build → Audit → Compare → Fix → Re-audit → Production verify → Closeout → Report
 ```
 
 A phase becomes Complete only when its behavior and boundaries are verified, actual outcome/limitations are recorded, the work is accepted/merged, production is verified when applicable, and source of truth is closed out.
@@ -23,7 +23,7 @@ A phase becomes Complete only when its behavior and boundaries are verified, act
 | 2 | Principles for People — First Complete Loop | **Complete** | Goal → Reality → Problem → Reflection → revisable Principle works durably. |
 | 3 | Design + Execution | **Complete** | Diagnosis → machine Design → Actions → observed Outcome → Review works durably. |
 | 4 | Learning Engine + Self Model | **Complete** | Durable history produces evidence-backed, user-correctable Pattern hypotheses that can revise a Principle back into testing. |
-| 5 | Principles for Organizations | **Planned** | Extend the proven People kernel to collective machines, governance and contextual believability. |
+| 5 | Principles for Organizations | **Complete** | A governed collective machine can make roles, responsibilities, issues, disagreement and contextual track record explicit without people scoring. |
 
 ## Completed foundation
 
@@ -37,51 +37,53 @@ Identity/session, Personal Workspace, PostgreSQL, tenant/provenance constraints,
 `Problem → Diagnosis → Design → Actions → Outcome → Review`, with actual Reality required before Design evaluation and no generic project-management shell.
 
 **Phase 4 merge:** `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`  
-`History → Pattern hypothesis → inspect/correct → optional Principle revision → testing again`, with production verification in deploy run `32838276392`.
+`History → Pattern hypothesis → inspect/correct → optional Principle revision → testing again`; production deploy `32838276392`.
+
+**Phase 5 merge:** `0fa12577636715437f3208e8289d71931433aa61`  
+`Organization → machine structure → Issue → Disagreement → contextual evidence → governed resolution`; production deploy `32844721161`.
 
 ## Phase 4 — Learning Engine + Self Model
 
 **Status:** Complete and production-verified.
 
-Delivered:
+Phase 4 made longitudinal personal history inspectable and correctable without turning AI inference into fixed identity. Patterns use bounded recent Reflections, preserve provenance, support evidence/counter-evidence/uncertainty and may explicitly revise a Principle back into testing.
 
-- Self Model = accepted/revised hypotheses, not personality labels;
-- Pattern proposal requires at least two completed Reflections;
-- AI uses ephemeral case/Principle keys, not durable UUIDs;
-- `recurring_pattern` requires at least two distinct Problems and is enforced in PostgreSQL;
-- proposals use the 8 most recent completed Reflection cases in chronological order with bounded model-facing excerpts;
-- stale pending proposals are superseded;
-- user can inspect, correct, keep or reject a Pattern;
-- rejected proposal creates no Pattern row;
-- safe client projection excludes Workspace/Evidence/AI provenance/internal semantic join IDs;
-- accepted/revised Pattern may inform one explicit Principle revision;
-- Principle revision preserves before/after history and returns to `revised + testing`, never `trusted`;
-- no scores, charts, trait feed, streaks or analytics dashboard.
-
-Final pre-merge re-audit on `a6f21a8dbd66b64c98e61a6e151be5828ea1f2b8`:
-
-- Lint #515 ✅
-- Playwright #282 ✅
-- Foundation #180 ✅
-
-Post-merge verification on `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`:
-
-- Foundation #181 ✅
-- Lint #516 ✅
-- Playwright #283 ✅
-- production deploy `32838276392` ✅
-- migration `0004_learning_self_model.sql` applied ✅
-- canary/public exact-SHA/zero-downtime gates ✅
-
-Known v1 limits: manual pattern discovery; 8 most recent Reflection cases per proposal rather than semantic retrieval across unlimited history; one Pattern→Principle revision; Learning remains a secondary `/learning` page.
+Final pre-merge: Foundation #180 ✅ · Lint #515 ✅ · Playwright #282 ✅.  
+Post-merge: Foundation #181 ✅ · Lint #516 ✅ · Playwright #283 ✅ · production `32838276392` ✅.
 
 ## Phase 5 — Principles for Organizations
 
-**Status:** Planned, not started.
+**Status:** Complete and production-verified.
 
-Potential scope: Organization Workspace, people/roles/responsibilities/teams, culture signals, disagreements, permissions/governance and contextual evidence-backed believability. Radical Transparency must coexist with authorization and accountability.
+Delivered:
 
-Phase 5 must start as a new explicitly scoped major phase with its own architecture/acceptance contract; it must not dilute the proven People kernel or privacy/correctability boundaries.
+- Setup key removed from normal account creation; only explicit `AUTH_SIGNUP_MODE=disabled` closes signup;
+- authenticated Organization Workspace with safe `org_...` client handle instead of Workspace UUID;
+- owner-managed members, roles, responsibilities, role assignments, teams and team assignments;
+- server-enforced owner/member governance and PostgreSQL cross-organization constraints;
+- attributable Issues and Disagreements representing collective Reality rather than anonymous sentiment;
+- context-specific track-record evidence with evidence-for/evidence-against and no global believability score;
+- sparse `/organization` UI with progressive disclosure;
+- existing Personal Workspace, People, Knowledge and Learning boundaries preserved.
+
+Final pre-merge head `424764e8855d37c4b961ab968386dc409e0d7b85`:
+
+- Foundation #189 ✅
+- Lint #524 ✅
+- Playwright #291 ✅
+
+Post-merge main `0fa12577636715437f3208e8289d71931433aa61`:
+
+- Foundation #190 ✅
+- Lint #525 ✅
+- Playwright #292 ✅
+- production deploy `32844721161` ✅
+- `MIGRATION_APPLIED=0005_organizations.sql` ✅
+- backup/migration/canary/public exact-SHA/zero-downtime gates ✅
+
+Phase 5 audit corrected stale Setup-key test coverage, organization-switcher accessibility semantics, new CSS warning debt and an ambiguous browser assertion before the final re-audit passed.
+
+Known v1 limits: members must already have a Principles account before an owner adds them by email; no invite delivery/magic links; owner/member permissions only; no anonymous culture surveys or culture score; no global people ranking; no organization-wide AI learning across unlimited history; no SSO/SCIM, HR workflows or business connectors.
 
 ## Reality / Learning Engine
 
@@ -90,9 +92,17 @@ Private knowledge → RAGFlow ─────────────┐
 Public current reality → Brave ─────────┤
 Direct observations / Outcomes ─────────┤→ Evidence + durable history → Principles reasoning
 Reflections / Principles ───────────────┘
+
+Organization members
+  → Issues / Disagreements / contextual evidence
+  → inspectable collective reality + governance
 ```
 
-Public live search never receives private RAG excerpts.
+Public live search never receives private RAG excerpts. Organizational evidence remains attributable and contextual rather than becoming identity-level scoring.
+
+## Next boundary
+
+No Phase 6 or other next major phase is implied. A new major phase starts only after an explicit product decision defines its goal, boundaries and acceptance contract.
 
 ## UI constraint
 
