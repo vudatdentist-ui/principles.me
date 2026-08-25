@@ -3,6 +3,8 @@ FROM node:22-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
+RUN corepack install --global pnpm@10.32.1 \
+  && pnpm --version
 WORKDIR /app
 
 FROM base AS deps
@@ -17,6 +19,10 @@ RUN pnpm build
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
+# The runtime image already contains the pinned pnpm shim and cache. If a
+# migration container is attached to an internal-only network, Corepack must
+# fail fast instead of trying to download pnpm from the public registry.
+ENV COREPACK_ENABLE_NETWORK=0
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
