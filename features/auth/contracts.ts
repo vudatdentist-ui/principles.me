@@ -1,4 +1,4 @@
-export type SignupMode = "bootstrap" | "disabled" | "open";
+export type SignupMode = "disabled" | "open";
 
 export interface SessionContext {
   readonly sessionId: string;
@@ -14,9 +14,5 @@ export interface SessionContext {
 }
 
 export function signupMode(value: string | undefined): SignupMode {
-  const normalized = value?.trim().toLowerCase();
-  if (normalized === "open" || normalized === "disabled") {
-    return normalized;
-  }
-  return "bootstrap";
+  return value?.trim().toLowerCase() === "disabled" ? "disabled" : "open";
 }
