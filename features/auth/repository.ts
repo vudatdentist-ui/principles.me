@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
 import { db } from "@/lib/db/client";
-import { assertBootstrapSecret } from "./bootstrap";
 import type { SessionContext } from "./contracts";
 import { signupMode } from "./contracts";
 
@@ -39,35 +38,25 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 export async function signupAvailable(): Promise<boolean> {
-  const mode = signupMode(process.env.AUTH_SIGNUP_MODE);
-  if (mode === "open") {
-    return true;
-  }
-  if (mode === "disabled") {
-    return false;
-  }
-  const rows = await db()`SELECT count(*)::int AS count FROM users`;
-  return Number(rows[0]?.count ?? 0) === 0;
+  return signupMode(process.env.AUTH_SIGNUP_MODE) !== "disabled";
 }
 
 export async function createAccount(input: {
   email: string;
   passwordHash: string;
-  setupKey?: string;
 }): Promise<{ userId: string; workspaceId: string }> {
   const sql = db();
   const mode = signupMode(process.env.AUTH_SIGNUP_MODE);
 
   try {
     return await sql.begin(async (transaction) => {
-      await transaction`SELECT pg_advisory_xact_lock(hashtext('principles.bootstrap.signup'))`;
-      const counts = await transaction`SELECT count(*)::int AS count FROM users`;
-      const userCount = Number(counts[0]?.count ?? 0);
-      if (mode === "disabled" || (mode === "bootstrap" && userCount > 0)) {
+      await transaction`SELECT pg_advisory_xact_lock(hashtext('principles.signup'))`;
+      if (mode === "disabled") {
         throw new SignupClosedError();
       }
-      assertBootstrapSecret(mode, input.setupKey);
 
+      const counts = await transaction`SELECT count(*)::int AS count FROM users`;
+      const userCount = Number(counts[0]?.count ?? 0);
       const users = await transaction`
         INSERT INTO users (email, email_normalized, password_hash)
         VALUES (${input.email.trim()}, ${normalizedEmail(input.email)}, ${input.passwordHash})
