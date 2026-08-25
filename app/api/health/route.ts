@@ -1,6 +1,6 @@
+import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
 import { databaseConfigured } from "@/lib/db/config";
 import { databaseHealth } from "@/lib/db/health";
-import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
 
 function isLocalhostUrl(value: string): boolean {
   try {
@@ -20,7 +20,10 @@ function booleanEnv(name: string, fallback: boolean): boolean {
 }
 
 function configuredDatasetIds(): string[] {
-  if (process.env.RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS?.trim().toLowerCase() === "false") {
+  if (
+    process.env.RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS?.trim().toLowerCase() ===
+    "false"
+  ) {
     return [];
   }
   return (process.env.RAGFLOW_DATASET_IDS || "")
@@ -32,21 +35,24 @@ function configuredDatasetIds(): string[] {
 async function probeRagflow(
   datasetIds: readonly string[],
   configured: boolean,
-  endpointReady: boolean
+  endpointReady: boolean,
 ): Promise<boolean> {
   if (!configured || !endpointReady || datasetIds.length === 0) {
     return false;
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3_000);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    Number(process.env.RAGFLOW_HEALTH_TIMEOUT_MS || 15_000),
+  );
   try {
     await new RagflowEvidenceProvider().retrieve(
       {
         datasetIds,
         question: "Principles health check",
       },
-      controller.signal
+      controller.signal,
     );
     return true;
   } catch {
@@ -73,14 +79,16 @@ export async function GET(): Promise<Response> {
   const ragflowReachable = await probeRagflow(
     ragflowDatasetIds,
     ragflowConfigured,
-    ragflowEndpointReady
+    ragflowEndpointReady,
   );
   const ragflowReady =
     ragflowConfigured &&
     ragflowDatasetIds.length > 0 &&
     ragflowEndpointReady &&
     ragflowReachable;
-  const liveSearchConfigured = Boolean(process.env.BRAVE_SEARCH_API_KEY?.trim());
+  const liveSearchConfigured = Boolean(
+    process.env.BRAVE_SEARCH_API_KEY?.trim(),
+  );
   const liveSearchRequired = booleanEnv("LIVE_SEARCH_REQUIRED", false);
   const liveSearchReady = !liveSearchRequired || liveSearchConfigured;
   const ready =
@@ -113,6 +121,6 @@ export async function GET(): Promise<Response> {
     {
       headers: { "cache-control": "no-store" },
       status: ready ? 200 : 503,
-    }
+    },
   );
 }
