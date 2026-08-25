@@ -1,9 +1,10 @@
 # Phase 4 — Learning Engine + Self Model
 
-**Status:** **Ready — verified on branch, not merged**  
+**Status:** **Complete — merged and production-verified**  
 **Started:** 2026-08-24  
-**Branch:** `phase/4-learning-self-model`  
-**Base:** Phases 0–3 Complete on `main`
+**Completed:** 2026-08-25  
+**Merge:** `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`  
+**Production deploy:** run `32838276392`
 
 Phase 4 adds a longitudinal learning layer:
 
@@ -141,20 +142,50 @@ The self-reinforcing loop found and fixed:
 1. TypeScript inferred ephemeral Maps as template-literal keys and rejected validated runtime strings; Maps now explicitly use string keys while runtime validation remains strict.
 2. AI validation alone could not prevent a malicious/edited client from relabeling same-Problem cases as `recurring_pattern`; the semantic rule is now also enforced by a deferred PostgreSQL constraint and real-Postgres boundary test.
 3. Initial history loading could eventually prefer the oldest 40 Reflections and miss newer learning; proposal generation now uses the 8 most recent completed Reflection cases in chronological order with bounded model-facing excerpts.
+4. Model-facing historical text was unbounded; case and Principle excerpts are now bounded before provider calls.
 
-## Verification
+## Production-hardened baseline
 
-Final runtime head before source-of-truth closeout: `4ae0d5cefc51b8137f943720f68bbac86175ac30`
+Before Phase 4 merge, `main` was hardened and production-verified at `4fde5a0f38db4ea626fa9b265105a52cc9ca4489`:
 
-- Foundation #163 ✅ — PostgreSQL 16, migrations 0001–0004, typecheck, Learning unit tests, serial real-Postgres integration tests, production build;
-- Lint #498 ✅;
-- Playwright #265 ✅ — authentication boundary, insufficient-history state, full Phase 2 + 3 + 4 browser path, Pattern correction, Principle revision, reload/rejection, Knowledge privacy and normal scrolling.
+- runtime image is clean Node without pnpm/Corepack dependency;
+- migration runs with `node scripts/migrate.mjs` on the internal-only data network;
+- Next standalone runtime starts with `node server.js` and `HOSTNAME=0.0.0.0`;
+- pre-migration backup, canary, public exact-SHA verification and zero-downtime swap remain mandatory.
+
+Phase 4 was synchronized with that baseline before final re-audit, so it did not regress or reintroduce the old runtime behavior.
+
+## Final verification
+
+Final synchronized pre-merge head: `a6f21a8dbd66b64c98e61a6e151be5828ea1f2b8`.
+
+- Lint #515 ✅;
+- Playwright #282 ✅ — authentication boundary, insufficient-history state, full Phase 2 + 3 + 4 browser path, Pattern correction, Principle revision, reload/rejection, Knowledge privacy and normal scrolling;
+- Foundation #180 ✅ — PostgreSQL 16, migrations 0001–0004, typecheck, Learning unit tests, serial real-Postgres integration tests and production build.
+
+Post-merge main: `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`.
+
+- Foundation #181 ✅;
+- Lint #516 ✅;
+- Playwright #283 ✅;
+- production deploy run `32838276392` ✅.
+
+Production log proves:
+
+- `MIGRATION_APPLIED=0004_learning_self_model.sql`;
+- `DEPLOY_MIGRATIONS_READY=1`;
+- `DEPLOY_CANARY_SMOKE=1`;
+- `DEPLOY_IMAGE_READY=1`;
+- `DEPLOY_INTERNAL_HEALTH=1`;
+- `DEPLOY_PUBLIC_ROUTE_READY=1`;
+- `DEPLOY_ZERO_DOWNTIME_SWAP=1`;
+- public `/api/health` returned `status: ok` with exact version `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`.
 
 ## Expected versus actual outcome
 
 **Expected:** durable personal history produces one evidence-backed, inspectable and correctable longitudinal Pattern that can improve a Principle without pretending the inference is fixed truth.
 
-**Actual:** achieved on the branch. A real browser flow can create the two historical Reflection cases through normal product use, generate a Pattern, inspect evidence/counter-evidence/uncertainty, correct the hypothesis, keep it as revised Self Model state, use it to revise a Principle back into testing, reload that state, and reject a later bad proposal.
+**Actual:** achieved, merged and production-verified. A real browser flow can create the two historical Reflection cases through normal product use, generate a Pattern, inspect evidence/counter-evidence/uncertainty, correct the hypothesis, keep it as revised Self Model state, use it to revise a Principle back into testing, reload that state, and reject a later bad proposal.
 
 ## Known limitations
 
@@ -165,6 +196,6 @@ Final runtime head before source-of-truth closeout: `4ae0d5cefc51b8137f943720f68
 - No generic conversation memory, personality scoring, organization learning or structured business connectors.
 - Existing platform gaps such as password recovery and automated off-host restore remain.
 
-## Merge boundary
+## Closeout boundary
 
-The current user request did **not** ask to merge. Phase 4 is therefore **Ready**, not Complete. It becomes Complete only after a later explicit merge to `main` and post-merge source-of-truth closeout.
+Phase 4 is **Complete**. Phase 5 — Principles for Organizations is **Planned, not started** and must begin as a separately scoped major phase with its own acceptance contract and audit loop.
