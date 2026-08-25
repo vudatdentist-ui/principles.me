@@ -2,12 +2,19 @@
 
 Principles is an **evolution system for people first and organizations second**.
 
-**`main`:** Phases 0–4 **Complete**.  
-**Next major phase:** Phase 5 — Principles for Organizations — **Planned, not started**.
+**`main`:** Phases 0–5 **Complete**.  
+**Next major phase:** **Not defined; requires an explicit product decision.**
 
 ```text
 Goal → Reality → Problem → Diagnosis → Design → Actions → Outcome
   → Reflection → Principle → Learning Pattern → Evolve ↺
+```
+
+For collective machines:
+
+```text
+Organization → People / Roles / Responsibilities / Teams
+  → Issue → Disagreement → contextual evidence → governed resolution
 ```
 
 Read first:
@@ -16,11 +23,21 @@ Read first:
 - [`docs/product/PRINCIPLES_KERNEL_SPEC_V1.md`](./docs/product/PRINCIPLES_KERNEL_SPEC_V1.md) — philosophy/domain language.
 - [`docs/product/UI_PRINCIPLES.md`](./docs/product/UI_PRINCIPLES.md) — interface constraints.
 - [`docs/product/PHASE_PLAN.md`](./docs/product/PHASE_PLAN.md) — major phase program.
-- [`docs/product/PHASE_4_ARCHITECTURE.md`](./docs/product/PHASE_4_ARCHITECTURE.md) — completed Learning Engine + Self Model architecture and verification.
+- [`docs/product/PHASE_4_ARCHITECTURE.md`](./docs/product/PHASE_4_ARCHITECTURE.md) — completed Learning Engine + Self Model architecture.
+- [`docs/product/PHASE_5_ARCHITECTURE.md`](./docs/product/PHASE_5_ARCHITECTURE.md) — completed Organizations architecture and governance.
+
+## Account entry
+
+Normal account creation uses email + password only. **Setup key has been removed.**
+
+- signup is open by default;
+- only `AUTH_SIGNUP_MODE=disabled` closes account creation;
+- a legacy `AUTH_SIGNUP_MODE=bootstrap` value is treated as open rather than requiring a hidden secret;
+- origin validation, password rules, rate limiting and session security remain in force.
 
 ## People
 
-The durable learning/change path spans:
+The durable personal learning/change path spans:
 
 ```text
 Goal Discovery → Reality → Problem → Reflection → Principle
@@ -45,20 +62,32 @@ History
   → testing again
 ```
 
+Self Model means accepted/revised hypotheses, not personality traits or clinical labels. Proposals use bounded recent history and ephemeral model-facing identifiers; recurring Patterns require multiple distinct Problems; rejected suggestions create no Pattern; revised Principles return to testing, never automatically trusted.
+
+## Organization — `/organization`
+
+Phase 5 is merged and production-verified. It extends the People kernel into a governed collective machine:
+
+```text
+Organization
+  → explicit roles / responsibilities / teams
+  → observed Issue
+  → attributable Disagreement
+  → contextual track record
+  → accountable resolution
+```
+
 Important rules:
 
-- Self Model means accepted/revised hypotheses, not personality traits or clinical labels;
-- fewer than two completed Reflections → no Pattern generation;
-- proposal generation uses the 8 most recent completed Reflection cases in chronological order;
-- model-facing case/Principle identifiers are ephemeral `C#` / `P#` keys, never durable UUIDs;
-- model-facing historical text is bounded;
-- `recurring_pattern` requires cases from at least two distinct Problems and is enforced in PostgreSQL;
-- Pattern cases preserve Workspace + Goal + Problem + Reflection semantics;
-- rejected proposal creates no Pattern row;
-- safe client projection excludes Workspace/Evidence/AI provenance/internal semantic join IDs;
-- accepted/revised Pattern can drive one explicit Principle revision;
-- previous Principle wording is preserved and revised Principle returns to `revised + testing`, never automatically trusted;
-- no scores, charts, streaks, trait feed or analytics dashboard.
+- creator becomes Organization owner;
+- client navigation uses a safe `org_...` handle rather than Workspace UUID;
+- owner manages members, roles, responsibilities, role assignments and teams;
+- ordinary members cannot mutate machine structure;
+- members can record Issues, Disagreements and contextual evidence;
+- PostgreSQL constraints prevent cross-organization structural references;
+- contextual track record preserves evidence-for/evidence-against and attribution;
+- there is no global believability score, employee ranking, personality label or anonymous culture score;
+- culture in v1 is visible through attributable Issues, Disagreements and contextual evidence.
 
 ## Knowledge — `/knowledge`
 
@@ -72,9 +101,10 @@ Public live search receives only the public query, never private RAG excerpts. B
 
 ## Platform substrate
 
-- first-party identity/session and one owned Personal Workspace;
+- first-party identity/session and owned Personal Workspace;
 - PostgreSQL 16 durable system of record;
 - Workspace authorization/provenance constraints;
+- Organization Workspaces with owner/member governance;
 - Activity Events and AI Suggestions;
 - durable provider/rate controls;
 - safe client projections;
@@ -92,16 +122,19 @@ app/
   api/me/
   api/people/
   api/learning/
+  api/organization/
   knowledge/page.tsx
   learning/page.tsx
+  organization/page.tsx
   page.tsx
 db/migrations/
   0001_secure_platform_kernel.sql
   0002_people_first_loop.sql
   0003_design_execution.sql
   0004_learning_self_model.sql
+  0005_organizations.sql
 features/
-  ask/ auth/ evidence/ kernel/ people/ learning/ security/
+  ask/ auth/ evidence/ kernel/ people/ learning/ organization/ security/
 lib/
   ai/providers/
   db/
@@ -113,6 +146,7 @@ docs/product/
   PHASE_2_ARCHITECTURE.md
   PHASE_3_ARCHITECTURE.md
   PHASE_4_ARCHITECTURE.md
+  PHASE_5_ARCHITECTURE.md
 ```
 
 ## Verification
@@ -128,22 +162,23 @@ pnpm lint
 pnpm test:e2e
 ```
 
-Phase 4 merge: `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`.
+Phase 5 merge: `0fa12577636715437f3208e8289d71931433aa61`.
 
 Final pre-merge re-audit:
 
-- Lint #515 ✅
-- Playwright #282 ✅
-- Foundation #180 ✅
+- Foundation #189 ✅
+- Lint #524 ✅
+- Playwright #291 ✅
 
 Post-merge main verification:
 
-- Foundation #181 ✅
-- Lint #516 ✅
-- Playwright #283 ✅
-- production deploy run `32838276392` ✅
-- `MIGRATION_APPLIED=0004_learning_self_model.sql` ✅
-- public `/api/health` exact version `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d` ✅
+- Foundation #190 ✅
+- Lint #525 ✅
+- Playwright #292 ✅
+- production deploy run `32844721161` ✅
+- `MIGRATION_APPLIED=0005_organizations.sql` ✅
+- public `/api/health` exact version `0fa12577636715437f3208e8289d71931433aa61` ✅
+- canary/public route/zero-downtime gates ✅
 
 ## UI constraint
 
@@ -153,4 +188,4 @@ Prefer fewer visible items, stronger state, direct actions, progressive disclosu
 
 ## Not implemented / intentionally deferred
 
-Phase 5 is not started. There is no proactive/scheduled Learning, unlimited-history semantic Pattern retrieval, personality/psychometric scoring, generic conversation memory, organization collaboration, generic project/task product, CRM/finance/HR product, structured business connectors, password recovery/OAuth/passkeys, RAG-binding administration UI or automated off-host restore system.
+Organization invitation delivery/magic links, arbitrary permission matrices, anonymous culture surveys or culture scores, global people rankings, organization-wide AI Pattern generation across unlimited history, SSO/SCIM, compensation/performance-management workflows, structured business connectors, generic project/task management, password recovery/OAuth/passkeys, RAG-binding administration UI and automated off-host restore remain deferred.
