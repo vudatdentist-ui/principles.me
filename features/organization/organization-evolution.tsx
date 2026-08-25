@@ -36,6 +36,25 @@ function lines(value: string): string[] {
     .slice(0, 5);
 }
 
+function contextEvidenceKey(
+  item: ClientOrganizationEvolutionState["contextEvidence"][number]
+): string {
+  return [
+    item.subjectEmail,
+    item.createdByEmail,
+    item.context,
+    item.observation,
+    item.evidenceFor ?? "",
+    item.evidenceAgainst ?? "",
+  ].join("\u0000");
+}
+
+function disagreementKey(
+  item: ClientOrganizationEvolutionProblem["disagreements"][number]
+): string {
+  return [item.raisedByEmail, item.statement, item.reasoning ?? "", item.status].join("\u0000");
+}
+
 export function OrganizationEvolution({
   email,
   organizations,
@@ -43,14 +62,7 @@ export function OrganizationEvolution({
   email: string;
   organizations: ClientOrganizationState;
 }) {
-  const preferredHandle =
-    typeof window === "undefined"
-      ? ""
-      : new URLSearchParams(window.location.search).get("organization") ?? "";
-  const firstHandle =
-    organizations.organizations.find((item) => item.handle === preferredHandle)?.handle ??
-    organizations.organizations[0]?.handle ??
-    "";
+  const firstHandle = organizations.organizations[0]?.handle ?? "";
   const [activeHandle, setActiveHandle] = useState(firstHandle);
   const [state, setState] = useState<ClientOrganizationEvolutionState | null>(null);
   const [activeGoalId, setActiveGoalId] = useState("");
@@ -95,9 +107,12 @@ export function OrganizationEvolution({
     window.location.href = "/";
   }
 
-  async function mutate(label: string, body: Record<string, unknown>) {
+  async function mutate(
+    label: string,
+    body: Record<string, unknown>
+  ): Promise<boolean> {
     if (!activeHandle || working) {
-      return;
+      return false;
     }
     setWorking(label);
     setError(null);
@@ -113,8 +128,10 @@ export function OrganizationEvolution({
       setActiveGoalId((current) =>
         next.goals.some((goal) => goal.id === current) ? current : next.goals[0]?.id ?? ""
       );
+      return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Request failed.");
+      return false;
     } finally {
       setWorking(null);
     }
@@ -127,8 +144,7 @@ export function OrganizationEvolution({
   ) {
     event.preventDefault();
     const form = event.currentTarget;
-    await mutate(label, body(form));
-    if (!error) {
+    if (await mutate(label, body(form))) {
       form.reset();
     }
   }
@@ -143,7 +159,8 @@ export function OrganizationEvolution({
           <a href="/">People</a>
           <a href="/knowledge">Knowledge</a>
           <a href="/learning">Learning</a>
-          <a aria-current="page" href="/organization">Organization</a>
+          <a href="/organization">Organization</a>
+          <a aria-current="page" href="/organization/evolve">Evolve</a>
         </nav>
         <div className={styles.account}>
           <span>{email}</span>
@@ -233,9 +250,12 @@ export function OrganizationEvolution({
                     <label>Desired reality<textarea name="desiredState" required rows={3} /></label>
                     <label>Why it matters<textarea name="whyItMatters" required rows={2} /></label>
                     <label>Success conditions<textarea name="successConditions" required rows={2} /></label>
-                    <label>Accepted trade-offs<textarea name="acceptedTradeoffs" rows={2} /></label>
-                    <label>Non-negotiables<textarea name="nonNegotiables" rows={2} /></label>
-                    <label>Measures<textarea name="measures" rows={2} /></label>
+                    <details className={styles.disclosure}>
+                      <summary>Trade-offs &amp; measures</summary>
+                      <label>Accepted trade-offs<textarea name="acceptedTradeoffs" rows={2} /></label>
+                      <label>Non-negotiables<textarea name="nonNegotiables" rows={2} /></label>
+                      <label>Measures<textarea name="measures" rows={2} /></label>
+                    </details>
                     <button className={styles.primary} disabled={working !== null} type="submit">Choose goal</button>
                   </form>
                 </details>
@@ -247,6 +267,27 @@ export function OrganizationEvolution({
                   {activeGoal.successConditions ? <p><b>Success:</b> {activeGoal.successConditions}</p> : null}
                 </article>
               ) : null}
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionHeading}>
+                <p className={styles.eyebrow}>Relevant experience</p>
+                <h2>Inspect context before assigning judgment.</h2>
+              </div>
+              <div className={styles.stack}>
+                {state.contextEvidence.map((item) => (
+                  <article className={styles.contextItem} key={contextEvidenceKey(item)}>
+                    <div className={styles.cardHeading}>
+                      <h3>{item.subjectEmail}</h3>
+                      <span>{item.context}</span>
+                    </div>
+                    <p>{item.observation}</p>
+                    {item.evidenceFor ? <p><b>For:</b> {item.evidenceFor}</p> : null}
+                    {item.evidenceAgainst ? <p><b>Against:</b> {item.evidenceAgainst}</p> : null}
+                    <p className={styles.meta}>Recorded by {item.createdByEmail}</p>
+                  </article>
+                ))}
+              </div>
             </section>
 
             {activeGoal ? (
@@ -295,27 +336,6 @@ export function OrganizationEvolution({
 
             <section className={styles.section}>
               <div className={styles.sectionHeading}>
-                <p className={styles.eyebrow}>Relevant experience</p>
-                <h2>Inspect context before assigning judgment.</h2>
-              </div>
-              <div className={styles.stack}>
-                {state.contextEvidence.map((item, index) => (
-                  <article className={styles.contextItem} key={`${item.subjectEmail}-${item.context}-${index}`}>
-                    <div className={styles.cardHeading}>
-                      <h3>{item.subjectEmail}</h3>
-                      <span>{item.context}</span>
-                    </div>
-                    <p>{item.observation}</p>
-                    {item.evidenceFor ? <p><b>For:</b> {item.evidenceFor}</p> : null}
-                    {item.evidenceAgainst ? <p><b>Against:</b> {item.evidenceAgainst}</p> : null}
-                    <p className={styles.meta}>Recorded by {item.createdByEmail}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className={styles.section}>
-              <div className={styles.sectionHeading}>
                 <p className={styles.eyebrow}>Principles</p>
                 <h2>Rules earned from outcomes.</h2>
               </div>
@@ -350,7 +370,7 @@ function ProblemLoop({
 }: {
   email: string;
   members: string[];
-  mutate: (label: string, body: Record<string, unknown>) => Promise<void>;
+  mutate: (label: string, body: Record<string, unknown>) => Promise<boolean>;
   owner: boolean;
   principles: ClientOrganizationEvolutionState["principles"];
   problem: ClientOrganizationEvolutionProblem;
@@ -358,7 +378,9 @@ function ProblemLoop({
 }) {
   const design = problem.design;
   const executor = Boolean(design && (owner || design.ownerEmail === email));
-  const noPendingActions = Boolean(design && design.actions.every((action) => action.status !== "pending"));
+  const noPendingActions = Boolean(
+    design?.actions.every((action) => action.status !== "pending")
+  );
 
   return (
     <article className={styles.issue}>
@@ -369,8 +391,8 @@ function ProblemLoop({
       <p>{problem.observedReality}</p>
       {problem.gap ? <p><b>Gap:</b> {problem.gap}</p> : null}
       <p className={styles.meta}>Raised by {problem.createdByEmail}</p>
-      {problem.disagreements.map((item, index) => (
-        <div className={styles.item} key={`${item.raisedByEmail}-${index}`}>
+      {problem.disagreements.map((item) => (
+        <div className={styles.item} key={disagreementKey(item)}>
           <strong>{item.raisedByEmail}</strong>
           <p>{item.statement}</p>
           {item.reasoning ? <p>{item.reasoning}</p> : null}
@@ -395,16 +417,23 @@ function ProblemLoop({
                 supportingEvidence: field(form, "supportingEvidence"),
                 symptom: field(form, "symptom"),
                 uncertainty: field(form, "uncertainty"),
-              }).then(() => form.reset());
+              }).then((success) => {
+                if (success) {
+                  form.reset();
+                }
+              });
             }}
           >
             <label>Symptom<textarea name="symptom" required rows={2} /></label>
-            <label>Proximate cause<textarea name="proximateCause" rows={2} /></label>
             <label>Root-cause hypothesis<textarea name="rootCauseHypothesis" required rows={3} /></label>
-            <label>Evidence for<textarea name="supportingEvidence" rows={2} /></label>
-            <label>Evidence against<textarea name="contradictingEvidence" rows={2} /></label>
-            <label>Alternatives<textarea name="alternativeHypotheses" rows={2} /></label>
-            <label>Uncertainty<textarea name="uncertainty" rows={2} /></label>
+            <details className={styles.disclosure}>
+              <summary>Evidence &amp; uncertainty</summary>
+              <label>Proximate cause<textarea name="proximateCause" rows={2} /></label>
+              <label>Evidence for<textarea name="supportingEvidence" rows={2} /></label>
+              <label>Evidence against<textarea name="contradictingEvidence" rows={2} /></label>
+              <label>Alternatives<textarea name="alternativeHypotheses" rows={2} /></label>
+              <label>Uncertainty<textarea name="uncertainty" rows={2} /></label>
+            </details>
             <button className={styles.primary} disabled={working !== null} type="submit">Accept diagnosis</button>
           </form>
         </details>
@@ -436,7 +465,11 @@ function ProblemLoop({
                 problemId: problem.id,
                 rationale: field(form, "rationale"),
                 successSignal: field(form, "successSignal"),
-              }).then(() => form.reset());
+              }).then((success) => {
+                if (success) {
+                  form.reset();
+                }
+              });
             }}
           >
             <label>Machine change<textarea name="machineChange" required rows={3} /></label>
@@ -513,7 +546,11 @@ function ProblemLoop({
                 actualResult: field(form, "actualResult"),
                 comparison: field(form, "comparison"),
                 designId: design.id,
-              }).then(() => form.reset());
+              }).then((success) => {
+                if (success) {
+                  form.reset();
+                }
+              });
             }}
           >
             <label>What actually happened?<textarea name="actualResult" required rows={3} /></label>
@@ -546,14 +583,21 @@ function ProblemLoop({
                 learning: field(form, "learning"),
                 recurring: field(form, "recurring") === "yes",
                 surprise: field(form, "surprise"),
-              }).then(() => form.reset());
+              }).then((success) => {
+                if (success) {
+                  form.reset();
+                }
+              });
             }}
           >
             <label>What happened?<textarea name="happened" required rows={2} /></label>
-            <label>What did you expect?<textarea name="expected" rows={2} /></label>
-            <label>What surprised you?<textarea name="surprise" rows={2} /></label>
             <label>What did the team learn?<textarea name="learning" required rows={3} /></label>
-            <label>Recurring?<select name="recurring" defaultValue="no"><option value="no">No</option><option value="yes">Yes</option></select></label>
+            <details className={styles.disclosure}>
+              <summary>Expectation &amp; recurrence</summary>
+              <label>What did you expect?<textarea name="expected" rows={2} /></label>
+              <label>What surprised you?<textarea name="surprise" rows={2} /></label>
+              <label>Recurring?<select name="recurring" defaultValue="no"><option value="no">No</option><option value="yes">Yes</option></select></label>
+            </details>
             <button className={styles.primary} disabled={working !== null} type="submit">Complete reflection</button>
           </form>
         </details>
@@ -581,7 +625,11 @@ function ProblemLoop({
                 reflectionId: design.reflection?.id,
                 rule: field(form, "rule"),
                 trigger: field(form, "trigger"),
-              }).then(() => form.reset());
+              }).then((success) => {
+                if (success) {
+                  form.reset();
+                }
+              });
             }}
           >
             {principles.length > 0 ? (
