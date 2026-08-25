@@ -91,3 +91,31 @@ CREATE TRIGGER organization_principle_evidence_provenance
 AFTER INSERT OR UPDATE OF origin_reflection_id ON principles
 FOR EACH ROW
 EXECUTE FUNCTION attach_organization_principle_evidence();
+
+CREATE OR REPLACE FUNCTION prevent_early_organization_kernel_issue_resolution()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.status = 'resolved' AND OLD.status <> 'resolved' AND EXISTS (
+    SELECT 1
+    FROM organization_issue_kernel_links link
+    JOIN problems problem
+      ON problem.id = link.problem_id
+      AND problem.workspace_id = link.workspace_id
+    WHERE link.workspace_id = NEW.workspace_id
+      AND link.issue_id = NEW.id
+      AND problem.status <> 'resolved'
+  ) THEN
+    RAISE EXCEPTION 'organization kernel issue requires completed evolution loop before resolution'
+      USING ERRCODE = 'P0001';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS organization_kernel_issue_resolution_guard ON organization_issues;
+CREATE TRIGGER organization_kernel_issue_resolution_guard
+BEFORE UPDATE OF status ON organization_issues
+FOR EACH ROW
+EXECUTE FUNCTION prevent_early_organization_kernel_issue_resolution();

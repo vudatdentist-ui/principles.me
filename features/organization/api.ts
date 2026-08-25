@@ -24,6 +24,19 @@ export async function requireOrganizationSession(
   return requireSession(request);
 }
 
+function isIncompleteEvolutionResolution(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      "message" in error &&
+      String((error as { code?: unknown }).code) === "P0001" &&
+      String((error as { message?: unknown }).message).includes(
+        "organization kernel issue requires completed evolution loop"
+      )
+  );
+}
+
 export function organizationApiError(
   error: unknown,
   fallback = "Organization request failed."
@@ -45,6 +58,12 @@ export function organizationApiError(
   }
   if (error instanceof OrganizationConflictError) {
     return Response.json({ error: "That organization record already exists." }, { status: 409 });
+  }
+  if (isIncompleteEvolutionResolution(error)) {
+    return Response.json(
+      { error: "Complete the organization evolution loop before resolving this issue." },
+      { status: 409 }
+    );
   }
   console.error(JSON.stringify({ event: "organization_api_failed" }));
   return Response.json({ error: fallback }, { status: 500 });
