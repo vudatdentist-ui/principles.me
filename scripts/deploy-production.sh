@@ -195,7 +195,7 @@ docker create \
   --name "$migration_container" \
   --env-file "$ENV_FILE" \
   --network "$DATA_NETWORK" \
-  "$IMAGE" pnpm db:migrate >/dev/null
+  "$IMAGE" node scripts/migrate.mjs >/dev/null
 docker start -a "$migration_container"
 migration_exit="$(docker inspect -f '{{.State.ExitCode}}' "$migration_container")"
 [ "$migration_exit" = '0' ] || fail 'Database migration failed.'
