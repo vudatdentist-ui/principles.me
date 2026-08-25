@@ -1,105 +1,100 @@
 # Principles Roadmap
 
 **Date:** 2026-08-24  
-**Current baseline:** Phases 0–3 Complete on `main`  
-**Next:** Phase 4 — Learning Engine + Self Model — Planned
+**`main` baseline:** Phases 0–3 Complete  
+**Branch status:** Phase 4 — Learning Engine + Self Model — **Ready, not merged**
 
 Principles is an **evolution system for people first and organizations second**.
 
 ## Build rule
 
-Every major phase follows:
-
 ```text
-Understand → Criteria → Build → Audit → Fix → Re-audit → Final check → Merge → Report
+Understand → Criteria → Build → Audit → Fix → Re-audit → Final check → Report
 ```
 
-A phase is Complete only when behavior works, required boundaries are verified, expected outcome is compared with actual outcome, source-of-truth is updated and the work is merged.
+A phase becomes Complete only when its behavior and boundaries are verified, actual outcome/limitations are recorded, and — when requested — the work is accepted and merged. Phase 4 is Ready because this request did not include merge.
 
 ## Program status
 
 | Phase | Name | Status | Outcome |
 | --- | --- | --- | --- |
 | 0 | Kernel Definition | **Complete** | Shared philosophical/product kernel, UI constraints and phase governance. |
-| 1 | Secure Platform + Durable Kernel | **Complete** | Authenticated Personal Workspace with PostgreSQL state, provenance, isolation and bounded AI/retrieval usage. |
+| 1 | Secure Platform + Durable Kernel | **Complete** | Authenticated Personal Workspace with PostgreSQL state, provenance, isolation and bounded provider usage. |
 | 2 | Principles for People — First Complete Loop | **Complete** | Goal → Reality → Problem → Reflection → revisable Principle works durably. |
 | 3 | Design + Execution | **Complete** | Diagnosis → machine Design → Actions → observed Outcome → Review works durably and is merged. |
-| 4 | Learning Engine + Self Model | Planned | Learn correctable longitudinal patterns from the person's own history. |
-| 5 | Principles for Organizations | Planned | Extend the proven kernel to collective people/culture machines, governance and domain-specific believability. |
+| 4 | Learning Engine + Self Model | **Ready** | Durable history produces evidence-backed, user-correctable Pattern hypotheses that can revise a Principle back into testing. |
+| 5 | Principles for Organizations | Planned | Extend the proven People kernel to collective machines, governance and contextual believability. |
 
-## Phase 1
+## Completed foundation
 
-**Merge:** `ce332d64db54c45d2c95a10c01aee50156e711d0`
+**Phase 1 merge:** `ce332d64db54c45d2c95a10c01aee50156e711d0`  
+Identity/session, Personal Workspace, PostgreSQL, tenant/provenance constraints, authenticated RAGFlow, Brave + DeepSeek, safe client projection and deployment-safety foundations.
 
-Identity/session, Personal Workspace, PostgreSQL 16, tenant/provenance constraints, Activity Events, AI Suggestions, authenticated RAGFlow, Brave + DeepSeek, provider controls, safe client projection and deployment safety foundations.
+**Phase 2 merge:** `601e0ef442bb3edc92bb3869c93ef1caa5089f81`  
+`Goal Discovery → Reality → Problem → Reflection → Principle Candidate`, with user-reviewed AI suggestions and no automatic trusted Principle.
 
-## Phase 2
-
-**Merge:** `601e0ef442bb3edc92bb3869c93ef1caa5089f81`
-
-```text
-Goal Discovery → Reality → Problem → Reflection → Principle Candidate
-```
-
-Goal meaning includes why, success conditions, trade-offs and boundaries; measures are optional. Reality is Goal-scoped Evidence + Observation. Problems and Principles remain user-reviewed rather than AI truth.
-
-## Phase 3
-
-**Complete. Merge:** `c30a2f8828f24fdb4c41a151e3d0fe0b483b13c8`
-
-```text
-Problem → Diagnosis → Design → Actions → Outcome → Review / Reflection
-```
-
-Delivered:
-
-- symptom/proximate/root-cause Diagnosis with evidence for/against, alternatives and uncertainty;
-- user-confirmed/revised Diagnosis and Design;
-- Design as machine change with rationale, expectation and success signal;
-- 1–5 minimal Actions only to execute that Design;
-- Action completion does not imply success;
-- Outcome requires no pending Actions and records actual Reality against expected Reality;
-- atomic Outcome + Evidence + Observation;
-- valid Outcome evaluates Design and locks evaluated Actions;
-- post-Outcome Review creates linked Reflection;
-- tenant/semantic/replay constraints and safe browser projections;
-- no generic project-management shell.
-
-Final verification before merge:
-
-- Foundation #154 ✅
-- Lint #489 ✅
-- Playwright #256 ✅
-
-**Actual outcome:** Principles no longer stops at insight. It can change a personal machine, observe the resulting Reality and feed the result back into Reflection.
-
-Known limitations: one v1 Outcome per Design, one surfaced execution chain for the selected Goal/Problem, no generic PM features, and a normal server render/navigation currently bridges reviewed Phase 2 Principle to Phase 3 surface.
+**Phase 3 merge:** `c30a2f8828f24fdb4c41a151e3d0fe0b483b13c8`  
+`Problem → Diagnosis → Design → Actions → Outcome → Review`, with actual Reality required before Design evaluation and no generic project-management shell.
 
 ## Phase 4 — Learning Engine + Self Model
 
-**Status:** Planned — not started
+**Status:** Ready on `phase/4-learning-self-model`; not merged.
 
-Use longitudinal evidence to test recurring Problems/Pain, repeated 5-Step failure points, stated priorities versus behavior, recurring diagnosis/design failures, Principle effectiveness and evolving strength/constraint hypotheses.
+Delivered:
 
-Every pattern must remain evidence-backed, inspectable and correctable.
+```text
+History
+  → Pattern hypothesis
+  → inspect cases / evidence / counter-evidence / uncertainty
+  → accept / revise / reject
+  → optional Principle revision
+  → test again
+```
+
+Important properties:
+
+- Self Model = accepted/revised hypotheses, not personality labels;
+- Pattern proposal requires ≥2 completed Reflections;
+- AI uses ephemeral case/Principle keys, not durable UUIDs;
+- `recurring_pattern` requires at least two distinct Problems and is enforced in PostgreSQL;
+- only the 8 most recent completed Reflection cases are considered per proposal, in chronological order, with bounded model-facing excerpts;
+- stale pending proposals are superseded;
+- user can inspect, correct, keep or reject a Pattern;
+- rejected proposal creates no Pattern row;
+- safe client projection excludes Workspace/Evidence/AI provenance/internal semantic join IDs;
+- accepted/revised Pattern may inform one explicit Principle revision;
+- Principle revision preserves before/after history and returns to `revised + testing`, never `trusted`;
+- no scores, charts, trait feed, streaks or analytics dashboard.
+
+Runtime verification on head `4ae0d5cefc51b8137f943720f68bbac86175ac30`:
+
+- Foundation #163 ✅
+- Lint #498 ✅
+- Playwright #265 ✅
+
+Audit corrected TypeScript ephemeral-key inference, a client-side recurring-pattern semantic bypass, stale-history selection and unbounded model-facing history text.
+
+Known v1 limits: manual pattern discovery; 8 most recent Reflection cases per proposal rather than semantic retrieval across unlimited history; one Pattern→Principle revision; Learning remains a secondary `/learning` page.
 
 ## Phase 5 — Principles for Organizations
 
-**Status:** Planned
+**Status:** Planned. Start only after Phase 4 is explicitly accepted/merged.
 
-Extend the proven People kernel with Organization Workspace, people/roles/responsibilities/teams, culture signals, disagreement, permissions, governance and domain-specific evidence-backed believability.
+Potential scope: Organization Workspace, people/roles/responsibilities/teams, culture signals, disagreements, permissions/governance and contextual evidence-backed believability. Radical Transparency must coexist with authorization and accountability.
 
-## Reality Engine
+## Reality / Learning Engine
 
 ```text
-Private knowledge → RAGFlow ─────────┐
-Public current reality → Brave ──────┼→ Evidence → Principles reasoning
-Direct observations ────────────────┤
-Outcomes ───────────────────────────┘
+Private knowledge → RAGFlow ─────────────┐
+Public current reality → Brave ─────────┤
+Direct observations / Outcomes ─────────┤→ Evidence + durable history → Principles reasoning
+Reflections / Principles ───────────────┘
 ```
+
+Public live search never receives private RAG excerpts.
 
 ## UI constraint
 
 > **Do not use small explanatory text to compensate for unclear structure or to fill empty space.**
 
-Prefer fewer visible items, stronger state, direct actions and progressive disclosure.
+Prefer fewer visible items, stronger state, direct action and progressive disclosure.
