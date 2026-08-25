@@ -30,6 +30,9 @@ export default defineConfig({
   },
   webServer: {
     command: `pnpm exec next dev --turbo --hostname 127.0.0.1 --port ${PORT}`,
+    env: {
+      AUTH_EMAIL_VERIFICATION_MODE: "optional",
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: baseURL,

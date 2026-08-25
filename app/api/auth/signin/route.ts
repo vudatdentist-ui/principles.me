@@ -1,9 +1,15 @@
 import { z } from "zod";
-import { assertTrustedOrigin, UntrustedOriginError } from "@/features/auth/origin";
+import {
+  assertTrustedOrigin,
+  UntrustedOriginError,
+} from "@/features/auth/origin";
 import { hashPassword, verifyPassword } from "@/features/auth/password";
 import { createSession, findUserForSignin } from "@/features/auth/repository";
 import { sessionCookie } from "@/features/auth/session";
-import { authRateScope, consumeRateLimit } from "@/features/security/rate-limit";
+import {
+  authRateScope,
+  consumeRateLimit,
+} from "@/features/security/rate-limit";
 
 const schema = z.object({
   email: z.string().trim().email().max(320),
@@ -11,7 +17,10 @@ const schema = z.object({
 });
 
 function invalidCredentials(): Response {
-  return Response.json({ error: "Invalid email or password." }, { status: 401 });
+  return Response.json(
+    { error: "Invalid email or password." },
+    { status: 401 },
+  );
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -31,7 +40,10 @@ export async function POST(request: Request): Promise<Response> {
     if (!rate.allowed) {
       return Response.json(
         { error: "Too many attempts." },
-        { headers: { "retry-after": String(rate.retryAfterSeconds) }, status: 429 }
+        {
+          headers: { "retry-after": String(rate.retryAfterSeconds) },
+          status: 429,
+        },
       );
     }
 
@@ -46,10 +58,23 @@ export async function POST(request: Request): Promise<Response> {
       return invalidCredentials();
     }
 
+    const verificationRequired =
+      process.env.NODE_ENV === "production" ||
+      process.env.AUTH_EMAIL_VERIFICATION_MODE !== "optional";
+    if (verificationRequired && !user.emailVerified) {
+      return Response.json(
+        {
+          code: "EMAIL_NOT_VERIFIED",
+          error: "Please verify your email before signing in.",
+        },
+        { status: 403 },
+      );
+    }
+
     const token = await createSession(user.id);
     return Response.json(
       { ok: true },
-      { headers: { "set-cookie": sessionCookie(token) } }
+      { headers: { "set-cookie": sessionCookie(token) } },
     );
   } catch (error) {
     if (error instanceof UntrustedOriginError) {

@@ -44,6 +44,12 @@
   gap: 12px;
 }
 
+.intro {
+  margin: 0 0 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .panel label {
   margin-top: 10px;
   font-size: 15px;
@@ -71,6 +77,26 @@
   color: var(--danger);
   font-size: 15px;
   line-height: 1.4;
+}
+
+.notice {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.textButton {
+  cursor: pointer;
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 4px 0;
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .submit {

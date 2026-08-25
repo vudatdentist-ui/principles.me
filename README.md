@@ -35,6 +35,8 @@ Normal account creation uses email + password only. **Setup key has been removed
 - a legacy `AUTH_SIGNUP_MODE=bootstrap` value is treated as open rather than requiring a hidden secret;
 - origin validation, password rules, rate limiting and session security remain in force.
 
+New accounts must verify their email before the first sign-in. Verification and password recovery links are sent through Brevo. Configure `BREVO_API_KEY` and a verified `BREVO_SENDER_EMAIL` only in the server environment; never commit the API key.
+
 ## People
 
 The durable personal learning/change path spans:
@@ -188,4 +190,4 @@ Prefer fewer visible items, stronger state, direct actions, progressive disclosu
 
 ## Not implemented / intentionally deferred
 
-Organization invitation delivery/magic links, arbitrary permission matrices, anonymous culture surveys or culture scores, global people rankings, organization-wide AI Pattern generation across unlimited history, SSO/SCIM, compensation/performance-management workflows, structured business connectors, generic project/task management, password recovery/OAuth/passkeys, RAG-binding administration UI and automated off-host restore remain deferred.
+Organization invitation delivery/magic links, arbitrary permission matrices, anonymous culture surveys or culture scores, global people rankings, organization-wide AI Pattern generation across unlimited history, SSO/SCIM, compensation/performance-management workflows, structured business connectors, generic project/task management, OAuth/passkeys, RAG-binding administration UI and automated off-host restore remain deferred.

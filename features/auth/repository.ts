@@ -17,7 +17,7 @@ function tokenHash(token: string): string {
 }
 
 function configuredBootstrapDatasets(
-  env: Readonly<Record<string, string | undefined>> = process.env
+  env: Readonly<Record<string, string | undefined>> = process.env,
 ): string[] {
   if (env.RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS?.trim().toLowerCase() === "false") {
     return [];
@@ -33,7 +33,7 @@ function isUniqueViolation(error: unknown): boolean {
     error &&
       typeof error === "object" &&
       "code" in error &&
-      (error as { code?: unknown }).code === "23505"
+      (error as { code?: unknown }).code === "23505",
   );
 }
 
@@ -108,11 +108,12 @@ export async function createAccount(input: {
 }
 
 export async function findUserForSignin(email: string): Promise<{
+  emailVerified: boolean;
   id: string;
   passwordHash: string;
 } | null> {
   const rows = await db()`
-    SELECT id, password_hash
+    SELECT id, password_hash, email_verified_at
     FROM users
     WHERE email_normalized = ${normalizedEmail(email)} AND status = 'active'
     LIMIT 1
@@ -121,7 +122,149 @@ export async function findUserForSignin(email: string): Promise<{
   if (!row) {
     return null;
   }
-  return { id: String(row.id), passwordHash: String(row.password_hash) };
+  return {
+    emailVerified: Boolean(row.email_verified_at),
+    id: String(row.id),
+    passwordHash: String(row.password_hash),
+  };
+}
+
+function createOpaqueToken(): { hash: string; value: string } {
+  const value = randomBytes(32).toString("base64url");
+  return { hash: tokenHash(value), value };
+}
+
+export async function createEmailVerificationToken(
+  userId: string,
+): Promise<string> {
+  const token = createOpaqueToken();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await db().begin(async (transaction) => {
+    await transaction`
+      DELETE FROM email_verification_tokens
+      WHERE user_id = ${userId}::uuid AND used_at IS NULL
+    `;
+    await transaction`
+      INSERT INTO email_verification_tokens (token_hash, user_id, expires_at)
+      VALUES (${token.hash}, ${userId}::uuid, ${expiresAt})
+    `;
+  });
+  return token.value;
+}
+
+export async function verifyEmailToken(token: string): Promise<boolean> {
+  const hash = tokenHash(token);
+  return db().begin(async (transaction) => {
+    const rows = await transaction`
+      SELECT user_id
+      FROM email_verification_tokens
+      WHERE token_hash = ${hash}
+        AND used_at IS NULL
+        AND expires_at > now()
+      FOR UPDATE
+    `;
+    const userId = rows[0]?.user_id;
+    if (!userId) {
+      return false;
+    }
+    await transaction`
+      UPDATE users
+      SET email_verified_at = COALESCE(email_verified_at, now()), updated_at = now()
+      WHERE id = ${String(userId)}::uuid
+    `;
+    await transaction`
+      UPDATE email_verification_tokens
+      SET used_at = now()
+      WHERE token_hash = ${hash}
+    `;
+    return true;
+  });
+}
+
+export async function createVerificationTokenForEmail(email: string): Promise<{
+  email: string;
+  token: string;
+} | null> {
+  const rows = await db()`
+    SELECT id, email, email_verified_at
+    FROM users
+    WHERE email_normalized = ${normalizedEmail(email)} AND status = 'active'
+    LIMIT 1
+  `;
+  const row = rows[0];
+  if (!row || row.email_verified_at) {
+    return null;
+  }
+  return {
+    email: String(row.email),
+    token: await createEmailVerificationToken(String(row.id)),
+  };
+}
+
+export async function createPasswordResetTokenForEmail(email: string): Promise<{
+  email: string;
+  token: string;
+} | null> {
+  const rows = await db()`
+    SELECT id, email
+    FROM users
+    WHERE email_normalized = ${normalizedEmail(email)} AND status = 'active'
+    LIMIT 1
+  `;
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+  const token = createOpaqueToken();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  await db().begin(async (transaction) => {
+    await transaction`
+      DELETE FROM password_reset_tokens
+      WHERE user_id = ${String(row.id)}::uuid AND used_at IS NULL
+    `;
+    await transaction`
+      INSERT INTO password_reset_tokens (token_hash, user_id, expires_at)
+      VALUES (${token.hash}, ${String(row.id)}::uuid, ${expiresAt})
+    `;
+  });
+  return { email: String(row.email), token: token.value };
+}
+
+export async function resetPasswordWithToken(
+  token: string,
+  passwordHash: string,
+): Promise<boolean> {
+  const hash = tokenHash(token);
+  return db().begin(async (transaction) => {
+    const rows = await transaction`
+      SELECT user_id
+      FROM password_reset_tokens
+      WHERE token_hash = ${hash}
+        AND used_at IS NULL
+        AND expires_at > now()
+      FOR UPDATE
+    `;
+    const userId = rows[0]?.user_id;
+    if (!userId) {
+      return false;
+    }
+    await transaction`
+      UPDATE users
+      SET password_hash = ${passwordHash}, updated_at = now()
+      WHERE id = ${String(userId)}::uuid
+    `;
+    await transaction`
+      UPDATE sessions
+      SET revoked_at = now()
+      WHERE user_id = ${String(userId)}::uuid AND revoked_at IS NULL
+    `;
+    await transaction`
+      UPDATE password_reset_tokens
+      SET used_at = now()
+      WHERE token_hash = ${hash}
+    `;
+    return true;
+  });
 }
 
 export async function createSession(userId: string): Promise<string> {
@@ -142,7 +285,9 @@ export async function revokeSession(token: string): Promise<void> {
   `;
 }
 
-export async function sessionContext(token: string): Promise<SessionContext | null> {
+export async function sessionContext(
+  token: string,
+): Promise<SessionContext | null> {
   if (!token) {
     return null;
   }
@@ -183,7 +328,9 @@ export async function sessionContext(token: string): Promise<SessionContext | nu
   };
 }
 
-export async function workspaceRagDatasetIds(workspaceId: string): Promise<string[]> {
+export async function workspaceRagDatasetIds(
+  workspaceId: string,
+): Promise<string[]> {
   // Keep deployment bootstrap configuration durable for workspaces created by
   // older releases. This repairs a missing binding without replacing any
   // workspace-specific sources that are already stored.
