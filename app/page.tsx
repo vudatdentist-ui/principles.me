@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { signupNeedsBootstrapSecret } from "@/features/auth/bootstrap";
 import { AuthScreen } from "@/features/auth/auth-screen";
-import { signupMode } from "@/features/auth/contracts";
 import { sessionContext, signupAvailable } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
 import { projectExecutionState } from "@/features/people/execution-projection";
@@ -18,13 +16,7 @@ async function WorkspaceEntry() {
   const session = token ? await sessionContext(token) : null;
 
   if (!session) {
-    const mode = signupMode(process.env.AUTH_SIGNUP_MODE);
-    return (
-      <AuthScreen
-        signupAvailable={await signupAvailable()}
-        signupRequiresSetupKey={signupNeedsBootstrapSecret(mode)}
-      />
-    );
+    return <AuthScreen signupAvailable={await signupAvailable()} />;
   }
 
   const [peopleState, executionState] = await Promise.all([
