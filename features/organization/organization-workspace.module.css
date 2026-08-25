@@ -52,9 +52,9 @@
 }
 
 .nav a[aria-current="page"],
-.activeSwitch {
-  background: #e9e9e2 !important;
-  color: #171713 !important;
+.switcher .activeSwitch {
+  background: #e9e9e2;
+  color: #171713;
 }
 
 .account {
@@ -331,8 +331,9 @@
   background: #f7f7f3;
 }
 
-.meta {
-  margin-top: 12px !important;
+.issue .meta,
+.contextItem .meta {
+  margin-top: 12px;
 }
 
 .error {
