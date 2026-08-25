@@ -19,8 +19,10 @@ RUN pnpm build
 # Start the runtime from a clean Node image rather than the build image. This
 # intentionally excludes Corepack and pnpm from production containers.
 FROM node:22-bookworm-slim AS runner
+WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 # The runtime image is deliberately independent of pnpm/Corepack. The app is
 # started with Next's standalone Node server and migrations are invoked with
 # node directly, so the private migration network never needs registry access.
