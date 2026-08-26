@@ -76,16 +76,17 @@ export async function GET(): Promise<Response> {
     process.env.NODE_ENV !== "production" || !isLocalhostUrl(ragflowBaseUrl);
   const ragflowDatasetIds = configuredDatasetIds();
   const ragflowBootstrapDatasetsConfigured = ragflowDatasetIds.length > 0;
-  const ragflowReachable = await probeRagflow(
-    ragflowDatasetIds,
-    ragflowConfigured,
-    ragflowEndpointReady,
-  );
+  const ragflowEnabled = ragflowConfigured && ragflowDatasetIds.length > 0;
+  const ragflowReachable = ragflowEnabled
+    ? await probeRagflow(
+        ragflowDatasetIds,
+        ragflowConfigured,
+        ragflowEndpointReady,
+      )
+    : false;
   const ragflowReady =
-    ragflowConfigured &&
-    ragflowDatasetIds.length > 0 &&
-    ragflowEndpointReady &&
-    ragflowReachable;
+    !ragflowEnabled ||
+    (ragflowEndpointReady && ragflowReachable);
   const liveSearchConfigured = Boolean(
     process.env.BRAVE_SEARCH_API_KEY?.trim(),
   );

@@ -70,9 +70,7 @@ test -f "$ENV_FILE" || fail "$ENV_FILE is required."
 test -f "$COMPOSE_FILE" || fail "$COMPOSE_FILE is required."
 test -f scripts/smoke-production.mjs || fail "Production smoke script is missing."
 test -f db/migrations/0001_secure_platform_kernel.sql || fail "Phase 1 migration is missing."
-test -f infra/traefik/ragflow-lib.yaml || fail "RAGFlow proxy route is missing."
-
-for required_var in DEEPSEEK_API_KEY RAGFLOW_API_KEY RAGFLOW_DATASET_IDS SMOKE_EMAIL SMOKE_PASSWORD BREVO_API_KEY BREVO_SENDER_EMAIL; do
+for required_var in DEEPSEEK_API_KEY SMOKE_EMAIL SMOKE_PASSWORD BREVO_API_KEY BREVO_SENDER_EMAIL; do
   grep -Eq "^${required_var}=.+$" "$ENV_FILE" || fail "${required_var} is required in $ENV_FILE."
 done
 
@@ -101,17 +99,8 @@ set_env_value POSTGRES_DB 'principles'
 set_env_value POSTGRES_USER 'principles'
 set_env_value AUTH_SIGNUP_MODE 'bootstrap'
 set_env_value APP_ORIGIN 'https://principles.me'
-set_env_if_missing RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS 'true'
-
-ragflow_url="$(read_env RAGFLOW_BASE_URL)"
-if [ -z "$ragflow_url" ] || printf '%s' "$ragflow_url" | grep -Eq '^http://(localhost|127\.0\.0\.1):9380/?$'; then
-  set_env_value RAGFLOW_BASE_URL 'http://host.docker.internal:9380'
-  printf '%s\n' 'Configured RAGFLOW_BASE_URL for Docker host access.'
-fi
-unset ragflow_url
 
 docker network inspect coolify >/dev/null
-install -D -m 0644 infra/traefik/ragflow-lib.yaml /data/coolify/proxy/dynamic/ragflow-lib.yaml
 if ! docker network inspect "$DATA_NETWORK" >/dev/null 2>&1; then
   docker network create --internal "$DATA_NETWORK" >/dev/null
 fi
