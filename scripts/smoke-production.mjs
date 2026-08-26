@@ -85,11 +85,17 @@ try {
   if (!sources) {
     throw new Error("Ask smoke did not emit a sources event.");
   }
-  if (sources.private !== "ok") {
-    throw new Error(`Private RAG retrieval was ${sources.private || "missing"}.`);
-  }
-  if (!sources.references?.some((reference) => reference.sourceType === "ragflow")) {
-    throw new Error("Ask smoke did not return a private RAG source.");
+  const ragflowEnabled = Boolean(
+    process.env.RAGFLOW_API_KEY?.trim() &&
+      process.env.RAGFLOW_DATASET_IDS?.trim()
+  );
+  if (ragflowEnabled) {
+    if (sources.private !== "ok") {
+      throw new Error(`Private RAG retrieval was ${sources.private || "missing"}.`);
+    }
+    if (!sources.references?.some((reference) => reference.sourceType === "ragflow")) {
+      throw new Error("Ask smoke did not return a private RAG source.");
+    }
   }
   if (!events.some((event) => event.type === "token" && event.token)) {
     throw new Error("Ask smoke did not emit answer content.");
