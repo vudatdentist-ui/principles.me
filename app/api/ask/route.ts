@@ -16,7 +16,7 @@ import {
   consumeRateLimit,
   workspaceRateScope,
 } from "@/features/security/rate-limit";
-import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
+import { createAiProvider } from "@/lib/ai/providers/factory";
 import { AiProviderError } from "@/lib/ai/providers/provider-error";
 
 export const maxDuration = 90;
@@ -248,7 +248,9 @@ export async function POST(request: Request): Promise<Response> {
         const allowedKeys = new Set(references.map((reference) => reference.key));
         const citationGuard = createCitationGuard(allowedKeys);
         const evidence = formatEvidence(references);
-        const provider = new DeepSeekProvider();
+        const provider = createAiProvider({
+          maxTokens: Number(process.env.LITELLM_MAX_TOKENS || process.env.DEEPSEEK_MAX_TOKENS || 2200),
+        });
 
         for await (const rawToken of provider.streamText({
           maxTokens: Number(process.env.DEEPSEEK_MAX_TOKENS || 2200),

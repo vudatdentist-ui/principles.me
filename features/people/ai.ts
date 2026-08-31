@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
+import { aiProviderConfigured, createAiProvider } from "@/lib/ai/providers/factory";
 import type { AiResponseMetadata } from "@/lib/ai/providers/types";
 import type {
   GoalDiscoveryResult,
@@ -87,7 +87,7 @@ export function fallbackGoalDiscovery(draft: GoalDraft): GoalDiscoveryResult {
 export function shouldUseGoalDiscoveryProvider(draft: GoalDraft): boolean {
   return (
     fallbackGoalDiscovery(draft).kind !== "ready" &&
-    Boolean(process.env.DEEPSEEK_API_KEY?.trim())
+    aiProviderConfigured()
   );
 }
 
@@ -98,13 +98,13 @@ export async function discoverGoalNext(
   const deterministic = fallbackGoalDiscovery(draft);
   if (
     deterministic.kind === "ready" ||
-    !process.env.DEEPSEEK_API_KEY?.trim()
+    !aiProviderConfigured()
   ) {
     return deterministic;
   }
 
   try {
-    const provider = new DeepSeekProvider({ maxTokens: 350 });
+    const provider = createAiProvider({ maxTokens: 350 });
     const result = await provider.generateObject({
       messages: [
         {
@@ -150,7 +150,7 @@ export async function generateProblemProposal(input: {
   signal?: AbortSignal;
 }): Promise<GeneratedProblem> {
   let metadata: AiResponseMetadata | undefined;
-  const provider = new DeepSeekProvider({ maxTokens: 450 });
+  const provider = createAiProvider({ maxTokens: 450 });
   const result = await provider.generateObject({
     messages: [
       {
@@ -179,7 +179,11 @@ export async function generateProblemProposal(input: {
   });
   return {
     ...result,
-    modelName: metadata?.model ?? process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+    modelName:
+      metadata?.model ??
+      process.env.LITELLM_MODEL ??
+      process.env.DEEPSEEK_MODEL ??
+      "deepseek-chat",
     modelProvider: provider.id,
   };
 }
@@ -197,7 +201,7 @@ export async function generatePrincipleProposal(input: {
   signal?: AbortSignal;
 }): Promise<GeneratedPrinciple> {
   let metadata: AiResponseMetadata | undefined;
-  const provider = new DeepSeekProvider({ maxTokens: 550 });
+  const provider = createAiProvider({ maxTokens: 550 });
   const result = await provider.generateObject({
     messages: [
       {
@@ -231,7 +235,11 @@ export async function generatePrincipleProposal(input: {
   return {
     ...result,
     confidence: result.confidence ?? null,
-    modelName: metadata?.model ?? process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+    modelName:
+      metadata?.model ??
+      process.env.LITELLM_MODEL ??
+      process.env.DEEPSEEK_MODEL ??
+      "deepseek-chat",
     modelProvider: provider.id,
   };
 }

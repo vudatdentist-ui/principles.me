@@ -24,6 +24,7 @@ export type DeepSeekProviderOptions = {
   fetch?: typeof fetch;
   maxTokens?: number;
   model?: string;
+  providerId?: string;
   timeoutMs?: number;
 };
 
@@ -263,7 +264,7 @@ function streamContent(payload: Record<string, unknown>): string | undefined {
 }
 
 export class DeepSeekProvider implements AiProvider {
-  readonly id = "deepseek";
+  readonly id: string;
 
   private readonly apiKey: string;
   private readonly baseUrl: string;
@@ -273,6 +274,7 @@ export class DeepSeekProvider implements AiProvider {
   private readonly timeoutMs: number;
 
   constructor(options: DeepSeekProviderOptions = {}) {
+    this.id = options.providerId ?? "deepseek";
     this.apiKey = (options.apiKey ?? process.env.DEEPSEEK_API_KEY ?? "").trim();
     this.baseUrl = (
       options.baseUrl ??

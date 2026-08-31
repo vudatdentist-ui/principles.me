@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
+import { createAiProvider } from "@/lib/ai/providers/factory";
 import type { AiResponseMetadata } from "@/lib/ai/providers/types";
 import type {
   LearningCaseRecord,
@@ -168,7 +168,7 @@ export async function generateLearningPattern(input: {
   const caseMap = learningCaseMap(input.cases);
   const principleMap = learningPrincipleMap(input.principles);
   let metadata: AiResponseMetadata | undefined;
-  const provider = new DeepSeekProvider({ maxTokens: 950 });
+  const provider = createAiProvider({ maxTokens: 950 });
   const result = await provider.generateObject({
     messages: [
       {
@@ -204,7 +204,11 @@ export async function generateLearningPattern(input: {
 
   return {
     ...resolved,
-    modelName: metadata?.model ?? process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+    modelName:
+      metadata?.model ??
+      process.env.LITELLM_MODEL ??
+      process.env.DEEPSEEK_MODEL ??
+      "deepseek-chat",
     modelProvider: provider.id,
   };
 }

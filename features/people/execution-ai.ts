@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DeepSeekProvider } from "@/lib/ai/providers/deepseek-provider";
+import { createAiProvider } from "@/lib/ai/providers/factory";
 import type { AiResponseMetadata } from "@/lib/ai/providers/types";
 import type { GoalRecord, ProblemRecord, ReflectionRecord } from "./contracts";
 import type { DiagnosisRecord } from "./execution-contracts";
@@ -42,7 +42,7 @@ export async function generateDiagnosisProposal(input: {
   signal?: AbortSignal;
 }): Promise<GeneratedDiagnosis> {
   let metadata: AiResponseMetadata | undefined;
-  const provider = new DeepSeekProvider({ maxTokens: 850 });
+  const provider = createAiProvider({ maxTokens: 850 });
   const result = await provider.generateObject({
     messages: [
       {
@@ -89,7 +89,11 @@ export async function generateDiagnosisProposal(input: {
   return {
     ...result,
     confidence: result.confidence ?? null,
-    modelName: metadata?.model ?? process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+    modelName:
+      metadata?.model ??
+      process.env.LITELLM_MODEL ??
+      process.env.DEEPSEEK_MODEL ??
+      "deepseek-chat",
     modelProvider: provider.id,
   };
 }
@@ -101,7 +105,7 @@ export async function generateDesignProposal(input: {
   signal?: AbortSignal;
 }): Promise<GeneratedDesign> {
   let metadata: AiResponseMetadata | undefined;
-  const provider = new DeepSeekProvider({ maxTokens: 700 });
+  const provider = createAiProvider({ maxTokens: 700 });
   const result = await provider.generateObject({
     messages: [
       {
@@ -137,7 +141,11 @@ export async function generateDesignProposal(input: {
   });
   return {
     ...result,
-    modelName: metadata?.model ?? process.env.DEEPSEEK_MODEL ?? "deepseek-chat",
+    modelName:
+      metadata?.model ??
+      process.env.LITELLM_MODEL ??
+      process.env.DEEPSEEK_MODEL ??
+      "deepseek-chat",
     modelProvider: provider.id,
   };
 }

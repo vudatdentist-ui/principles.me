@@ -68,6 +68,10 @@ export async function GET(): Promise<Response> {
     ? await databaseHealth()
     : { reachable: false, schemaReady: false };
   const deepseekConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
+  const litellmConfigured = Boolean(
+    process.env.LITELLM_API_KEY?.trim() &&
+      process.env.LITELLM_BASE_URL?.trim(),
+  );
   const ragflowConfigured = Boolean(process.env.RAGFLOW_API_KEY?.trim());
   const ragflowBaseUrl = (
     process.env.RAGFLOW_BASE_URL ?? "http://localhost:9380"
@@ -96,7 +100,7 @@ export async function GET(): Promise<Response> {
     dbConfigured &&
     dbHealth.reachable &&
     dbHealth.schemaReady &&
-    deepseekConfigured &&
+    (deepseekConfigured || litellmConfigured) &&
     ragflowReady &&
     liveSearchReady;
   const version = process.env.APP_VERSION?.trim() || "development";
@@ -108,6 +112,7 @@ export async function GET(): Promise<Response> {
         databaseReady: dbHealth.reachable,
         databaseSchemaReady: dbHealth.schemaReady,
         deepseekConfigured,
+        litellmConfigured,
         liveSearchConfigured,
         liveSearchReady,
         ragflowBootstrapDatasetsConfigured,

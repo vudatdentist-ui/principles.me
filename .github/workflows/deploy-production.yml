@@ -107,6 +107,19 @@ jobs:
           trap 'rm -f "$LOCAL_BOOTSTRAP"' EXIT
           chmod 600 "$LOCAL_BOOTSTRAP"
           printf 'DEEPSEEK_API_KEY=%s\n' "$BOOTSTRAP_DEEPSEEK_API_KEY" > "$LOCAL_BOOTSTRAP"
+          if [ -f /home/homeserver01/litellm/.env ]; then
+            LITELLM_MASTER_KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' /home/homeserver01/litellm/.env | tail -n 1)"
+            if [ -n "$LITELLM_MASTER_KEY" ]; then
+              printf 'LITELLM_API_KEY=%s\n' "$LITELLM_MASTER_KEY" >> "$LOCAL_BOOTSTRAP"
+            fi
+            unset LITELLM_MASTER_KEY
+          fi
+          printf '%s\n' \
+            'LITELLM_BASE_URL=https://llm.principles.me/v1' \
+            'LITELLM_MODEL=codex' \
+            'LITELLM_REASONING_EFFORT=high' \
+            'LITELLM_MAX_TOKENS=2200' \
+            'LITELLM_TIMEOUT_MS=55000' >> "$LOCAL_BOOTSTRAP"
 
           scp -q -P "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
             "$LOCAL_BOOTSTRAP" "$VPS_USER@$VPS_HOST:$REMOTE_BOOTSTRAP"
@@ -159,6 +172,14 @@ jobs:
             write_env_if_missing DEEPSEEK_API_KEY "$DEEPSEEK_VALUE" "$ENV_FILE" || true
             unset DEEPSEEK_VALUE
           fi
+
+          for name in LITELLM_API_KEY LITELLM_BASE_URL LITELLM_MODEL LITELLM_REASONING_EFFORT LITELLM_MAX_TOKENS LITELLM_TIMEOUT_MS; do
+            if ! grep -Eq "^${name}=.+$" "$ENV_FILE"; then
+              value="$(read_env "$name" "$BOOTSTRAP_FILE")"
+              write_env_if_missing "$name" "$value" "$ENV_FILE" || true
+              unset value
+            fi
+          done
           REMOTE
 
       - name: Upload and deploy exact commit to VPS
