@@ -11,7 +11,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "ragflow:bootstrap": "powershell -ExecutionPolicy Bypass -File scripts/bootstrap-ragflow.ps1",
     "ragflow:seed": "node scripts/seed-ragflow.mjs",
-    "test:unit": "tsx --test features/auth/__tests__/*.test.ts features/evidence/__tests__/*.test.ts features/evidence/providers/__tests__/*.test.ts features/learning/__tests__/*.test.ts features/people/__tests__/*.test.ts features/security/__tests__/*.test.ts lib/ai/providers/__tests__/*.test.ts",
+    "test:unit": "tsx --test features/auth/__tests__/*.test.ts features/evidence/__tests__/*.test.ts features/evidence/providers/__tests__/*.test.ts features/evolution/__tests__/*.test.ts features/learning/__tests__/*.test.ts features/people/__tests__/*.test.ts features/security/__tests__/*.test.ts lib/ai/providers/__tests__/*.test.ts",
     "test:integration": "tsx --test --test-concurrency=1 tests/integration/*.test.ts",
     "test:e2e": "playwright test",
     "test": "pnpm test:unit && pnpm test:integration"
@@ -29,7 +29,7 @@
     "@types/node": "^24.13.2",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "babel-plugin-react-compiler": "^1.0.0",
+    "babel-plugin-react-compiler": "1.0.0",
     "tsx": "^4.23.0",
     "typescript": "^5.6.3"
   },
