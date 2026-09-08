@@ -25,6 +25,14 @@ hydrate_abi_links() {
   done
 }
 
+start_postgres() {
+  "$BIN_DIR/pg_ctl" \
+    -D "$DATA_DIR" \
+    -l "$LOG_FILE" \
+    -o "-h 127.0.0.1 -p $POSTGRES_PORT" \
+    -w start >/dev/null 2>&1
+}
+
 case "$ACTION" in
   start)
     rm -rf "$ROOT"
@@ -75,11 +83,34 @@ case "$ACTION" in
         "$BIN_DIR/postgres" --single -D "$DATA_DIR" postgres >/dev/null
     fi
 
-    "$BIN_DIR/pg_ctl" \
-      -D "$DATA_DIR" \
-      -l "$LOG_FILE" \
-      -o "-h 127.0.0.1 -p $POSTGRES_PORT" \
-      -w start >/dev/null
+    requested_port="$POSTGRES_PORT"
+    if ! start_postgres; then
+      if grep -Eqi 'address already in use|could not bind|could not create any tcp/ip sockets' "$LOG_FILE"; then
+        started=0
+        for offset in $(seq 1 50); do
+          POSTGRES_PORT=$((requested_port + offset))
+          rm -f "$DATA_DIR/postmaster.pid"
+          if start_postgres; then
+            started=1
+            break
+          fi
+        done
+        if [ "$started" != '1' ]; then
+          printf 'Embedded PostgreSQL could not find a free port after %s.\n' "$requested_port" >&2
+          cat "$LOG_FILE" >&2 || true
+          exit 1
+        fi
+        if [ -n "${GITHUB_ENV:-}" ]; then
+          printf 'POSTGRES_PORT=%s\n' "$POSTGRES_PORT" >> "$GITHUB_ENV"
+        fi
+        printf 'CI_POSTGRES_PORT_FALLBACK=1 requested=%s selected=%s\n' \
+          "$requested_port" "$POSTGRES_PORT"
+      else
+        printf 'Embedded PostgreSQL failed to start.\n' >&2
+        cat "$LOG_FILE" >&2 || true
+        exit 1
+      fi
+    fi
 
     "$BIN_DIR/postgres" --version
     printf 'CI_POSTGRES_READY=1 port=%s database=%s\n' "$POSTGRES_PORT" "$POSTGRES_DB"
