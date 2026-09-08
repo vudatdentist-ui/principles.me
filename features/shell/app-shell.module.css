@@ -1,0 +1,155 @@
+.shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(218, 185, 129, 0.12), transparent 34rem),
+    #f8f6f1;
+  color: #171714;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-bottom: 1px solid rgba(23, 23, 20, 0.1);
+  background: rgba(248, 246, 241, 0.94);
+  backdrop-filter: blur(16px);
+}
+
+.headerRow {
+  width: min(1180px, calc(100% - 48px));
+  min-height: 68px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  color: inherit;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  text-decoration: none;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  color: #68675f;
+  font-size: 12px;
+}
+
+.accountMeta {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signOut {
+  border: 0;
+  padding: 7px 0;
+  background: transparent;
+  color: #47463f;
+  cursor: pointer;
+  font: inherit;
+}
+
+.signOut:hover,
+.signOut:focus-visible {
+  color: #11110f;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.nav {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+.nav a {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 8px 13px;
+  color: #68675f;
+  font-size: 13px;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.nav a:hover,
+.nav a:focus-visible {
+  background: rgba(23, 23, 20, 0.055);
+  color: #171714;
+  outline: none;
+}
+
+.nav .activeTab {
+  background: #171714;
+  color: #fffdf8;
+}
+
+.main {
+  width: min(1180px, calc(100% - 48px));
+  min-width: 0;
+  margin: 0 auto;
+  padding: 56px 0 96px;
+}
+
+.main > *,
+.main section,
+.main aside,
+.main ol {
+  min-width: 0;
+}
+
+.main ol {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  .headerRow,
+  .nav,
+  .main {
+    width: min(100% - 36px, 1180px);
+  }
+
+  .headerRow {
+    min-height: 60px;
+  }
+
+  .accountMeta {
+    display: none;
+  }
+
+  .nav {
+    gap: 1px;
+    padding-bottom: 10px;
+  }
+
+  .nav a {
+    padding: 8px 11px;
+    font-size: 12px;
+  }
+
+  .main {
+    padding-top: 36px;
+    padding-bottom: 72px;
+  }
+}

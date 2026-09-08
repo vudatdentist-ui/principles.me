@@ -3,19 +3,15 @@ import type { SessionContext } from "@/features/auth/contracts";
 import { assertTrustedOrigin, UntrustedOriginError } from "@/features/auth/origin";
 import { workspaceRagDatasetIds } from "@/features/auth/repository";
 import { requireSession, UnauthorizedError } from "@/features/auth/session";
-import { recordActivity } from "@/features/kernel/activity";
 import { projectEvidenceForClient } from "@/features/evidence/client-reference";
 import type { EvidenceReference } from "@/features/evidence/contracts";
-import {
-  liveSearchMode,
-  shouldUseLiveSearch,
-} from "@/features/evidence/live-search-policy";
+import { liveSearchMode, shouldUseLiveSearch } from "@/features/evidence/live-search-policy";
 import { BraveSearchEvidenceProvider } from "@/features/evidence/providers/brave-search-provider";
 import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
-import {
-  consumeRateLimit,
-  workspaceRateScope,
-} from "@/features/security/rate-limit";
+import type { EvolutionState } from "@/features/evolution/contracts";
+import { loadEvolutionState } from "@/features/evolution/service";
+import { recordActivity } from "@/features/kernel/activity";
+import { consumeRateLimit, workspaceRateScope } from "@/features/security/rate-limit";
 import { createAiProvider } from "@/lib/ai/providers/factory";
 import { AiProviderError } from "@/lib/ai/providers/provider-error";
 
@@ -26,6 +22,7 @@ const requestSchema = z.object({
 });
 
 type RetrievalState = "disabled" | "empty" | "ok" | "unavailable";
+type PersonalContextState = "empty" | "ok";
 
 type RetrievalResult = {
   live: RetrievalState;
@@ -35,6 +32,43 @@ type RetrievalResult = {
 
 function line(event: Record<string, unknown>): string {
   return `${JSON.stringify(event)}\n`;
+}
+
+function clipped(value: string | null | undefined, max = 900): string | null {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  return normalized.length > max ? `${normalized.slice(0, max)}…` : normalized;
+}
+
+function formatEvolutionContext(state: EvolutionState): {
+  state: PersonalContextState;
+  text: string;
+} {
+  if (!state.dream && !state.reality && !state.problem) {
+    return { state: "empty", text: "NO PERSONAL EVOLUTION CONTEXT HAS BEEN RECORDED YET." };
+  }
+
+  const lines = [
+    `CURRENT STAGE: ${state.stage}`,
+    clipped(state.dream?.desiredState) ? `DREAM: ${clipped(state.dream?.desiredState)}` : null,
+    clipped(state.reality?.statement) ? `CURRENT REALITY: ${clipped(state.reality?.statement)}` : null,
+    clipped(state.problem?.gap) ? `GAP: ${clipped(state.problem?.gap)}` : null,
+    clipped(state.problem?.statement) ? `PROBLEM: ${clipped(state.problem?.statement)}` : null,
+    clipped(state.diagnosis?.rootCauseHypothesis)
+      ? `ROOT-CAUSE HYPOTHESIS: ${clipped(state.diagnosis?.rootCauseHypothesis)}`
+      : null,
+    clipped(state.diagnosis?.uncertainty)
+      ? `DIAGNOSIS UNCERTAINTY: ${clipped(state.diagnosis?.uncertainty)}`
+      : null,
+    clipped(state.design?.machineChange) ? `MACHINE DESIGN: ${clipped(state.design?.machineChange)}` : null,
+    clipped(state.outcome?.actualResult) ? `LATEST OUTCOME: ${clipped(state.outcome?.actualResult)}` : null,
+    state.outcome ? `OUTCOME COMPARISON: ${state.outcome.comparison}` : null,
+    clipped(state.reflection?.learning) ? `LATEST REFLECTION: ${clipped(state.reflection?.learning)}` : null,
+    clipped(state.principle?.rule) ? `PRINCIPLE UNDER REVIEW/TEST: ${clipped(state.principle?.rule)}` : null,
+    clipped(state.principle?.trigger) ? `PRINCIPLE TRIGGER: ${clipped(state.principle?.trigger)}` : null,
+  ].filter((value): value is string => Boolean(value));
+
+  return { state: "ok", text: lines.join("\n") };
 }
 
 function formatEvidence(references: readonly EvidenceReference[]): string {
@@ -75,20 +109,15 @@ function createCitationGuard(allowedKeys: ReadonlySet<string>) {
     let output = "";
     for (const character of chunk) {
       if (!pending) {
-        if (character === "[") {
-          pending = character;
-        } else {
-          output += character;
-        }
+        if (character === "[") pending = character;
+        else output += character;
         continue;
       }
 
       pending += character;
       if (character === "]") {
         const citation = /^\[((?:R|W)\d+)\]$/.exec(pending);
-        if (!citation || allowedKeys.has(citation[1] ?? "")) {
-          output += pending;
-        }
+        if (!citation || allowedKeys.has(citation[1] ?? "")) output += pending;
         pending = "";
         continue;
       }
@@ -127,9 +156,7 @@ async function retrieveEvidence(
       : Promise.resolve(null),
   ]);
 
-  if (signal.aborted) {
-    throw signal.reason ?? new DOMException("Aborted", "AbortError");
-  }
+  if (signal.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError");
 
   const references: EvidenceReference[] = [];
   let privateState: RetrievalState = datasetIds.length === 0 ? "empty" : "unavailable";
@@ -137,9 +164,7 @@ async function retrieveEvidence(
     references.push(...ragResult.value.references);
     privateState = ragResult.value.references.length > 0 ? "ok" : "empty";
   } else {
-    console.error(
-      JSON.stringify({ event: "ask_retrieval_failed", provider: "ragflow" })
-    );
+    console.error(JSON.stringify({ event: "ask_retrieval_failed", provider: "ragflow" }));
   }
 
   let live: RetrievalState = "disabled";
@@ -150,9 +175,7 @@ async function retrieveEvidence(
     live = liveResult.value.references.length > 0 ? "ok" : "empty";
   } else if (useLive && liveResult.status === "rejected") {
     live = "unavailable";
-    console.error(
-      JSON.stringify({ event: "ask_retrieval_failed", provider: "brave" })
-    );
+    console.error(JSON.stringify({ event: "ask_retrieval_failed", provider: "brave" }));
   }
 
   return { live, private: privateState, references };
@@ -179,11 +202,7 @@ function safeError(error: unknown): {
       retryable: error.retryable,
     };
   }
-  return {
-    code: "internal_error",
-    message: "The Q&A request could not be completed.",
-    retryable: true,
-  };
+  return { code: "internal_error", message: "The Q&A request could not be completed.", retryable: true };
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -219,8 +238,13 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const datasetIds = await workspaceRagDatasetIds(session.workspace.id);
+  const [datasetIds, evolutionState] = await Promise.all([
+    workspaceRagDatasetIds(session.workspace.id),
+    loadEvolutionState(session.workspace.id),
+  ]);
+  const personalContext = formatEvolutionContext(evolutionState);
   const { question } = parsed.data;
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const encoder = new TextEncoder();
@@ -233,17 +257,20 @@ export async function POST(request: Request): Promise<Response> {
       try {
         write({ message: "Searching…", stage: "retrieving", type: "status" });
 
+        // Only the user's question is sent to public live search. Personal context stays
+        // inside the authenticated model prompt and is never appended to Brave queries.
         const retrieval = await retrieveEvidence(question, datasetIds, request.signal);
         retrievalSummary = retrieval;
         const references = retrieval.references;
 
         write({
           live: retrieval.live,
+          personal: personalContext.state,
           private: retrieval.private,
           references: references.map(projectEvidenceForClient),
           type: "sources",
         });
-        write({ message: "Preparing…", stage: "answering", type: "status" });
+        write({ message: "Thinking from principles…", stage: "answering", type: "status" });
 
         const allowedKeys = new Set(references.map((reference) => reference.key));
         const citationGuard = createCitationGuard(allowedKeys);
@@ -257,11 +284,11 @@ export async function POST(request: Request): Promise<Response> {
           messages: [
             {
               content:
-                "You are the intelligence layer inside Principles. Build one concise, practical answer from private RAG evidence and current public web evidence. [R#] sources are private knowledge-base evidence and are authoritative for claims about the user's own documents, policies, and internal knowledge. [W#] sources are live public web evidence and should be preferred for time-sensitive public facts. Cite every material sourced claim with the exact source key. Never invent citation keys, quotes, document details, URLs, dates, or evidence. If private evidence and live web evidence conflict, explicitly surface the conflict and distinguish internal knowledge from current public information instead of silently choosing one. If the question needs current information but live search is unavailable or empty, say that current public evidence could not be verified. If evidence is absent, clearly separate unsourced general guidance from verified source-backed information. Keep the answer direct and low-noise.",
+                "You are the intelligence layer inside Principles. Help the user think from reality, evidence, the 5 Steps (Goal, Problem, Diagnosis, Design, Do), and Pain + Reflection → Progress. PRIVATE PERSONAL EVOLUTION CONTEXT is authenticated user-owned context and may be used when relevant, but it is not a citation source and must never be invented or expanded beyond what is supplied. [R#] sources are shared Principles RAG evidence. [W#] sources are live public web evidence. Cite every material claim derived from RAG or web with the exact source key. Never invent citation keys, quotes, URLs, dates, or evidence. Distinguish observation from inference, surface uncertainty and counter-evidence when material, and do not tell the user a hypothesis is true merely because AI proposed it. If live evidence is needed but unavailable, say so. If no retrieved evidence exists, clearly separate general guidance from verified source-backed information. Do not claim to write Goals, Problems, Diagnoses, Designs, Reflections, or Principles; durable changes require explicit confirmation in the product. Keep the answer direct and low-noise.",
               role: "system",
             },
             {
-              content: `QUESTION:\n${question}\n\nPRIVATE KNOWLEDGE STATUS: ${retrieval.private}\nLIVE SEARCH STATUS: ${retrieval.live}\n\nEVIDENCE:\n${evidence}`,
+              content: `QUESTION:\n${question}\n\nPERSONAL EVOLUTION CONTEXT STATUS: ${personalContext.state}\nPERSONAL EVOLUTION CONTEXT:\n${personalContext.text}\n\nSHARED KNOWLEDGE STATUS: ${retrieval.private}\nLIVE SEARCH STATUS: ${retrieval.live}\n\nRETRIEVED EVIDENCE:\n${evidence}`,
               role: "user",
             },
           ],
@@ -269,27 +296,17 @@ export async function POST(request: Request): Promise<Response> {
           temperature: 0.2,
         })) {
           const token = citationGuard.push(rawToken);
-          if (token) {
-            write({ token, type: "token" });
-          }
+          if (token) write({ token, type: "token" });
         }
 
         const tail = citationGuard.finish();
-        if (tail) {
-          write({ token: tail, type: "token" });
-        }
+        if (tail) write({ token: tail, type: "token" });
         write({ type: "done" });
         completed = true;
       } catch (error) {
         if (!request.signal.aborted) {
           const safe = safeError(error);
-          console.error(
-            JSON.stringify({
-              code: safe.code,
-              event: "ask_failed",
-              retryable: safe.retryable,
-            })
-          );
+          console.error(JSON.stringify({ code: safe.code, event: "ask_failed", retryable: safe.retryable }));
           write({ ...safe, type: "error" });
         }
       } finally {
@@ -300,14 +317,13 @@ export async function POST(request: Request): Promise<Response> {
             eventType: "ai.ask.completed",
             metadata: {
               live: retrievalSummary?.live ?? "unknown",
+              personalContext: personalContext.state,
               private: retrievalSummary?.private ?? "unknown",
               sourceCount: retrievalSummary?.references.length ?? 0,
             },
             subjectType: "ask",
             workspaceId: session.workspace.id,
-          }).catch(() =>
-            console.error(JSON.stringify({ event: "ask_activity_write_failed" }))
-          );
+          }).catch(() => console.error(JSON.stringify({ event: "ask_activity_write_failed" })));
         }
       }
     },
