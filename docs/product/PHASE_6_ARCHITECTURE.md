@@ -9,10 +9,10 @@
 
 Phase 6 recenters Principles around one coherent evolution system instead of a collection of adjacent product modules.
 
-The product should become unmistakably organized around three nested ideas:
+The product is organized around three nested ideas:
 
 ```text
-Dream + Reality + Determination → a successful life
+Dream + Reality + Determination → Successful Life
 ```
 
 ```text
@@ -28,9 +28,7 @@ Dream + Reality + Determination → a successful life
 Pain + Reflection → Progress
 ```
 
-These are not three separate workflows. They are three views of the same kernel.
-
-The durable kernel remains:
+These are not three separate workflows. They are three views of the same durable kernel:
 
 ```text
 Goal
@@ -47,13 +45,11 @@ Goal
   ↺
 ```
 
-Phase 6 changes the product orchestration and user mental model first. It does not discard the durable records proven by Phases 1–5.
+Phase 6 changes product orchestration and the user mental model first. It does not discard records proven by Phases 1–5.
 
 ## 2. Product thesis
 
-A user should not have to understand the internal ontology to use Principles.
-
-The product should answer four questions immediately:
+A user should not have to understand the internal ontology to use Principles. The product should answer four questions immediately:
 
 1. What do I really want?
 2. What is actually true?
@@ -61,8 +57,6 @@ The product should answer four questions immediately:
 4. What is the next meaningful step?
 
 When Reality produces pain, surprise, failure, or contradiction, the product should help the user reflect and turn useful learning into a revisable Principle.
-
-The primary experience is therefore:
 
 ```text
 DREAM
@@ -90,26 +84,22 @@ PRINCIPLE
 What rule is worth testing next?
 ```
 
-## 3. The three nested loops
+## 3. Three nested loops
 
-### 3.1 North-star equation
+### North-star equation
 
 ```text
 Dream + Reality + Determination → Successful Life
 ```
-
-This is the highest-level product narrative.
 
 - **Dream** is the desired Reality the person chooses to organize around.
 - **Reality** is observed Reality, not optimism, fear, or AI inference.
 - **Determination** is the disciplined work of confronting Problems, finding causes, designing a better machine, and executing it.
 - **Success** is not task completion. It is Reality moving toward the chosen Dream.
 
-The existing `goals` table continues to store Dream/Goal semantics. Phase 6 does not rename durable tables merely to rename UI concepts.
+The existing `goals` table continues to store Dream/Goal semantics. Durable tables are not renamed merely to rename UI concepts.
 
-### 3.2 Execution engine — 5 Steps
-
-The 5 Steps are the backbone of action:
+### Execution engine — 5 Steps
 
 ```text
 1 Goal
@@ -134,19 +124,11 @@ Mapping to the existing kernel:
 
 Outcome remains separate from Do. Completing Actions is not evidence that the Design worked.
 
-### 3.3 Learning engine — Pain + Reflection
+### Learning engine — Pain + Reflection
 
 Pain + Reflection is a feedback loop, not a sixth execution step.
 
-Pain may be represented by:
-
-- an Outcome that is worse, mixed, or unclear;
-- a surprising Outcome;
-- a repeated Problem;
-- a challenged Principle;
-- an explicit user statement that something hurt or failed.
-
-The product then helps the user reflect:
+Pain may be represented by a poor or mixed Outcome, a surprise, a repeated Problem, a challenged Principle, or an explicit user statement that something hurt or failed.
 
 ```text
 Pain / Surprise
@@ -164,28 +146,17 @@ A Reflection does not have to produce a Principle. Insufficient evidence should 
 
 ## 4. Product surfaces after recenter
 
-The authenticated primary navigation remains:
+Authenticated primary navigation remains:
 
 ```text
 People · Organization · Knowledge · Learning
 ```
 
-All four surfaces operate on the same philosophical kernel.
-
 ### People
 
-The personal evolution loop.
+The personal evolution loop. Default state should show Dream, current Reality, active Gap/Problem, current 5-Step position, one next meaningful action, and any high-value Reflection or Principle-under-test attention.
 
-Default state should show:
-
-- Dream;
-- current Reality;
-- active Gap/Problem;
-- current 5-Step position;
-- one next meaningful action;
-- any high-value pain/reflection or Principle-under-test attention.
-
-People should not render the entire database ontology merely because the records exist.
+People should not render the entire database ontology merely because records exist.
 
 ### Organization
 
@@ -207,9 +178,7 @@ Roles, responsibilities, teams, disagreement, and contextual track record remain
 
 ### Knowledge
 
-Knowledge becomes a way to think from Principles rather than an isolated generic chat surface.
-
-A user can still ask arbitrary questions, but the product should increasingly support prompts such as:
+Knowledge becomes a way to think from Principles rather than an isolated generic chat surface. It should increasingly support questions such as:
 
 - What is Reality here?
 - What Problem am I not confronting?
@@ -218,25 +187,17 @@ A user can still ask arbitrary questions, but the product should increasingly su
 - Which Principle applies?
 - What should I reflect on?
 
-Knowledge may suggest a connection to active People/Organization state, but important durable writes still require explicit user confirmation.
+Knowledge may suggest connections to active state, but important durable writes still require explicit user confirmation.
 
 ### Learning
 
-Learning becomes the longitudinal view of:
-
-- recurring Patterns;
-- unresolved Pain / Reflection opportunities;
-- Principles under test;
-- challenged Principles;
-- evidence for and against current hypotheses.
-
-It must not become a personality profiler or score dashboard.
+Learning becomes the longitudinal view of recurring Patterns, unresolved Reflection opportunities, Principles under test, challenged Principles, and evidence for/against current hypotheses. It must not become a personality profiler or score dashboard.
 
 ## 5. Phase 6 state model
 
 Phase 6 introduces a read model called `EvolutionState`.
 
-It is a projection over existing durable records, not a new system of record.
+It is a projection over existing durable records, not a new system of record:
 
 ```text
 PeopleState + ExecutionState
@@ -248,13 +209,9 @@ PeopleState + ExecutionState
         future UI
 ```
 
-The first tranche deliberately avoids a new `evolution_cycles` table.
-
-Existing production data must project into the new model without migration or re-entry.
+The first tranche deliberately avoids a new `evolution_cycles` table. Existing production data must project into the new model without migration or re-entry.
 
 ## 6. `EvolutionState` contract
-
-The projection represents the active personal loop:
 
 ```ts
 EvolutionState {
@@ -300,7 +257,7 @@ For backward compatibility with current People behavior:
 2. otherwise use the newest available Goal;
 3. if no Goal exists, stage is `dream`.
 
-Repositories already return current collections newest-first, except Actions which are ordered by Design and position.
+Current repositories return the relevant collections newest-first except Actions, which are ordered by Design and position.
 
 ### Stage semantics
 
@@ -316,24 +273,15 @@ Outcome, no linked Review       → reflection
 Review exists                   → principle
 ```
 
-A Principle may already exist from legacy Phase 2 data while the newer 5-Step execution path is incomplete. Missing execution steps still determine the current stage; legacy learning remains available as context rather than allowing the projection to skip Diagnosis/Design/Do.
+Legacy Reflection/Principle data does not allow the projection to skip missing Diagnosis, Design, or Do steps in the newer execution path.
 
 ### Five-Step semantics
 
-`Reality`, `Outcome`, `Reflection`, and `Principle` are essential parts of the broader evolution loop but are not numbered as additional 5 Steps.
+Reality, Outcome, Reflection, and Principle are essential parts of the broader evolution loop but are not numbered as additional 5 Steps.
 
-The projection therefore exposes both:
-
-- broad `stage` across the whole evolution loop;
-- `fiveSteps` with Goal / Problem / Diagnosis / Design / Do.
-
-After all five execution steps are complete, `fiveSteps.current` is `null` while broad stage may still be Outcome, Reflection, or Principle.
+The projection exposes both broad `stage` and the 5-Step execution state. After all five Steps are complete, `fiveSteps.current` is `null` while broad stage may still be Outcome, Reflection, or Principle.
 
 ## 7. `nextAction` semantics
-
-The projection should make the next meaningful action explicit without requiring explanatory UI copy.
-
-Initial semantic actions:
 
 ```text
 dream       → Clarify your dream
@@ -341,7 +289,7 @@ reality     → Face reality
 problem     → Name the problem
 diagnosis   → Diagnose the root cause
 design      → Design the machine
-do          → Do the design
+do           → Do the design
 outcome     → Observe the outcome
 reflection  → Reflect
 principle   → Distill / review the principle
@@ -351,38 +299,34 @@ Once an accepted/revised Principle is under test, the next action returns to Rea
 
 ## 8. Attention semantics
 
-`EvolutionState.attention` is intentionally small.
-
-The first projection may surface only high-value states such as:
+`EvolutionState.attention` is intentionally small. The first projection may surface only high-value states:
 
 - `pain_needs_reflection` — Outcome exists without linked Outcome Review;
 - `principle_needs_review` — a Principle candidate is pending;
 - `principle_under_test` — an accepted/revised Principle is being tested.
 
-This is not an analytics feed. The future UI should normally show one to three attention items at most.
+This is not an analytics feed. Future UI should normally show one to three attention items at most.
 
 ## 9. Privacy and projection boundary
 
-The Evolution projection must preserve all existing private-state invariants.
+The Evolution projection preserves existing private-state invariants by composing the existing People and Execution client projectors before selecting the active lineage.
 
-It may expose client-safe record identifiers already used by existing browser actions, but must not expose:
+It must not expose:
 
 - Workspace UUIDs;
 - private Evidence UUIDs;
 - Outcome Evidence UUIDs;
-- internal Observation UUIDs that existing safe projection already removes;
+- Outcome Observation UUIDs removed by the existing Execution projection;
 - model-provider internals;
-- raw private RAG chunks.
+- raw private retrieval chunks.
 
-The projection reuses existing People/Execution client projectors instead of inventing a weaker privacy boundary.
+Direct Reality observation handles remain only where the existing People browser contract already treats them as client-safe inputs for confirmed follow-up actions. Phase 6 does not broaden that exposure.
 
 Authorization occurs before loading Workspace state.
 
 ## 10. Data strategy
 
-Phase 6 begins without a destructive migration.
-
-Existing durable records remain authoritative:
+Phase 6 begins without a destructive migration. Existing durable records remain authoritative:
 
 - `goals`;
 - `observations`;
@@ -417,9 +361,9 @@ This tranche intentionally does **not** replace the People UI yet.
 
 1. **People recenter** — replace stacked ontology cards with Dream / Reality / Gap / current 5-Step / next action.
 2. **5 Steps completion** — make Diagnosis → Design → Do the visible execution backbone.
-3. **Pain + Reflection** — outcome-triggered reflection and explicit progress state.
+3. **Pain + Reflection** — outcome-triggered Reflection and explicit Progress state.
 4. **Living Principles** — visible testing/challenged/revised lifecycle with inspectable evidence.
-5. **Learning recenter** — Patterns, unresolved reflection, Principles under test.
+5. **Learning recenter** — Patterns, unresolved Reflection, Principles under test.
 6. **Knowledge recenter** — Think from Principles + confirmed bridges into active state.
 7. **Organization recenter** — apply the same evolution loop to the governed collective machine.
 8. **Mobile/accessibility/visual audit**.
@@ -429,9 +373,7 @@ People is recentered before Organization so the kernel is proven once rather tha
 
 ## 13. Acceptance contract for Phase 6
 
-Phase 6 is not Complete merely because the new UI looks better.
-
-It is Complete only when:
+Phase 6 is not Complete merely because the new UI looks better. It is Complete only when:
 
 - an existing production user's history projects without re-entry;
 - a new user can move through Dream → Reality → Problem → Diagnosis → Design → Do → Outcome → Reflection → Principle;
@@ -449,17 +391,7 @@ It is Complete only when:
 
 ## 14. Non-goals
 
-Phase 6 does not introduce:
-
-- a generic task manager;
-- OKR dashboards;
-- personality scoring;
-- global people rankings;
-- raw chain-of-thought display;
-- autonomous durable AI writes;
-- a second parallel data model just to support redesigned labels;
-- decorative gamification, streaks, points, or achievement systems;
-- resurrection of retired Council/thinker-persona architecture.
+Phase 6 does not introduce a generic task manager, OKR dashboards, personality scoring, global people rankings, raw chain-of-thought display, autonomous durable AI writes, a second parallel data model just to support redesigned labels, decorative gamification, or resurrection of retired Council/thinker-persona architecture.
 
 ## 15. Audit rule
 
