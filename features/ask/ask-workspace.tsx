@@ -170,7 +170,7 @@ export function AskWorkspace() {
         </p>
       </section>
 
-      <div className={styles.promptRail} aria-label="Principles prompts">
+      <div className={styles.promptRail} aria-label="Principles prompts" role="group">
         {prompts.map((prompt) => (
           <button disabled={phase === "submitting"} key={prompt} onClick={() => setQuestion(prompt)} type="button">
             {prompt}
@@ -239,7 +239,7 @@ export function AskWorkspace() {
             </div>
             <span>{sourceLabel}</span>
           </div>
-          <div aria-label="Retrieval status" className={styles.retrievalGrid}>
+          <div aria-label="Retrieval status" className={styles.retrievalGrid} role="group">
             <div className={styles.retrievalCard}>
               <span>Shared Principles knowledge</span>
               <strong>{retrievalLabel(knowledgeState, "knowledge")}</strong>
