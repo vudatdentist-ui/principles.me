@@ -1,7 +1,7 @@
 # PROJECT CONTEXT — Principles
 
-**Status:** Phase 5 — Principles for Organizations — **Complete**  
-**Effective date:** 2026-08-25  
+**Status:** Phase 6 — Product Recenter / Evolution Engine — **In progress**  
+**Effective date:** 2026-09-08  
 **Completed on `main`:** Phases 0–5  
 **Phase 1 merge:** `ce332d64db54c45d2c95a10c01aee50156e711d0`  
 **Phase 2 merge:** `601e0ef442bb3edc92bb3869c93ef1caa5089f81`  
@@ -9,7 +9,8 @@
 **Phase 4 merge:** `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`  
 **Phase 5 merge:** `0fa12577636715437f3208e8289d71931433aa61`  
 **Phase 5 production deploy:** run `32844721161` — verified 2026-08-25  
-**Next major phase:** **Not defined. Requires an explicit product decision.**
+**Phase 6 start:** 2026-09-08 — explicit product decision  
+**Next major phase after Phase 6:** **Not defined.**
 
 This file is the source of truth for current product direction, architecture, progress and boundaries.
 
@@ -23,13 +24,41 @@ Read with:
 - `docs/product/PHASE_3_ARCHITECTURE.md`
 - `docs/product/PHASE_4_ARCHITECTURE.md`
 - `docs/product/PHASE_5_ARCHITECTURE.md`
+- `docs/product/PHASE_6_ARCHITECTURE.md`
 
 ## 1. Product mission
 
 Principles is an **evolution system for people first and organizations second**.
 
+Phase 6 recenters the product around three nested ideas rather than exposing the kernel as a set of adjacent modules.
+
+North-star equation:
+
 ```text
-Goal
+Dream + Reality + Determination → Successful Life
+```
+
+Execution backbone:
+
+```text
+5 Steps to Get What You Want
+1. Goal
+2. Problem
+3. Diagnosis
+4. Design
+5. Do
+```
+
+Learning feedback loop:
+
+```text
+Pain + Reflection → Progress
+```
+
+These ideas map onto the durable kernel already built in Phases 1–5:
+
+```text
+Dream / Goal
   ↓
 Reality
   ↓
@@ -39,9 +68,11 @@ Diagnosis
   ↓
 Design
   ↓
-Actions
+Actions / Do
   ↓
 Outcome
+  ↓
+Pain / Surprise
   ↓
 Reflection
   ↓
@@ -58,31 +89,36 @@ For organizations, the same kernel operates inside an explicit collective machin
 ```text
 Organization
   → People / Roles / Responsibilities / Teams
-  → observed Issues
-  → explicit Disagreements
-  → contextual track-record evidence
-  → governed machine changes
+  → shared Goal / observed Reality
+  → Issues / Problems / Disagreements
+  → Diagnosis
+  → governed machine Design
+  → accountable execution
+  → Outcome / Reflection / Principle
 ```
 
 The product is not a generic task manager, OKR app, journal, CRM, HR suite, employee-ranking system, personality profiler, analytics dashboard, decision-only app, multi-agent Council or thinker simulator.
 
 ## 2. Philosophical / truth invariants
 
-- Desired Reality defines what matters; actual Reality informs the path.
-- Problem, Diagnosis, Design, Action and Outcome remain distinct.
+- Dream / desired Reality defines what matters; actual Reality informs the path.
+- Goal, Problem, Diagnosis, Design, Action and Outcome remain distinct.
+- Action completion is not evidence that the Design worked; Outcome requires observed Reality.
 - Evidence/Observation are not the same as inference.
 - AI output is never accepted truth solely because AI produced it.
 - Pain/Outcome + Reflection should feed learning and future machine changes.
+- Reflection may produce no Principle when evidence is insufficient.
 - Principles remain revisable hypotheses to test, not immutable rules.
 - Self Model means evidence-backed, user-correctable Pattern hypotheses — not fixed identity labels.
 - Radical Transparency requires attribution and inspectable evidence; it does not override authorization.
 - Believability is contextual track-record evidence, not a global score or fixed judgment about a person.
+- Product UI should present current Reality and the next meaningful action before exposing internal ontology.
 
 ## 3. Implemented product
 
 ### Phase 1 — Secure Platform + Durable Kernel — Complete
 
-First-party identity/session, owned Personal Workspace, PostgreSQL 16, tenant/provenance constraints, Activity Events, AI Suggestions, durable usage controls, checksum migrations, DB health, authenticated RAGFlow, Brave live search + DeepSeek, safe client evidence projection and deployment safety foundations.
+First-party identity/session, owned Personal Workspace, PostgreSQL 16, tenant/provenance constraints, Activity Events, AI Suggestions, durable usage controls, checksum migrations, DB health, authenticated knowledge retrieval, live search, AI generation, safe client evidence projection and deployment safety foundations.
 
 ### Phase 2 — Principles for People: First Complete Loop — Complete
 
@@ -111,7 +147,7 @@ Durable history
   → testing again
 ```
 
-Longitudinal learning uses bounded Workspace-scoped private history, ephemeral model-facing keys, correctable Pattern hypotheses and explicit Principle revision. A revised Principle returns to `testing`, never automatically `trusted`.
+Longitudinal learning uses bounded Workspace-scoped private history, ephemeral model-facing keys, correctable Pattern hypotheses and explicit Principle revision. A revised Principle returns to testing, never automatically trusted.
 
 ### Phase 5 — Principles for Organizations — Complete
 
@@ -127,38 +163,68 @@ Organization
 Implemented and production-verified:
 
 - normal signup no longer exposes or accepts a Setup key;
-- signup is open unless `AUTH_SIGNUP_MODE=disabled`; legacy `bootstrap` configuration is treated as open so production is not trapped behind a hidden secret;
-- signup still creates an owned Personal Workspace and preserves first-workspace RAG dataset bootstrap behavior;
-- authenticated sparse `/organization` surface;
-- an authenticated user can create an Organization Workspace and becomes its owner;
-- browser/API organization selection uses a safe `org_...` handle rather than exposing the Workspace UUID;
-- organization state is readable only by members;
+- authenticated sparse Organization surface;
+- authenticated user can create an Organization Workspace and becomes owner;
+- safe `org_...` handles are used instead of exposing Workspace UUIDs to the browser;
 - owner controls members, roles, responsibilities, role assignments, teams and team assignments;
-- ordinary members are blocked from structural writes by server authorization, not merely hidden UI;
-- cross-organization role/team/member references are rejected by PostgreSQL constraints;
-- members can record attributable Issues as observed reality + tension;
-- members can raise attributable Disagreements tied to Issues;
-- owners can resolve Issues and Disagreements while original statements remain durable;
-- members can record context-specific track-record evidence for/against another organization member;
+- ordinary members are blocked from structural writes by server authorization;
+- cross-organization structural references are rejected by PostgreSQL constraints;
+- members can record attributable Issues, Disagreements and contextual track-record evidence;
 - contextual evidence never becomes a global score, ranking, personality label or fixed identity judgment;
-- culture in v1 is represented through attributable Issues, Disagreements and contextual evidence, not anonymous surveys or culture scores;
-- Personal Workspace, People, Knowledge and Learning retain their existing private behavior.
+- Personal Workspace, People, Knowledge and Learning retain their personal behavior.
+
+### Phase 6 — Product Recenter / Evolution Engine — In progress
+
+The explicit Phase 6 product decision is to stop treating Goal, Reality, Problem, Execution, Reflection, Knowledge and Learning as loosely adjacent features and orchestrate them as one evolution system.
+
+The first implementation tranche establishes the contract and a read-only projection without changing durable production data:
+
+```text
+PeopleState + ExecutionState
+            ↓
+    projectEvolutionState()
+            ↓
+       EvolutionState
+```
+
+`EvolutionState` exposes the active personal lineage:
+
+```text
+Dream
+Reality
+Problem / Gap
+Diagnosis
+Design
+Actions
+Outcome
+Reflection
+Principle
+5-Step position
+attention
+next action
+```
+
+The projection composes existing repositories and safe client projections. No `evolution_cycles` table or destructive migration is introduced in the foundation tranche.
+
+An authenticated read-only `GET /api/evolution/state` provides the projection for later People/UI recenter work.
+
+See `docs/product/PHASE_6_ARCHITECTURE.md` for the locked goal, semantics and Definition of Done.
 
 ## 4. Reality / Learning Engine
 
 ```text
-Private knowledge → RAGFlow ─────────────┐
-Current public reality → Brave ─────────┤
-Direct observations ────────────────────┤→ Evidence / history → Principles reasoning
-Recorded Outcomes ──────────────────────┤
-Completed Reflections / Principles ─────┘
+Shared Principles knowledge → RAG / retrieval ─┐
+Current public reality → live search ──────────┤
+Direct observations ───────────────────────────┤→ Evidence / history → Principles reasoning
+Recorded Outcomes ─────────────────────────────┤
+Completed Reflections / Principles ────────────┘
 
 Organization members
   → Issues / Disagreements / contextual evidence
   → inspectable collective reality + governance
 ```
 
-Public live search receives only the public query, never private RAG excerpts. Longitudinal Learning AI works only with authenticated Workspace-scoped private history server-side. Phase 5 does not introduce organization-wide AI inference or people scoring.
+Public live search receives only the public query, never private personal-history excerpts. Longitudinal Learning AI works only with authenticated Workspace-scoped personal history server-side. Shared knowledge access does not make Personal Workspace state shared.
 
 ## 5. Production architecture baseline
 
@@ -169,35 +235,41 @@ Production runtime is self-contained after build:
 - Next runs from standalone output via `node server.js` with `HOSTNAME=0.0.0.0`;
 - pre-migration database backup, canary health/smoke, exact-SHA public health verification and zero-downtime swap remain deployment gates.
 
-Phase 5 production verification on merge `0fa12577636715437f3208e8289d71931433aa61` proved:
-
-- `DEPLOY_DATABASE_READY=1`;
-- `DEPLOY_DATABASE_BACKUP_READY=1`;
-- `MIGRATION_APPLIED=0005_organizations.sql`;
-- `DEPLOY_MIGRATIONS_READY=1`;
-- `AUTH_BOUNDARY_SMOKE=1`;
-- `DEPLOY_CANARY_SMOKE=1`;
-- `DEPLOY_INTERNAL_HEALTH=1`;
-- `DEPLOY_PUBLIC_ROUTE_READY=1`;
-- `DEPLOY_ZERO_DOWNTIME_SWAP=1`;
-- `/api/health` returned `status: ok` and exact version `0fa12577636715437f3208e8289d71931433aa61`.
+Phase 6 must preserve all existing production gates. The foundation tranche is read-only at the domain level and introduces no migration.
 
 ## 6. UI direction
 
 > **Do not use small explanatory text to compensate for unclear structure or to fill empty space.**
 
-People and Knowledge remain primary personal surfaces; Learning and Organization are sparse secondary surfaces. Organization structure and evidence use progressive disclosure. No scorecards, employee rankings, trait radar, streaks or analytics dashboard were introduced.
+Authenticated primary navigation is:
+
+```text
+People · Organization · Knowledge · Learning
+```
+
+Phase 6 UI direction:
+
+- People becomes the primary personal evolution surface: Dream / Reality / Gap / current 5-Step / next action;
+- Organization applies the same kernel to the collective machine;
+- Knowledge becomes a way to think from Principles and evidence rather than an isolated generic chat mental model;
+- Learning becomes the longitudinal view of Patterns, unresolved Reflection opportunities and living Principles;
+- 5 Steps are the visible execution backbone, not decorative progress labels;
+- Pain + Reflection becomes a central learning interaction;
+- Principles should visibly behave as living hypotheses under test;
+- no scorecards, employee rankings, trait radar, streaks, gamification or analytics dashboard;
+- progressive disclosure remains the default for evidence, uncertainty and history.
 
 ## 7. Phase progress
 
-| Phase | Name | Status | Actual outcome |
+| Phase | Name | Status | Actual / target outcome |
 | --- | --- | --- | --- |
 | 0 | Kernel Definition | **Complete** | Shared product philosophy, language and governance. |
 | 1 | Secure Platform + Durable Kernel | **Complete** | A real user safely owns durable private state. |
 | 2 | Principles for People — First Complete Loop | **Complete** | Goal → Reality → Problem → Reflection → Principle works durably. |
 | 3 | Design + Execution | **Complete** | Diagnosis → machine change → Actions → Outcome → Review works durably. |
 | 4 | Learning Engine + Self Model | **Complete** | History yields inspectable/correctable Pattern hypotheses and can revise a Principle back into testing. |
-| 5 | Principles for Organizations | **Complete** | A governed collective machine can make roles, responsibilities, issues, disagreement and contextual track record explicit without people scoring. |
+| 5 | Principles for Organizations | **Complete** | A governed collective machine can make structure, issues, disagreement and contextual track record explicit without people scoring. |
+| 6 | Product Recenter / Evolution Engine | **In progress** | Recenter the product around Dream + Reality + Determination, 5 Steps, and Pain + Reflection → Progress using the proven durable kernel. |
 
 ## 8. Phase 4 verification
 
@@ -214,20 +286,13 @@ Post-merge main `9bbabb1ecb90eba0a8cf518b69a77a8b4530a16d`:
 - Playwright #283 ✅;
 - production deploy run `32838276392` ✅.
 
-## 9. Phase 5 audit / verification
-
-The requested self-reinforcing loop corrected:
-
-- stale Setup-key unit coverage that still imported the removed bootstrap module;
-- organization switcher ARIA semantics rejected by the repository accessibility/lint rules;
-- new Phase 5 CSS `!important` warnings;
-- an ambiguous Playwright locator that matched both a visible member row and a role-assignment option.
+## 9. Phase 5 verification
 
 Final pre-merge head: `424764e8855d37c4b961ab968386dc409e0d7b85`.
 
 - Foundation #189 ✅ — PostgreSQL 16, migrations 0001–0005, typecheck, unit tests, real-Postgres integration tests and production build;
 - Lint #524 ✅;
-- Playwright #291 ✅ — no Setup key, two-account Organization collaboration, member governance denial, Issue → Disagreement → contextual evidence → owner resolution, plus existing browser smoke.
+- Playwright #291 ✅.
 
 Post-merge main `0fa12577636715437f3208e8289d71931433aa61`:
 
@@ -238,32 +303,80 @@ Post-merge main `0fa12577636715437f3208e8289d71931433aa61`:
 - migration `0005_organizations.sql` applied on production ✅;
 - canary, public exact-SHA health and zero-downtime swap ✅.
 
-**Expected outcome achieved:** Principles now supports a real governed collective machine while preserving the People kernel, authorization boundaries, inspectable evidence and the distinction between contextual track record and identity-level scoring.
+## 10. Phase 6 acceptance boundary
 
-## 10. Known limitations after Phase 5
+Phase 6 is not Complete because an architecture document or redesigned screen exists.
 
-- Organization owners add an **existing Principles account by email**; email invitation delivery and magic invitation links are not implemented.
-- Authorization is owner/member in v1; there is no arbitrary custom permission matrix.
-- `/organization` is a secondary surface rather than a unified global workspace shell.
-- Culture is represented through attributable Issues, Disagreements and contextual evidence; there are no anonymous culture surveys or culture scores.
-- No organization-wide AI Pattern generation across unlimited history.
-- No SSO/SCIM or enterprise directory sync.
-- No compensation/performance-management workflows or generic HR product.
-- No Slack/CRM/finance/HR connectors.
-- No global people rankings or generic project/task management.
-- Existing platform gaps such as password recovery and automated off-host restore remain.
+Completion requires the full recentered loop to work end-to-end:
 
-## 11. Next boundary
+```text
+Dream
+  → Reality
+  → Problem
+  → Diagnosis
+  → Design
+  → Do
+  → Outcome
+  → Reflection
+  → Principle
+  → Reality again
+```
 
-**No next major phase has been defined or started.**
+Required properties:
 
-Do not infer a Phase 6 from the existence of Phase 5. The next major phase requires an explicit product decision, its own goal/acceptance contract and the same audit loop.
+- existing user history projects without re-entry;
+- current state and next action are explicit;
+- 5 Steps are semantically enforced;
+- Outcome remains observed Reality, never inferred from task completion;
+- Pain/Outcome can trigger Reflection;
+- Reflection can yield no Principle when evidence is insufficient;
+- Principle lifecycle remains user-reviewed and revisable;
+- Knowledge cannot silently write durable personal state;
+- Organization reuses the same kernel rather than duplicating a separate product ontology;
+- authorization, provenance, privacy projections and production gates remain intact.
 
-## 12. Retired architecture
+## 11. Known limitations / work remaining in Phase 6
+
+The foundation tranche does not yet:
+
+- replace the existing People UI with the Evolution experience;
+- make Diagnosis → Design → Do the primary visible People flow;
+- redesign Pain + Reflection interactions;
+- expose living Principle test evidence in the UI;
+- recenter Learning around Patterns / Reflection / Principles under test;
+- recenter Knowledge around Principles-aware contextual actions;
+- recenter Organization around the same complete evolution loop;
+- add explicit durable Principle test-event semantics.
+
+Existing platform/Phase 5 limitations not directly addressed by Phase 6 remain unless explicitly pulled into a later tranche.
+
+## 12. Next boundary
+
+**Phase 6 is explicitly defined and in progress.**
+
+Do not infer a Phase 7 from this work. The next major phase after Phase 6 requires a separate explicit product decision.
+
+The implementation order is:
+
+```text
+contract + EvolutionState projection
+  → People recenter
+  → 5 Steps completion
+  → Pain + Reflection
+  → Living Principles
+  → Learning recenter
+  → Knowledge recenter
+  → Organization recenter
+  → mobile/accessibility audit
+  → production verification
+  → Phase 6 closeout
+```
+
+## 13. Retired architecture
 
 Do not restore without an explicit product decision: Thinker Machine, Council/Council agents, Brain models, historical-thinker personas, Principles Graph/constellation, Decision Workspace/Brief/Run and old V2 route/contracts.
 
-## 13. Contributor rule
+## 14. Contributor rule
 
 ```text
 Understand requirements
