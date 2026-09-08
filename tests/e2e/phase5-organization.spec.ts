@@ -11,7 +11,13 @@ async function createAccount(
   await page.getByRole("button", { name: "Create account" }).first().click();
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
+  const signupResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/auth/signup") &&
+      response.request().method() === "POST"
+  );
   await page.getByRole("button", { name: "Create account" }).last().click();
+  expect((await signupResponse).status()).toBe(201);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
 }
