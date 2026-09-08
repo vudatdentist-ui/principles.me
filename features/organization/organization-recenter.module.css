@@ -1,0 +1,378 @@
+.workspace {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  display: grid;
+  gap: 36px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr);
+  gap: 38px;
+  align-items: end;
+  padding-top: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #77736a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.hero h1,
+.orientation h2,
+.sectionLead h2,
+.emptyState h2,
+.issues h3,
+.disagreements h3,
+.machineGrid h3,
+.evidenceGrid h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(44px, 7vw, 78px);
+  line-height: 0.98;
+}
+
+.hero p:last-child {
+  max-width: 690px;
+  margin: 22px 0 0;
+  color: #5e5a53;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.loop {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 8px;
+  color: #77736a;
+  font-size: 11px;
+}
+
+.loop span {
+  border: 1px solid rgba(23, 23, 20, 0.1);
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.45);
+  color: #3f3d37;
+  font-weight: 650;
+}
+
+.orientation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid rgba(23, 23, 20, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.orientation article {
+  min-height: 215px;
+  padding: 28px;
+}
+
+.orientation article + article {
+  border-left: 1px solid rgba(23, 23, 20, 0.1);
+}
+
+.purpose {
+  background: linear-gradient(145deg, rgba(218, 185, 129, 0.1), transparent 62%);
+}
+
+.reality {
+  background: linear-gradient(145deg, rgba(77, 96, 95, 0.08), transparent 62%);
+}
+
+.orientation h2 {
+  margin: 0;
+  font-size: clamp(25px, 3.4vw, 40px);
+  line-height: 1.15;
+}
+
+.orientation article > span {
+  display: block;
+  margin-top: 16px;
+  color: #77736a;
+  font-size: 12px;
+}
+
+.issueSection,
+.diagnosisSection,
+.machineSection,
+.evidenceSection {
+  border-top: 1px solid rgba(23, 23, 20, 0.1);
+  padding-top: 28px;
+}
+
+.sectionLead {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 24px;
+}
+
+.sectionLead h2 {
+  margin: 0;
+  max-width: 760px;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.1;
+}
+
+.sectionLead > span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 8px 11px;
+  background: rgba(23, 23, 20, 0.055);
+  color: #625f58;
+  font-size: 11px;
+}
+
+.issues,
+.disagreements,
+.machineGrid,
+.evidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.issues article,
+.disagreements article,
+.machineGrid article,
+.evidenceGrid article {
+  padding: 18px;
+  border: 1px solid rgba(23, 23, 20, 0.09);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.issueMeta,
+.patternMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #817d74;
+  font-size: 10px;
+}
+
+.issues h3,
+.disagreements h3,
+.machineGrid h3,
+.evidenceGrid h3 {
+  margin: 13px 0 8px;
+  font-size: 21px;
+  line-height: 1.25;
+}
+
+.issues article > p,
+.disagreements article > p,
+.machineGrid article > p,
+.evidenceGrid article > p {
+  margin: 0;
+  color: #656159;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.issues details,
+.machineGrid details,
+.evidenceGrid details {
+  margin-top: 12px;
+  border-top: 1px solid rgba(23, 23, 20, 0.08);
+  padding-top: 10px;
+}
+
+.issues summary,
+.machineGrid summary,
+.evidenceGrid summary {
+  cursor: pointer;
+  color: #5d5a53;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.issues dl,
+.machineGrid dl {
+  display: grid;
+  gap: 10px;
+  margin: 13px 0 0;
+}
+
+.issues dl div,
+.machineGrid dl div {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 12px;
+}
+
+.issues dt,
+.machineGrid dt {
+  color: #837f76;
+  font-size: 11px;
+}
+
+.issues dd,
+.machineGrid dd {
+  margin: 0;
+  color: #484640;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.disagreements article > span,
+.machineGrid article > span,
+.evidenceGrid article > span {
+  color: #77736a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.disagreements small {
+  display: block;
+  margin-top: 13px;
+  color: #89857b;
+}
+
+.evidenceGrid details p {
+  color: #56534c;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.empty,
+.emptyState {
+  border: 1px dashed rgba(23, 23, 20, 0.14);
+  border-radius: 15px;
+  color: #69665f;
+}
+
+.empty {
+  margin-top: 20px;
+  padding: 16px;
+  font-size: 13px;
+}
+
+.emptyState {
+  padding: 26px;
+}
+
+.emptyState h2 {
+  margin: 0;
+  font-size: 36px;
+}
+
+.emptyState > p:last-child {
+  max-width: 620px;
+  margin: 13px 0 0;
+  line-height: 1.6;
+}
+
+.operations {
+  border-top: 1px solid rgba(23, 23, 20, 0.1);
+  padding-top: 18px;
+}
+
+.operations > summary {
+  display: grid;
+  gap: 5px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.operations > summary::-webkit-details-marker {
+  display: none;
+}
+
+.operations > summary span {
+  color: #77736a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.operations > summary strong {
+  font-size: 14px;
+}
+
+.legacy {
+  margin-top: 20px;
+}
+
+.legacy :global(main) {
+  min-height: auto;
+  background: transparent;
+}
+
+.legacy :global(header) {
+  display: none;
+}
+
+.legacy :global(main > section) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legacy :global(main > section > div:first-child) {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .loop {
+    justify-content: flex-start;
+  }
+
+  .orientation,
+  .issues,
+  .disagreements,
+  .machineGrid,
+  .evidenceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .orientation article + article {
+    border-top: 1px solid rgba(23, 23, 20, 0.1);
+    border-left: 0;
+  }
+
+  .sectionLead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .workspace {
+    gap: 30px;
+  }
+
+  .hero h1 {
+    font-size: 48px;
+  }
+
+  .orientation article {
+    min-height: 180px;
+    padding: 22px;
+  }
+}
