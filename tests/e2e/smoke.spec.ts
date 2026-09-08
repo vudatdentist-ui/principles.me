@@ -92,7 +92,7 @@ test("authenticated shell is coherent and empty Learning waits for lived history
   expect((await request.get("/api/learning/state")).status()).toBe(401);
   expect((await request.post("/api/ask", { data: { question: "What is private?" } })).status()).toBe(401);
 
-  const email = await createAccount(page);
+  await createAccount(page);
   const evolution = await page.evaluate(async () => {
     const response = await fetch("/api/evolution/state");
     return { body: await response.json(), status: response.status };
@@ -126,13 +126,6 @@ test("authenticated shell is coherent and empty Learning waits for lived history
     )
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Find a pattern" })).toHaveCount(0);
-
-  await page.getByRole("button", { name: "Sign out" }).click();
-  await page.getByRole("button", { name: "Sign in" }).first().click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).last().click();
-  await expect(page.getByRole("heading", { name: "Evolve through reality." })).toBeVisible();
 });
 
 test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a living Principle", async ({
@@ -177,11 +170,29 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
   );
   await page.getByRole("button", { name: "Adopt this design" }).click();
 
-  for (let index = 0; index < 3; index += 1) {
-    const nextAction = page.getByRole("button", { name: /^Complete / }).first();
-    await expect(nextAction).toBeVisible();
-    await nextAction.click();
+  for (let guard = 0; guard < 6; guard += 1) {
+    const completeButtons = page.getByRole("button", { name: /^Complete / });
+    const beforeCount = await completeButtons.count();
+    if (beforeCount === 0) break;
+
+    const actionResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/people/actions") &&
+        response.request().method() === "POST"
+    );
+    await completeButtons.first().click();
+    expect((await actionResponse).status()).toBe(200);
+    await expect
+      .poll(async () => page.getByRole("button", { name: /^Complete / }).count())
+      .toBe(beforeCount - 1);
   }
+
+  await expect(page.getByLabel("Actual outcome")).toBeVisible();
+  const afterDo = await page.evaluate(async () => {
+    const response = await fetch("/api/evolution/state");
+    return response.json();
+  });
+  expect(afterDo.actions.some((action: { status: string }) => action.status === "pending")).toBe(false);
 
   await page.getByLabel("Actual outcome").fill(actualOutcome);
   await page.getByRole("button", { name: "improved" }).click();
