@@ -8,15 +8,17 @@ async function createAccount(
 ) {
   await page.goto("/");
   await expect(page.getByLabel("Setup key")).toHaveCount(0);
+  await page.getByRole("button", { name: "Create account" }).first().click();
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).last().click();
+  await page.reload();
   await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
 }
 
 async function signOut(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" }).first()).toBeVisible();
 }
 
 async function signIn(
@@ -24,7 +26,7 @@ async function signIn(
   email: string
 ) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in" }).first().click();
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).last().click();
