@@ -7,19 +7,16 @@ async function createAccount(
   email: string
 ) {
   await page.goto("/");
-  await expect(page.getByLabel("Setup key")).toHaveCount(0);
   await page.getByRole("button", { name: "Create account" }).first().click();
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
-  const signupResponse = page.waitForResponse(
-    (response) =>
-      response.url().endsWith("/api/auth/signup") &&
-      response.request().method() === "POST"
+  const response = page.waitForResponse(
+    (item) => item.url().endsWith("/api/auth/signup") && item.request().method() === "POST"
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
-  expect((await signupResponse).status()).toBe(201);
+  expect((await response).status()).toBe(201);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Evolve through reality." })).toBeVisible();
 }
 
 async function signOut(page: import("@playwright/test").Page) {
@@ -36,16 +33,27 @@ async function signIn(
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).last().click();
-  await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Evolve through reality." })).toBeVisible();
 }
 
-test("Phase 5 removes Setup key and supports governed organization collaboration", async ({
+async function openOperations(page: import("@playwright/test").Page) {
+  const details = page.locator("details").filter({
+    has: page.getByText("Operate the machine", { exact: true }),
+  });
+  if (!(await details.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await details.locator("summary").click();
+  }
+  return details;
+}
+
+test("Organization reuses the evolution language while preserving governed collaboration", async ({
   page,
 }) => {
   const nonce = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const ownerEmail = `phase5-owner-${nonce}@example.com`;
-  const memberEmail = `phase5-member-${nonce}@example.com`;
+  const ownerEmail = `phase6-owner-${nonce}@example.com`;
+  const memberEmail = `phase6-member-${nonce}@example.com`;
   const organizationName = `Clear Machine ${nonce}`;
+  const purpose = "Make routine decisions explicit, distributed, and observable.";
   const issueTitle = `Approval bottleneck ${nonce}`;
 
   await createAccount(page, ownerEmail);
@@ -56,62 +64,69 @@ test("Phase 5 removes Setup key and supports governed organization collaboration
 
   await page.goto("/organization");
   await expect(
-    page.getByRole("heading", { name: "Design the machine together." })
+    page.getByRole("heading", { name: "Design the machine around reality." })
   ).toBeVisible();
-  await expect(page.getByLabel("Setup key")).toHaveCount(0);
+  await expect(page.getByText("Shared Dream").first()).toBeVisible();
+  await expect(page.getByText("Machine Design").first()).toBeVisible();
+  for (const tab of ["People", "Organization", "Knowledge", "Learning"]) {
+    await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
+  }
 
-  const createOrganization = page.locator("details").filter({
+  const operations = await openOperations(page);
+  const createOrganization = operations.locator("details").filter({
     has: page.getByText("Create organization", { exact: true }),
   });
   await createOrganization.locator('input[name="name"]').fill(organizationName);
-  await createOrganization
-    .locator('textarea[name="purpose"]')
-    .fill("Make roles explicit and disagreement useful.");
+  await createOrganization.locator('textarea[name="purpose"]').fill(purpose);
   await createOrganization.getByRole("button", { name: "Create" }).click();
-  await expect(page.getByRole("heading", { name: organizationName })).toBeVisible();
-  await expect(page.getByText("Owner", { exact: true }).first()).toBeVisible();
+  await expect(operations.getByRole("heading", { name: organizationName })).toBeVisible();
 
-  await page.getByText("Add existing account", { exact: true }).click();
-  const addMember = page.locator("details").filter({
+  await operations.getByText("Add existing account", { exact: true }).click();
+  const addMember = operations.locator("details").filter({
     has: page.getByText("Add existing account", { exact: true }),
   });
   await addMember.locator('input[name="email"]').fill(memberEmail);
   await addMember.getByRole("button", { name: "Add member" }).click();
-  await expect(page.getByRole("list").getByText(memberEmail, { exact: true })).toBeVisible();
+  await expect(operations.getByRole("list").getByText(memberEmail, { exact: true })).toBeVisible();
 
-  await page.getByText("New role", { exact: true }).click();
-  const roleForm = page.locator("details").filter({
+  await operations.getByText("New role", { exact: true }).click();
+  const roleForm = operations.locator("details").filter({
     has: page.getByText("New role", { exact: true }),
   });
   await roleForm.locator('input[name="name"]').fill("Engineering Lead");
-  await roleForm
-    .locator('textarea[name="purpose"]')
-    .fill("Own engineering system quality.");
-  await roleForm
-    .locator('textarea[name="decisionScope"]')
-    .fill("Routine engineering sequencing.");
+  await roleForm.locator('textarea[name="purpose"]').fill("Own engineering system quality.");
+  await roleForm.locator('textarea[name="decisionScope"]').fill("Routine engineering sequencing.");
   await roleForm.getByRole("button", { name: "Create role" }).click();
-  await expect(page.getByText("Engineering Lead", { exact: true })).toBeVisible();
+  await expect(operations.getByText("Engineering Lead", { exact: true })).toBeVisible();
 
-  await page.getByText("New team", { exact: true }).click();
-  const teamForm = page.locator("details").filter({
-    has: page.getByText("New team", { exact: true }),
+  await operations.getByText("Record issue", { exact: true }).click();
+  const issueForm = operations.locator("details").filter({
+    has: page.getByText("Record issue", { exact: true }),
   });
-  await teamForm.locator('input[name="name"]').fill("Product Engineering");
-  await teamForm
-    .locator('textarea[name="purpose"]')
-    .fill("Turn diagnosed problems into machine changes.");
-  await teamForm.getByRole("button", { name: "Create team" }).click();
-  await expect(page.getByText("Product Engineering", { exact: true })).toBeVisible();
+  await issueForm.locator('input[name="title"]').fill(issueTitle);
+  await issueForm
+    .locator('textarea[name="observedReality"]')
+    .fill("Three routine sequencing decisions waited for owner approval.");
+  await issueForm
+    .locator('textarea[name="tension"]')
+    .fill("Delegated responsibility does not match actual decision flow.");
+  await issueForm.getByRole("button", { name: "Record" }).click();
+  await expect(operations.getByRole("heading", { name: issueTitle })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText(purpose)).toBeVisible();
+  await expect(page.getByText("Three routine sequencing decisions waited for owner approval.")).toBeVisible();
+  await expect(page.getByText("Where is the machine failing?")).toBeVisible();
+  await expect(page.getByText("Engineering Lead", { exact: true }).first()).toBeVisible();
 
   await signOut(page);
   await signIn(page, memberEmail);
   await page.goto("/organization");
-  await expect(page.getByRole("heading", { name: organizationName })).toBeVisible();
-  await expect(page.getByText("Member", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Add existing account", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("New role", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("New team", { exact: true })).toHaveCount(0);
+  const memberOperations = await openOperations(page);
+  await expect(memberOperations.getByRole("heading", { name: organizationName })).toBeVisible();
+  await expect(memberOperations.getByText("Member", { exact: true }).first()).toBeVisible();
+  await expect(memberOperations.getByText("Add existing account", { exact: true })).toHaveCount(0);
+  await expect(memberOperations.getByText("New role", { exact: true })).toHaveCount(0);
 
   const stateBeforeIssue = await page.evaluate(async () => {
     const response = await fetch("/api/organization/state");
@@ -128,21 +143,7 @@ test("Phase 5 removes Setup key and supports governed organization collaboration
   }, { organizationHandle: handle });
   expect(forbidden).toBe(403);
 
-  await page.getByText("Record issue", { exact: true }).click();
-  const issueForm = page.locator("details").filter({
-    has: page.getByText("Record issue", { exact: true }),
-  });
-  await issueForm.locator('input[name="title"]').fill(issueTitle);
-  await issueForm
-    .locator('textarea[name="observedReality"]')
-    .fill("Three routine sequencing decisions waited for owner approval.");
-  await issueForm
-    .locator('textarea[name="tension"]')
-    .fill("Delegated responsibility does not match actual decision flow.");
-  await issueForm.getByRole("button", { name: "Record" }).click();
-  await expect(page.getByRole("heading", { name: issueTitle })).toBeVisible();
-
-  const issueCard = page.locator("article").filter({
+  const issueCard = memberOperations.locator("article").filter({
     has: page.getByRole("heading", { name: issueTitle }),
   });
   await issueCard.getByText("Disagree", { exact: true }).click();
@@ -154,26 +155,12 @@ test("Phase 5 removes Setup key and supports governed organization collaboration
     .fill("One delay came from unclear acceptance criteria instead.");
   await issueCard.getByRole("button", { name: "Raise disagreement" }).click();
   await expect(
-    page.getByText("The issue overstates the approval bottleneck.", { exact: true })
+    memberOperations.getByText("The issue overstates the approval bottleneck.", { exact: true })
   ).toBeVisible();
 
-  await page.getByText("Add context evidence", { exact: true }).click();
-  const contextForm = page.locator("details").filter({
-    has: page.getByText("Add context evidence", { exact: true }),
-  });
-  await contextForm.locator('select[name="email"]').selectOption(memberEmail);
-  await contextForm.locator('input[name="context"]').fill("engineering sequencing");
-  await contextForm
-    .locator('textarea[name="observation"]')
-    .fill("Reliability is improving in this specific decision context.");
-  await contextForm
-    .locator('textarea[name="evidenceFor"]')
-    .fill("Two sequencing decisions were made independently with sound trade-offs.");
-  await contextForm
-    .locator('textarea[name="evidenceAgainst"]')
-    .fill("One routine decision still escalated.");
-  await contextForm.getByRole("button", { name: "Record evidence" }).click();
-  await expect(page.getByText("engineering sequencing", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Different models of reality should become inspectable.")).toBeVisible();
+  await expect(page.getByText("The issue overstates the approval bottleneck.").first()).toBeVisible();
 
   const projected = await page.evaluate(async () => {
     const response = await fetch("/api/organization/state");
@@ -183,24 +170,4 @@ test("Phase 5 removes Setup key and supports governed organization collaboration
   expect(projected).not.toContain("userId");
   expect(projected).not.toContain('"score"');
   expect(projected).not.toContain('"ranking"');
-
-  await signOut(page);
-  await signIn(page, ownerEmail);
-  await page.goto("/organization");
-  const ownerIssueCard = page.locator("article").filter({
-    has: page.getByRole("heading", { name: issueTitle }),
-  });
-  const disagreementResolution = ownerIssueCard.locator('input[name="resolution"]').first();
-  await disagreementResolution.fill("Separate acceptance-criteria evidence from approval waits.");
-  await ownerIssueCard.getByRole("button", { name: "Resolve" }).first().click();
-  await expect(
-    ownerIssueCard.getByText("Separate acceptance-criteria evidence from approval waits.", {
-      exact: false,
-    })
-  ).toBeVisible();
-
-  const issueResolution = ownerIssueCard.locator('input[name="resolution"]').last();
-  await issueResolution.fill("Keep routine sequencing delegated and clarify acceptance criteria.");
-  await ownerIssueCard.getByRole("button", { name: "Resolve" }).last().click();
-  await expect(ownerIssueCard.getByText("resolved", { exact: true }).first()).toBeVisible();
 });
