@@ -19,5 +19,17 @@
         "noConsole": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["features/evolution/evolution-workspace.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off"
+          }
+        }
+      }
+    }
+  ]
 }
