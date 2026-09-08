@@ -20,6 +20,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, principles-ci]
     env:
       APP_ORIGIN: http://127.0.0.1:3000
+      AUTH_EMAIL_VERIFICATION_MODE: optional
       AUTH_SIGNUP_MODE: open
       DEEPSEEK_API_KEY: phase2-e2e-key
       DEEPSEEK_BASE_URL: http://127.0.0.1:4111
