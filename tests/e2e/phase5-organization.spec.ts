@@ -114,8 +114,10 @@ test("Organization reuses the evolution language while preserving governed colla
   await expect(operations.getByRole("heading", { name: issueTitle })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText(purpose)).toBeVisible();
-  await expect(page.getByText("Three routine sequencing decisions waited for owner approval.")).toBeVisible();
+  await expect(page.getByText(purpose).first()).toBeVisible();
+  await expect(
+    page.getByText("Three routine sequencing decisions waited for owner approval.").first()
+  ).toBeVisible();
   await expect(page.getByText("Where is the machine failing?")).toBeVisible();
   await expect(page.getByText("Engineering Lead", { exact: true }).first()).toBeVisible();
 
