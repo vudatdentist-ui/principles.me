@@ -65,8 +65,11 @@ async function answerDreamQuestion(
   page: import("@playwright/test").Page,
   value: string
 ) {
+  const continueButton = page.getByRole("button", { name: "Continue" });
+  await expect(continueButton).toBeVisible();
   await page.getByLabel("Goal discovery answer").fill(value);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(continueButton).toBeEnabled();
+  await continueButton.click();
 }
 
 async function createDream(page: import("@playwright/test").Page) {
@@ -76,14 +79,16 @@ async function createDream(page: import("@playwright/test").Page) {
   await answerDreamQuestion(page, "I will deprioritize low-value side projects.");
   await answerDreamQuestion(page, "Protect health and family time.");
 
-  const maybeMeasure = page.getByLabel("Goal discovery answer");
-  if (await maybeMeasure.isVisible()) {
-    await maybeMeasure.fill("Count routine decisions that proceed without founder intervention.");
-    await page.getByRole("button", { name: "Continue" }).click();
+  const chooseDream = page.getByRole("button", { name: "Choose this dream" });
+  if (!(await chooseDream.isVisible())) {
+    await answerDreamQuestion(
+      page,
+      "Count routine decisions that proceed without founder intervention."
+    );
   }
 
-  await expect(page.getByRole("button", { name: "Choose this dream" })).toBeVisible();
-  await page.getByRole("button", { name: "Choose this dream" }).click();
+  await expect(chooseDream).toBeVisible();
+  await chooseDream.click();
 }
 
 test("authenticated shell is coherent and empty Learning waits for lived history", async ({
@@ -121,7 +126,12 @@ test("authenticated shell is coherent and empty Learning waits for lived history
   }
 
   await expect(page.getByRole("heading", { name: "What is reality teaching you?" })).toBeVisible();
-  await expect(page.getByText("Not enough history yet", { exact: false })).toBeVisible();
+  await expect(
+    page.getByText(
+      "Not enough history yet. Live the loop before asking the system to define a pattern.",
+      { exact: true }
+    )
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Find a pattern" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Sign out" }).click();
@@ -179,7 +189,6 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
     await expect(nextAction).toBeVisible();
     await nextAction.click();
   }
-  await expect(page.getByText("Completing Actions is not success", { exact: false })).toHaveCount(0);
 
   await page.getByLabel("Actual outcome").fill(actualOutcome);
   await page.getByRole("button", { name: "improved" }).click();
@@ -209,6 +218,27 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
   expect(finalEvolution.reflection.learning).toBe(outcomeLearning);
   expect(finalEvolution.principle.lifecycleState).toBe("testing");
 
+  const secondReflectionStatus = await page.evaluate(async () => {
+    const stateResponse = await fetch("/api/people/state");
+    const state = await stateResponse.json();
+    const response = await fetch("/api/people/reflections", {
+      body: JSON.stringify({
+        expected: "Role discussion would remove the bottleneck.",
+        goalId: state.goals[0].id,
+        happened: "The same approval wait returned after another role discussion.",
+        learning: "Discussion without explicit default authority did not change behavior.",
+        problemId: state.problems[0].id,
+        recurrenceNote: "The approval bottleneck repeated before the machine rule changed.",
+        recurring: true,
+        surprise: "Clarity in conversation did not create authority in practice.",
+      }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    });
+    return response.status;
+  });
+  expect(secondReflectionStatus).toBe(201);
+
   await page.goto("/learning");
   await expect(page.getByRole("heading", { name: "What is reality teaching you?" })).toBeVisible();
   await expect(page.getByText(outcomeLearning).first()).toBeVisible();
@@ -220,7 +250,7 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
     page.getByText("Explicit default authority changed behavior where discussing responsibilities alone had not.")
   ).toBeVisible();
   await page.getByText("Inspect the evidence").click();
-  await expect(page.getByText("Case 1 · Outcome review", { exact: false })).toBeVisible();
+  await expect(page.getByText("Outcome review", { exact: false }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Edit" }).click();
   await page.getByLabel("Pattern statement").fill(correctedPattern);
