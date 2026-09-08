@@ -208,7 +208,9 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
 
   await page.getByRole("button", { name: "Distill a principle" }).click();
   await expect(
-    page.getByText("Make the decision owner and default authority explicit before the next routine case.")
+    page
+      .getByText("Make the decision owner and default authority explicit before the next routine case.")
+      .first()
   ).toBeVisible();
   await page.getByRole("button", { name: "Accept for testing" }).click();
   await expect(page.getByText("testing", { exact: true }).first()).toBeVisible();
