@@ -45,13 +45,15 @@ async function createAccount(page: import("@playwright/test").Page) {
   const email = `phase4-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Principles" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign in" })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: "Sign in" }).first()).toHaveAttribute(
     "aria-pressed",
     "true"
   );
+  await page.getByRole("button", { name: "Create account" }).first().click();
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).last().click();
+  await page.reload();
   await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
   await expect(page.getByText("Personal")).toBeVisible();
@@ -101,7 +103,7 @@ test("unauthenticated private APIs are blocked and Learning waits for real histo
   await expect(page.getByRole("link", { name: "Learning" })).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  const signInMode = page.getByRole("button", { name: "Sign in" });
+  const signInMode = page.getByRole("button", { name: "Sign in" }).first();
   await expect(signInMode).toBeVisible();
   await signInMode.click();
   await page.getByLabel("Email").fill(email);
