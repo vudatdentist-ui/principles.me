@@ -35,7 +35,7 @@ export function LearningRecenter({
             Reflections remain inspectable, and Principles stay alive by being tested.
           </p>
         </div>
-        <div className={styles.equation} aria-label="Learning equation" role="group">
+        <div className={styles.equation}>
           <span>Pain</span><b>+</b><span>Reflection</span><b>→</b><strong>Progress</strong>
         </div>
       </section>
