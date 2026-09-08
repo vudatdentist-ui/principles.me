@@ -52,7 +52,13 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).first().click();
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
+  const signupResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/auth/signup") &&
+      response.request().method() === "POST"
+  );
   await page.getByRole("button", { name: "Create account" }).last().click();
+  expect((await signupResponse).status()).toBe(201);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Evolve from reality." })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
@@ -80,17 +86,33 @@ test("unauthenticated private APIs are blocked and Learning waits for real histo
   expect(unauthenticatedPeople.status()).toBe(401);
   const unauthenticatedExecution = await request.get("/api/people/execution/state");
   expect(unauthenticatedExecution.status()).toBe(401);
+  const unauthenticatedEvolution = await request.get("/api/evolution/state");
+  expect(unauthenticatedEvolution.status()).toBe(401);
   const unauthenticatedLearning = await request.get("/api/learning/state");
   expect(unauthenticatedLearning.status()).toBe(401);
 
   const email = await createAccount(page);
-  const me = await page.evaluate(async () => {
-    const response = await fetch("/api/me");
-    return { body: await response.json(), status: response.status };
+  const authenticatedState = await page.evaluate(async () => {
+    const [meResponse, evolutionResponse] = await Promise.all([
+      fetch("/api/me"),
+      fetch("/api/evolution/state"),
+    ]);
+    return {
+      evolution: {
+        body: await evolutionResponse.json(),
+        status: evolutionResponse.status,
+      },
+      me: { body: await meResponse.json(), status: meResponse.status },
+    };
   });
-  expect(me.status).toBe(200);
-  expect(me.body.user.email).toBe(email);
-  expect(me.body.workspace.kind).toBe("personal");
+  expect(authenticatedState.me.status).toBe(200);
+  expect(authenticatedState.me.body.user.email).toBe(email);
+  expect(authenticatedState.me.body.workspace.kind).toBe("personal");
+  expect(authenticatedState.evolution.status).toBe(200);
+  expect(authenticatedState.evolution.body.stage).toBe("dream");
+  expect(authenticatedState.evolution.body.fiveSteps.current).toBe("goal");
+  expect(authenticatedState.evolution.body.nextAction.kind).toBe("clarify_dream");
+  expect(JSON.stringify(authenticatedState.evolution.body)).not.toContain("workspaceId");
 
   await page.goto("/learning");
   await expect(
