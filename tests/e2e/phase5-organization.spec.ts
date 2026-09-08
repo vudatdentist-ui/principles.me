@@ -37,11 +37,11 @@ async function signIn(
 }
 
 async function openOperations(page: import("@playwright/test").Page) {
-  const details = page.locator("details").filter({
-    has: page.getByText("Operate the machine", { exact: true }),
-  });
+  const label = page.getByText("Operate the machine", { exact: true });
+  const summary = label.locator("..");
+  const details = summary.locator("..");
   if (!(await details.evaluate((element) => (element as HTMLDetailsElement).open))) {
-    await details.locator("summary").click();
+    await summary.click();
   }
   return details;
 }
