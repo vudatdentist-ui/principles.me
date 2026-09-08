@@ -3,12 +3,9 @@ import { Suspense } from "react";
 import { AuthScreen } from "@/features/auth/auth-screen";
 import { sessionContext, signupAvailable } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
-import { projectExecutionState } from "@/features/people/execution-projection";
-import { loadExecutionState } from "@/features/people/execution-repository";
-import { ExecutionWorkspace } from "@/features/people/execution-workspace";
-import { PeopleWorkspace } from "@/features/people/people-workspace";
-import { projectPeopleState } from "@/features/people/projection";
-import { loadPeopleState } from "@/features/people/repository";
+import { EvolutionWorkspace } from "@/features/evolution/evolution-workspace";
+import { loadEvolutionState } from "@/features/evolution/service";
+import { AppShell } from "@/features/shell/app-shell";
 
 async function WorkspaceEntry() {
   const cookieStore = await cookies();
@@ -19,23 +16,14 @@ async function WorkspaceEntry() {
     return <AuthScreen signupAvailable={await signupAvailable()} />;
   }
 
-  const [peopleState, executionState] = await Promise.all([
-    loadPeopleState(session.workspace.id),
-    loadExecutionState(session.workspace.id),
-  ]);
-  const initialPeopleState = projectPeopleState(peopleState);
   return (
-    <>
-      <PeopleWorkspace
-        email={session.user.email}
-        initialState={initialPeopleState}
-        workspaceName={session.workspace.name}
-      />
-      <ExecutionWorkspace
-        initialExecutionState={projectExecutionState(executionState)}
-        initialPeopleState={initialPeopleState}
-      />
-    </>
+    <AppShell
+      activeTab="people"
+      email={session.user.email}
+      workspaceName={session.workspace.name}
+    >
+      <EvolutionWorkspace initialState={await loadEvolutionState(session.workspace.id)} />
+    </AppShell>
   );
 }
 
