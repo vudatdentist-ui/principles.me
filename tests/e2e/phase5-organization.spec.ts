@@ -162,7 +162,9 @@ test("Organization reuses the evolution language while preserving governed colla
 
   await page.reload();
   await expect(page.getByText("Different models of reality should become inspectable.")).toBeVisible();
-  await expect(page.getByText("The issue overstates the approval bottleneck.").first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "The issue overstates the approval bottleneck." }).first()
+  ).toBeVisible();
 
   const projected = await page.evaluate(async () => {
     const response = await fetch("/api/organization/state");
