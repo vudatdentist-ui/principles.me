@@ -80,13 +80,6 @@ async function createDream(page: import("@playwright/test").Page) {
   await answerDreamQuestion(page, "Protect health and family time.");
 
   const chooseDream = page.getByRole("button", { name: "Choose this dream" });
-  if (!(await chooseDream.isVisible())) {
-    await answerDreamQuestion(
-      page,
-      "Count routine decisions that proceed without founder intervention."
-    );
-  }
-
   await expect(chooseDream).toBeVisible();
   await chooseDream.click();
 }
