@@ -169,6 +169,7 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
     "Assign one explicit decision owner and a default authority boundary for routine operating decisions."
   );
   await page.getByRole("button", { name: "Adopt this design" }).click();
+  await expect(page.getByRole("button", { name: /^Complete / }).first()).toBeVisible();
 
   for (let guard = 0; guard < 6; guard += 1) {
     const completeButtons = page.getByRole("button", { name: /^Complete / });
