@@ -106,8 +106,21 @@
 
 .main {
   width: min(1180px, calc(100% - 48px));
+  min-width: 0;
   margin: 0 auto;
   padding: 56px 0 96px;
+}
+
+.main > *,
+.main section,
+.main aside,
+.main ol {
+  min-width: 0;
+}
+
+.main ol {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 720px) {
