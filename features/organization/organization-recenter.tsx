@@ -41,7 +41,7 @@ export function OrganizationRecenter({
             not a people score.
           </p>
         </div>
-        <div className={styles.loop} aria-label="Organization evolution loop" role="group">
+        <div className={styles.loop}>
           <span>Shared Dream</span><b>→</b><span>Reality</span><b>→</b><span>Problem</span><b>→</b><span>Machine Design</span>
         </div>
       </section>
