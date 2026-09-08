@@ -310,7 +310,12 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
         return (
           <div className={styles.actionBody}>
             <p>{goalDiscovery.summary}</p>
-            <button className={styles.primary} disabled={working === "dream"} onClick={() => void commitGoal()} type="button">
+            <button
+              className={styles.primary}
+              disabled={working === "dream"}
+              onClick={() => void commitGoal()}
+              type="button"
+            >
               {working === "dream" ? "Saving…" : "Choose this dream"}
             </button>
           </div>
@@ -319,14 +324,20 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       const field = goalDiscovery.field;
       return (
         <div className={styles.actionBody}>
-          <label>{goalDiscovery.question}</label>
+          <label htmlFor="goal-discovery-answer">{goalDiscovery.question}</label>
           <textarea
             aria-label="Goal discovery answer"
+            id="goal-discovery-answer"
             onChange={(event) => setGoalDraft({ ...goalDraft, [field]: event.target.value })}
             rows={4}
             value={goalDraft[field]}
           />
-          <button className={styles.primary} disabled={working === "dream" || goalDraft[field].trim().length < 1} onClick={() => void continueGoalDiscovery()} type="button">
+          <button
+            className={styles.primary}
+            disabled={working === "dream" || goalDraft[field].trim().length < 1}
+            onClick={() => void continueGoalDiscovery()}
+            type="button"
+          >
             {working === "dream" ? "Thinking…" : "Continue"}
           </button>
         </div>
@@ -337,8 +348,18 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       return (
         <div className={styles.actionBody}>
           <label htmlFor="reality">Describe reality without explaining it away.</label>
-          <textarea id="reality" onChange={(event) => setRealityText(event.target.value)} rows={5} value={realityText} />
-          <button className={styles.primary} disabled={working === "reality" || realityText.trim().length < 3} onClick={() => void recordReality()} type="button">
+          <textarea
+            id="reality"
+            onChange={(event) => setRealityText(event.target.value)}
+            rows={5}
+            value={realityText}
+          />
+          <button
+            className={styles.primary}
+            disabled={working === "reality" || realityText.trim().length < 3}
+            onClick={() => void recordReality()}
+            type="button"
+          >
             {working === "reality" ? "Saving…" : "Record reality"}
           </button>
         </div>
@@ -350,7 +371,12 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
         return (
           <div className={styles.actionBody}>
             <p>Compare the dream with observed reality. AI may propose the gap; you decide whether it is true.</p>
-            <button className={styles.primary} disabled={working === "problem"} onClick={() => void proposeProblem()} type="button">
+            <button
+              className={styles.primary}
+              disabled={working === "problem"}
+              onClick={() => void proposeProblem()}
+              type="button"
+            >
               {working === "problem" ? "Looking…" : "Find the problem"}
             </button>
           </div>
@@ -358,9 +384,14 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       }
       return (
         <div className={styles.actionBody}>
-          <Field label="Gap between Dream and Reality" value={problemGap} onChange={setProblemGap} />
-          <Field label="Problem statement" value={problemStatement} onChange={setProblemStatement} />
-          <button className={styles.primary} disabled={working === "problem" || problemStatement.trim().length < 3} onClick={() => void confirmProblem()} type="button">
+          <Field label="Gap between Dream and Reality" onChange={setProblemGap} value={problemGap} />
+          <Field label="Problem statement" onChange={setProblemStatement} value={problemStatement} />
+          <button
+            className={styles.primary}
+            disabled={working === "problem" || problemStatement.trim().length < 3}
+            onClick={() => void confirmProblem()}
+            type="button"
+          >
             {working === "problem" ? "Saving…" : "Name this problem"}
           </button>
         </div>
@@ -372,7 +403,12 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
         return (
           <div className={styles.actionBody}>
             <p>Do not jump from a painful symptom to a solution. Separate symptom, proximate cause, and root-cause hypothesis.</p>
-            <button className={styles.primary} disabled={working === "diagnosis"} onClick={() => void proposeDiagnosis()} type="button">
+            <button
+              className={styles.primary}
+              disabled={working === "diagnosis"}
+              onClick={() => void proposeDiagnosis()}
+              type="button"
+            >
               {working === "diagnosis" ? "Diagnosing…" : "Diagnose the root cause"}
             </button>
           </div>
@@ -380,17 +416,50 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       }
       return (
         <div className={styles.actionBody}>
-          <Field label="Symptom" value={diagnosisDraft.symptom} onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, symptom: value })} />
-          <Field label="Proximate cause" value={diagnosisDraft.proximateCause} onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, proximateCause: value })} />
-          <Field label="Root-cause hypothesis" value={diagnosisDraft.rootCauseHypothesis} onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, rootCauseHypothesis: value })} />
+          <Field
+            label="Symptom"
+            onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, symptom: value })}
+            value={diagnosisDraft.symptom}
+          />
+          <Field
+            label="Proximate cause"
+            onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, proximateCause: value })}
+            value={diagnosisDraft.proximateCause}
+          />
+          <Field
+            label="Root-cause hypothesis"
+            onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, rootCauseHypothesis: value })}
+            value={diagnosisDraft.rootCauseHypothesis}
+          />
           <details className={styles.disclosure}>
             <summary>Evidence, alternatives, uncertainty</summary>
-            <Field label="Supporting evidence" value={diagnosisDraft.supportingEvidence} onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, supportingEvidence: value })} />
-            <Field label="Contradicting evidence" value={diagnosisDraft.contradictingEvidence} onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, contradictingEvidence: value })} />
-            <Field label="Alternative hypotheses" value={diagnosisDraft.alternativeHypotheses} onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, alternativeHypotheses: value })} />
-            <Field label="Uncertainty" value={diagnosisDraft.uncertainty} onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, uncertainty: value })} />
+            <Field
+              label="Supporting evidence"
+              onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, supportingEvidence: value })}
+              value={diagnosisDraft.supportingEvidence}
+            />
+            <Field
+              label="Contradicting evidence"
+              onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, contradictingEvidence: value })}
+              value={diagnosisDraft.contradictingEvidence}
+            />
+            <Field
+              label="Alternative hypotheses"
+              onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, alternativeHypotheses: value })}
+              value={diagnosisDraft.alternativeHypotheses}
+            />
+            <Field
+              label="Uncertainty"
+              onChange={(value) => setDiagnosisDraft({ ...diagnosisDraft, uncertainty: value })}
+              value={diagnosisDraft.uncertainty}
+            />
           </details>
-          <button className={styles.primary} disabled={working === "diagnosis" || diagnosisDraft.rootCauseHypothesis.trim().length < 3} onClick={() => void confirmDiagnosis()} type="button">
+          <button
+            className={styles.primary}
+            disabled={working === "diagnosis" || diagnosisDraft.rootCauseHypothesis.trim().length < 3}
+            onClick={() => void confirmDiagnosis()}
+            type="button"
+          >
             {working === "diagnosis" ? "Saving…" : "Accept this diagnosis"}
           </button>
         </div>
@@ -402,7 +471,12 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
         return (
           <div className={styles.actionBody}>
             <p>A Design changes the machine around the root cause. It is not a prettier to-do list.</p>
-            <button className={styles.primary} disabled={working === "design"} onClick={() => void proposeDesign()} type="button">
+            <button
+              className={styles.primary}
+              disabled={working === "design"}
+              onClick={() => void proposeDesign()}
+              type="button"
+            >
               {working === "design" ? "Designing…" : "Design the machine"}
             </button>
           </div>
@@ -410,16 +484,32 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       }
       return (
         <div className={styles.actionBody}>
-          <Field label="Machine change" value={designDraft.machineChange} onChange={(value) => setDesignDraft({ ...designDraft, machineChange: value })} />
-          <Field label="Expected result" value={designDraft.expectedResult} onChange={(value) => setDesignDraft({ ...designDraft, expectedResult: value })} />
-          <Field label="Success signal" value={designDraft.successSignal} onChange={(value) => setDesignDraft({ ...designDraft, successSignal: value })} />
-          <Field label="Why this should work" value={designDraft.rationale} onChange={(value) => setDesignDraft({ ...designDraft, rationale: value })} />
+          <Field
+            label="Machine change"
+            onChange={(value) => setDesignDraft({ ...designDraft, machineChange: value })}
+            value={designDraft.machineChange}
+          />
+          <Field
+            label="Expected result"
+            onChange={(value) => setDesignDraft({ ...designDraft, expectedResult: value })}
+            value={designDraft.expectedResult}
+          />
+          <Field
+            label="Success signal"
+            onChange={(value) => setDesignDraft({ ...designDraft, successSignal: value })}
+            value={designDraft.successSignal}
+          />
+          <Field
+            label="Why this should work"
+            onChange={(value) => setDesignDraft({ ...designDraft, rationale: value })}
+            value={designDraft.rationale}
+          />
           <div className={styles.actionDrafts}>
             <span>Actions</span>
             {designDraft.actions.map((action, index) => (
               <input
                 aria-label={`Action ${index + 1}`}
-                key={index}
+                key={action}
                 onChange={(event) => {
                   const actions = [...designDraft.actions];
                   actions[index] = event.target.value;
@@ -429,7 +519,12 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
               />
             ))}
           </div>
-          <button className={styles.primary} disabled={working === "design" || designDraft.machineChange.trim().length < 3} onClick={() => void confirmDesign()} type="button">
+          <button
+            className={styles.primary}
+            disabled={working === "design" || designDraft.machineChange.trim().length < 3}
+            onClick={() => void confirmDesign()}
+            type="button"
+          >
             {working === "design" ? "Saving…" : "Adopt this design"}
           </button>
         </div>
@@ -444,22 +539,42 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
             {state.actions.map((action) => (
               <div className={styles.actionRow} key={action.id}>
                 <button
-                  aria-label={action.status === "completed" ? `Reopen ${action.commitment}` : `Complete ${action.commitment}`}
+                  aria-label={
+                    action.status === "completed"
+                      ? `Reopen ${action.commitment}`
+                      : `Complete ${action.commitment}`
+                  }
                   className={action.status === "completed" ? styles.actionDone : styles.actionToggle}
                   disabled={working === "do"}
-                  onClick={() => void updateAction(action.id, action.status === "completed" ? "pending" : "completed")}
+                  onClick={() =>
+                    void updateAction(
+                      action.id,
+                      action.status === "completed" ? "pending" : "completed"
+                    )
+                  }
                   type="button"
                 >
                   {action.status === "completed" ? "✓" : action.position}
                 </button>
-                <span className={action.status === "completed" ? styles.completedText : undefined}>{action.commitment}</span>
+                <span className={action.status === "completed" ? styles.completedText : undefined}>
+                  {action.commitment}
+                </span>
                 {action.status === "pending" ? (
-                  <button className={styles.tertiary} disabled={working === "do"} onClick={() => void updateAction(action.id, "cancelled")} type="button">Cancel</button>
+                  <button
+                    className={styles.tertiary}
+                    disabled={working === "do"}
+                    onClick={() => void updateAction(action.id, "cancelled")}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
                 ) : null}
               </div>
             ))}
           </div>
-          <p className={styles.hint}>Completing Actions is not success. The next step is to observe the Outcome.</p>
+          <p className={styles.hint}>
+            Completing Actions is not success. The next step is to observe the Outcome.
+          </p>
         </div>
       );
     }
@@ -468,15 +583,38 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       return (
         <div className={styles.actionBody}>
           <div className={styles.expectedActual}>
-            <div><span>Expected</span><strong>{state.design?.expectedResult}</strong></div>
-            <div><span>Actual</span><textarea aria-label="Actual outcome" onChange={(event) => setOutcomeText(event.target.value)} rows={4} value={outcomeText} /></div>
+            <div>
+              <span>Expected</span>
+              <strong>{state.design?.expectedResult}</strong>
+            </div>
+            <div>
+              <span>Actual</span>
+              <textarea
+                aria-label="Actual outcome"
+                onChange={(event) => setOutcomeText(event.target.value)}
+                rows={4}
+                value={outcomeText}
+              />
+            </div>
           </div>
-          <div className={styles.choiceRow} aria-label="Outcome comparison">
+          <div className={styles.choiceRow} aria-label="Outcome comparison" role="group">
             {(["improved", "mixed", "worse", "unclear"] as OutcomeComparison[]).map((value) => (
-              <button aria-pressed={comparison === value} key={value} onClick={() => setComparison(value)} type="button">{value}</button>
+              <button
+                aria-pressed={comparison === value}
+                key={value}
+                onClick={() => setComparison(value)}
+                type="button"
+              >
+                {value}
+              </button>
             ))}
           </div>
-          <button className={styles.primary} disabled={working === "outcome" || outcomeText.trim().length < 3 || !comparison} onClick={() => void recordOutcome()} type="button">
+          <button
+            className={styles.primary}
+            disabled={working === "outcome" || outcomeText.trim().length < 3 || !comparison}
+            onClick={() => void recordOutcome()}
+            type="button"
+          >
             {working === "outcome" ? "Saving…" : "Record observed outcome"}
           </button>
         </div>
@@ -486,14 +624,31 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
     if (state.stage === "reflection") {
       return (
         <div className={styles.actionBody}>
-          <div className={styles.painEquation}><span>Pain</span><b>+</b><span>Reflection</span><b>→</b><strong>Progress</strong></div>
-          <div className={styles.expectedActual}>
-            <div><span>Expected</span><strong>{state.outcome?.expectedResult}</strong></div>
-            <div><span>Reality</span><strong>{state.outcome?.actualResult}</strong></div>
+          <div className={styles.painEquation}>
+            <span>Pain</span><b>+</b><span>Reflection</span><b>→</b><strong>Progress</strong>
           </div>
-          <Field label="What hurt or surprised you?" value={surprise} onChange={setSurprise} />
-          <Field label="What should change in your model next time?" value={learning} onChange={setLearning} />
-          <button className={styles.primary} disabled={working === "reflection" || learning.trim().length < 3} onClick={() => void saveReflection()} type="button">
+          <div className={styles.expectedActual}>
+            <div>
+              <span>Expected</span>
+              <strong>{state.outcome?.expectedResult}</strong>
+            </div>
+            <div>
+              <span>Reality</span>
+              <strong>{state.outcome?.actualResult}</strong>
+            </div>
+          </div>
+          <Field label="What hurt or surprised you?" onChange={setSurprise} value={surprise} />
+          <Field
+            label="What should change in your model next time?"
+            onChange={setLearning}
+            value={learning}
+          />
+          <button
+            className={styles.primary}
+            disabled={working === "reflection" || learning.trim().length < 3}
+            onClick={() => void saveReflection()}
+            type="button"
+          >
             {working === "reflection" ? "Saving…" : "Turn reflection into progress"}
           </button>
         </div>
@@ -505,8 +660,17 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       return (
         <div className={styles.actionBody}>
           <p>A Principle is not a quote. It is a rule worth testing because Reality taught you something.</p>
-          <button className={styles.primary} disabled={working === "principle"} onClick={() => void proposePrinciple()} type="button">
-            {working === "principle" ? "Distilling…" : principle ? "Try another principle" : "Distill a principle"}
+          <button
+            className={styles.primary}
+            disabled={working === "principle"}
+            onClick={() => void proposePrinciple()}
+            type="button"
+          >
+            {working === "principle"
+              ? "Distilling…"
+              : principle
+                ? "Try another principle"
+                : "Distill a principle"}
           </button>
         </div>
       );
@@ -522,14 +686,47 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
           </div>
           <details className={styles.disclosure}>
             <summary>Revise before testing</summary>
-            <Field label="Trigger" value={principleTrigger || principle.trigger} onChange={setPrincipleTrigger} />
-            <Field label="Rule" value={principleRule || principle.rule} onChange={setPrincipleRule} />
-            <Field label="Rationale" value={principleRationale || principle.rationale || ""} onChange={setPrincipleRationale} />
-            <button className={styles.secondary} disabled={working === "principle"} onClick={() => void reviewPrinciple("revise")} type="button">Revise and test</button>
+            <Field
+              label="Trigger"
+              onChange={setPrincipleTrigger}
+              value={principleTrigger || principle.trigger}
+            />
+            <Field
+              label="Rule"
+              onChange={setPrincipleRule}
+              value={principleRule || principle.rule}
+            />
+            <Field
+              label="Rationale"
+              onChange={setPrincipleRationale}
+              value={principleRationale || principle.rationale || ""}
+            />
+            <button
+              className={styles.secondary}
+              disabled={working === "principle"}
+              onClick={() => void reviewPrinciple("revise")}
+              type="button"
+            >
+              Revise and test
+            </button>
           </details>
           <div className={styles.buttonRow}>
-            <button className={styles.primary} disabled={working === "principle"} onClick={() => void reviewPrinciple("accept")} type="button">Accept for testing</button>
-            <button className={styles.secondary} disabled={working === "principle"} onClick={() => void reviewPrinciple("reject")} type="button">Reject</button>
+            <button
+              className={styles.primary}
+              disabled={working === "principle"}
+              onClick={() => void reviewPrinciple("accept")}
+              type="button"
+            >
+              Accept for testing
+            </button>
+            <button
+              className={styles.secondary}
+              disabled={working === "principle"}
+              onClick={() => void reviewPrinciple("reject")}
+              type="button"
+            >
+              Reject
+            </button>
           </div>
         </div>
       );
@@ -544,8 +741,20 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
           <p>Born from this reflection: {sentence(state.reflection?.learning)}</p>
         </div>
         <label htmlFor="principle-reality">Test it against new reality.</label>
-        <textarea id="principle-reality" onChange={(event) => setRealityText(event.target.value)} rows={4} value={realityText} />
-        <button className={styles.primary} disabled={working === "reality" || realityText.trim().length < 3} onClick={() => void recordReality()} type="button">Record reality against this principle</button>
+        <textarea
+          id="principle-reality"
+          onChange={(event) => setRealityText(event.target.value)}
+          rows={4}
+          value={realityText}
+        />
+        <button
+          className={styles.primary}
+          disabled={working === "reality" || realityText.trim().length < 3}
+          onClick={() => void recordReality()}
+          type="button"
+        >
+          Record reality against this principle
+        </button>
         <a className={styles.textLink} href="/learning">Inspect learning history →</a>
       </div>
     );
@@ -559,8 +768,8 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
           <h1 id="people-title">Evolve through reality.</h1>
           <p className={styles.heroCopy}>{progressStatement}</p>
         </div>
-        <div className={styles.equation} aria-label="Evolution equation">
-          <span>Dream</span><b>+</b><span>Reality</span><b>+</b><span>Determination</span><b>→</b><strong>Progress</strong>
+        <div className={styles.equation} aria-label="Evolution equation" role="group">
+          <span>Dream</span><b>+</b><span>Reality</span><b>+</b><span>Determination</span><b>→</b><strong>Successful Life</strong>
         </div>
       </section>
 
@@ -584,7 +793,11 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
         <article className={`${styles.contextPane} ${styles.realityPane}`}>
           <p className={styles.contextLabel}>Reality</p>
           <h2>{state.reality ? state.reality.statement : "What is actually true?"}</h2>
-          {state.reality ? <p className={styles.timestamp}>Observed {new Date(state.reality.observedAt).toLocaleDateString()}</p> : null}
+          {state.reality ? (
+            <p className={styles.timestamp}>
+              Observed {new Date(state.reality.observedAt).toLocaleDateString()}
+            </p>
+          ) : null}
         </article>
       </section>
 
@@ -592,7 +805,9 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
         <section className={styles.gap} aria-label="Active gap">
           <p>The gap</p>
           <h2>{sentence(state.problem.gap, state.problem.statement)}</h2>
-          {state.problem.gap && state.problem.statement !== state.problem.gap ? <span>{state.problem.statement}</span> : null}
+          {state.problem.gap && state.problem.statement !== state.problem.gap ? (
+            <span>{state.problem.statement}</span>
+          ) : null}
         </section>
       ) : null}
 
