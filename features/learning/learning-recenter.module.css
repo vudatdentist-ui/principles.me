@@ -304,23 +304,23 @@
   margin-top: 20px;
 }
 
-.legacy :global(main) {
+.legacy > main {
   min-height: auto;
   background: transparent;
 }
 
-.legacy :global(header) {
+.legacy > main > header {
   display: none;
 }
 
-.legacy :global(main > section) {
+.legacy > main > section {
   width: 100%;
   max-width: none;
   margin: 0;
   padding: 0;
 }
 
-.legacy :global(main > section > div:first-child) {
+.legacy > main > section > div:first-child {
   display: none;
 }
 
