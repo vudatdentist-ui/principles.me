@@ -65,7 +65,7 @@ export function AskWorkspace() {
   const canSubmit = question.trim().length >= 3 && phase !== "submitting";
   const sourceLabel = useMemo(() => {
     if (phase === "submitting" && sources.length === 0) return "Searching…";
-    if (sources.length === 0) return "No retrieved sources";
+    if (sources.length === 0) return "No sources";
     return `${sources.length} source${sources.length === 1 ? "" : "s"}`;
   }, [phase, sources.length]);
 
@@ -164,10 +164,6 @@ export function AskWorkspace() {
       <section className={styles.hero} aria-labelledby="knowledge-title">
         <p className={styles.eyebrow}>Knowledge</p>
         <h1 id="knowledge-title">Think from principles.</h1>
-        <p>
-          Ask freely. Shared Principles knowledge provides evidence; your personal evolution
-          state provides bounded context. Neither is silently written back into your life.
-        </p>
       </section>
 
       <div className={styles.promptRail}>
@@ -186,7 +182,7 @@ export function AskWorkspace() {
           id="question"
           maxLength={4000}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="What are you trying to understand, diagnose, design, or learn?"
+          placeholder="What are you trying to understand?"
           rows={5}
           value={question}
         />
@@ -211,20 +207,13 @@ export function AskWorkspace() {
       {answer || phase === "submitting" ? (
         <section className={styles.answerSection} aria-live="polite">
           <div className={styles.sectionHeading}>
-            <div>
-              <p className={styles.eyebrow}>Answer</p>
-              <h2>Reason with reality.</h2>
-            </div>
+            <h2>Answer</h2>
             <span>{sourceLabel}</span>
           </div>
           <article className={styles.answer}>{answer || "Preparing…"}</article>
           {phase === "done" ? (
             <div className={styles.bridge}>
-              <div>
-                <span>Important conclusions still require your judgment.</span>
-                <strong>Continue the thought inside your active evolution loop.</strong>
-              </div>
-              <a href="/">Use this thinking in People →</a>
+              <a href="/">Continue in Me →</a>
             </div>
           ) : null}
         </section>
@@ -233,10 +222,7 @@ export function AskWorkspace() {
       {phase !== "idle" ? (
         <section className={styles.sourcesSection}>
           <div className={styles.sectionHeading}>
-            <div>
-              <p className={styles.eyebrow}>Grounding</p>
-              <h2>What informed this answer?</h2>
-            </div>
+            <h2>Sources</h2>
             <span>{sourceLabel}</span>
           </div>
           <div className={styles.retrievalGrid}>
@@ -272,10 +258,10 @@ export function AskWorkspace() {
           ) : (
             <p className={styles.emptySources}>
               {knowledgeState === "unavailable"
-                ? "Shared knowledge could not be reached."
+                ? "Shared knowledge unavailable."
                 : knowledgeState === "empty"
-                  ? "No shared document matched this question."
-                  : "No retrieved sources were returned."}
+                  ? "No shared match."
+                  : "No sources returned."}
             </p>
           )}
         </section>
