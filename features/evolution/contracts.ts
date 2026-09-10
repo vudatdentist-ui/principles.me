@@ -78,6 +78,18 @@ export type EvolutionReflection = {
   surprise: string | null;
 };
 
+export type EvolutionGoalSummary = {
+  attentionCount: number;
+  currentStep: EvolutionFiveStep | null;
+  desiredState: string;
+  id: string;
+  nextAction: EvolutionNextAction;
+  problem: string | null;
+  reality: string | null;
+  stage: EvolutionStage;
+  status: ClientGoalRecord["status"];
+};
+
 export type EvolutionState = {
   actions: ClientExecutionActionRecord[];
   attention: EvolutionAttention[];
@@ -85,11 +97,13 @@ export type EvolutionState = {
   diagnosis: ClientDiagnosisRecord | null;
   dream: ClientGoalRecord | null;
   fiveSteps: EvolutionFiveSteps;
+  goals: EvolutionGoalSummary[];
   nextAction: EvolutionNextAction;
   outcome: ClientOutcomeRecord | null;
   principle: ClientPrincipleRecord | null;
   problem: ClientProblemRecord | null;
   reality: ClientRealityRecord | null;
   reflection: EvolutionReflection | null;
+  selectedGoalId: string | null;
   stage: EvolutionStage;
 };
