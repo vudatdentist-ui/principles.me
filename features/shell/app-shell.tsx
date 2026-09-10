@@ -6,7 +6,7 @@ import styles from "./app-shell.module.css";
 export type AppTab = "people" | "organization" | "knowledge" | "learning";
 
 const tabs: Array<{ href: string; key: AppTab; label: string }> = [
-  { href: "/", key: "people", label: "People" },
+  { href: "/", key: "people", label: "Me" },
   { href: "/organization", key: "organization", label: "Organization" },
   { href: "/knowledge", key: "knowledge", label: "Knowledge" },
   { href: "/learning", key: "learning", label: "Learning" },
