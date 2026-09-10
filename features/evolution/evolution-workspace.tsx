@@ -453,9 +453,10 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
           </details>
           <div className={styles.actionDrafts}>
             {designDraft.actions.map((action, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: action positions are fixed for the lifetime of an editable design draft.
               <input
                 aria-label={`Action ${index + 1}`}
-                key={`${index}-${action}`}
+                key={index}
                 onChange={(event) => {
                   const actions = [...designDraft.actions];
                   actions[index] = event.target.value;
@@ -590,7 +591,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
           <p className={styles.eyebrow}>Me</p>
           <h1 id="me-title">What deserves attention now?</h1>
         </div>
-        <button className={styles.addGoal} disabled={working === "switch"} onClick={() => void startNewGoal()} type="button">+ Goal</button>
+        <button className={styles.addGoal} disabled={working !== null} onClick={() => void startNewGoal()} type="button">+ Goal</button>
       </section>
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
@@ -601,7 +602,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
             <button
               aria-pressed={state.selectedGoalId === goal.id}
               className={styles.goalCard}
-              disabled={working === "switch"}
+              disabled={working !== null}
               key={goal.id}
               onClick={() => void selectGoal(goal.id)}
               type="button"
@@ -668,7 +669,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
             </aside>
           ) : null}
 
-          <section className={styles.next} aria-labelledby="next-action-title">
+          <section className={styles.next} aria-label="Current action">
             <p className={styles.eyebrow}>Now</p>
             <h2 id="next-action-title">{state.nextAction.prompt}</h2>
             {renderStageAction()}
