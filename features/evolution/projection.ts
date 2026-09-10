@@ -6,6 +6,7 @@ import type {
   EvolutionAttention,
   EvolutionFiveStep,
   EvolutionFiveSteps,
+  EvolutionGoalSummary,
   EvolutionNextAction,
   EvolutionReflection,
   EvolutionStage,
@@ -19,6 +20,10 @@ const fiveStepOrder: Array<{ key: EvolutionFiveStep; label: string }> = [
   { key: "design", label: "Design" },
   { key: "do", label: "Do" },
 ];
+
+type ProjectedPeople = ReturnType<typeof projectPeopleState>;
+type ProjectedExecution = ReturnType<typeof projectExecutionState>;
+type GoalLane = Omit<EvolutionState, "goals" | "selectedGoalId">;
 
 function fiveSteps(input: {
   design: boolean;
@@ -54,36 +59,36 @@ function nextAction(
   principle: EvolutionState["principle"]
 ): EvolutionNextAction {
   if (stage === "dream") {
-    return { kind: "clarify_dream", label: "Clarify your dream", prompt: "What do you really want?" };
+    return { kind: "clarify_dream", label: "New goal", prompt: "What do you really want?" };
   }
   if (stage === "reality") {
-    return { kind: "observe_reality", label: "Face reality", prompt: "What is actually true right now?" };
+    return { kind: "observe_reality", label: "Reality", prompt: "What is actually true right now?" };
   }
   if (stage === "problem") {
-    return { kind: "identify_problem", label: "Name the problem", prompt: "Where does reality fall short of the dream?" };
+    return { kind: "identify_problem", label: "Problem", prompt: "Where does reality fall short?" };
   }
   if (stage === "diagnosis") {
-    return { kind: "diagnose_problem", label: "Diagnose the root cause", prompt: "Why is this happening?" };
+    return { kind: "diagnose_problem", label: "Diagnose", prompt: "Why is this happening?" };
   }
   if (stage === "design") {
-    return { kind: "design_change", label: "Design the machine", prompt: "What must change so this problem stops recurring?" };
+    return { kind: "design_change", label: "Design", prompt: "What must change?" };
   }
   if (stage === "do") {
-    return { kind: "do_design", label: "Do the design", prompt: "What commitment moves this machine change forward now?" };
+    return { kind: "do_design", label: "Do", prompt: "What needs to happen now?" };
   }
   if (stage === "outcome") {
-    return { kind: "record_outcome", label: "Observe the outcome", prompt: "What actually happened after you changed the machine?" };
+    return { kind: "record_outcome", label: "Outcome", prompt: "What actually happened?" };
   }
   if (stage === "reflection") {
-    return { kind: "reflect_on_pain", label: "Reflect", prompt: "What hurt or surprised you, and what is it teaching you?" };
+    return { kind: "reflect_on_pain", label: "Reflect", prompt: "What did this teach you?" };
   }
   if (!principle || principle.acceptanceState === "rejected") {
-    return { kind: "distill_principle", label: "Distill a principle", prompt: "What rule is worth testing next time?" };
+    return { kind: "distill_principle", label: "Principle", prompt: "What rule is worth testing?" };
   }
   if (principle.acceptanceState === "pending") {
-    return { kind: "review_principle", label: "Review the principle", prompt: "Is this a rule you are willing to test against reality?" };
+    return { kind: "review_principle", label: "Review", prompt: "Test this principle?" };
   }
-  return { kind: "continue_cycle", label: "Return to reality", prompt: "What is true now after applying what you learned?" };
+  return { kind: "continue_cycle", label: "Continue", prompt: "What is true now?" };
 }
 
 function attention(input: {
@@ -93,50 +98,73 @@ function attention(input: {
 }): EvolutionAttention[] {
   const items: EvolutionAttention[] = [];
   if (input.outcome && !input.outcomeReview) {
-    items.push({ kind: "pain_needs_reflection", title: "This outcome needs reflection." });
+    items.push({ kind: "pain_needs_reflection", title: "Outcome needs reflection" });
   }
   if (input.principle?.acceptanceState === "pending") {
-    items.push({ kind: "principle_needs_review", title: "A Principle candidate needs your judgment." });
+    items.push({ kind: "principle_needs_review", title: "Principle needs review" });
   } else if (
     input.principle &&
     (input.principle.acceptanceState === "accepted" || input.principle.acceptanceState === "revised") &&
     input.principle.lifecycleState !== "retired"
   ) {
-    items.push({ kind: "principle_under_test", title: "A Principle is under test against reality." });
+    items.push({ kind: "principle_under_test", title: "Principle under test" });
   }
   return items;
 }
 
-export function projectEvolutionState(
-  peopleState: PeopleState,
-  executionState: ExecutionState
-): EvolutionState {
-  const people = projectPeopleState(peopleState);
-  const execution = projectExecutionState(executionState);
+function emptyLane(): GoalLane {
+  const stage: EvolutionStage = "dream";
+  return {
+    actions: [],
+    attention: [],
+    design: null,
+    diagnosis: null,
+    dream: null,
+    fiveSteps: fiveSteps({ design: false, diagnosis: false, do: false, goal: false, problem: false }),
+    nextAction: nextAction(stage, null),
+    outcome: null,
+    principle: null,
+    problem: null,
+    reality: null,
+    reflection: null,
+    stage,
+  };
+}
 
-  const dream = people.goals.find((goal) => goal.status === "chosen") ?? people.goals[0] ?? null;
-  const reality = dream ? people.reality.find((item) => item.goalId === dream.id) ?? null : null;
-  const problem = dream
-    ? people.problems.find((item) => item.goalId === dream.id && item.status === "recognized") ??
-      people.problems.find((item) => item.goalId === dream.id) ??
-      null
+function projectGoalLane(
+  people: ProjectedPeople,
+  execution: ProjectedExecution,
+  dream: ProjectedPeople["goals"][number]
+): GoalLane {
+  const reality = people.reality.find((item) => item.goalId === dream.id) ?? null;
+  const problem =
+    people.problems.find((item) => item.goalId === dream.id && item.status === "recognized") ??
+    people.problems.find((item) => item.goalId === dream.id) ??
+    null;
+  const diagnosis = problem
+    ? execution.diagnoses.find((item) => item.problemId === problem.id) ?? null
     : null;
-  const diagnosis = problem ? execution.diagnoses.find((item) => item.problemId === problem.id) ?? null : null;
   const design = diagnosis
-    ? execution.designs.find((item) => item.diagnosisId === diagnosis.id && item.lifecycleState !== "retired") ??
-      execution.designs.find((item) => item.diagnosisId === diagnosis.id) ??
-      null
+    ? execution.designs.find(
+        (item) => item.diagnosisId === diagnosis.id && item.lifecycleState !== "retired"
+      ) ?? execution.designs.find((item) => item.diagnosisId === diagnosis.id) ?? null
     : null;
   const actions = design
-    ? execution.actions.filter((item) => item.designId === design.id).slice().sort((left, right) => left.position - right.position)
+    ? execution.actions
+        .filter((item) => item.designId === design.id)
+        .slice()
+        .sort((left, right) => left.position - right.position)
     : [];
-  const outcome = design ? execution.outcomes.find((item) => item.designId === design.id) ?? null : null;
-
+  const outcome = design
+    ? execution.outcomes.find((item) => item.designId === design.id) ?? null
+    : null;
   const linkedOutcomeReview = outcome
     ? execution.outcomeReviews.find((item) => item.outcomeId === outcome.id) ?? null
     : null;
   const fallbackReflection = problem
-    ? people.reflections.find((item) => item.problemId === problem.id && item.status === "completed") ?? null
+    ? people.reflections.find(
+        (item) => item.problemId === problem.id && item.status === "completed"
+      ) ?? null
     : null;
   const reflection: EvolutionReflection | null = linkedOutcomeReview
     ? {
@@ -163,20 +191,20 @@ export function projectEvolutionState(
           surprise: fallbackReflection.surprise,
         }
       : null;
-
   const principle = reflection
     ? people.principles.find(
-        (item) => item.originReflectionId === reflection.id && item.acceptanceState !== "rejected"
+        (item) =>
+          item.originReflectionId === reflection.id && item.acceptanceState !== "rejected"
       ) ?? people.principles.find((item) => item.originReflectionId === reflection.id) ?? null
     : null;
 
   const doComplete =
     Boolean(design) &&
-    (Boolean(outcome) || (actions.length > 0 && actions.every((item) => item.status !== "pending")));
+    (Boolean(outcome) ||
+      (actions.length > 0 && actions.every((item) => item.status !== "pending")));
 
   let stage: EvolutionStage;
-  if (!dream) stage = "dream";
-  else if (!reality) stage = "reality";
+  if (!reality) stage = "reality";
   else if (!problem) stage = "problem";
   else if (!diagnosis) stage = "diagnosis";
   else if (!design) stage = "design";
@@ -185,25 +213,27 @@ export function projectEvolutionState(
   else if (!linkedOutcomeReview) stage = "reflection";
   else stage = "principle";
 
+  const laneAttention = attention({
+    outcome,
+    outcomeReview: linkedOutcomeReview
+      ? {
+          expected: linkedOutcomeReview.expected,
+          goalId: linkedOutcomeReview.goalId,
+          happened: linkedOutcomeReview.happened,
+          id: linkedOutcomeReview.id,
+          kind: "outcome_review",
+          learning: linkedOutcomeReview.learning,
+          outcomeId: linkedOutcomeReview.outcomeId,
+          problemId: linkedOutcomeReview.problemId,
+          surprise: linkedOutcomeReview.surprise,
+        }
+      : null,
+    principle,
+  });
+
   return {
     actions,
-    attention: attention({
-      outcome,
-      outcomeReview: linkedOutcomeReview
-        ? {
-            expected: linkedOutcomeReview.expected,
-            goalId: linkedOutcomeReview.goalId,
-            happened: linkedOutcomeReview.happened,
-            id: linkedOutcomeReview.id,
-            kind: "outcome_review",
-            learning: linkedOutcomeReview.learning,
-            outcomeId: linkedOutcomeReview.outcomeId,
-            problemId: linkedOutcomeReview.problemId,
-            surprise: linkedOutcomeReview.surprise,
-          }
-        : null,
-      principle,
-    }),
+    attention: laneAttention,
     design,
     diagnosis,
     dream,
@@ -211,7 +241,7 @@ export function projectEvolutionState(
       design: Boolean(design),
       diagnosis: Boolean(diagnosis),
       do: doComplete,
-      goal: Boolean(dream),
+      goal: true,
       problem: Boolean(problem),
     }),
     nextAction: nextAction(stage, principle),
@@ -221,5 +251,46 @@ export function projectEvolutionState(
     reality,
     reflection,
     stage,
+  };
+}
+
+export function projectEvolutionState(
+  peopleState: PeopleState,
+  executionState: ExecutionState,
+  options: { goalId?: string | null; newGoal?: boolean } = {}
+): EvolutionState {
+  const people = projectPeopleState(peopleState);
+  const execution = projectExecutionState(executionState);
+  const visibleGoals = people.goals.filter((goal) => goal.status !== "retired");
+
+  const summaries: EvolutionGoalSummary[] = visibleGoals.map((goal) => {
+    const lane = projectGoalLane(people, execution, goal);
+    return {
+      attentionCount: lane.attention.length,
+      currentStep: lane.fiveSteps.current,
+      desiredState: goal.desiredState,
+      id: goal.id,
+      nextAction: lane.nextAction,
+      problem: lane.problem?.statement ?? null,
+      reality: lane.reality?.statement ?? null,
+      stage: lane.stage,
+      status: goal.status,
+    };
+  });
+
+  const selectedGoal = options.newGoal
+    ? null
+    : (options.goalId
+        ? visibleGoals.find((goal) => goal.id === options.goalId)
+        : null) ??
+      visibleGoals.find((goal) => goal.status === "chosen") ??
+      visibleGoals[0] ??
+      null;
+  const lane = selectedGoal ? projectGoalLane(people, execution, selectedGoal) : emptyLane();
+
+  return {
+    ...lane,
+    goals: summaries,
+    selectedGoalId: selectedGoal?.id ?? null,
   };
 }
