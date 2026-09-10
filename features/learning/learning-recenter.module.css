@@ -2,15 +2,15 @@
   width: min(100%, 980px);
   margin: 0 auto;
   display: grid;
-  gap: 36px;
+  gap: 42px;
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: end;
-  gap: 32px;
-  padding-top: 12px;
+  justify-content: space-between;
+  gap: 28px;
+  padding-top: 16px;
 }
 
 .eyebrow {
@@ -18,14 +18,15 @@
   color: #77736a;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .hero h1,
 .latest h2,
 .sectionLead h2,
-.principle strong,
+.principle h3,
+.reflection h3,
 .patterns h3 {
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 500;
@@ -39,21 +40,13 @@
   line-height: 0.98;
 }
 
-.hero p:last-child {
-  max-width: 680px;
-  margin: 22px 0 0;
-  color: #5e5a53;
-  font-size: 16px;
-  line-height: 1.65;
-}
-
 .equation {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  padding-bottom: 8px;
+  padding-bottom: 7px;
   color: #77736a;
   font-size: 12px;
 }
@@ -76,7 +69,9 @@
 
 .latest,
 .principleSection,
-.patternSection {
+.reflectionSection,
+.patternSection,
+.lab {
   border-top: 1px solid rgba(23, 23, 20, 0.1);
   padding-top: 28px;
 }
@@ -86,37 +81,6 @@
   margin: 0;
   font-size: clamp(30px, 4.5vw, 50px);
   line-height: 1.08;
-}
-
-.lessonContext {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
-  margin-top: 22px;
-}
-
-.lessonContext > div {
-  display: grid;
-  gap: 7px;
-  padding: 16px;
-  border: 1px solid rgba(23, 23, 20, 0.09);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.38);
-}
-
-.lessonContext span,
-.principle > span,
-.challenge > span {
-  color: #77736a;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.lessonContext strong {
-  font-size: 13px;
-  line-height: 1.55;
 }
 
 .sectionLead {
@@ -133,99 +97,82 @@
   line-height: 1.1;
 }
 
-.state,
-.meta {
-  flex: 0 0 auto;
+.primary,
+.secondary {
+  width: fit-content;
   border-radius: 999px;
-  padding: 8px 11px;
-  background: rgba(23, 23, 20, 0.055);
-  color: #5f5c55;
-  font-size: 11px;
-  text-transform: capitalize;
-}
-
-.principle {
-  display: grid;
-  gap: 8px;
-  margin-top: 22px;
-  padding: 23px;
-  border: 1px solid rgba(72, 104, 72, 0.16);
-  border-radius: 19px;
-  background: linear-gradient(145deg, rgba(82, 118, 80, 0.09), rgba(255, 255, 255, 0.4));
-}
-
-.principle strong {
-  font-size: clamp(22px, 3vw, 32px);
-  line-height: 1.2;
-}
-
-.principle p {
-  margin: 5px 0 0;
-  color: #656159;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.principle details,
-.patterns details {
-  margin-top: 9px;
-  border-top: 1px solid rgba(23, 23, 20, 0.08);
-  padding-top: 10px;
-}
-
-.principle summary,
-.patterns summary {
+  padding: 10px 15px;
   cursor: pointer;
-  color: #5f5b54;
-  font-size: 12px;
+  font: inherit;
+  font-size: 13px;
   font-weight: 650;
 }
 
-.principle dl,
-.patterns dl {
+.primary {
+  border: 1px solid #202019;
+  background: #202019;
+  color: #fffdf8;
+}
+
+.secondary {
+  border: 1px solid rgba(23, 23, 20, 0.16);
+  background: transparent;
+  color: #34332e;
+}
+
+.primary:disabled,
+.secondary:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.principleEditor {
   display: grid;
-  gap: 9px;
-  margin: 14px 0 0;
+  gap: 14px;
+  margin-top: 22px;
+  max-width: 760px;
+  padding: 20px;
+  border: 1px solid rgba(23, 23, 20, 0.11);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
 }
 
-.principle dl div,
-.patterns dl div {
+.principleEditor label {
   display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: 12px;
-}
-
-.principle dt,
-.patterns dt {
-  color: #817d74;
-  font-size: 11px;
-}
-
-.principle dd,
-.patterns dd {
-  margin: 0;
-  color: #484640;
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.challenge {
-  display: grid;
-  gap: 5px;
-  margin-top: 18px;
-  padding: 14px 16px;
-  border-left: 3px solid #a96550;
-  background: rgba(169, 101, 80, 0.07);
-}
-
-.challenge > span {
-  color: #93604f;
-}
-
-.challenge strong {
+  gap: 7px;
   font-size: 13px;
+  font-weight: 650;
 }
 
+.principleEditor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(23, 23, 20, 0.14);
+  border-radius: 13px;
+  padding: 13px 14px;
+  background: rgba(255, 255, 255, 0.76);
+  color: #171714;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.principleEditor textarea:focus {
+  border-color: rgba(23, 23, 20, 0.48);
+  box-shadow: 0 0 0 3px rgba(23, 23, 20, 0.05);
+}
+
+.principles,
+.reflections,
 .patterns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -233,71 +180,135 @@
   margin-top: 22px;
 }
 
+.principle,
+.reflection,
 .patterns article {
-  padding: 18px;
+  min-width: 0;
+  padding: 20px;
   border: 1px solid rgba(23, 23, 20, 0.09);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.34);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.36);
 }
 
+.principle {
+  display: grid;
+  gap: 9px;
+  border-color: rgba(72, 104, 72, 0.16);
+  background: linear-gradient(145deg, rgba(82, 118, 80, 0.08), rgba(255, 255, 255, 0.4));
+}
+
+.principleTop,
 .patternMeta {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   color: #77736a;
-  font-size: 10px;
+  font-size: 11px;
   text-transform: capitalize;
 }
 
-.patterns h3 {
-  margin: 14px 0 8px;
-  font-size: 21px;
-  line-height: 1.25;
-}
-
-.patterns article > p {
-  margin: 0;
+.principle > p {
+  margin: 4px 0 0;
   color: #656159;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
-.empty {
-  margin-top: 20px;
-  padding: 17px;
-  border: 1px dashed rgba(23, 23, 20, 0.14);
-  border-radius: 14px;
-  color: #6d6961;
+.principle h3,
+.reflection h3,
+.patterns h3 {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.principle details,
+.patterns details {
+  margin-top: 6px;
+  border-top: 1px solid rgba(23, 23, 20, 0.08);
+  padding-top: 10px;
+}
+
+.principle summary,
+.patterns summary,
+.lab > summary {
+  cursor: pointer;
+  color: #5f5b54;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.principle details p {
+  margin: 10px 0 0;
+  color: #5f5b54;
   font-size: 13px;
   line-height: 1.55;
 }
 
-.lab {
-  border-top: 1px solid rgba(23, 23, 20, 0.1);
-  padding-top: 18px;
+.reflection {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+}
+
+.reflection > p {
+  margin: 0;
+  color: #6b655e;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.linked {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(75, 106, 75, 0.09);
+  color: #536b54;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.patterns dl {
+  display: grid;
+  gap: 9px;
+  margin: 13px 0 0;
+}
+
+.patterns dl div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.patterns dt {
+  color: #817d74;
+  font-size: 11px;
+}
+
+.patterns dd {
+  min-width: 0;
+  margin: 0;
+  color: #484640;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  margin-top: 20px;
+  padding: 16px 0;
+  color: #6d6961;
+  font-size: 14px;
 }
 
 .lab > summary {
-  display: grid;
-  gap: 5px;
-  cursor: pointer;
   list-style: none;
 }
 
 .lab > summary::-webkit-details-marker {
   display: none;
-}
-
-.lab > summary span {
-  color: #77736a;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.lab > summary strong {
-  font-size: 14px;
 }
 
 .legacy {
@@ -324,36 +335,49 @@
   display: none;
 }
 
+.error {
+  border-left: 3px solid #a54e42;
+  padding: 13px 15px;
+  background: rgba(165, 78, 66, 0.07);
+  color: #7a3e36;
+  font-size: 13px;
+}
+
 @media (max-width: 760px) {
   .hero {
-    grid-template-columns: 1fr;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .equation {
     justify-content: flex-start;
   }
 
-  .lessonContext,
+  .principles,
+  .reflections,
   .patterns {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .workspace {
+    gap: 34px;
+  }
+
+  .hero h1 {
+    font-size: 46px;
   }
 
   .sectionLead {
     align-items: flex-start;
     flex-direction: column;
   }
-}
 
-@media (max-width: 520px) {
-  .workspace {
-    gap: 30px;
-  }
-
-  .hero h1 {
-    font-size: 48px;
-  }
-
-  .principle {
-    padding: 18px;
+  .principle,
+  .reflection,
+  .patterns article,
+  .principleEditor {
+    padding: 17px;
   }
 }
