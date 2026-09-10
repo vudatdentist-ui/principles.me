@@ -121,7 +121,11 @@ export function LearningRecenter({
           <p className={styles.eyebrow}>Learning</p>
           <h1 id="learning-title">What is reality teaching you?</h1>
         </div>
-        <div className={styles.equation} aria-label="Pain plus Reflection equals Progress">
+        <div
+          aria-label="Pain plus Reflection leads to Progress"
+          className={styles.equation}
+          role="img"
+        >
           <span>Pain</span><b>+</b><span>Reflection</span><b>→</b><strong>Progress</strong>
         </div>
       </section>
