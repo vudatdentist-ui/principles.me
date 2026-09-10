@@ -22,7 +22,7 @@ test("all four authenticated surfaces share one stable mobile shell", async ({ p
   let referenceNavTop: number | null = null;
 
   for (const [path, active, heading] of [
-    ["/", "People", "Evolve through reality."],
+    ["/", "Me", "What deserves attention now?"],
     ["/organization", "Organization", "Design the machine around reality."],
     ["/knowledge", "Knowledge", "Think from principles."],
     ["/learning", "Learning", "What is reality teaching you?"],
@@ -30,7 +30,7 @@ test("all four authenticated surfaces share one stable mobile shell", async ({ p
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
 
-    const tabs = ["People", "Organization", "Knowledge", "Learning"] as const;
+    const tabs = ["Me", "Organization", "Knowledge", "Learning"] as const;
     for (const tab of tabs) {
       await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
     }

@@ -1,28 +1,118 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { EvolutionState } from "@/features/evolution/contracts";
+import type {
+  ClientPeopleState,
+  ClientPrincipleRecord,
+  ReflectionRecord,
+} from "@/features/people/contracts";
 import type { ClientLearningState } from "./contracts";
 import { LearningWorkspace } from "./learning-workspace";
 import styles from "./learning-recenter.module.css";
 
+async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...init,
+    headers: { "content-type": "application/json", ...(init.headers ?? {}) },
+  });
+  const payload = (await response.json().catch(() => null)) as
+    | (T & { error?: string })
+    | null;
+  if (!response.ok) throw new Error(payload?.error || "Request failed.");
+  if (!payload) throw new Error("Request failed.");
+  return payload;
+}
+
 export function LearningRecenter({
   email,
   evolution,
+  initialPeople,
   initialState,
   workspaceName,
 }: {
   email: string;
   evolution: EvolutionState;
+  initialPeople: ClientPeopleState;
   initialState: ClientLearningState;
   workspaceName: string;
 }) {
+  const [people, setPeople] = useState(initialPeople);
+  const [showAdd, setShowAdd] = useState(false);
+  const [trigger, setTrigger] = useState("");
+  const [rule, setRule] = useState("");
+  const [rationale, setRationale] = useState("");
+  const [working, setWorking] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const activePatterns = initialState.patterns.filter(
     (pattern) => pattern.lifecycleState !== "retired"
   );
-  const challenged = activePatterns.filter(
-    (pattern) => pattern.lifecycleState === "challenged"
+  const principles = people.principles.filter(
+    (principle) =>
+      principle.acceptanceState !== "rejected" && principle.lifecycleState !== "retired"
   );
-  const principle = evolution.principle;
+  const eligibleReflections = useMemo(
+    () =>
+      people.reflections.filter(
+        (reflection) =>
+          reflection.status === "completed" && Boolean(reflection.goalId) && Boolean(reflection.problemId)
+      ),
+    [people.reflections]
+  );
+
+  async function refreshPeople() {
+    const response = await fetch("/api/people/state", { cache: "no-store" });
+    if (!response.ok) throw new Error("Could not refresh Learning.");
+    setPeople((await response.json()) as ClientPeopleState);
+  }
+
+  async function run(label: string, action: () => Promise<void>) {
+    if (working) return;
+    setWorking(label);
+    setError(null);
+    try {
+      await action();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Request failed.");
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  async function addPrinciple() {
+    await run("manual", async () => {
+      await jsonRequest("/api/people/principles", {
+        body: JSON.stringify({ rationale, rule, trigger }),
+        method: "POST",
+      });
+      setTrigger("");
+      setRule("");
+      setRationale("");
+      setShowAdd(false);
+      await refreshPeople();
+    });
+  }
+
+  async function distill(reflectionId: string) {
+    await run(`distill:${reflectionId}`, async () => {
+      await jsonRequest("/api/people/principles/propose", {
+        body: JSON.stringify({ reflectionId }),
+        method: "POST",
+      });
+      await refreshPeople();
+    });
+  }
+
+  async function reviewPrinciple(principleId: string, action: "accept" | "reject") {
+    await run(`review:${principleId}`, async () => {
+      await jsonRequest("/api/people/principles/review", {
+        body: JSON.stringify({ action, principleId }),
+        method: "POST",
+      });
+      await refreshPeople();
+    });
+  }
 
   return (
     <div className={styles.workspace}>
@@ -30,74 +120,104 @@ export function LearningRecenter({
         <div>
           <p className={styles.eyebrow}>Learning</p>
           <h1 id="learning-title">What is reality teaching you?</h1>
-          <p>
-            Pain matters only when it changes the model. Patterns remain hypotheses,
-            Reflections remain inspectable, and Principles stay alive by being tested.
-          </p>
         </div>
-        <div className={styles.equation}>
+        <div
+          aria-label="Pain plus Reflection leads to Progress"
+          className={styles.equation}
+          role="img"
+        >
           <span>Pain</span><b>+</b><span>Reflection</span><b>→</b><strong>Progress</strong>
         </div>
       </section>
 
-      {evolution.reflection || evolution.outcome ? (
+      {error ? <div className={styles.error} role="alert">{error}</div> : null}
+
+      {evolution.reflection?.learning ? (
         <section className={styles.latest} aria-labelledby="latest-learning-title">
-          <p className={styles.eyebrow}>Latest lesson</p>
-          <h2 id="latest-learning-title">
-            {evolution.reflection?.learning || "This outcome still needs reflection."}
-          </h2>
-          <div className={styles.lessonContext}>
-            {evolution.outcome ? (
-              <div>
-                <span>Reality</span>
-                <strong>{evolution.outcome.actualResult}</strong>
-              </div>
-            ) : null}
-            {evolution.reflection?.surprise ? (
-              <div>
-                <span>Pain / surprise</span>
-                <strong>{evolution.reflection.surprise}</strong>
-              </div>
-            ) : null}
-          </div>
+          <p className={styles.eyebrow}>Latest</p>
+          <h2 id="latest-learning-title">{evolution.reflection.learning}</h2>
         </section>
       ) : null}
 
-      <section className={styles.principleSection} aria-labelledby="principle-title">
+      <section className={styles.principleSection} aria-labelledby="principles-title">
         <div className={styles.sectionLead}>
           <div>
-            <p className={styles.eyebrow}>Living Principle</p>
-            <h2 id="principle-title">A rule earns trust through reality.</h2>
+            <p className={styles.eyebrow}>Principles</p>
+            <h2 id="principles-title">Rules I am testing</h2>
           </div>
-          {principle ? <span className={styles.state}>{principle.lifecycleState}</span> : null}
+          <button className={styles.primary} onClick={() => setShowAdd((value) => !value)} type="button">
+            {showAdd ? "Cancel" : "+ Add principle"}
+          </button>
         </div>
-        {principle && principle.acceptanceState !== "rejected" ? (
-          <article className={styles.principle}>
-            <span>When</span>
-            <strong>{principle.trigger}</strong>
-            <span>Then</span>
-            <strong>{principle.rule}</strong>
-            {principle.rationale ? <p>{principle.rationale}</p> : null}
-            <details>
-              <summary>Why this Principle exists</summary>
-              <dl>
-                {evolution.reflection ? (
-                  <div>
-                    <dt>Reflection</dt>
-                    <dd>{evolution.reflection.learning || evolution.reflection.happened}</dd>
-                  </div>
-                ) : null}
-                {evolution.outcome ? (
-                  <div>
-                    <dt>Observed outcome</dt>
-                    <dd>{evolution.outcome.actualResult} · {evolution.outcome.comparison}</dd>
-                  </div>
-                ) : null}
-              </dl>
-            </details>
-          </article>
+
+        {showAdd ? (
+          <div className={styles.principleEditor}>
+            <label>
+              <span>When</span>
+              <textarea aria-label="Principle trigger" onChange={(event) => setTrigger(event.target.value)} rows={2} value={trigger} />
+            </label>
+            <label>
+              <span>Then</span>
+              <textarea aria-label="Principle rule" onChange={(event) => setRule(event.target.value)} rows={3} value={rule} />
+            </label>
+            <label>
+              <span>Why</span>
+              <textarea aria-label="Principle rationale" onChange={(event) => setRationale(event.target.value)} rows={2} value={rationale} />
+            </label>
+            <button
+              className={styles.primary}
+              disabled={working === "manual" || trigger.trim().length < 3 || rule.trim().length < 3}
+              onClick={() => void addPrinciple()}
+              type="button"
+            >
+              {working === "manual" ? "Saving…" : "Save principle"}
+            </button>
+          </div>
+        ) : null}
+
+        {principles.length > 0 ? (
+          <div className={styles.principles}>
+            {principles.map((principle) => (
+              <PrincipleCard
+                key={principle.id}
+                onReview={(action) => void reviewPrinciple(principle.id, action)}
+                principle={principle}
+                working={working === `review:${principle.id}`}
+              />
+            ))}
+          </div>
         ) : (
-          <div className={styles.empty}>No active Principle is under test in the current cycle.</div>
+          <div className={styles.empty}>No principles yet.</div>
+        )}
+      </section>
+
+      <section className={styles.reflectionSection} aria-labelledby="reflections-title">
+        <div className={styles.sectionLead}>
+          <div>
+            <p className={styles.eyebrow}>Reflections</p>
+            <h2 id="reflections-title">Pain worth learning from</h2>
+          </div>
+        </div>
+        {eligibleReflections.length > 0 ? (
+          <div className={styles.reflections}>
+            {eligibleReflections.slice(0, 8).map((reflection) => {
+              const linked = people.principles.find(
+                (principle) =>
+                  principle.originReflectionId === reflection.id && principle.acceptanceState !== "rejected"
+              );
+              return (
+                <ReflectionCard
+                  key={reflection.id}
+                  linkedPrinciple={linked ?? null}
+                  onDistill={() => void distill(reflection.id)}
+                  reflection={reflection}
+                  working={working === `distill:${reflection.id}`}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className={styles.empty}>No completed reflections yet.</div>
         )}
       </section>
 
@@ -105,37 +225,24 @@ export function LearningRecenter({
         <div className={styles.sectionLead}>
           <div>
             <p className={styles.eyebrow}>Patterns</p>
-            <h2 id="patterns-title">Notice recurrence without turning it into identity.</h2>
+            <h2 id="patterns-title">Recurring reality</h2>
           </div>
-          <span className={styles.meta}>
-            {initialState.historyCount} learning case{initialState.historyCount === 1 ? "" : "s"}
-          </span>
         </div>
-
-        {challenged.length > 0 ? (
-          <div className={styles.challenge}>
-            <span>Needs attention</span>
-            <strong>{challenged.length} pattern hypothesis{challenged.length === 1 ? " is" : "es are"} challenged.</strong>
-          </div>
-        ) : null}
-
         {activePatterns.length > 0 ? (
           <div className={styles.patterns}>
             {activePatterns.slice(0, 4).map((pattern) => (
               <article key={pattern.id}>
                 <div className={styles.patternMeta}>
-                  <span>{pattern.kind.replaceAll("_", " ")}</span>
                   <span>{pattern.lifecycleState}</span>
+                  <span>{pattern.cases.length} cases</span>
                 </div>
                 <h3>{pattern.statement}</h3>
-                <p>{pattern.implication}</p>
                 <details>
-                  <summary>Evidence and uncertainty</summary>
+                  <summary>Evidence</summary>
                   <dl>
                     <div><dt>For</dt><dd>{pattern.supportingEvidence || "Not recorded"}</dd></div>
                     <div><dt>Against</dt><dd>{pattern.contradictingEvidence || "Not recorded"}</dd></div>
                     <div><dt>Uncertainty</dt><dd>{pattern.uncertainty || "Not recorded"}</dd></div>
-                    <div><dt>Cases</dt><dd>{pattern.cases.length}</dd></div>
                   </dl>
                 </details>
               </article>
@@ -145,24 +252,77 @@ export function LearningRecenter({
           <div className={styles.empty}>
             {initialState.historyCount < 2
               ? "Not enough history yet. Live the loop before asking the system to define a pattern."
-              : "Enough history exists to look for a recurring pattern."}
+              : "No pattern kept yet."}
           </div>
         )}
       </section>
 
       <details className={styles.lab} open={activePatterns.length === 0 && initialState.historyCount >= 2}>
-        <summary>
-          <span>Pattern lab</span>
-          <strong>Find, inspect, correct, or apply a learning pattern</strong>
-        </summary>
+        <summary>Pattern tools</summary>
         <div className={styles.legacy}>
-          <LearningWorkspace
-            email={email}
-            initialState={initialState}
-            workspaceName={workspaceName}
-          />
+          <LearningWorkspace email={email} initialState={initialState} workspaceName={workspaceName} />
         </div>
       </details>
     </div>
+  );
+}
+
+function PrincipleCard({
+  onReview,
+  principle,
+  working,
+}: {
+  onReview: (action: "accept" | "reject") => void;
+  principle: ClientPrincipleRecord;
+  working: boolean;
+}) {
+  return (
+    <article className={styles.principle}>
+      <div className={styles.principleTop}>
+        <span>{principle.lifecycleState}</span>
+        {principle.originReflectionId ? <span>from reflection</span> : <span>mine</span>}
+      </div>
+      <p>When {principle.trigger}</p>
+      <h3>{principle.rule}</h3>
+      {principle.rationale ? (
+        <details><summary>Why</summary><p>{principle.rationale}</p></details>
+      ) : null}
+      {principle.acceptanceState === "pending" ? (
+        <div className={styles.buttonRow}>
+          <button className={styles.primary} disabled={working} onClick={() => onReview("accept")} type="button">
+            Accept for testing
+          </button>
+          <button className={styles.secondary} disabled={working} onClick={() => onReview("reject")} type="button">
+            Reject
+          </button>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function ReflectionCard({
+  linkedPrinciple,
+  onDistill,
+  reflection,
+  working,
+}: {
+  linkedPrinciple: ClientPrincipleRecord | null;
+  onDistill: () => void;
+  reflection: ReflectionRecord;
+  working: boolean;
+}) {
+  return (
+    <article className={styles.reflection}>
+      <h3>{reflection.learning || reflection.happened}</h3>
+      {reflection.surprise ? <p>{reflection.surprise}</p> : null}
+      {linkedPrinciple ? (
+        <span className={styles.linked}>Principle · {linkedPrinciple.lifecycleState}</span>
+      ) : (
+        <button className={styles.secondary} disabled={working} onClick={onDistill} type="button">
+          {working ? "Distilling…" : "Distill principle"}
+        </button>
+      )}
+    </article>
   );
 }

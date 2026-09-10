@@ -33,16 +33,11 @@ export function OrganizationRecenter({
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="organization-title">
         <div>
-          <p className={styles.eyebrow}>Principles for Organizations</p>
+          <p className={styles.eyebrow}>Organization</p>
           <h1 id="organization-title">Design the machine around reality.</h1>
-          <p>
-            A healthy organization makes its purpose, observed problems, conflicting models,
-            responsibilities, and machine changes explicit. Disagreement is evidence to inspect,
-            not a people score.
-          </p>
         </div>
         <div className={styles.loop}>
-          <span>Shared Dream</span><b>→</b><span>Reality</span><b>→</b><span>Problem</span><b>→</b><span>Machine Design</span>
+          <span>Dream</span><b>→</b><span>Reality</span><b>→</b><span>Problem</span><b>→</b><span>Design</span>
         </div>
       </section>
 
@@ -50,22 +45,19 @@ export function OrganizationRecenter({
         <>
           <section className={styles.orientation} aria-label="Organization purpose and reality">
             <article className={styles.purpose}>
-              <p className={styles.eyebrow}>Shared Dream</p>
+              <p className={styles.eyebrow}>Dream</p>
               <h2>{active.purpose || active.name}</h2>
               <span>{active.name}</span>
             </article>
             <article className={styles.reality}>
-              <p className={styles.eyebrow}>Current Reality</p>
+              <p className={styles.eyebrow}>Reality</p>
               {openIssues[0] ? (
                 <>
                   <h2>{openIssues[0].observedReality}</h2>
-                  <span>{openIssues.length} open issue{openIssues.length === 1 ? "" : "s"} need attention</span>
+                  <span>{openIssues.length} open issue{openIssues.length === 1 ? "" : "s"}</span>
                 </>
               ) : (
-                <>
-                  <h2>No unresolved issue is currently recorded.</h2>
-                  <span>Keep observing the machine instead of assuming it works.</span>
-                </>
+                <h2>No open issues.</h2>
               )}
             </article>
           </section>
@@ -83,13 +75,13 @@ export function OrganizationRecenter({
                 {openIssues.slice(0, 4).map((issue) => (
                   <article key={issue.id}>
                     <div className={styles.issueMeta}>
-                      <span>Observed by {issue.createdByEmail}</span>
+                      <span>{issue.createdByEmail}</span>
                       <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
                     </div>
                     <h3>{issue.title}</h3>
                     <p>{issue.tension}</p>
                     <details>
-                      <summary>Observed reality and competing models</summary>
+                      <summary>Reality and models</summary>
                       <dl>
                         <div><dt>Reality</dt><dd>{issue.observedReality}</dd></div>
                         {issue.disagreements.map((disagreement) => (
@@ -109,10 +101,10 @@ export function OrganizationRecenter({
           <section className={styles.diagnosisSection} aria-labelledby="diagnosis-title">
             <div className={styles.sectionLead}>
               <div>
-                <p className={styles.eyebrow}>Diagnosis evidence</p>
-                <h2 id="diagnosis-title">Different models of reality should become inspectable.</h2>
+                <p className={styles.eyebrow}>Diagnosis</p>
+                <h2 id="diagnosis-title">Competing models</h2>
               </div>
-              <span>{unresolvedDisagreements.length} unresolved disagreement{unresolvedDisagreements.length === 1 ? "" : "s"}</span>
+              <span>{unresolvedDisagreements.length} unresolved</span>
             </div>
             {unresolvedDisagreements.length > 0 ? (
               <div className={styles.disagreements}>
@@ -121,20 +113,20 @@ export function OrganizationRecenter({
                     <span>{issue.title}</span>
                     <h3>{disagreement.statement}</h3>
                     {disagreement.reasoning ? <p>{disagreement.reasoning}</p> : null}
-                    <small>Raised by {disagreement.raisedByEmail}</small>
+                    <small>{disagreement.raisedByEmail}</small>
                   </article>
                 ))}
               </div>
             ) : (
-              <div className={styles.empty}>No unresolved disagreement is currently challenging the shared model.</div>
+              <div className={styles.empty}>No unresolved disagreements.</div>
             )}
           </section>
 
           <section className={styles.machineSection} aria-labelledby="machine-title">
             <div className={styles.sectionLead}>
               <div>
-                <p className={styles.eyebrow}>Machine Design</p>
-                <h2 id="machine-title">Make who owns what explicit.</h2>
+                <p className={styles.eyebrow}>Design</p>
+                <h2 id="machine-title">Ownership and responsibility</h2>
               </div>
               <span>{active.roles.length} roles · {responsibilityCount} responsibilities · {active.teams.length} teams</span>
             </div>
@@ -145,12 +137,12 @@ export function OrganizationRecenter({
                   <h3>{role.name}</h3>
                   {role.purpose ? <p>{role.purpose}</p> : null}
                   <details>
-                    <summary>Responsibility and decision scope</summary>
+                    <summary>Scope</summary>
                     <dl>
-                      {role.decisionScope ? <div><dt>Decision scope</dt><dd>{role.decisionScope}</dd></div> : null}
+                      {role.decisionScope ? <div><dt>Decisions</dt><dd>{role.decisionScope}</dd></div> : null}
                       {role.responsibilities.map((responsibility) => (
                         <div key={responsibility.id}>
-                          <dt>Responsibility</dt>
+                          <dt>Owns</dt>
                           <dd>{responsibility.statement}{responsibility.expectedOutcome ? ` → ${responsibility.expectedOutcome}` : ""}</dd>
                         </div>
                       ))}
@@ -165,8 +157,8 @@ export function OrganizationRecenter({
             <section className={styles.evidenceSection} aria-labelledby="context-title">
               <div className={styles.sectionLead}>
                 <div>
-                  <p className={styles.eyebrow}>Contextual track record</p>
-                  <h2 id="context-title">Evidence belongs to a context, not a permanent score.</h2>
+                  <p className={styles.eyebrow}>Evidence</p>
+                  <h2 id="context-title">Contextual track record</h2>
                 </div>
               </div>
               <div className={styles.evidenceGrid}>
@@ -175,7 +167,7 @@ export function OrganizationRecenter({
                     <span>{evidence.context}</span>
                     <h3>{evidence.observation}</h3>
                     <details>
-                      <summary>Evidence for / against</summary>
+                      <summary>For / against</summary>
                       <p><strong>For:</strong> {evidence.evidenceFor || "Not recorded"}</p>
                       <p><strong>Against:</strong> {evidence.evidenceAgainst || "Not recorded"}</p>
                     </details>
@@ -187,17 +179,13 @@ export function OrganizationRecenter({
         </>
       ) : (
         <section className={styles.emptyState}>
-          <p className={styles.eyebrow}>Start with purpose</p>
-          <h2>Create the machine you want to improve.</h2>
-          <p>An organization needs an explicit purpose before Issues, disagreements, roles, and evidence have context.</p>
+          <p className={styles.eyebrow}>Organization</p>
+          <h2>Create your organization.</h2>
         </section>
       )}
 
       <details className={styles.operations} open={!active}>
-        <summary>
-          <span>Operate the machine</span>
-          <strong>Create organizations, record issues, govern roles, resolve disagreements, and add evidence</strong>
-        </summary>
+        <summary>Operations</summary>
         <div className={styles.legacy}>
           <OrganizationWorkspace email={email} initialState={initialState} />
         </div>

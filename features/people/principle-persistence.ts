@@ -6,6 +6,73 @@ function nullableString(value: unknown): string | null {
   return value === null || value === undefined ? null : String(value);
 }
 
+function mapPrincipleRow(row: Record<string, unknown>, evidenceIds: string[] = []): PrincipleRecord {
+  return {
+    acceptanceState: String(row.acceptance_state) as PrincipleRecord["acceptanceState"],
+    confidence:
+      row.confidence === null || row.confidence === undefined ? null : Number(row.confidence),
+    evidenceIds,
+    id: String(row.id),
+    lifecycleState: String(row.lifecycle_state) as PrincipleRecord["lifecycleState"],
+    originReflectionId: nullableString(row.origin_reflection_id),
+    rationale: nullableString(row.rationale),
+    rule: String(row.rule),
+    trigger: String(row.trigger),
+  };
+}
+
+export async function persistManualPrinciple(input: {
+  rationale?: string | null;
+  rule: string;
+  trigger: string;
+  userId: string;
+  workspaceId: string;
+}): Promise<PrincipleRecord> {
+  return db().begin(async (transaction) => {
+    const rows = await transaction`
+      INSERT INTO principles (
+        workspace_id,
+        created_by_user_id,
+        trigger,
+        rule,
+        rationale,
+        lifecycle_state,
+        acceptance_state
+      ) VALUES (
+        ${input.workspaceId}::uuid,
+        ${input.userId}::uuid,
+        ${input.trigger.trim()},
+        ${input.rule.trim()},
+        ${input.rationale?.trim() || null},
+        'testing',
+        'accepted'
+      )
+      RETURNING id, origin_reflection_id, trigger, rule, rationale,
+        confidence, lifecycle_state, acceptance_state
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new Error("Principle was not created.");
+    }
+    await transaction`
+      INSERT INTO activity_events (
+        workspace_id,
+        actor_user_id,
+        event_type,
+        subject_type,
+        subject_id
+      ) VALUES (
+        ${input.workspaceId}::uuid,
+        ${input.userId}::uuid,
+        'principle.created',
+        'principle',
+        ${String(row.id)}::uuid
+      )
+    `;
+    return mapPrincipleRow(row);
+  });
+}
+
 export async function persistAiPrincipleCandidate(input: {
   confidence: number | null;
   evidenceIds: readonly string[];
@@ -125,19 +192,6 @@ export async function persistAiPrincipleCandidate(input: {
       )
     `;
 
-    return {
-      acceptanceState: String(row.acceptance_state) as PrincipleRecord["acceptanceState"],
-      confidence:
-        row.confidence === null || row.confidence === undefined
-          ? null
-          : Number(row.confidence),
-      evidenceIds,
-      id: principleId,
-      lifecycleState: String(row.lifecycle_state) as PrincipleRecord["lifecycleState"],
-      originReflectionId: nullableString(row.origin_reflection_id),
-      rationale: nullableString(row.rationale),
-      rule: String(row.rule),
-      trigger: String(row.trigger),
-    };
+    return mapPrincipleRow(row, evidenceIds);
   });
 }

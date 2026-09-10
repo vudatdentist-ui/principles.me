@@ -16,7 +16,7 @@ async function createAccount(
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await response).status()).toBe(201);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Evolve through reality." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What deserves attention now?" })).toBeVisible();
 }
 
 async function signOut(page: import("@playwright/test").Page) {
@@ -33,12 +33,11 @@ async function signIn(
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).last().click();
-  await expect(page.getByRole("heading", { name: "Evolve through reality." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What deserves attention now?" })).toBeVisible();
 }
 
 async function openOperations(page: import("@playwright/test").Page) {
-  const label = page.getByText("Operate the machine", { exact: true });
-  const summary = label.locator("..");
+  const summary = page.getByText("Operations", { exact: true });
   const details = summary.locator("..");
   if (!(await details.evaluate((element) => (element as HTMLDetailsElement).open))) {
     await summary.click();
@@ -66,9 +65,9 @@ test("Organization reuses the evolution language while preserving governed colla
   await expect(
     page.getByRole("heading", { name: "Design the machine around reality." })
   ).toBeVisible();
-  await expect(page.getByText("Shared Dream").first()).toBeVisible();
-  await expect(page.getByText("Machine Design").first()).toBeVisible();
-  for (const tab of ["People", "Organization", "Knowledge", "Learning"]) {
+  await expect(page.getByText("Dream").first()).toBeVisible();
+  await expect(page.getByText("Design").first()).toBeVisible();
+  for (const tab of ["Me", "Organization", "Knowledge", "Learning"]) {
     await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
   }
 
@@ -161,7 +160,7 @@ test("Organization reuses the evolution language while preserving governed colla
   ).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText("Different models of reality should become inspectable.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Competing models" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "The issue overstates the approval bottleneck." }).first()
   ).toBeVisible();

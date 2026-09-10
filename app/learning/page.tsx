@@ -7,6 +7,8 @@ import { loadEvolutionState } from "@/features/evolution/service";
 import { LearningRecenter } from "@/features/learning/learning-recenter";
 import { projectLearningState } from "@/features/learning/projection";
 import { loadLearningState } from "@/features/learning/repository";
+import { projectPeopleState } from "@/features/people/projection";
+import { loadPeopleState } from "@/features/people/repository";
 import { AppShell } from "@/features/shell/app-shell";
 
 async function LearningEntry() {
@@ -15,9 +17,10 @@ async function LearningEntry() {
   const session = token ? await sessionContext(token) : null;
   if (!session) redirect("/");
 
-  const [learning, evolution] = await Promise.all([
+  const [learning, evolution, people] = await Promise.all([
     loadLearningState(session.workspace.id).then(projectLearningState),
     loadEvolutionState(session.workspace.id),
+    loadPeopleState(session.workspace.id).then(projectPeopleState),
   ]);
 
   return (
@@ -29,6 +32,7 @@ async function LearningEntry() {
       <LearningRecenter
         email={session.user.email}
         evolution={evolution}
+        initialPeople={people}
         initialState={learning}
         workspaceName={session.workspace.name}
       />
