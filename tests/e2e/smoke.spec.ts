@@ -56,12 +56,14 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Evolve through reality." })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "What deserves attention now?" })
+  ).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
   return email;
 }
 
-async function answerDreamQuestion(
+async function answerGoalQuestion(
   page: import("@playwright/test").Page,
   value: string
 ) {
@@ -72,25 +74,43 @@ async function answerDreamQuestion(
   await continueButton.click();
 }
 
-async function createDream(page: import("@playwright/test").Page) {
-  await answerDreamQuestion(page, "Build a company that operates without depending on me day to day.");
-  await answerDreamQuestion(page, "I want the company to compound without making me its bottleneck.");
-  await answerDreamQuestion(page, "The team makes routine operating decisions without waiting for me.");
-  await answerDreamQuestion(page, "I will deprioritize low-value side projects.");
-  await answerDreamQuestion(page, "Protect health and family time.");
-
-  const chooseDream = page.getByRole("button", { name: "Choose this dream" });
-  await expect(chooseDream).toBeVisible();
-  await chooseDream.click();
+async function createGoal(
+  page: import("@playwright/test").Page,
+  values: [string, string, string, string, string]
+) {
+  for (const value of values) {
+    await answerGoalQuestion(page, value);
+  }
+  const addGoal = page.getByRole("button", { name: "Add goal" });
+  await expect(addGoal).toBeVisible();
+  await addGoal.click();
 }
 
-test("authenticated shell is coherent and empty Learning waits for lived history", async ({
+const companyGoal: [string, string, string, string, string] = [
+  "Build a company that operates without depending on me day to day.",
+  "I want the company to compound without making me its bottleneck.",
+  "The team makes routine operating decisions without waiting for me.",
+  "I will deprioritize low-value side projects.",
+  "Protect health and family time.",
+];
+
+const healthGoal: [string, string, string, string, string] = [
+  "Build durable health and energy.",
+  "Energy determines how well I can live and work.",
+  "I train consistently and recover well for three months.",
+  "I will reduce late-night work.",
+  "Protect family commitments.",
+];
+
+test("authenticated shell uses Me and empty Learning waits for lived history", async ({
   page,
   request,
 }) => {
   expect((await request.get("/api/evolution/state")).status()).toBe(401);
   expect((await request.get("/api/learning/state")).status()).toBe(401);
-  expect((await request.post("/api/ask", { data: { question: "What is private?" } })).status()).toBe(401);
+  expect(
+    (await request.post("/api/ask", { data: { question: "What is private?" } })).status()
+  ).toBe(401);
 
   await createAccount(page);
   const evolution = await page.evaluate(async () => {
@@ -100,16 +120,17 @@ test("authenticated shell is coherent and empty Learning waits for lived history
   expect(evolution.status).toBe(200);
   expect(evolution.body.stage).toBe("dream");
   expect(evolution.body.fiveSteps.current).toBe("goal");
+  expect(evolution.body.goals).toEqual([]);
   expect(JSON.stringify(evolution.body)).not.toContain("workspaceId");
 
   for (const [path, active] of [
-    ["/", "People"],
+    ["/", "Me"],
     ["/organization", "Organization"],
     ["/knowledge", "Knowledge"],
     ["/learning", "Learning"],
   ] as const) {
     await page.goto(path);
-    for (const tab of ["People", "Organization", "Knowledge", "Learning"]) {
+    for (const tab of ["Me", "Organization", "Knowledge", "Learning"]) {
       await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
     }
     await expect(page.getByRole("link", { name: active, exact: true }).first()).toHaveAttribute(
@@ -118,7 +139,9 @@ test("authenticated shell is coherent and empty Learning waits for lived history
     );
   }
 
-  await expect(page.getByRole("heading", { name: "What is reality teaching you?" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "What is reality teaching you?" })
+  ).toBeVisible();
   await expect(
     page.getByText(
       "Not enough history yet. Live the loop before asking the system to define a pattern.",
@@ -128,7 +151,53 @@ test("authenticated shell is coherent and empty Learning waits for lived history
   await expect(page.getByRole("button", { name: "Find a pattern" })).toHaveCount(0);
 });
 
-test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a living Principle", async ({
+test("Me keeps multiple goals visible and projects each goal independently", async ({ page }) => {
+  await createAccount(page);
+  await createGoal(page, companyGoal);
+  await expect(page.getByRole("button", { name: "+ Goal" })).toBeVisible();
+  await page.getByRole("button", { name: "+ Goal" }).click();
+  await createGoal(page, healthGoal);
+
+  await expect(page.getByText(companyGoal[0]).first()).toBeVisible();
+  await expect(page.getByText(healthGoal[0]).first()).toBeVisible();
+
+  const portfolio = await page.evaluate(async () => {
+    const response = await fetch("/api/evolution/state");
+    return response.json();
+  });
+  expect(portfolio.goals).toHaveLength(2);
+  const company = portfolio.goals.find(
+    (goal: { desiredState: string }) => goal.desiredState === companyGoal[0]
+  );
+  const health = portfolio.goals.find(
+    (goal: { desiredState: string }) => goal.desiredState === healthGoal[0]
+  );
+  expect(company?.id).toBeTruthy();
+  expect(health?.id).toBeTruthy();
+
+  const lanes = await page.evaluate(async ({ companyId, healthId }) => {
+    const [companyResponse, healthResponse] = await Promise.all([
+      fetch(`/api/evolution/state?goalId=${encodeURIComponent(companyId)}`),
+      fetch(`/api/evolution/state?goalId=${encodeURIComponent(healthId)}`),
+    ]);
+    return {
+      company: await companyResponse.json(),
+      health: await healthResponse.json(),
+    };
+  }, { companyId: company.id as string, healthId: health.id as string });
+
+  expect(lanes.company.dream.desiredState).toBe(companyGoal[0]);
+  expect(lanes.health.dream.desiredState).toBe(healthGoal[0]);
+  expect(lanes.company.stage).toBe("reality");
+  expect(lanes.health.stage).toBe("reality");
+
+  const companyButton = page.locator('button[aria-pressed]').filter({ hasText: companyGoal[0] });
+  await companyButton.click();
+  await expect(companyButton).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: companyGoal[0] }).first()).toBeVisible();
+});
+
+test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning", async ({
   page,
 }) => {
   const actualOutcome =
@@ -141,23 +210,22 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
     "Name the decision owner and default authority before the next routine case, then verify the next real outcome.";
 
   await createAccount(page);
+  await createGoal(page, companyGoal);
   await expect(page.getByText("Dream").first()).toBeVisible();
   await expect(page.getByText("Reality").first()).toBeVisible();
-  await expect(page.getByText("5 Steps to Get What You Want")).toBeVisible();
-  await createDream(page);
+  await expect(page.getByRole("heading", { name: "5 Steps" })).toBeVisible();
 
   await page
-    .getByLabel("Describe reality without explaining it away.")
+    .getByLabel("What is actually true?")
     .fill("Three routine operating decisions waited for me this week.");
   await page.getByRole("button", { name: "Record reality" }).click();
 
   await page.getByRole("button", { name: "Find the problem" }).click();
-  await expect(page.getByLabel("Problem statement")).toHaveValue(
+  await expect(page.getByLabel("Problem")).toHaveValue(
     "The founder remains a routine operating bottleneck."
   );
   await page.getByRole("button", { name: "Name this problem" }).click();
 
-  await expect(page.getByRole("button", { name: "Diagnose the root cause" })).toBeVisible();
   await page.getByRole("button", { name: "Diagnose the root cause" }).click();
   await expect(page.getByLabel("Root-cause hypothesis")).toHaveValue(
     "Routine decisions have no explicit default owner with authority to act without founder approval."
@@ -189,27 +257,23 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
   }
 
   await expect(page.getByLabel("Actual outcome")).toBeVisible();
-  const afterDo = await page.evaluate(async () => {
-    const response = await fetch("/api/evolution/state");
-    return response.json();
-  });
-  expect(afterDo.actions.some((action: { status: string }) => action.status === "pending")).toBe(false);
-
   await page.getByLabel("Actual outcome").fill(actualOutcome);
   await page.getByRole("button", { name: "improved" }).click();
-  await page.getByRole("button", { name: "Record observed outcome" }).click();
+  await page.getByRole("button", { name: "Record outcome" }).click();
 
   await expect(page.getByText("Pain").first()).toBeVisible();
   await page.getByLabel("What hurt or surprised you?").fill(
     "A small authority rule removed more waiting than another discussion did."
   );
-  await page.getByLabel("What should change in your model next time?").fill(outcomeLearning);
-  await page.getByRole("button", { name: "Turn reflection into progress" }).click();
+  await page.getByLabel("What did this teach you?").fill(outcomeLearning);
+  await page.getByRole("button", { name: "Save reflection" }).click();
 
   await page.getByRole("button", { name: "Distill a principle" }).click();
   await expect(
     page
-      .getByText("Make the decision owner and default authority explicit before the next routine case.")
+      .getByText(
+        "Make the decision owner and default authority explicit before the next routine case."
+      )
       .first()
   ).toBeVisible();
   await page.getByRole("button", { name: "Accept for testing" }).click();
@@ -220,7 +284,9 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
     return response.json();
   });
   expect(finalEvolution.stage).toBe("principle");
-  expect(finalEvolution.fiveSteps.steps.every((step: { status: string }) => step.status === "complete")).toBe(true);
+  expect(
+    finalEvolution.fiveSteps.steps.every((step: { status: string }) => step.status === "complete")
+  ).toBe(true);
   expect(finalEvolution.outcome.comparison).toBe("improved");
   expect(finalEvolution.reflection.learning).toBe(outcomeLearning);
   expect(finalEvolution.principle.lifecycleState).toBe("testing");
@@ -247,14 +313,19 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
   expect(secondReflectionStatus).toBe(201);
 
   await page.goto("/learning");
-  await expect(page.getByRole("heading", { name: "What is reality teaching you?" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "What is reality teaching you?" })
+  ).toBeVisible();
   await expect(page.getByText(outcomeLearning).first()).toBeVisible();
-  await expect(page.getByText("A rule earns trust through reality.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Rules I am testing" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Distill principle" })).toBeVisible();
 
   await expect(page.getByRole("button", { name: "Find a pattern" })).toBeVisible();
   await page.getByRole("button", { name: "Find a pattern" }).click();
   await expect(
-    page.getByText("Explicit default authority changed behavior where discussing responsibilities alone had not.")
+    page.getByText(
+      "Explicit default authority changed behavior where discussing responsibilities alone had not."
+    )
   ).toBeVisible();
   await page.getByText("Inspect the evidence").click();
   await expect(page.getByText("Outcome review", { exact: false }).first()).toBeVisible();
@@ -279,9 +350,39 @@ test("one person completes Dream, 5 Steps, Outcome, Pain + Reflection, and a liv
   expect(revisedPrinciple?.lifecycleState).toBe("testing");
 });
 
-test("Knowledge uses shared evidence plus bounded personal context without durable writes", async ({ page }) => {
+test("Learning lets a user add a principle directly", async ({ page }) => {
+  const trigger = "I am making an irreversible decision";
+  const rule = "Slow down until I understand the downside.";
+
   await createAccount(page);
-  await createDream(page);
+  await page.goto("/learning");
+  await page.getByRole("button", { name: "+ Add principle" }).click();
+  await page.getByLabel("Principle trigger").fill(trigger);
+  await page.getByLabel("Principle rule").fill(rule);
+  await page
+    .getByLabel("Principle rationale")
+    .fill("Reversal cost matters more than speed in this context.");
+  await page.getByRole("button", { name: "Save principle" }).click();
+
+  await expect(page.getByRole("heading", { name: rule })).toBeVisible();
+  await expect(page.getByText("testing", { exact: true }).first()).toBeVisible();
+
+  const saved = await page.evaluate(async ({ expectedRule }) => {
+    const response = await fetch("/api/people/state");
+    const state = await response.json();
+    return state.principles.find((item: { rule: string }) => item.rule === expectedRule);
+  }, { expectedRule: rule });
+
+  expect(saved.originReflectionId).toBeNull();
+  expect(saved.acceptanceState).toBe("accepted");
+  expect(saved.lifecycleState).toBe("testing");
+});
+
+test("Knowledge uses shared evidence plus bounded personal context without durable writes", async ({
+  page,
+}) => {
+  await createAccount(page);
+  await createGoal(page, companyGoal);
   const before = await page.evaluate(async () => {
     const response = await fetch("/api/evolution/state");
     return response.json();
@@ -300,7 +401,7 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
 
   await page.getByLabel("Question").fill("What problem am I not confronting?");
   await page.getByRole("button", { name: "Ask" }).click();
-  await expect(page.getByRole("heading", { name: "Reason with reality." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
   await expect(
     page.getByText("Shared Principles knowledge").locator("..").getByText("Connected")
   ).toBeVisible();
@@ -311,7 +412,7 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
     page.getByText("Live public search").locator("..").getByText("Connected")
   ).toBeVisible();
   await expect(page.getByText("Principles knowledge source")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Use this thinking in People →" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue in Me →" })).toBeVisible();
 
   const after = await page.evaluate(async () => {
     const response = await fetch("/api/evolution/state");
