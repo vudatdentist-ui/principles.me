@@ -107,6 +107,7 @@ await assertEventuallyCanonical(
   `http://www.principles.me/test-path`,
   `${canonicalOrigin}/test-path`,
 );
+await assertRedirect(`${canonicalOrigin}/$%7B1%7D`, `${canonicalOrigin}/`);
 
 const canonicalRoot = await request(`${canonicalOrigin}/`);
 assert.ok(
