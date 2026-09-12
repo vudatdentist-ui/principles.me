@@ -67,3 +67,11 @@ test("canonical apex is not redirected to www", () => {
   assert.equal(canonicalUrl.hostname, "principles.me");
   assert.notEqual(canonicalUrl.hostname, "www.principles.me");
 });
+
+test("legacy encoded placeholder recovers to the canonical root", () => {
+  const legacyUrl = new URL("https://principles.me/$%7B1%7D");
+  assert.equal(decodeURIComponent(legacyUrl.pathname), `/${captureMarker}`);
+  legacyUrl.hostname = "principles.me";
+  legacyUrl.pathname = "/";
+  assert.equal(legacyUrl.toString(), "https://principles.me/");
+});
