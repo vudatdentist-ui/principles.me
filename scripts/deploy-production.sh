@@ -245,7 +245,7 @@ create_app_container "$release_container" \
   --label "traefik.http.routers.${router}-http.middlewares=${redirect}" \
   --label "traefik.http.middlewares.${redirect}.redirectscheme.scheme=https" \
   --label "traefik.http.middlewares.${router}-www-redirect.redirectregex.regex=^https://www\\.principles\\.me/(.*)" \
-  --label "traefik.http.middlewares.${router}-www-redirect.redirectregex.replacement=https://principles.me/\$\${1}" \
+  --label "traefik.http.middlewares.${router}-www-redirect.redirectregex.replacement=https://principles.me/\${1}" \
   --label "traefik.http.middlewares.${router}-www-redirect.redirectregex.permanent=true" \
   --label "traefik.http.routers.${router}-https.rule=Host(\`principles.me\`) || Host(\`www.principles.me\`)" \
   --label "traefik.http.routers.${router}-https.entrypoints=https" \
