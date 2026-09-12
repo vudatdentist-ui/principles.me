@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 
 const canonicalOrigin = (
   process.env.CANONICAL_ORIGIN || "https://principles.me"
@@ -8,6 +9,8 @@ const canonicalOrigin = (
 const wwwOrigin =
   process.env.WWW_ORIGIN || canonicalOrigin.replace("://", "://www.");
 const timeoutMs = Number(process.env.ROUTING_TIMEOUT_MS || 20_000);
+const curlCommand = process.platform === "win32" ? "curl.exe" : "curl";
+const nullDevice = process.platform === "win32" ? "NUL" : "/dev/null";
 const captureMarker = "$" + "{1}";
 const forbiddenPlaceholders = [
   captureMarker,
@@ -31,18 +34,36 @@ function assertSafeLocation(location, requestUrl) {
   return location;
 }
 
-async function request(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      cache: "no-store",
-      redirect: "manual",
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
+function request(url) {
+  const output = execFileSync(
+    curlCommand,
+    [
+      "-4",
+      "--silent",
+      "--show-error",
+      "--max-time",
+      String(Math.ceil(timeoutMs / 1_000)),
+      "--output",
+      nullDevice,
+      "--dump-header",
+      "-",
+      "--write-out",
+      "\n%{http_code}",
+      url,
+    ],
+    { encoding: "utf8" },
+  );
+  const statusSeparator = output.lastIndexOf("\n");
+  assert.ok(statusSeparator > 0, `curl did not return a status for ${url}.`);
+  const status = Number(output.slice(statusSeparator + 1).trim());
+  const headers = output.slice(0, statusSeparator);
+  const location = headers
+    .split(/\r?\n/)
+    .find((header) => /^location:/i.test(header))
+    ?.replace(/^location:\s*/i, "")
+    .trim();
+  assert.ok(Number.isInteger(status), `Invalid HTTP status for ${url}.`);
+  return { headers, location: location || null, status };
 }
 
 async function assertRedirect(url, expectedLocation) {
@@ -51,7 +72,7 @@ async function assertRedirect(url, expectedLocation) {
     isRedirect(response.status),
     `${url} returned HTTP ${response.status}; expected a redirect.`,
   );
-  const location = assertSafeLocation(response.headers.get("location"), url);
+  const location = assertSafeLocation(response.location, url);
   assert.equal(location, expectedLocation, `${url} redirected incorrectly.`);
   console.log(`CANONICAL_REDIRECT_OK ${url} -> ${location}`);
 }
@@ -70,10 +91,7 @@ async function assertEventuallyCanonical(url, expectedLocation) {
       return;
     }
 
-    const location = assertSafeLocation(
-      response.headers.get("location"),
-      currentUrl,
-    );
+    const location = assertSafeLocation(response.location, currentUrl);
     currentUrl = new URL(location, currentUrl).toString();
   }
   throw new Error(`${url} exceeded the canonical redirect limit.`);
@@ -95,7 +113,7 @@ assert.ok(
   !isRedirect(canonicalRoot.status),
   `${canonicalOrigin}/ unexpectedly redirects with HTTP ${canonicalRoot.status}.`,
 );
-const canonicalRootLocation = canonicalRoot.headers.get("location");
+const canonicalRootLocation = canonicalRoot.location;
 if (canonicalRootLocation) {
   assertSafeLocation(canonicalRootLocation, `${canonicalOrigin}/`);
   assert.ok(
