@@ -18,7 +18,9 @@ export function proxy(request: NextRequest) {
     decodedPathname === `/${captureMarker}`
   ) {
     const recoveryUrl = request.nextUrl.clone();
+    recoveryUrl.protocol = "https:";
     recoveryUrl.hostname = "principles.me";
+    recoveryUrl.port = "";
     recoveryUrl.pathname = "/";
     return NextResponse.redirect(recoveryUrl, 307);
   }
