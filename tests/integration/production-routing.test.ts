@@ -70,8 +70,11 @@ test("canonical apex is not redirected to www", () => {
 
 test("legacy encoded placeholder recovers to the canonical root", () => {
   const legacyUrl = new URL("https://principles.me/$%7B1%7D");
+  legacyUrl.port = "3000";
   assert.equal(decodeURIComponent(legacyUrl.pathname), `/${captureMarker}`);
+  legacyUrl.protocol = "https:";
   legacyUrl.hostname = "principles.me";
+  legacyUrl.port = "";
   legacyUrl.pathname = "/";
   assert.equal(legacyUrl.toString(), "https://principles.me/");
 });
