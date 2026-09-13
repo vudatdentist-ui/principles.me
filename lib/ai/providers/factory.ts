@@ -1,8 +1,14 @@
+import { errorFields, logEvent } from "@/lib/observability/logger";
+import { instrumentAiProvider } from "@/lib/observability/ai-provider";
 import type { AiProvider } from "./ai-provider";
-import { AiProviderError } from "./provider-error";
 import { DeepSeekProvider } from "./deepseek-provider";
 import { OpenAIResponsesProvider } from "./openai-responses-provider";
-import type { GenerateObjectRequest, GenerateTextRequest, StreamTextRequest } from "./types";
+import { AiProviderError } from "./provider-error";
+import type {
+  GenerateObjectRequest,
+  GenerateTextRequest,
+  StreamTextRequest,
+} from "./types";
 
 type ProviderOptions = {
   maxTokens?: number;
@@ -17,6 +23,15 @@ class FallbackAiProvider implements AiProvider {
     private readonly fallback: AiProvider,
   ) {}
 
+  private reportFallback(operation: string, error: unknown): void {
+    logEvent("warn", "ai.fallback.used", {
+      ...errorFields(error),
+      fallbackProvider: this.fallback.id,
+      operation,
+      primaryProvider: this.primary.id,
+    });
+  }
+
   async generateObject<T>(request: GenerateObjectRequest<T>): Promise<T> {
     try {
       return await this.primary.generateObject(request);
@@ -24,6 +39,7 @@ class FallbackAiProvider implements AiProvider {
       if (error instanceof AiProviderError && error.code === "aborted") {
         throw error;
       }
+      this.reportFallback("generateObject", error);
       return this.fallback.generateObject(request);
     }
   }
@@ -35,6 +51,7 @@ class FallbackAiProvider implements AiProvider {
       if (error instanceof AiProviderError && error.code === "aborted") {
         throw error;
       }
+      this.reportFallback("generateText", error);
       return this.fallback.generateText(request);
     }
   }
@@ -51,6 +68,7 @@ class FallbackAiProvider implements AiProvider {
       if (emitted || (error instanceof AiProviderError && error.code === "aborted")) {
         throw error;
       }
+      this.reportFallback("streamText", error);
     }
 
     yield* this.fallback.streamText(request);
@@ -64,9 +82,9 @@ export function aiProviderConfigured(): boolean {
 }
 
 export function createAiProvider(options: ProviderOptions = {}): AiProvider {
-  const primary = new OpenAIResponsesProvider(options);
-  const fallback = new DeepSeekProvider(options);
-  const primaryConfigured = primary.isConfigured();
+  const primary = instrumentAiProvider(new OpenAIResponsesProvider(options));
+  const fallback = instrumentAiProvider(new DeepSeekProvider(options));
+  const primaryConfigured = new OpenAIResponsesProvider(options).isConfigured();
   const fallbackConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
 
   if (primaryConfigured && fallbackConfigured) {
