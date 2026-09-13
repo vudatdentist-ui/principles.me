@@ -1,5 +1,5 @@
-import { errorFields, logEvent } from "@/lib/observability/logger";
 import { instrumentAiProvider } from "@/lib/observability/ai-provider";
+import { errorFields, logEvent } from "@/lib/observability/logger";
 import type { AiProvider } from "./ai-provider";
 import { DeepSeekProvider } from "./deepseek-provider";
 import { OpenAIResponsesProvider } from "./openai-responses-provider";
@@ -82,10 +82,12 @@ export function aiProviderConfigured(): boolean {
 }
 
 export function createAiProvider(options: ProviderOptions = {}): AiProvider {
-  const primary = instrumentAiProvider(new OpenAIResponsesProvider(options));
-  const fallback = instrumentAiProvider(new DeepSeekProvider(options));
-  const primaryConfigured = new OpenAIResponsesProvider(options).isConfigured();
+  const primaryRaw = new OpenAIResponsesProvider(options);
+  const fallbackRaw = new DeepSeekProvider(options);
+  const primaryConfigured = primaryRaw.isConfigured();
   const fallbackConfigured = Boolean(process.env.DEEPSEEK_API_KEY?.trim());
+  const primary = instrumentAiProvider(primaryRaw);
+  const fallback = instrumentAiProvider(fallbackRaw);
 
   if (primaryConfigured && fallbackConfigured) {
     return new FallbackAiProvider(primary, fallback);
