@@ -176,9 +176,12 @@
     font-size: 22px;
   }
 
-  .accountMeta,
-  .accountLink {
+  .accountMeta {
     display: none;
+  }
+
+  .account {
+    gap: 12px;
   }
 
   .nav {
