@@ -71,7 +71,7 @@ test("5 Steps lets the user inspect lived, current, and future meaning", async (
   );
   await page.getByRole("button", { name: "Record reality" }).click();
   await page.getByRole("button", { name: "Find the problem" }).click();
-  await expect(page.getByLabel("Problem", { exact: true })).toHaveValue(
+  await expect(page.getByRole("textbox", { name: "Problem", exact: true })).toHaveValue(
     "The founder remains a routine operating bottleneck.",
   );
   await page.getByRole("button", { name: "Name this problem" }).click();
