@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import styles from "./account-controls.module.css";
 
 type OwnedOrganization = {
@@ -10,7 +10,10 @@ type OwnedOrganization = {
 
 function filenameFromDisposition(value: string | null): string {
   const match = value?.match(/filename="([^"]+)"/i);
-  return match?.[1] || `principles-export-${new Date().toISOString().slice(0, 10)}.json`;
+  return (
+    match?.[1] ||
+    `principles-export-${new Date().toISOString().slice(0, 10)}.json`
+  );
 }
 
 export function AccountControls({ email }: { email: string }) {
@@ -20,7 +23,9 @@ export function AccountControls({ email }: { email: string }) {
   const [deletePassword, setDeletePassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [deleteOwnedOrganizations, setDeleteOwnedOrganizations] = useState(false);
-  const [ownedOrganizations, setOwnedOrganizations] = useState<OwnedOrganization[]>([]);
+  const [ownedOrganizations, setOwnedOrganizations] = useState<
+    OwnedOrganization[]
+  >([]);
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -35,7 +40,9 @@ export function AccountControls({ email }: { email: string }) {
         body: JSON.stringify({ password: exportPassword }),
       });
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
         setExportStatus(body?.error || "Export failed.");
         return;
       }
@@ -43,7 +50,9 @@ export function AccountControls({ email }: { email: string }) {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = filenameFromDisposition(response.headers.get("content-disposition"));
+      anchor.download = filenameFromDisposition(
+        response.headers.get("content-disposition"),
+      );
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -76,9 +85,14 @@ export function AccountControls({ email }: { email: string }) {
             organizations?: OwnedOrganization[];
           }
         | null;
-      if (response.status === 409 && body?.code === "OWNED_ORGANIZATIONS_REQUIRE_CONFIRMATION") {
+      if (
+        response.status === 409 &&
+        body?.code === "OWNED_ORGANIZATIONS_REQUIRE_CONFIRMATION"
+      ) {
         setOwnedOrganizations(body.organizations ?? []);
-        setDeleteStatus(body.error || "Owned organizations require explicit confirmation.");
+        setDeleteStatus(
+          body.error || "Owned organizations require explicit confirmation.",
+        );
         return;
       }
       if (!response.ok) {
@@ -103,8 +117,8 @@ export function AccountControls({ email }: { email: string }) {
         <div className={styles.sectionCopy}>
           <h2 id="export-heading">Export your data</h2>
           <p>
-            Get your personal evolution history and your attributable organization participation.
-            Credentials and session/reset tokens are never included.
+            Get your personal evolution history and your attributable organization
+            participation. Credentials and session/reset tokens are never included.
           </p>
         </div>
         <form className={styles.form} onSubmit={(event) => void exportData(event)}>
@@ -120,16 +134,24 @@ export function AccountControls({ email }: { email: string }) {
           <button disabled={exporting || exportPassword.length === 0} type="submit">
             {exporting ? "Preparing…" : "Export data"}
           </button>
-          {exportStatus ? <p className={styles.status} role="status">{exportStatus}</p> : null}
+          {exportStatus ? (
+            <p className={styles.status} role="status">
+              {exportStatus}
+            </p>
+          ) : null}
         </form>
       </section>
 
-      <section className={`${styles.section} ${styles.danger}`} aria-labelledby="delete-heading">
+      <section
+        className={`${styles.section} ${styles.danger}`}
+        aria-labelledby="delete-heading"
+      >
         <div className={styles.sectionCopy}>
           <h2 id="delete-heading">Delete account</h2>
           <p>
-            This permanently deletes your Personal Workspace. Shared organization history keeps a
-            disabled pseudonymous identity when other members still depend on that history.
+            This permanently deletes your Personal Workspace. Shared organization
+            history keeps a disabled pseudonymous identity when other members still
+            depend on that history.
           </p>
         </div>
         <form className={styles.form} onSubmit={(event) => void deleteAccount(event)}>
@@ -169,7 +191,9 @@ export function AccountControls({ email }: { email: string }) {
               <label className={styles.checkbox}>
                 <input
                   checked={deleteOwnedOrganizations}
-                  onChange={(event) => setDeleteOwnedOrganizations(event.target.checked)}
+                  onChange={(event) =>
+                    setDeleteOwnedOrganizations(event.target.checked)
+                  }
                   type="checkbox"
                 />
                 Also permanently delete these organizations and their data.
@@ -189,7 +213,11 @@ export function AccountControls({ email }: { email: string }) {
           >
             {deleting ? "Deleting…" : "Delete account"}
           </button>
-          {deleteStatus ? <p className={styles.status} role="status">{deleteStatus}</p> : null}
+          {deleteStatus ? (
+            <p className={styles.status} role="status">
+              {deleteStatus}
+            </p>
+          ) : null}
         </form>
       </section>
     </div>
