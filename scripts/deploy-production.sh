@@ -47,6 +47,7 @@ set_env_if_missing() {
 canary_container=""
 release_container=""
 migration_container=""
+restore_database=""
 old_backup=""
 cleanup() {
   if [ -n "$migration_container" ]; then
@@ -57,6 +58,14 @@ cleanup() {
   fi
   if [ -n "$release_container" ]; then
     docker rm -f "$release_container" >/dev/null 2>&1 || true
+  fi
+  if [ -n "$restore_database" ] && [ -n "${postgres_password:-}" ] && [ -n "${postgres_user:-}" ]; then
+    docker run --rm \
+      --network "$DATA_NETWORK" \
+      -e "PGPASSWORD=$postgres_password" \
+      "$DB_IMAGE" \
+      dropdb --if-exists -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database" \
+      >/dev/null 2>&1 || true
   fi
   if [ -n "$old_backup" ] && docker inspect "$old_backup" >/dev/null 2>&1; then
     if ! docker inspect "$CONTAINER" >/dev/null 2>&1; then
@@ -175,8 +184,53 @@ docker run --rm \
   -v "$DB_BACKUP_VOLUME:/backups" \
   "$DB_IMAGE" \
   sh -c 'ls -1t /backups/pre-*.dump 2>/dev/null | tail -n +8 | xargs -r rm -f'
-unset postgres_password
 printf 'DEPLOY_DATABASE_BACKUP_READY=1\n'
+
+# A dump is not proof of recoverability. Restore the exact fresh snapshot into
+# an isolated temporary database and query the restored schema before allowing
+# production migrations to begin.
+restore_database="principles_restore_${short_sha}"
+docker run --rm \
+  --network "$DATA_NETWORK" \
+  -e "PGPASSWORD=$postgres_password" \
+  "$DB_IMAGE" \
+  dropdb --if-exists -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database" >/dev/null
+docker run --rm \
+  --network "$DATA_NETWORK" \
+  -e "PGPASSWORD=$postgres_password" \
+  "$DB_IMAGE" \
+  createdb -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database"
+docker run --rm \
+  --network "$DATA_NETWORK" \
+  -e "PGPASSWORD=$postgres_password" \
+  -v "$DB_BACKUP_VOLUME:/backups" \
+  "$DB_IMAGE" \
+  pg_restore --exit-on-error --no-owner --no-privileges \
+    -h "$DB_CONTAINER" -U "$postgres_user" -d "$restore_database" \
+    "/backups/pre-${short_sha}.dump"
+restore_migration_count="$(docker run --rm \
+  --network "$DATA_NETWORK" \
+  -e "PGPASSWORD=$postgres_password" \
+  "$DB_IMAGE" \
+  psql -h "$DB_CONTAINER" -U "$postgres_user" -d "$restore_database" \
+    -Atc 'SELECT count(*) FROM schema_migrations;')"
+restore_table_count="$(docker run --rm \
+  --network "$DATA_NETWORK" \
+  -e "PGPASSWORD=$postgres_password" \
+  "$DB_IMAGE" \
+  psql -h "$DB_CONTAINER" -U "$postgres_user" -d "$restore_database" \
+    -Atc "SELECT count(*) FROM pg_tables WHERE schemaname = 'public';")"
+[[ "$restore_migration_count" =~ ^[1-9][0-9]*$ ]] || fail 'Restored backup has no migration history.'
+[[ "$restore_table_count" =~ ^[1-9][0-9]*$ ]] || fail 'Restored backup has no public tables.'
+docker run --rm \
+  --network "$DATA_NETWORK" \
+  -e "PGPASSWORD=$postgres_password" \
+  "$DB_IMAGE" \
+  dropdb -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database"
+restore_database=""
+printf 'DEPLOY_DATABASE_RESTORE_DRILL=1 migrations=%s tables=%s\n' \
+  "$restore_migration_count" "$restore_table_count"
+unset postgres_password
 
 APP_VERSION="$DEPLOY_SHA" docker compose -f "$COMPOSE_FILE" build "$SERVICE"
 
