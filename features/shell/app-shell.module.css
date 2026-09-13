@@ -1,46 +1,50 @@
 .shell {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 12% -10%, rgba(218, 185, 129, 0.12), transparent 34rem),
-    #f8f6f1;
-  color: #171714;
+  background: #f3f0e8;
+  color: #181713;
 }
 
 .header {
   position: sticky;
   top: 0;
   z-index: 30;
-  border-bottom: 1px solid rgba(23, 23, 20, 0.1);
-  background: rgba(248, 246, 241, 0.94);
-  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(24, 23, 19, 0.14);
+  background: color-mix(in srgb, #f3f0e8 95%, transparent);
+  backdrop-filter: blur(18px);
 }
 
 .headerRow {
-  width: min(1180px, calc(100% - 48px));
-  min-height: 68px;
+  width: min(1240px, calc(100% - 64px));
+  min-height: 64px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 28px;
 }
 
 .brand {
   color: inherit;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -0.045em;
   text-decoration: none;
 }
 
+.brand::after {
+  content: ".";
+  color: #9a4f3d;
+}
+
 .account {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 16px;
-  min-width: 0;
-  color: #68675f;
-  font-size: 12px;
+  gap: 14px;
+  color: #716d64;
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 .accountMeta {
@@ -52,27 +56,27 @@
 
 .signOut {
   border: 0;
-  padding: 7px 0;
+  border-bottom: 1px solid transparent;
+  padding: 5px 0;
   background: transparent;
-  color: #47463f;
+  color: #403e38;
   cursor: pointer;
   font: inherit;
 }
 
 .signOut:hover,
 .signOut:focus-visible {
-  color: #11110f;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  border-bottom-color: currentColor;
+  color: #15140f;
+  outline: none;
 }
 
 .nav {
-  width: min(1180px, calc(100% - 48px));
+  width: min(1240px, calc(100% - 64px));
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-bottom: 12px;
+  gap: 26px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -82,33 +86,53 @@
 }
 
 .nav a {
+  position: relative;
   flex: 0 0 auto;
-  border-radius: 999px;
-  padding: 8px 13px;
-  color: #68675f;
-  font-size: 13px;
+  padding: 11px 0 13px;
+  color: #777269;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
   line-height: 1;
   text-decoration: none;
-  transition: background 140ms ease, color 140ms ease;
+  text-transform: uppercase;
+}
+
+.nav a::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: #181713;
+  content: "";
+  opacity: 0;
+  transform: scaleX(0.25);
+  transition: opacity 150ms ease, transform 150ms ease;
 }
 
 .nav a:hover,
 .nav a:focus-visible {
-  background: rgba(23, 23, 20, 0.055);
-  color: #171714;
+  color: #181713;
   outline: none;
 }
 
+.nav a:hover::after,
+.nav a:focus-visible::after,
+.nav .activeTab::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
 .nav .activeTab {
-  background: #171714;
-  color: #fffdf8;
+  color: #181713;
 }
 
 .main {
-  width: min(1180px, calc(100% - 48px));
+  width: min(1240px, calc(100% - 64px));
   min-width: 0;
   margin: 0 auto;
-  padding: 56px 0 96px;
+  padding: 66px 0 120px;
 }
 
 .main > *,
@@ -127,11 +151,15 @@
   .headerRow,
   .nav,
   .main {
-    width: min(100% - 36px, 1180px);
+    width: min(100% - 36px, 1240px);
   }
 
   .headerRow {
-    min-height: 60px;
+    min-height: 58px;
+  }
+
+  .brand {
+    font-size: 22px;
   }
 
   .accountMeta {
@@ -139,17 +167,22 @@
   }
 
   .nav {
-    gap: 1px;
-    padding-bottom: 10px;
+    gap: 20px;
   }
 
   .nav a {
-    padding: 8px 11px;
-    font-size: 12px;
+    padding-block: 10px 12px;
+    font-size: 11px;
   }
 
   .main {
-    padding-top: 36px;
-    padding-bottom: 72px;
+    padding-top: 42px;
+    padding-bottom: 80px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav a::after {
+    transition: none;
   }
 }
