@@ -39,7 +39,7 @@ test -s "$DUMP_FILE"
   --if-exists "$DRILL_DB" >/dev/null
 "$BIN_DIR/createdb" \
   -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
-  "$DRILL_DB"
+  -T template0 "$DRILL_DB"
 "$BIN_DIR/pg_restore" \
   -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
   --exit-on-error --no-owner --no-privileges \
