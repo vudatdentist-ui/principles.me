@@ -1,3 +1,4 @@
+import { errorFields, logEvent } from "@/lib/observability/logger";
 import { db } from "./client";
 
 export async function databaseHealth(): Promise<{
@@ -16,7 +17,8 @@ export async function databaseHealth(): Promise<{
       LIMIT 1
     `;
     return { reachable: true, schemaReady: migrations.length === 1 };
-  } catch {
+  } catch (error) {
+    logEvent("error", "database.health.failed", errorFields(error));
     return { reachable: false, schemaReady: false };
   }
 }
