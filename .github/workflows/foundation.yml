@@ -46,6 +46,8 @@ jobs:
         run: pnpm security:secrets
       - name: Product and privacy quality gate
         run: pnpm quality:gate
+      - name: Operational shell syntax
+        run: bash -n scripts/deploy-production.sh scripts/restore-drill.sh scripts/ci-postgres.sh
       - name: Apply database migrations
         run: pnpm db:migrate
       - name: Typecheck
