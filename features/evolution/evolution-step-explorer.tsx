@@ -160,8 +160,8 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
             tabIndex={selectedStep === step.key ? 0 : -1}
             type="button"
           >
-            <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
-            <span className={styles.label}>{step.label}</span>
+            <span aria-hidden="true" className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
+            <span aria-hidden="true" className={styles.label}>{step.label}</span>
             <span aria-hidden="true" className={styles.marker} />
           </button>
         ))}
