@@ -1,0 +1,146 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import type { EvolutionFiveStep, EvolutionState } from "./contracts";
+import styles from "./evolution-step-explorer.module.css";
+
+type StepSnapshot = {
+  detail: string;
+  kicker: string;
+  title: string;
+};
+
+const futureCopy: Record<EvolutionFiveStep, StepSnapshot> = {
+  goal: {
+    kicker: "Goal",
+    title: "Name the reality you want to create.",
+    detail: "A useful goal is specific enough to guide choices and honest enough to expose trade-offs.",
+  },
+  problem: {
+    kicker: "Problem",
+    title: "Find the gap that matters.",
+    detail: "The problem is the meaningful difference between the desired reality and what is actually true now.",
+  },
+  diagnosis: {
+    kicker: "Diagnosis",
+    title: "Understand why the gap exists.",
+    detail: "Separate symptoms from causes, preserve uncertainty, and look for evidence that could prove the hypothesis wrong.",
+  },
+  design: {
+    kicker: "Design",
+    title: "Change the machine, not just the intention.",
+    detail: "Choose a concrete change that should alter reality, then define the result and signal you expect to observe.",
+  },
+  do: {
+    kicker: "Do",
+    title: "Execute the design and observe reality.",
+    detail: "Actions only matter if the resulting reality changes. Completion is not evidence that the design worked.",
+  },
+};
+
+function compact(...values: Array<string | null | undefined>) {
+  return values.map((value) => value?.trim()).find(Boolean) || null;
+}
+
+export function snapshotForStep(state: EvolutionState, step: EvolutionFiveStep): StepSnapshot {
+  if (step === "goal" && state.dream) {
+    return {
+      kicker: "Goal · Dream",
+      title: state.dream.desiredState,
+      detail:
+        compact(state.dream.whyItMatters, state.dream.successConditions) ||
+        "The desired reality this cycle is trying to create.",
+    };
+  }
+
+  if (step === "problem" && state.problem) {
+    return {
+      kicker: "Problem · Gap",
+      title: state.problem.statement,
+      detail: compact(state.problem.gap) || "The gap between Dream and observed Reality.",
+    };
+  }
+
+  if (step === "diagnosis" && state.diagnosis) {
+    return {
+      kicker: "Diagnosis · Hypothesis",
+      title: state.diagnosis.rootCauseHypothesis,
+      detail:
+        compact(state.diagnosis.uncertainty, state.diagnosis.supportingEvidence) ||
+        "A revisable explanation for why this problem exists.",
+    };
+  }
+
+  if (step === "design" && state.design) {
+    return {
+      kicker: "Design · Machine change",
+      title: state.design.machineChange,
+      detail:
+        compact(state.design.expectedResult, state.design.successSignal) ||
+        "The change expected to create a different reality.",
+    };
+  }
+
+  if (step === "do" && state.design) {
+    const completed = state.actions.filter((action) => action.status === "completed").length;
+    const pending = state.actions.find((action) => action.status === "pending");
+    return {
+      kicker: "Do · Execution",
+      title: pending?.commitment || (state.actions.length > 0 ? "Execution complete. Observe the outcome." : "Execute the design."),
+      detail:
+        state.actions.length > 0
+          ? `${completed} of ${state.actions.length} actions complete. The test is still the resulting reality, not the checklist.`
+          : "Translate the design into accountable actions, then compare expected and actual reality.",
+    };
+  }
+
+  return futureCopy[step];
+}
+
+export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
+  const defaultStep = state.fiveSteps.current ?? state.fiveSteps.steps.findLast((step) => step.status === "complete")?.key ?? "goal";
+  const [selectedStep, setSelectedStep] = useState<EvolutionFiveStep>(defaultStep);
+
+  useEffect(() => {
+    setSelectedStep(defaultStep);
+  }, [defaultStep, state.selectedGoalId]);
+
+  const snapshot = useMemo(() => snapshotForStep(state, selectedStep), [selectedStep, state]);
+  const selected = state.fiveSteps.steps.find((step) => step.key === selectedStep);
+
+  return (
+    <div className={styles.explorer}>
+      <div aria-label="Inspect the 5 Steps" className={styles.rail} role="tablist">
+        {state.fiveSteps.steps.map((step, index) => (
+          <button
+            aria-controls="evolution-step-inspection"
+            aria-selected={selectedStep === step.key}
+            className={`${styles.step} ${styles[step.status]}`}
+            key={step.key}
+            onClick={() => setSelectedStep(step.key)}
+            role="tab"
+            type="button"
+          >
+            <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
+            <span className={styles.label}>{step.label}</span>
+            <span aria-hidden="true" className={styles.marker} />
+          </button>
+        ))}
+      </div>
+
+      <div
+        aria-live="polite"
+        className={styles.inspection}
+        id="evolution-step-inspection"
+        role="tabpanel"
+      >
+        <div className={styles.inspectionMeta}>
+          <span>{snapshot.kicker}</span>
+          <span>{selected?.status === "complete" ? "Lived" : selected?.status === "current" ? "Now" : "Ahead"}</span>
+        </div>
+        <h3>{snapshot.title}</h3>
+        <p>{snapshot.detail}</p>
+      </div>
+    </div>
+  );
+}
