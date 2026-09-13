@@ -43,7 +43,7 @@ const stepAriaNames: Record<EvolutionFiveStep, string> = {
   goal: "Evolution step 1: desired reality",
   problem: "Evolution step 2: meaningful gap",
   diagnosis: "Evolution step 3: root cause",
-  design: "Evolution step 4: machine change",
+  design: "Evolution step 4: system redesign",
   do: "Evolution step 5: execution",
 };
 
