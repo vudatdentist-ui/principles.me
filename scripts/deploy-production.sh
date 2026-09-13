@@ -199,7 +199,7 @@ docker run --rm \
   --network "$DATA_NETWORK" \
   -e "PGPASSWORD=$postgres_password" \
   "$DB_IMAGE" \
-  createdb -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database"
+  createdb -T template0 -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database"
 docker run --rm \
   --network "$DATA_NETWORK" \
   -e "PGPASSWORD=$postgres_password" \
