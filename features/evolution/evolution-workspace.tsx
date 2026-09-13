@@ -680,7 +680,7 @@ function Field({ label, onChange, value }: { label: string; onChange: (value: st
   return (
     <label className={styles.field}>
       <span>{label}</span>
-      <textarea onChange={(event) => onChange(event.target.value)} rows={3} value={value} />
+      <textarea aria-label={label} onChange={(event) => onChange(event.target.value)} rows={3} value={value} />
     </label>
   );
 }
