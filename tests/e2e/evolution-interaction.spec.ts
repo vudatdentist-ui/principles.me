@@ -53,16 +53,18 @@ test("5 Steps lets the user inspect lived, current, and future meaning", async (
   const problemTab = page.getByRole("tab", { name: "Evolution step 2: meaningful gap" });
   const diagnosisTab = page.getByRole("tab", { name: "Evolution step 3: root cause" });
 
-  await expect(goalTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel")).toContainText(goal);
-
-  await problemTab.click();
   await expect(problemTab).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tabpanel")).toContainText("Find the gap that matters.");
-  await expect(page.getByRole("tabpanel")).toContainText("Ahead");
+  await expect(page.getByRole("tabpanel")).toContainText("Now");
+
+  await goalTab.click();
+  await expect(goalTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tabpanel")).toContainText(goal);
+  await expect(page.getByRole("tabpanel")).toContainText("Lived");
 
   await diagnosisTab.click();
   await expect(page.getByRole("tabpanel")).toContainText("Understand why the gap exists.");
+  await expect(page.getByRole("tabpanel")).toContainText("Ahead");
 
   await page.getByLabel("What is actually true?").fill(
     "Three routine operating decisions waited for my approval this week.",
