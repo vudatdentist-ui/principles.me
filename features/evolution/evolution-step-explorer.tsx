@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { EvolutionFiveStep, EvolutionState } from "./contracts";
 import styles from "./evolution-step-explorer.module.css";
@@ -115,10 +115,12 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
   const defaultStep =
     state.fiveSteps.current ?? completeSteps[completeSteps.length - 1]?.key ?? "goal";
   const [selectedStep, setSelectedStep] = useState<EvolutionFiveStep>(defaultStep);
+  const previousGoalId = useRef(state.selectedGoalId);
 
   useEffect(() => {
-    const stepForGoal = state.selectedGoalId ? defaultStep : "goal";
-    setSelectedStep(stepForGoal);
+    if (previousGoalId.current === state.selectedGoalId) return;
+    previousGoalId.current = state.selectedGoalId;
+    setSelectedStep(state.selectedGoalId ? defaultStep : "goal");
   }, [defaultStep, state.selectedGoalId]);
 
   const snapshot = useMemo(() => snapshotForStep(state, selectedStep), [selectedStep, state]);
@@ -168,7 +170,7 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
       </div>
 
       <div
-        aria-labelledby={`evolution-step-${selectedStep}`}
+        aria-label="Evolution step details"
         aria-live="polite"
         className={styles.inspection}
         id="evolution-step-inspection"
