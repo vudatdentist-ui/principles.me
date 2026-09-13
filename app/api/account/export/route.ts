@@ -51,9 +51,7 @@ export async function POST(request: Request): Promise<Response> {
       workspaceId: session.workspace.id,
     });
     const date = new Date().toISOString().slice(0, 10);
-    logEvent("info", "account.export.completed", {
-      workspaceId: session.workspace.id,
-    });
+    logEvent("info", "account.export.completed");
     return new Response(JSON.stringify(data, null, 2), {
       headers: {
         "cache-control": "no-store",
