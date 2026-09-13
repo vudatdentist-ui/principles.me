@@ -140,7 +140,7 @@ Controls:
 
 - checksum-bound append-only migrations;
 - pre-migration custom-format PostgreSQL dump;
-- restore drill;
+- restore drill rebuilds into a `template0` database so verification starts from a clean PostgreSQL schema;
 - canary + authenticated smoke;
 - exact-SHA health verification;
 - canonical routing verification;
