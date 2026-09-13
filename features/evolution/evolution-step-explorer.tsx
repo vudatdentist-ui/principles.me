@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { KeyboardEvent } from "react";
 import type { EvolutionFiveStep, EvolutionState } from "./contracts";
 import styles from "./evolution-step-explorer.module.css";
 
@@ -86,7 +87,11 @@ export function snapshotForStep(state: EvolutionState, step: EvolutionFiveStep):
     const pending = state.actions.find((action) => action.status === "pending");
     return {
       kicker: "Do · Execution",
-      title: pending?.commitment || (state.actions.length > 0 ? "Execution complete. Observe the outcome." : "Execute the design."),
+      title:
+        pending?.commitment ||
+        (state.actions.length > 0
+          ? "Execution complete. Observe the outcome."
+          : "Execute the design."),
       detail:
         state.actions.length > 0
           ? `${completed} of ${state.actions.length} actions complete. The test is still the resulting reality, not the checklist.`
@@ -98,7 +103,9 @@ export function snapshotForStep(state: EvolutionState, step: EvolutionFiveStep):
 }
 
 export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
-  const defaultStep = state.fiveSteps.current ?? state.fiveSteps.steps.findLast((step) => step.status === "complete")?.key ?? "goal";
+  const completeSteps = state.fiveSteps.steps.filter((step) => step.status === "complete");
+  const defaultStep =
+    state.fiveSteps.current ?? completeSteps[completeSteps.length - 1]?.key ?? "goal";
   const [selectedStep, setSelectedStep] = useState<EvolutionFiveStep>(defaultStep);
 
   useEffect(() => {
@@ -108,6 +115,25 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
   const snapshot = useMemo(() => snapshotForStep(state, selectedStep), [selectedStep, state]);
   const selected = state.fiveSteps.steps.find((step) => step.key === selectedStep);
 
+  function selectFromKeyboard(event: KeyboardEvent<HTMLButtonElement>, key: EvolutionFiveStep) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+
+    const keys = state.fiveSteps.steps.map((step) => step.key);
+    const index = keys.indexOf(key);
+    let nextIndex = index;
+
+    if (event.key === "ArrowLeft") nextIndex = Math.max(0, index - 1);
+    if (event.key === "ArrowRight") nextIndex = Math.min(keys.length - 1, index + 1);
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = keys.length - 1;
+
+    const next = keys[nextIndex];
+    if (!next) return;
+    setSelectedStep(next);
+    requestAnimationFrame(() => document.getElementById(`evolution-step-${next}`)?.focus());
+  }
+
   return (
     <div className={styles.explorer}>
       <div aria-label="Inspect the 5 Steps" className={styles.rail} role="tablist">
@@ -116,9 +142,12 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
             aria-controls="evolution-step-inspection"
             aria-selected={selectedStep === step.key}
             className={`${styles.step} ${styles[step.status]}`}
+            id={`evolution-step-${step.key}`}
             key={step.key}
             onClick={() => setSelectedStep(step.key)}
+            onKeyDown={(event) => selectFromKeyboard(event, step.key)}
             role="tab"
+            tabIndex={selectedStep === step.key ? 0 : -1}
             type="button"
           >
             <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
@@ -129,6 +158,7 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
       </div>
 
       <div
+        aria-labelledby={`evolution-step-${selectedStep}`}
         aria-live="polite"
         className={styles.inspection}
         id="evolution-step-inspection"
@@ -136,7 +166,13 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
       >
         <div className={styles.inspectionMeta}>
           <span>{snapshot.kicker}</span>
-          <span>{selected?.status === "complete" ? "Lived" : selected?.status === "current" ? "Now" : "Ahead"}</span>
+          <span>
+            {selected?.status === "complete"
+              ? "Lived"
+              : selected?.status === "current"
+                ? "Now"
+                : "Ahead"}
+          </span>
         </div>
         <h3>{snapshot.title}</h3>
         <p>{snapshot.detail}</p>
