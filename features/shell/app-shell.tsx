@@ -18,7 +18,7 @@ export function AppShell({
   email,
   workspaceName = "Personal",
 }: {
-  activeTab: AppTab;
+  activeTab?: AppTab;
   children: ReactNode;
   email: string;
   workspaceName?: string;
@@ -37,7 +37,9 @@ export function AppShell({
           </a>
           <div className={styles.account}>
             <span className={styles.accountMeta}>{workspaceName}</span>
-            <span className={styles.accountMeta}>{email}</span>
+            <a className={styles.accountLink} href="/account">
+              {email}
+            </a>
             <button className={styles.signOut} onClick={() => void signOut()} type="button">
               Sign out
             </button>
