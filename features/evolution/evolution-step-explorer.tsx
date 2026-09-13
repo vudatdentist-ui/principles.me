@@ -109,7 +109,8 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
   const [selectedStep, setSelectedStep] = useState<EvolutionFiveStep>(defaultStep);
 
   useEffect(() => {
-    setSelectedStep(defaultStep);
+    const stepForGoal = state.selectedGoalId ? defaultStep : "goal";
+    setSelectedStep(stepForGoal);
   }, [defaultStep, state.selectedGoalId]);
 
   const snapshot = useMemo(() => snapshotForStep(state, selectedStep), [selectedStep, state]);
