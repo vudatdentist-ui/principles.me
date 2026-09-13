@@ -37,8 +37,9 @@ export function AppShell({
           </a>
           <div className={styles.account}>
             <span className={styles.accountMeta}>{workspaceName}</span>
-            <a className={styles.accountLink} href="/account">
-              {email}
+            <span className={styles.accountMeta}>{email}</span>
+            <a className={styles.accountLink} href="/account" aria-label={`Account for ${email}`}>
+              Account
             </a>
             <button className={styles.signOut} onClick={() => void signOut()} type="button">
               Sign out
