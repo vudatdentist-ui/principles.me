@@ -1,117 +1,203 @@
 .shell {
-  display: grid;
   min-height: 100vh;
+  display: grid;
   place-items: center;
-  padding: 32px 20px;
+  padding: 44px 22px;
+  background: #f3f0e8;
+  color: #181713;
 }
 
 .panel {
-  width: min(100%, 420px);
+  width: min(100%, 560px);
 }
 
 .panel h1 {
-  margin: 0 0 44px;
-  font-size: clamp(44px, 9vw, 68px);
-  font-weight: 620;
-  letter-spacing: -0.055em;
-  line-height: 0.96;
+  margin: 0 0 58px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(60px, 11vw, 104px);
+  font-weight: 400;
+  letter-spacing: -0.065em;
+  line-height: 0.88;
+}
+
+.panel h1::after {
+  content: ".";
+  color: #9a4f3d;
 }
 
 .mode {
   display: flex;
-  gap: 8px;
-  margin-bottom: 28px;
+  gap: 24px;
+  margin-bottom: 38px;
+  border-bottom: 1px solid rgba(24, 23, 19, 0.14);
 }
 
 .mode button {
+  position: relative;
   cursor: pointer;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  border: 0;
+  padding: 0 0 12px;
   background: transparent;
-  color: var(--muted);
-  padding: 10px 15px;
-  font-size: 15px;
-  font-weight: 620;
+  color: #777269;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
+.mode button::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: #181713;
+  content: "";
+  opacity: 0;
+  transform: scaleX(0.25);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.mode button:hover,
+.mode button:focus-visible,
 .mode .activeMode {
-  border-color: var(--text);
-  color: var(--text);
+  color: #181713;
+  outline: none;
+}
+
+.mode button:hover::after,
+.mode button:focus-visible::after,
+.mode .activeMode::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .panel form {
   display: grid;
-  gap: 12px;
+  gap: 18px;
 }
 
 .intro {
-  margin: 0 0 8px;
-  color: var(--muted);
+  max-width: 430px;
+  margin: 0 0 12px;
+  color: #69645c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
   line-height: 1.5;
 }
 
 .panel label {
-  margin-top: 10px;
-  font-size: 15px;
-  font-weight: 620;
+  margin-top: 7px;
+  color: #625e56;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .panel input {
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border: 0;
+  border-bottom: 1px solid rgba(24, 23, 19, 0.3);
+  border-radius: 0;
   outline: 0;
-  background: var(--surface);
-  color: var(--text);
-  padding: 15px 16px;
-  font: inherit;
-  font-size: 17px;
+  background: transparent;
+  color: #181713;
+  padding: 8px 0 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  line-height: 1.35;
 }
 
 .panel input:focus {
-  border-color: #9c9c93;
+  border-bottom-color: #181713;
+}
+
+.error,
+.notice {
+  margin-top: 4px;
+  padding: 11px 0;
+  border-top: 1px solid rgba(24, 23, 19, 0.1);
+  border-bottom: 1px solid rgba(24, 23, 19, 0.1);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .error {
-  margin-top: 8px;
-  color: var(--danger);
-  font-size: 15px;
-  line-height: 1.4;
+  border-color: rgba(161, 42, 42, 0.28);
+  color: #8a4139;
 }
 
 .notice {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.4;
+  color: #5e6b58;
 }
 
 .textButton {
+  width: fit-content;
   cursor: pointer;
   justify-self: start;
   border: 0;
+  border-bottom: 1px solid rgba(24, 23, 19, 0.25);
   background: transparent;
-  color: var(--muted);
-  padding: 4px 0;
+  color: #6b665e;
+  padding: 3px 0;
   font: inherit;
-  font-size: 14px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-size: 12px;
+}
+
+.textButton:hover,
+.textButton:focus-visible {
+  border-bottom-color: currentColor;
+  color: #181713;
+  outline: none;
 }
 
 .submit {
   cursor: pointer;
-  margin-top: 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--accent);
-  color: white;
-  padding: 13px 18px;
-  font-size: 16px;
-  font-weight: 650;
+  width: fit-content;
+  margin-top: 18px;
+  border: 1px solid #181713;
+  border-radius: 2px;
+  background: #181713;
+  color: #fffdf8;
+  padding: 11px 17px;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.submit:hover,
+.submit:focus-visible {
+  background: transparent;
+  color: #181713;
+  outline: none;
 }
 
 .submit:disabled {
   cursor: default;
-  opacity: 0.45;
+  opacity: 0.42;
+}
+
+@media (max-width: 560px) {
+  .shell {
+    place-items: start stretch;
+    padding-top: 72px;
+  }
+
+  .panel h1 {
+    margin-bottom: 48px;
+    font-size: clamp(58px, 20vw, 88px);
+  }
+
+  .submit {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode button::after,
+  .submit {
+    transition: none;
+  }
 }
