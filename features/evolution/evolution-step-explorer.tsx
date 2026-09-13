@@ -39,6 +39,14 @@ const futureCopy: Record<EvolutionFiveStep, StepSnapshot> = {
   },
 };
 
+const stepAriaNames: Record<EvolutionFiveStep, string> = {
+  goal: "Evolution step 1: desired reality",
+  problem: "Evolution step 2: meaningful gap",
+  diagnosis: "Evolution step 3: root cause",
+  design: "Evolution step 4: machine change",
+  do: "Evolution step 5: execution",
+};
+
 function compact(...values: Array<string | null | undefined>) {
   return values.map((value) => value?.trim()).find(Boolean) || null;
 }
@@ -141,6 +149,7 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
         {state.fiveSteps.steps.map((step, index) => (
           <button
             aria-controls="evolution-step-inspection"
+            aria-label={stepAriaNames[step.key]}
             aria-selected={selectedStep === step.key}
             className={`${styles.step} ${styles[step.status]}`}
             id={`evolution-step-${step.key}`}
