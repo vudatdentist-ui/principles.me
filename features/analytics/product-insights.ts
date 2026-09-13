@@ -18,10 +18,11 @@ export type ProductInsights = {
   repeatReflectionWorkspaces: number;
   stageReach: Record<string, number>;
   workspacesObserved: number;
+  workspacesWithOutcomeReview: number;
   workspacesWithReflection: number;
 };
 
-const STAGES = [
+const STAGES: ReadonlyArray<readonly [string, ...string[]]> = [
   ["workspace", "workspace.created"],
   ["goal", "goal.chosen"],
   ["reality", "reality.observed"],
@@ -32,7 +33,7 @@ const STAGES = [
   ["outcome", "outcome.recorded"],
   ["reflection", "reflection.completed"],
   ["principle", "principle.accepted", "principle.revised"],
-] as const;
+];
 
 function ratio(numerator: number, denominator: number): number | null {
   return denominator > 0 ? Number((numerator / denominator).toFixed(4)) : null;
@@ -50,7 +51,10 @@ function median(values: readonly number[]): number | null {
   return ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2;
 }
 
-function firstTime(events: readonly ProductEvent[], eventTypes: readonly string[]): number | null {
+function firstTime(
+  events: readonly ProductEvent[],
+  eventTypes: readonly string[],
+): number | null {
   const wanted = new Set(eventTypes);
   for (const event of events) {
     if (wanted.has(event.eventType)) {
@@ -72,20 +76,23 @@ export function summarizeProductEvents(
   }
   for (const events of byWorkspace.values()) {
     events.sort(
-      (a, b) => new Date(a.happenedAt).getTime() - new Date(b.happenedAt).getTime(),
+      (a, b) =>
+        new Date(a.happenedAt).getTime() - new Date(b.happenedAt).getTime(),
     );
   }
 
   const stageReach: Record<string, number> = {};
   for (const [stage, ...eventTypes] of STAGES) {
+    const wanted = new Set(eventTypes);
     stageReach[stage] = [...byWorkspace.values()].filter((events) =>
-      events.some((event) => eventTypes.includes(event.eventType as never)),
+      events.some((event) => wanted.has(event.eventType)),
     ).length;
   }
 
   let activatedWorkspaces = 0;
   let fullLearningLoops = 0;
   let repeatReflectionWorkspaces = 0;
+  let workspacesWithOutcomeReview = 0;
   let workspacesWithReflection = 0;
   const timeToFirstProblemSeconds: number[] = [];
 
@@ -95,12 +102,17 @@ export function summarizeProductEvents(
     const reality = firstTime(events, ["reality.observed"]);
     const problem = firstTime(events, ["problem.recognized"]);
     const outcomeReview = firstTime(events, ["outcome.reviewed"]);
-    const principle = firstTime(events, ["principle.accepted", "principle.revised"]);
+    const principle = firstTime(events, [
+      "principle.accepted",
+      "principle.revised",
+    ]);
 
     const activated =
+      created !== null &&
       goal !== null &&
       reality !== null &&
       problem !== null &&
+      created <= goal &&
       goal <= reality &&
       reality <= problem;
     if (activated) {
@@ -109,8 +121,11 @@ export function summarizeProductEvents(
     if (created !== null && problem !== null && problem >= created) {
       timeToFirstProblemSeconds.push((problem - created) / 1000);
     }
-    if (outcomeReview !== null && principle !== null && principle >= outcomeReview) {
-      fullLearningLoops += 1;
+    if (outcomeReview !== null) {
+      workspacesWithOutcomeReview += 1;
+      if (principle !== null && principle >= outcomeReview) {
+        fullLearningLoops += 1;
+      }
     }
 
     const reflectionDays = new Set(
@@ -131,22 +146,25 @@ export function summarizeProductEvents(
     activationRate: ratio(activatedWorkspaces, newWorkspaces),
     activatedWorkspaces,
     fullLearningLoops,
-    learningLoopRate: ratio(fullLearningLoops, activatedWorkspaces),
+    learningLoopRate: ratio(fullLearningLoops, workspacesWithOutcomeReview),
     medianSecondsToFirstProblem: median(timeToFirstProblemSeconds),
     newWorkspaces,
     period,
-    reflectionReturnRate: ratio(repeatReflectionWorkspaces, workspacesWithReflection),
+    reflectionReturnRate: ratio(
+      repeatReflectionWorkspaces,
+      workspacesWithReflection,
+    ),
     repeatReflectionWorkspaces,
     stageReach,
     workspacesObserved: byWorkspace.size,
+    workspacesWithOutcomeReview,
     workspacesWithReflection,
   };
 }
 
-export async function loadProductInsights(input: {
-  days?: number;
-  now?: Date;
-} = {}): Promise<ProductInsights> {
+export async function loadProductInsights(
+  input: { days?: number; now?: Date } = {},
+): Promise<ProductInsights> {
   const days = Math.min(Math.max(Math.trunc(input.days ?? 30), 1), 365);
   const to = input.now ?? new Date();
   const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
