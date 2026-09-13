@@ -12,6 +12,7 @@ import type {
   OutcomeComparison,
 } from "@/features/people/execution-contracts";
 import type { EvolutionState } from "./contracts";
+import { EvolutionStepExplorer } from "./evolution-step-explorer";
 import styles from "./evolution-workspace.module.css";
 
 const emptyGoal: GoalDraft = {
@@ -653,14 +654,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
               <h2 id="five-steps-title">5 Steps</h2>
               <span className={styles.stageBadge}>{state.nextAction.label}</span>
             </div>
-            <ol className={styles.stepRail}>
-              {state.fiveSteps.steps.map((step, index) => (
-                <li className={styles[step.status]} key={step.key}>
-                  <span>{index + 1}</span>
-                  <strong>{step.label}</strong>
-                </li>
-              ))}
-            </ol>
+            <EvolutionStepExplorer state={state} />
           </section>
 
           {state.attention.length > 0 ? (
