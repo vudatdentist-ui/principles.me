@@ -10,7 +10,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByLabel("Password").fill(password);
   const signupResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/auth/signup") && response.request().method() === "POST"
+      response.url().endsWith("/api/auth/signup") && response.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
@@ -18,8 +18,17 @@ async function createAccount(page: import("@playwright/test").Page) {
 }
 
 async function answerGoalQuestion(page: import("@playwright/test").Page, value: string) {
+  const continueButton = page.getByRole("button", { name: "Continue" });
+  await expect(continueButton).toBeVisible();
   await page.getByLabel("Goal discovery answer").fill(value);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(continueButton).toBeEnabled();
+  const discoveryResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/people/goal-discovery") &&
+      response.request().method() === "POST",
+  );
+  await continueButton.click();
+  expect((await discoveryResponse).ok()).toBe(true);
 }
 
 test("5 Steps lets the user inspect lived, current, and future meaning", async ({ page }) => {
@@ -40,9 +49,9 @@ test("5 Steps lets the user inspect lived, current, and future meaning", async (
   const path = page.getByRole("tablist", { name: "Inspect the 5 Steps" });
   await expect(path).toBeVisible();
 
-  const goalTab = page.getByRole("tab", { name: /01\s*Goal/ });
-  const problemTab = page.getByRole("tab", { name: /02\s*Problem/ });
-  const diagnosisTab = page.getByRole("tab", { name: /03\s*Diagnosis/ });
+  const goalTab = page.getByRole("tab", { name: "Evolution step 1: desired reality" });
+  const problemTab = page.getByRole("tab", { name: "Evolution step 2: meaningful gap" });
+  const diagnosisTab = page.getByRole("tab", { name: "Evolution step 3: root cause" });
 
   await expect(goalTab).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tabpanel")).toContainText(goal);
@@ -56,15 +65,18 @@ test("5 Steps lets the user inspect lived, current, and future meaning", async (
   await expect(page.getByRole("tabpanel")).toContainText("Understand why the gap exists.");
 
   await page.getByLabel("What is actually true?").fill(
-    "Three routine operating decisions waited for my approval this week."
+    "Three routine operating decisions waited for my approval this week.",
   );
   await page.getByRole("button", { name: "Record reality" }).click();
   await page.getByRole("button", { name: "Find the problem" }).click();
+  await expect(page.getByLabel("Problem", { exact: true })).toHaveValue(
+    "The founder remains a routine operating bottleneck.",
+  );
   await page.getByRole("button", { name: "Name this problem" }).click();
 
   await problemTab.click();
   await expect(page.getByRole("tabpanel")).toContainText(
-    "The founder remains a routine operating bottleneck."
+    "The founder remains a routine operating bottleneck.",
   );
   await expect(page.getByRole("tabpanel")).toContainText("Lived");
 
