@@ -1,16 +1,39 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { POST as deleteAccountRoute } from "../../app/api/account/delete/route";
+import { POST as exportAccountRoute } from "../../app/api/account/export/route";
 import {
   deleteAccountData,
   exportAccountData,
   OwnedOrganizationsRequireConfirmationError,
 } from "../../features/account/repository";
-import { createAccount } from "../../features/auth/repository";
+import { hashPassword } from "../../features/auth/password";
+import {
+  createAccount,
+  createSession,
+} from "../../features/auth/repository";
 import { createGoal } from "../../features/kernel/repository";
 import { closeDatabaseForTests, db } from "../../lib/db/client";
 
 async function resetDatabase() {
   await db()`TRUNCATE TABLE users, rate_limit_buckets RESTART IDENTITY CASCADE`;
+}
+
+function accountRequest(
+  path: string,
+  sessionToken: string,
+  body: Record<string, unknown>,
+  origin = "http://127.0.0.1:3000",
+): Request {
+  return new Request(`http://127.0.0.1:3000${path}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      cookie: `principles_session=${encodeURIComponent(sessionToken)}`,
+      origin,
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 test("account export excludes credentials and deletion removes personal state while preserving safe tombstone identity", async () => {
@@ -88,8 +111,85 @@ test("account export excludes credentials and deletion removes personal state wh
     `;
     assert.equal(userRows[0]?.status, "disabled");
     assert.match(String(userRows[0]?.email), /^deleted\+/);
-    assert.equal(String(userRows[0]?.email).includes("privacy-owner@example.com"), false);
+    assert.equal(
+      String(userRows[0]?.email).includes("privacy-owner@example.com"),
+      false,
+    );
     assert.match(String(userRows[0]?.password_hash), /^deleted\$/);
+  } finally {
+    await resetDatabase();
+    await closeDatabaseForTests();
+  }
+});
+
+test("account export/delete routes enforce origin, re-authentication and explicit confirmation", async () => {
+  process.env.APP_ORIGIN = "http://127.0.0.1:3000";
+  process.env.AUTH_SIGNUP_MODE = "open";
+  process.env.RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS = "false";
+  await resetDatabase();
+  try {
+    const password = "route-test-password-with-enough-length";
+    const account = await createAccount({
+      email: "route-privacy@example.com",
+      passwordHash: await hashPassword(password),
+    });
+    await createGoal({
+      createdByUserId: account.userId,
+      desiredState: "A route-level export goal.",
+      workspaceId: account.workspaceId,
+    });
+    const sessionToken = await createSession(account.userId);
+
+    const untrusted = await exportAccountRoute(
+      accountRequest(
+        "/api/account/export",
+        sessionToken,
+        { password },
+        "https://evil.example",
+      ),
+    );
+    assert.equal(untrusted.status, 403);
+
+    const wrongPassword = await exportAccountRoute(
+      accountRequest("/api/account/export", sessionToken, {
+        password: "wrong-password",
+      }),
+    );
+    assert.equal(wrongPassword.status, 401);
+
+    const exported = await exportAccountRoute(
+      accountRequest("/api/account/export", sessionToken, { password }),
+    );
+    assert.equal(exported.status, 200);
+    assert.match(exported.headers.get("content-disposition") ?? "", /principles-export-/);
+    const exportedText = await exported.text();
+    assert.match(exportedText, /route-level export goal/i);
+    assert.equal(exportedText.includes("password_hash"), false);
+    assert.equal(exportedText.includes("token_hash"), false);
+
+    const weakConfirmation = await deleteAccountRoute(
+      accountRequest("/api/account/delete", sessionToken, {
+        confirmation: "delete",
+        deleteOwnedOrganizations: false,
+        password,
+      }),
+    );
+    assert.equal(weakConfirmation.status, 400);
+
+    const deleted = await deleteAccountRoute(
+      accountRequest("/api/account/delete", sessionToken, {
+        confirmation: "DELETE MY ACCOUNT",
+        deleteOwnedOrganizations: false,
+        password,
+      }),
+    );
+    assert.equal(deleted.status, 200);
+    assert.match(deleted.headers.get("set-cookie") ?? "", /Max-Age=0/);
+
+    const revoked = await exportAccountRoute(
+      accountRequest("/api/account/export", sessionToken, { password }),
+    );
+    assert.equal(revoked.status, 401);
   } finally {
     await resetDatabase();
     await closeDatabaseForTests();
