@@ -1,0 +1,48 @@
+name: Patch production restore template0
+
+on:
+  push:
+    branches:
+      - hardening/product-learning-observability-security
+    paths:
+      - .github/workflows/patch-production-restore-template0.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: hardening/product-learning-observability-security
+          fetch-depth: 0
+
+      - name: Patch production restore database creation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/deploy-production.sh')
+          text = path.read_text()
+          old = 'createdb -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database"'
+          new = 'createdb -T template0 -h "$DB_CONTAINER" -U "$postgres_user" "$restore_database"'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one production restore createdb line, found {count}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Commit patch and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/patch-production-restore-template0.yml
+          git add scripts/deploy-production.sh
+          git diff --cached --check
+          git commit -m 'Fix production restore database template'
+          git push origin HEAD:hardening/product-learning-observability-security
