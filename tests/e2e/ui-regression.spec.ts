@@ -78,8 +78,9 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
           await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
         }
       }
-      await expect(page.getByRole("link", { name: /^Account for / })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+      const appHeader = page.getByRole("banner");
+      await expect(appHeader.getByRole("link", { name: /^Account for / })).toBeVisible();
+      await expect(appHeader.getByRole("button", { name: "Sign out" })).toBeVisible();
     }
   }
 });
@@ -124,8 +125,9 @@ test("cancelled execution remains reversible after Outcome becomes available", a
   }
 
   await expect(page.getByLabel("Actual outcome")).toBeVisible();
-  await page.getByText("Execution", { exact: true }).click();
-  const restore = page.getByRole("button", { name: /^Restore / }).first();
+  const executionDetails = page.locator("details").filter({ hasText: "Execution" }).first();
+  await executionDetails.locator("summary").click();
+  const restore = executionDetails.getByRole("button", { name: /^Restore / }).first();
   await expect(restore).toBeVisible();
 
   const restoreResponse = page.waitForResponse(
