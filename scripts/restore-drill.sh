@@ -98,7 +98,7 @@ CREATEDB="$(require_pg_binary createdb)"
 DROPDB="$(require_pg_binary dropdb)"
 PSQL="$(require_pg_binary psql)"
 
-printf 'RESTORE_DRILL_CLIENT=%s\n' "$($PG_DUMP --version)"
+printf 'RESTORE_DRILL_CLIENT=%s\n' "$(run_pg_binary "$PG_DUMP" --version)"
 
 cleanup() {
   run_pg_binary "$DROPDB" \
