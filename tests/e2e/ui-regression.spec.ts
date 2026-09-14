@@ -2,6 +2,11 @@ import { expect, test } from "@playwright/test";
 
 const password = "a strong ui regression password";
 
+type EvolutionSnapshot = {
+  actions: Array<{ status: string }>;
+  stage: string;
+};
+
 async function createAccount(page: import("@playwright/test").Page) {
   const email = `ui-regression-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
   await page.goto("/");
@@ -35,6 +40,15 @@ async function createGoal(page: import("@playwright/test").Page) {
     await continueButton.click();
   }
   await page.getByRole("button", { name: "Add goal" }).click();
+}
+
+async function readEvolution(
+  page: import("@playwright/test").Page
+): Promise<EvolutionSnapshot> {
+  return page.evaluate(async () => {
+    const response = await fetch("/api/evolution/state");
+    return response.json();
+  }) as Promise<EvolutionSnapshot>;
 }
 
 test("primary surfaces keep the shared hierarchy without viewport overflow", async ({ page }) => {
@@ -113,18 +127,32 @@ test("cancelled execution remains reversible after Outcome becomes available", a
   await page.getByRole("button", { name: "Cancel", exact: true }).first().click();
   expect((await cancelResponse).status()).toBe(200);
 
+  await expect
+    .poll(async () => (await readEvolution(page)).actions.filter((action) => action.status === "cancelled").length)
+    .toBeGreaterThan(0);
+
   for (let guard = 0; guard < 6; guard += 1) {
-    const completeButtons = page.getByRole("button", { name: /^Complete / });
-    if ((await completeButtons.count()) === 0) break;
+    const snapshot = await readEvolution(page);
+    const pendingBefore = snapshot.actions.filter((action) => action.status === "pending").length;
+    if (pendingBefore === 0) break;
+
+    const completeButton = page.getByRole("button", { name: /^Complete / }).first();
+    await expect(completeButton).toBeVisible();
     const actionResponse = page.waitForResponse(
       (response) =>
         response.url().endsWith("/api/people/actions") && response.request().method() === "POST"
     );
-    await completeButtons.first().click();
+    await completeButton.click();
     expect((await actionResponse).status()).toBe(200);
+
+    await expect
+      .poll(async () => (await readEvolution(page)).actions.filter((action) => action.status === "pending").length)
+      .toBe(pendingBefore - 1);
   }
 
+  await expect.poll(async () => (await readEvolution(page)).stage).toBe("outcome");
   await expect(page.getByLabel("Actual outcome")).toBeVisible();
+
   const executionDetails = page.locator("details").filter({ hasText: "Execution" }).first();
   await executionDetails.locator("summary").click();
   const restore = executionDetails.getByRole("button", { name: /^Restore / }).first();
@@ -137,15 +165,10 @@ test("cancelled execution remains reversible after Outcome becomes available", a
   await restore.click();
   expect((await restoreResponse).status()).toBe(200);
 
+  await expect.poll(async () => (await readEvolution(page)).stage).toBe("do");
   await expect(page.getByLabel("Actual outcome")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Complete / }).first()).toBeVisible();
 
-  const evolution = await page.evaluate(async () => {
-    const response = await fetch("/api/evolution/state");
-    return response.json();
-  });
-  expect(evolution.stage).toBe("do");
-  expect(evolution.actions.some((action: { status: string }) => action.status === "pending")).toBe(
-    true
-  );
+  const evolution = await readEvolution(page);
+  expect(evolution.actions.some((action) => action.status === "pending")).toBe(true);
 });
