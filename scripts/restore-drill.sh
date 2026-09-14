@@ -9,6 +9,7 @@ POSTGRES_PORT="${POSTGRES_PORT:-55432}"
 POSTGRES_USER="${POSTGRES_USER:-principles}"
 POSTGRES_DB="${POSTGRES_DB:-postgres}"
 POSTGRES_MAJOR="${POSTGRES_MAJOR:-16}"
+POSTGRES_CLIENT_IMAGE="${POSTGRES_CLIENT_IMAGE:-postgres:${POSTGRES_MAJOR}-alpine}"
 DRILL_DB="principles_restore_drill_${GITHUB_RUN_ID:-local}_${GITHUB_RUN_ATTEMPT:-1}"
 DRILL_DB="$(printf '%s' "$DRILL_DB" | tr -cd 'A-Za-z0-9_')"
 DUMP_FILE="$ROOT/restore-drill.dump"
@@ -37,23 +38,58 @@ resolve_pg_binary() {
   return 1
 }
 
+run_pg_binary() {
+  local executable="$1"
+  shift
+
+  if [[ "$executable" == docker:* ]]; then
+    docker run --rm \
+      --network host \
+      --user "$(id -u):$(id -g)" \
+      --volume "$ROOT:$ROOT" \
+      --env "PGPASSWORD=${PGPASSWORD:-}" \
+      "$POSTGRES_CLIENT_IMAGE" "${executable#docker:}" "$@"
+    return
+  fi
+
+  "$executable" "$@"
+}
+
+resolve_docker_pg_binary() {
+  local binary="$1"
+
+  command -v docker >/dev/null 2>&1 || return 1
+  docker run --rm \
+    --network host \
+    --user "$(id -u):$(id -g)" \
+    --volume "$ROOT:$ROOT" \
+    --env "PGPASSWORD=${PGPASSWORD:-}" \
+    "$POSTGRES_CLIENT_IMAGE" "$binary" --version >/dev/null 2>&1 || return 1
+  printf 'docker:%s\n' "$binary"
+}
+
 require_pg_binary() {
   local binary="$1"
   local path version
 
-  path="$(resolve_pg_binary "$binary")" || {
-    printf 'Restore drill missing PostgreSQL %s client binary.\n' "$binary" >&2
-    return 1
-  }
-
-  version="$($path --version 2>/dev/null || true)"
-  if [[ "$version" != *"PostgreSQL) $POSTGRES_MAJOR."* ]]; then
-    printf 'Restore drill requires PostgreSQL %s client tools; %s reports: %s\n' \
-      "$POSTGRES_MAJOR" "$path" "${version:-unknown}" >&2
-    return 1
+  if path="$(resolve_pg_binary "$binary")"; then
+    version="$("$path" --version 2>/dev/null || true)"
+    if [[ "$version" == *"PostgreSQL) $POSTGRES_MAJOR."* ]]; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+    printf 'Restore drill found an incompatible PostgreSQL client; %s reports: %s\n' \
+      "$path" "${version:-unknown}" >&2
   fi
 
-  printf '%s\n' "$path"
+  if path="$(resolve_docker_pg_binary "$binary")"; then
+    printf '%s\n' "$path"
+    return 0
+  fi
+
+  printf 'Restore drill missing PostgreSQL %s client binary (local or Docker image %s).\n' \
+    "$binary" "$POSTGRES_CLIENT_IMAGE" >&2
+  return 1
 }
 
 PG_DUMP="$(require_pg_binary pg_dump)"
@@ -65,36 +101,36 @@ PSQL="$(require_pg_binary psql)"
 printf 'RESTORE_DRILL_CLIENT=%s\n' "$($PG_DUMP --version)"
 
 cleanup() {
-  "$DROPDB" \
+  run_pg_binary "$DROPDB" \
     -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
     --if-exists "$DRILL_DB" >/dev/null 2>&1 || true
   rm -f "$DUMP_FILE"
 }
 trap cleanup EXIT
 
-"$PG_DUMP" \
+run_pg_binary "$PG_DUMP" \
   -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
   -d "$POSTGRES_DB" -Fc -f "$DUMP_FILE"
 test -s "$DUMP_FILE"
 
-"$DROPDB" \
+run_pg_binary "$DROPDB" \
   -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
   --if-exists "$DRILL_DB" >/dev/null
-"$CREATEDB" \
+run_pg_binary "$CREATEDB" \
   -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
   -T template0 "$DRILL_DB"
-"$PG_RESTORE" \
+run_pg_binary "$PG_RESTORE" \
   -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
   --exit-on-error --no-owner --no-privileges \
   -d "$DRILL_DB" "$DUMP_FILE"
 
 migration_count="$(
-  "$PSQL" \
+  run_pg_binary "$PSQL" \
     -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
     -d "$DRILL_DB" -Atc 'SELECT count(*) FROM schema_migrations;'
 )"
 table_count="$(
-  "$PSQL" \
+  run_pg_binary "$PSQL" \
     -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" \
     -d "$DRILL_DB" -Atc "SELECT count(*) FROM pg_tables WHERE schemaname = 'public';"
 )"
