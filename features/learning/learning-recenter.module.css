@@ -1,13 +1,7 @@
 .workspace {
-  --ink: #181713;
-  --muted: #716d64;
-  --hairline: rgba(24, 23, 19, 0.14);
-  --hairline-soft: rgba(24, 23, 19, 0.08);
-  --green: #526a54;
   width: 100%;
   margin: 0 auto;
   display: grid;
-  gap: 0;
   color: var(--ink);
 }
 
@@ -16,16 +10,16 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 40px;
-  padding: 18px 0 72px;
-  border-bottom: 1px solid var(--hairline);
+  padding: 8px 0 48px;
+  border-bottom: 1px solid var(--line);
 }
 
 .eyebrow {
-  margin: 0 0 12px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 750;
-  letter-spacing: 0.18em;
+  margin: 0 0 10px;
+  color: var(--muted-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -35,16 +29,16 @@
 .principle h3,
 .reflection h3,
 .patterns h3 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.04em;
 }
 
 .hero h1 {
-  max-width: 900px;
+  max-width: 880px;
   margin: 0;
-  font-size: clamp(52px, 7.2vw, 96px);
-  line-height: 0.94;
+  font-size: clamp(42px, 5.6vw, 72px);
+  line-height: 0.98;
   text-wrap: balance;
 }
 
@@ -54,10 +48,10 @@
   align-items: baseline;
   justify-content: flex-end;
   gap: 9px;
-  padding-bottom: 8px;
-  color: #8b867c;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 19px;
+  padding-bottom: 6px;
+  color: var(--faint-ink);
+  font-family: var(--font-display);
+  font-size: 18px;
 }
 
 .equation span,
@@ -75,15 +69,15 @@
 .reflectionSection,
 .patternSection,
 .lab {
-  padding: clamp(56px, 7vw, 84px) 0;
-  border-bottom: 1px solid var(--hairline);
+  padding: clamp(48px, 6vw, 68px) 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .latest h2 {
-  max-width: 920px;
+  max-width: 900px;
   margin: 0;
-  font-size: clamp(36px, 5.2vw, 66px);
-  line-height: 1.02;
+  font-size: clamp(34px, 4.5vw, 54px);
+  line-height: 1.03;
   text-wrap: balance;
 }
 
@@ -91,13 +85,13 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  gap: 28px;
+  gap: 24px;
 }
 
 .sectionLead h2 {
-  max-width: 820px;
+  max-width: 800px;
   margin: 0;
-  font-size: clamp(34px, 4.8vw, 60px);
+  font-size: clamp(32px, 4.2vw, 52px);
   line-height: 1.02;
   text-wrap: balance;
 }
@@ -105,13 +99,14 @@
 .primary,
 .secondary {
   width: fit-content;
+  min-height: 40px;
   border-radius: 2px;
   padding: 10px 15px;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
   font-weight: 700;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
 .primary {
@@ -124,11 +119,11 @@
 .primary:focus-visible {
   background: transparent;
   color: var(--ink);
-  outline: none;
+  transform: translateY(-1px);
 }
 
 .secondary {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--line);
   background: transparent;
   color: #34332e;
 }
@@ -136,13 +131,23 @@
 .secondary:hover,
 .secondary:focus-visible {
   border-color: rgba(24, 23, 19, 0.5);
-  outline: none;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.principle summary:focus-visible,
+.patterns summary:focus-visible,
+.lab > summary:focus-visible,
+.principleEditor textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
 }
 
 .primary:disabled,
 .secondary:disabled {
   cursor: default;
   opacity: 0.42;
+  transform: none;
 }
 
 .buttonRow {
@@ -157,8 +162,8 @@
   gap: 18px;
   max-width: 780px;
   margin-top: 28px;
-  padding: 24px 0 0 20px;
-  border-top: 1px solid var(--hairline-soft);
+  padding: 24px 0 0 18px;
+  border-top: 1px solid var(--line-soft);
   border-left: 2px solid var(--green);
 }
 
@@ -181,7 +186,7 @@
   padding: 9px 0 12px;
   background: transparent;
   color: var(--ink);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display);
   font-size: 19px;
   line-height: 1.5;
   resize: vertical;
@@ -190,17 +195,16 @@
 
 .principleEditor textarea:focus {
   border-color: var(--ink);
-  box-shadow: none;
+  background: color-mix(in srgb, var(--surface) 34%, transparent);
+  box-shadow: 0 2px 0 var(--ink);
 }
 
 .principles,
 .reflections,
 .patterns {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-  margin-top: 34px;
-  border-top: 1px solid var(--hairline);
+  margin-top: 30px;
+  border-top: 1px solid var(--line);
 }
 
 .principle,
@@ -208,21 +212,22 @@
 .patterns article {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(150px, 0.24fr) minmax(0, 0.76fr);
-  column-gap: 34px;
-  padding: 25px 0 29px;
-  border-bottom: 1px solid var(--hairline-soft);
+  grid-template-columns: minmax(140px, 0.22fr) minmax(0, 0.78fr);
+  column-gap: 32px;
+  padding: 23px 0 27px;
+  border-bottom: 1px solid var(--line-soft);
   background: transparent;
 }
 
 .principle {
   border-left: 2px solid transparent;
+  transition: border-color 140ms ease, padding-left 140ms ease;
 }
 
 .principle:hover,
 .principle:focus-within {
   border-left-color: var(--green);
-  padding-left: 18px;
+  padding-left: 16px;
 }
 
 .principleTop,
@@ -232,7 +237,7 @@
   align-content: start;
   display: grid;
   gap: 7px;
-  color: #77736a;
+  color: var(--muted-ink);
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -241,7 +246,7 @@
 .principle > p {
   grid-column: 2;
   margin: 7px 0 0;
-  color: #656159;
+  color: var(--muted-ink);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -251,8 +256,8 @@
 .patterns h3 {
   grid-column: 2;
   margin: 0;
-  font-size: clamp(25px, 3.2vw, 38px);
-  line-height: 1.08;
+  font-size: clamp(24px, 2.8vw, 35px);
+  line-height: 1.1;
   overflow-wrap: anywhere;
 }
 
@@ -260,7 +265,7 @@
 .patterns details {
   grid-column: 2;
   margin-top: 17px;
-  border-top: 1px solid var(--hairline-soft);
+  border-top: 1px solid var(--line-soft);
   padding-top: 11px;
 }
 
@@ -298,7 +303,7 @@
 
 .principle details p {
   margin: 12px 0 0;
-  color: #5f5b54;
+  color: var(--muted-ink);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -310,7 +315,7 @@
 .reflection > p {
   grid-column: 2;
   margin: 12px 0 0;
-  color: #6b655e;
+  color: var(--muted-ink);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -339,7 +344,7 @@
 }
 
 .patterns dt {
-  color: #817d74;
+  color: var(--faint-ink);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -358,14 +363,14 @@
 .empty {
   margin-top: 28px;
   padding: 18px 0;
-  border-top: 1px solid var(--hairline-soft);
-  border-bottom: 1px solid var(--hairline-soft);
-  color: #6d6961;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted-ink);
   font-size: 13px;
 }
 
 .lab {
-  padding-top: 30px;
+  padding-top: 28px;
 }
 
 .lab > summary {
@@ -398,10 +403,10 @@
 
 .error {
   margin: 24px 0;
-  border-top: 1px solid rgba(165, 78, 66, 0.32);
-  border-bottom: 1px solid rgba(165, 78, 66, 0.32);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
   padding: 12px 0;
-  color: #7a3e36;
+  color: var(--danger);
   font-size: 12px;
 }
 
@@ -409,6 +414,7 @@
   .hero {
     grid-template-columns: 1fr;
     align-items: start;
+    gap: 22px;
   }
 
   .equation {
@@ -449,7 +455,7 @@
 
 @media (max-width: 560px) {
   .hero h1 {
-    font-size: clamp(46px, 15vw, 66px);
+    font-size: clamp(40px, 13vw, 58px);
   }
 
   .equation {
@@ -458,7 +464,7 @@
 
   .latest h2,
   .sectionLead h2 {
-    font-size: 38px;
+    font-size: 36px;
   }
 
   .principleEditor {
@@ -473,7 +479,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .primary,
-  .secondary {
+  .secondary,
+  .principle {
     transition: none;
   }
 }
