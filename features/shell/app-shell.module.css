@@ -211,12 +211,6 @@
   }
 }
 
-@media (max-width: 420px) {
-  .signOut {
-    display: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .nav a::after {
     transition: none;
