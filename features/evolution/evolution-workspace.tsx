@@ -13,6 +13,7 @@ import type {
 } from "@/features/people/execution-contracts";
 import type { EvolutionState } from "./contracts";
 import { EvolutionStepExplorer } from "./evolution-step-explorer";
+import { ExecutionActionList } from "./execution-action-list";
 import styles from "./evolution-workspace.module.css";
 
 const emptyGoal: GoalDraft = {
@@ -325,6 +326,16 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
     });
   }
 
+  function executionActions() {
+    return (
+      <ExecutionActionList
+        actions={state.actions}
+        disabled={working === "do"}
+        onStatusChange={(actionId, status) => void updateAction(actionId, status)}
+      />
+    );
+  }
+
   function renderStageAction() {
     if (state.stage === "dream") {
       if (goalDiscovery.kind === "ready") {
@@ -478,45 +489,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
       return (
         <div className={styles.actionBody}>
           <strong className={styles.machineChange}>{state.design?.machineChange}</strong>
-          <div className={styles.actionList}>
-            {state.actions.map((action) => {
-              const completed = action.status === "completed";
-              const cancelled = action.status === "cancelled";
-              return (
-                <div className={styles.actionRow} key={action.id}>
-                  <button
-                    aria-label={
-                      completed
-                        ? `Reopen ${action.commitment}`
-                        : cancelled
-                          ? `Restore ${action.commitment}`
-                          : `Complete ${action.commitment}`
-                    }
-                    className={
-                      completed
-                        ? styles.actionDone
-                        : cancelled
-                          ? styles.actionCancelled
-                          : styles.actionToggle
-                    }
-                    disabled={working === "do"}
-                    onClick={() => void updateAction(action.id, completed || cancelled ? "pending" : "completed")}
-                    type="button"
-                  >
-                    {completed ? "✓" : cancelled ? "↺" : action.position + 1}
-                  </button>
-                  <span className={completed ? styles.completedText : cancelled ? styles.cancelledText : undefined}>
-                    {action.commitment}
-                  </span>
-                  {action.status === "pending" ? (
-                    <button className={styles.tertiary} disabled={working === "do"} onClick={() => void updateAction(action.id, "cancelled")} type="button">Cancel</button>
-                  ) : cancelled ? (
-                    <button className={styles.tertiary} disabled={working === "do"} onClick={() => void updateAction(action.id, "pending")} type="button">Restore</button>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+          {executionActions()}
         </div>
       );
     }
@@ -524,6 +497,10 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
     if (state.stage === "outcome") {
       return (
         <div className={styles.actionBody}>
+          <details className={styles.disclosure}>
+            <summary>Execution</summary>
+            {executionActions()}
+          </details>
           <div className={styles.expectedActual}>
             <div><span>Expected</span><strong>{state.design?.expectedResult}</strong></div>
             <div>
