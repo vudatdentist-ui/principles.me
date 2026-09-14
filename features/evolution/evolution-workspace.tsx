@@ -479,23 +479,43 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
         <div className={styles.actionBody}>
           <strong className={styles.machineChange}>{state.design?.machineChange}</strong>
           <div className={styles.actionList}>
-            {state.actions.map((action) => (
-              <div className={styles.actionRow} key={action.id}>
-                <button
-                  aria-label={action.status === "completed" ? `Reopen ${action.commitment}` : `Complete ${action.commitment}`}
-                  className={action.status === "completed" ? styles.actionDone : styles.actionToggle}
-                  disabled={working === "do"}
-                  onClick={() => void updateAction(action.id, action.status === "completed" ? "pending" : "completed")}
-                  type="button"
-                >
-                  {action.status === "completed" ? "✓" : action.position + 1}
-                </button>
-                <span className={action.status === "completed" ? styles.completedText : undefined}>{action.commitment}</span>
-                {action.status === "pending" ? (
-                  <button className={styles.tertiary} disabled={working === "do"} onClick={() => void updateAction(action.id, "cancelled")} type="button">Cancel</button>
-                ) : null}
-              </div>
-            ))}
+            {state.actions.map((action) => {
+              const completed = action.status === "completed";
+              const cancelled = action.status === "cancelled";
+              return (
+                <div className={styles.actionRow} key={action.id}>
+                  <button
+                    aria-label={
+                      completed
+                        ? `Reopen ${action.commitment}`
+                        : cancelled
+                          ? `Restore ${action.commitment}`
+                          : `Complete ${action.commitment}`
+                    }
+                    className={
+                      completed
+                        ? styles.actionDone
+                        : cancelled
+                          ? styles.actionCancelled
+                          : styles.actionToggle
+                    }
+                    disabled={working === "do"}
+                    onClick={() => void updateAction(action.id, completed || cancelled ? "pending" : "completed")}
+                    type="button"
+                  >
+                    {completed ? "✓" : cancelled ? "↺" : action.position + 1}
+                  </button>
+                  <span className={completed ? styles.completedText : cancelled ? styles.cancelledText : undefined}>
+                    {action.commitment}
+                  </span>
+                  {action.status === "pending" ? (
+                    <button className={styles.tertiary} disabled={working === "do"} onClick={() => void updateAction(action.id, "cancelled")} type="button">Cancel</button>
+                  ) : cancelled ? (
+                    <button className={styles.tertiary} disabled={working === "do"} onClick={() => void updateAction(action.id, "pending")} type="button">Restore</button>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -586,7 +606,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
   }
 
   return (
-    <div className={styles.workspace}>
+    <div aria-busy={working !== null} className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="me-title">
         <div>
           <p className={styles.eyebrow}>Me</p>
@@ -663,7 +683,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
             </aside>
           ) : null}
 
-          <section className={styles.next} aria-label="Current action">
+          <section className={styles.next} aria-labelledby="next-action-title">
             <p className={styles.eyebrow}>Now</p>
             <h2 id="next-action-title">{state.nextAction.prompt}</h2>
             {renderStageAction()}
