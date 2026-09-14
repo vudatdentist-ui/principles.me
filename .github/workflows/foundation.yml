@@ -42,6 +42,12 @@ jobs:
         run: bash scripts/ci-postgres.sh start
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Secret scan
+        run: pnpm security:secrets
+      - name: Product and privacy quality gate
+        run: pnpm quality:gate
+      - name: Operational shell syntax
+        run: bash -n scripts/deploy-production.sh scripts/restore-drill.sh scripts/ci-postgres.sh
       - name: Apply database migrations
         run: pnpm db:migrate
       - name: Typecheck
@@ -50,6 +56,8 @@ jobs:
         run: pnpm test:unit
       - name: Integration tests
         run: pnpm test:integration
+      - name: Backup restore drill
+        run: pnpm restore:drill
       - name: Build
         run: pnpm build
       - name: Stop PostgreSQL

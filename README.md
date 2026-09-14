@@ -2,246 +2,173 @@
 
 Principles is an **evolution system for people first and organizations second**.
 
-**`main`:** Phases 0–5 **Complete**.  
-**Current major phase:** **Phase 6 — Product Recenter / Evolution Engine — In progress.**
-
-Phase 6 organizes the product around three nested ideas:
-
 ```text
 Dream + Reality + Determination → Successful Life
+
+5 Steps
+Goal → Problem → Diagnosis → Design → Do
+
+Outcome → Pain / Surprise → Reflection → Principle → Evolve ↺
 ```
+
+**Current major phase:** Phase 6 — Product Recenter / Evolution Engine — in progress / production.  
+**Completed major phases:** 0–5.  
+**Next major phase:** not defined.
+
+## Start here
+
+For agents/contributors, read in this order:
+
+1. [`AGENTS.md`](./AGENTS.md) — short repository map, commands and red zones.
+2. [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) — current product/architecture source of truth.
+3. [`docs/product/PHASE_6_ARCHITECTURE.md`](./docs/product/PHASE_6_ARCHITECTURE.md) — current evolution contract.
+4. [`docs/product/UI_PRINCIPLES.md`](./docs/product/UI_PRINCIPLES.md) — interface constraints.
+5. [`docs/product/INTERACTION_DESIGN.md`](./docs/product/INTERACTION_DESIGN.md) — interaction semantics.
+6. [`docs/product/PRODUCT_MEASUREMENT.md`](./docs/product/PRODUCT_MEASUREMENT.md) — privacy-safe product learning.
+7. [`docs/engineering/REVIEW_PROTOCOL.md`](./docs/engineering/REVIEW_PROTOCOL.md) — risk/evidence/merge protocol.
+8. [`docs/security/THREAT_MODEL.md`](./docs/security/THREAT_MODEL.md) and [`docs/security/DATA_RETENTION.md`](./docs/security/DATA_RETENTION.md) for security/privacy/data work.
+
+Phase 1–5 architecture files are historical delivery records; see [`docs/product/HISTORICAL_DOCS.md`](./docs/product/HISTORICAL_DOCS.md).
+
+## Product surfaces
+
+Authenticated navigation:
 
 ```text
-5 Steps to Get What You Want
-1 Goal → 2 Problem → 3 Diagnosis → 4 Design → 5 Do
+Me · Organization · Knowledge · Learning
 ```
+
+### Me
+
+Users can hold multiple Goals. One selected Goal is projected through its own lineage:
 
 ```text
-Pain + Reflection → Progress
+Goal → Reality → Problem → Diagnosis → Design → Do → Outcome → Reflection
 ```
 
-These map onto the existing durable kernel:
+The 5 Steps are inspectable execution state, not gamified progress. Action completion never substitutes for observed Outcome.
 
-```text
-Dream / Goal → Reality → Problem → Diagnosis → Design → Actions → Outcome
-  → Pain / Surprise → Reflection → Principle → Learning Pattern → Evolve ↺
-```
+### Organization
 
-For collective machines:
+A governed collective machine with members, roles, responsibilities, teams, attributable Issues/Disagreements and contextual evidence. There is no global people score, personality label or anonymous culture score.
 
-```text
-Organization → People / Roles / Responsibilities / Teams
-  → shared Goal / Reality / Issues / Disagreement
-  → Diagnosis → Design → accountable execution
-  → Outcome → Reflection → organizational Principle
-```
+### Knowledge
 
-Read first:
+`Think from principles.` Shared Principles knowledge, bounded personal context and public live search remain separately attributable. Public live search never receives private personal-history excerpts. Knowledge does not silently write durable personal state.
 
-- [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) — source of truth.
-- [`docs/product/PRINCIPLES_KERNEL_SPEC_V1.md`](./docs/product/PRINCIPLES_KERNEL_SPEC_V1.md) — philosophy/domain language.
-- [`docs/product/UI_PRINCIPLES.md`](./docs/product/UI_PRINCIPLES.md) — interface constraints.
-- [`docs/product/PHASE_PLAN.md`](./docs/product/PHASE_PLAN.md) — major phase program.
-- [`docs/product/PHASE_4_ARCHITECTURE.md`](./docs/product/PHASE_4_ARCHITECTURE.md) — completed Learning Engine + Self Model architecture.
-- [`docs/product/PHASE_5_ARCHITECTURE.md`](./docs/product/PHASE_5_ARCHITECTURE.md) — completed Organizations architecture and governance.
-- [`docs/product/PHASE_6_ARCHITECTURE.md`](./docs/product/PHASE_6_ARCHITECTURE.md) — current Product Recenter / Evolution Engine contract.
+### Learning
 
-## Account entry
+Longitudinal Principles, Reflections and evidence-backed correctable Patterns. Principles remain living hypotheses under test.
 
-Normal account creation uses email + password only. **Setup key has been removed.**
+## Core invariants
 
-- signup is open by default;
-- only `AUTH_SIGNUP_MODE=disabled` closes account creation;
-- a legacy `AUTH_SIGNUP_MODE=bootstrap` value is treated as open rather than requiring a hidden secret;
-- origin validation, password rules, rate limiting and session security remain in force.
+- Evidence/Observation ≠ inference.
+- AI suggestion ≠ accepted truth.
+- Action completion ≠ successful Outcome.
+- Outcome requires observed Reality.
+- Reflection may produce no Principle.
+- Principles are revisable hypotheses.
+- Self Model patterns are correctable, not fixed identity labels.
+- Workspace authorization/provenance boundaries are mandatory.
+- Private content does not belong in product analytics or operational logs.
 
-New accounts must verify their email before the first sign-in. Verification and password recovery links are sent through Brevo. Configure `BREVO_API_KEY` and a verified `BREVO_SENDER_EMAIL` only in the server environment; never commit the API key.
+## Platform
 
-## People
-
-The durable personal evolution path spans:
-
-```text
-Dream / Goal → Reality → Problem → Diagnosis → Design → Do → Outcome
-                                               ↓
-                                  Pain / Reflection → Principle
-                                                        ↓
-                                         Learning Pattern → revision
-```
-
-Phase 6 is recentering People so the future primary surface shows the active Dream, current Reality, active Gap/Problem, current 5-Step position and one next meaningful action instead of exposing the underlying ontology as a stack of modules.
-
-The foundation tranche adds a read-only `EvolutionState` projection over the existing People + Execution state. No destructive migration is required.
-
-## Learning — `/learning`
-
-Phase 4 established longitudinal Learning:
-
-```text
-History
-  → Pattern hypothesis
-  → inspect cases / evidence / counter-evidence / uncertainty
-  → Keep / Edit / Reject
-  → optional Principle revision
-  → testing again
-```
-
-Self Model means accepted/revised hypotheses, not personality traits or clinical labels. Phase 6 will recenter Learning around recurring Patterns, unresolved Reflection opportunities and living Principles under test.
-
-## Organization — `/organization`
-
-Phase 5 is merged and production-verified. It extends the People kernel into a governed collective machine:
-
-```text
-Organization
-  → explicit roles / responsibilities / teams
-  → observed Issue
-  → attributable Disagreement
-  → contextual track record
-  → accountable resolution
-```
-
-Important rules:
-
-- creator becomes Organization owner;
-- client navigation uses a safe `org_...` handle rather than Workspace UUID;
-- owner manages members, roles, responsibilities, role assignments and teams;
-- ordinary members cannot mutate machine structure;
-- members can record Issues, Disagreements and contextual evidence;
-- PostgreSQL constraints prevent cross-organization structural references;
-- contextual track record preserves evidence-for/evidence-against and attribution;
-- there is no global believability score, employee ranking, personality label or anonymous culture score.
-
-Phase 6 will apply the same Dream → Reality → Problem → Diagnosis → Design → Do → Outcome → Reflection → Principle orchestration to the governed collective machine after the personal loop is recentered.
-
-## Knowledge — `/knowledge`
-
-```text
-Shared Principles knowledge → retrieval ─┐
-Current public web → live search ────────┼→ normalized Evidence → AI
-Direct observations / Outcomes ──────────┘
-```
-
-Shared Principles knowledge is available to authenticated users; Personal Workspace history remains private and workspace-scoped. Public live search receives only the public query, never private personal-history excerpts. Browser projection strips private internal evidence identifiers/full chunks/internal URLs.
-
-Phase 6 will recenter Knowledge from a generic “Ask anything” mental model toward “Think from principles,” with explicit confirmation before any future durable bridge into active People/Organization state.
-
-## Phase 6 foundation — EvolutionState
-
-The first Phase 6 tranche adds:
-
-```text
-PeopleState + ExecutionState
-            ↓
-    projectEvolutionState()
-            ↓
-       EvolutionState
-```
-
-`EvolutionState` exposes one coherent active lineage and semantic orchestration:
-
-- Dream;
-- current Reality;
-- Problem / Gap;
-- Diagnosis;
-- Design;
-- Actions;
-- Outcome;
-- Reflection;
-- Principle;
-- 5-Step status;
-- high-value attention;
-- one next action.
-
-The authenticated read-only API is:
-
-```text
-GET /api/evolution/state
-```
-
-The projection reuses the existing safe People/Execution client projectors and does not introduce an `evolution_cycles` table in this tranche.
-
-## Platform substrate
-
-- first-party identity/session and owned Personal Workspace;
+- Next.js 16 / React 19;
 - PostgreSQL 16 durable system of record;
-- Workspace authorization/provenance constraints;
-- Organization Workspaces with owner/member governance;
-- Activity Events and AI Suggestions;
-- durable provider/rate controls;
-- safe client projections;
-- checksum-bound migrations and DB-aware health;
-- self-contained production Node runtime with direct Node migrations;
-- pre-migration DB backup, internal-only data network, canary health/smoke and exact-SHA public deployment verification;
-- real-Postgres integration and authenticated browser verification.
+- first-party email/password identity with email verification/password recovery;
+- safe Workspace-scoped repositories and database provenance constraints;
+- LiteLLM/OpenAI-compatible primary AI route with DeepSeek fallback;
+- RAGFlow private retrieval + optional Brave public search;
+- checksum-bound migrations;
+- real-Postgres integration tests and Playwright browser tests;
+- pre-migration production backups, restore verification, canary smoke and exact-SHA production health verification.
 
 ## Repository shape
 
 ```text
-app/
-  api/ask/
-  api/auth/
-  api/evolution/
-  api/me/
-  api/people/
-  api/learning/
-  api/organization/
-  knowledge/page.tsx
-  learning/page.tsx
-  organization/page.tsx
-  page.tsx
-db/migrations/
-  0001_secure_platform_kernel.sql
-  0002_people_first_loop.sql
-  0003_design_execution.sql
-  0004_learning_self_model.sql
-  0005_organizations.sql
-features/
-  ask/ auth/ evidence/ evolution/ kernel/ people/ learning/ organization/ security/
-lib/
-  ai/providers/
-  db/
-docs/product/
-  PRINCIPLES_KERNEL_SPEC_V1.md
-  UI_PRINCIPLES.md
-  PHASE_PLAN.md
-  PHASE_1_ARCHITECTURE.md
-  PHASE_2_ARCHITECTURE.md
-  PHASE_3_ARCHITECTURE.md
-  PHASE_4_ARCHITECTURE.md
-  PHASE_5_ARCHITECTURE.md
-  PHASE_6_ARCHITECTURE.md
+app/                    routes + API boundaries
+features/account/       export/deletion lifecycle
+features/analytics/     privacy-safe product insights
+features/auth/          identity/session
+features/evidence/      retrieval/provider boundaries
+features/evolution/     Me projection + interactive evolution surface
+features/learning/      longitudinal learning
+features/organization/  governed collective machine
+features/people/        durable personal evolution writes
+features/security/      rate/security helpers
+lib/ai/providers/       model-provider transport + fallback
+lib/db/                 PostgreSQL access/health
+db/migrations/          append-only checksum migrations
+tests/integration/      real-Postgres boundary tests
+tests/e2e/              browser journeys
+scripts/                migration/deploy/security/restore/operator tooling
 ```
 
-## Verification
+## Local verification
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm security:secrets
+pnpm quality:gate
 pnpm db:migrate
 pnpm typecheck
 pnpm test:unit
 pnpm test:integration
+pnpm restore:drill
 pnpm build
 pnpm lint
 pnpm test:e2e
 ```
 
-Phase 5 production baseline remains verified at merge `0fa12577636715437f3208e8289d71931433aa61` / deploy run `32844721161`.
+CI runs Foundation, Lint, Playwright and a separate Security workflow with CodeQL/dependency review.
 
-Phase 6 is not Complete until its full recentered loop passes the same repository and production gates.
+## Product learning
 
-## UI constraint
+The repository reuses semantic `activity_events`; it does not install a third-party behavioral tracker or collect intimate text for analytics.
 
-> **Do not use small explanatory text to compensate for unclear structure or to fill empty space.**
+With database access:
 
-Prefer fewer visible items, stronger state, direct actions, progressive disclosure and inspectable evidence. The authenticated navigation remains:
-
-```text
-People · Organization · Knowledge · Learning
+```bash
+pnpm product:insights 30
 ```
 
-## Not implemented / intentionally deferred
+Current signals include:
 
-Phase 6 foundation does not yet replace the People UI, redesign Pain + Reflection, expose living Principle test evidence, recenter Learning/Knowledge/Organization, or add durable Principle test-event semantics.
+- Goal → Reality → Problem activation;
+- median time from Workspace creation to first recognized Problem;
+- Reflection return on multiple days;
+- Outcome review → accepted/revised Principle learning loop;
+- aggregate stage reach.
 
-Existing deferred platform/product scope such as arbitrary permission matrices, anonymous culture scoring, global people rankings, SSO/SCIM, compensation/performance workflows, structured business connectors, generic project/task management, OAuth/passkeys, RAG-binding administration UI and automated off-host restore remains deferred unless explicitly pulled into a later tranche.
+See [`docs/product/PRODUCT_MEASUREMENT.md`](./docs/product/PRODUCT_MEASUREMENT.md) for interpretation/privacy boundaries.
+
+## Account data controls
+
+Account export/deletion endpoints require active authentication, trusted origin, password re-authentication and rate limiting.
+
+Deletion removes the Personal Workspace. Shared Organization history may retain a disabled pseudonymous identity for referential integrity. Organizations owned by the account require an additional explicit destructive choice before they are deleted.
+
+Provider-side data retention is not implied by application deletion; see [`docs/security/DATA_RETENTION.md`](./docs/security/DATA_RETENTION.md).
+
+## Production delivery
+
+A push to `main` is verified before production deploy. Deployment:
+
+1. verifies application against PostgreSQL;
+2. snapshots the production database before migration;
+3. restores the exact fresh snapshot into a temporary database and verifies schema history/tables;
+4. runs migrations;
+5. starts a canary and authenticated smoke test;
+6. starts the release container;
+7. verifies public health reports the exact merged SHA;
+8. verifies canonical routing;
+9. performs zero-downtime swap.
+
+A green PR is not considered a successful release until the exact merged SHA is verified in production.
+
+## Current product question
+
+The repository can build and ship the kernel safely enough to move the bottleneck elsewhere. The current question is whether real users reach meaningful insight, return to Reflection and change behavior from observed Reality.
+
+Do not add another major phase merely because implementation is cheap. Learn first, then make the next product decision explicitly.

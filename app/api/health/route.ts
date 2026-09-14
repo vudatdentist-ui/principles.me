@@ -1,6 +1,7 @@
 import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
 import { databaseConfigured } from "@/lib/db/config";
 import { databaseHealth } from "@/lib/db/health";
+import { logEvent } from "@/lib/observability/logger";
 
 function isLocalhostUrl(value: string): boolean {
   try {
@@ -89,8 +90,7 @@ export async function GET(): Promise<Response> {
       )
     : false;
   const ragflowReady =
-    !ragflowEnabled ||
-    (ragflowEndpointReady && ragflowReachable);
+    !ragflowEnabled || (ragflowEndpointReady && ragflowReachable);
   const liveSearchConfigured = Boolean(
     process.env.BRAVE_SEARCH_API_KEY?.trim(),
   );
@@ -104,23 +104,34 @@ export async function GET(): Promise<Response> {
     ragflowReady &&
     liveSearchReady;
   const version = process.env.APP_VERSION?.trim() || "development";
+  const checks = {
+    databaseConfigured: dbConfigured,
+    databaseReady: dbHealth.reachable,
+    databaseSchemaReady: dbHealth.schemaReady,
+    deepseekConfigured,
+    litellmConfigured,
+    liveSearchConfigured,
+    liveSearchReady,
+    ragflowBootstrapDatasetsConfigured,
+    ragflowConfigured,
+    ragflowEndpointReady,
+    ragflowReachable,
+    ragflowReady,
+  };
+
+  if (!ready) {
+    logEvent("warn", "health.degraded", {
+      databaseReady: checks.databaseReady,
+      databaseSchemaReady: checks.databaseSchemaReady,
+      liveSearchReady: checks.liveSearchReady,
+      ragflowReady: checks.ragflowReady,
+      version,
+    });
+  }
 
   return Response.json(
     {
-      checks: {
-        databaseConfigured: dbConfigured,
-        databaseReady: dbHealth.reachable,
-        databaseSchemaReady: dbHealth.schemaReady,
-        deepseekConfigured,
-        litellmConfigured,
-        liveSearchConfigured,
-        liveSearchReady,
-        ragflowBootstrapDatasetsConfigured,
-        ragflowConfigured,
-        ragflowEndpointReady,
-        ragflowReachable,
-        ragflowReady,
-      },
+      checks,
       status: ready ? "ok" : "degraded",
       version,
     },
