@@ -131,6 +131,14 @@ function emptyLane(): GoalLane {
   };
 }
 
+function executedDesign(actions: GoalLane["actions"]): boolean {
+  return (
+    actions.length > 0 &&
+    actions.some((item) => item.status === "completed") &&
+    actions.every((item) => item.status !== "pending")
+  );
+}
+
 function projectGoalLane(
   people: ProjectedPeople,
   execution: ProjectedExecution,
@@ -198,10 +206,7 @@ function projectGoalLane(
       ) ?? people.principles.find((item) => item.originReflectionId === reflection.id) ?? null
     : null;
 
-  const doComplete =
-    Boolean(design) &&
-    (Boolean(outcome) ||
-      (actions.length > 0 && actions.every((item) => item.status !== "pending")));
+  const doComplete = Boolean(design) && (Boolean(outcome) || executedDesign(actions));
 
   let stage: EvolutionStage;
   if (!reality) stage = "reality";
