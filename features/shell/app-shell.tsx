@@ -53,6 +53,9 @@ export function AppShell({
             <span className={styles.workspaceName} title={workspaceName}>
               {workspaceName}
             </span>
+            <span className={styles.accountEmail} title={email}>
+              {email}
+            </span>
             <a className={styles.accountLink} href="/account" aria-label={`Account for ${email}`}>
               Account
             </a>
