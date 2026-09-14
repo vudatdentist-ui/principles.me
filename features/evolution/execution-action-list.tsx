@@ -1,9 +1,11 @@
 "use client";
 
 import type { ClientExecutionActionRecord } from "@/features/people/execution-contracts";
+import {
+  toggledExecutionActionStatus,
+  type ExecutionActionStatus,
+} from "./execution-action-state";
 import styles from "./evolution-workspace.module.css";
-
-type ActionStatus = ClientExecutionActionRecord["status"];
 
 export function ExecutionActionList({
   actions,
@@ -12,7 +14,7 @@ export function ExecutionActionList({
 }: {
   actions: ClientExecutionActionRecord[];
   disabled: boolean;
-  onStatusChange: (actionId: string, status: ActionStatus) => void;
+  onStatusChange: (actionId: string, status: ExecutionActionStatus) => void;
 }) {
   return (
     <div className={styles.actionList}>
@@ -37,7 +39,7 @@ export function ExecutionActionList({
                     : styles.actionToggle
               }
               disabled={disabled}
-              onClick={() => onStatusChange(action.id, completed || cancelled ? "pending" : "completed")}
+              onClick={() => onStatusChange(action.id, toggledExecutionActionStatus(action.status))}
               type="button"
             >
               {completed ? "✓" : cancelled ? "↺" : action.position + 1}
