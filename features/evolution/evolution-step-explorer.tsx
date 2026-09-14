@@ -106,14 +106,14 @@ export function snapshotForStep(state: EvolutionState, step: EvolutionFiveStep):
       kicker: "Do · Execution",
       title:
         pending?.commitment ||
-        (allCancelled
-          ? "No executable action remains. Restore one or redesign."
-          : state.actions.length > 0
-            ? "Execution complete. Observe the outcome."
-            : "Execute the design."),
+        (state.actions.length > 0
+          ? allCancelled
+            ? "Execution closed. Observe the outcome."
+            : "Execution complete. Observe the outcome."
+          : "Execute the design."),
       detail:
         state.actions.length > 0
-          ? `${statusSummary || "No action completed yet"}. The test is still the resulting reality, not the checklist.`
+          ? `${statusSummary || "No action completed yet"}. The test is the resulting reality, including a decision not to execute.`
           : "Translate the design into accountable actions, then compare expected and actual reality.",
     };
   }
