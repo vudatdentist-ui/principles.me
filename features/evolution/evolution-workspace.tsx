@@ -660,7 +660,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
             </aside>
           ) : null}
 
-          <section className={styles.next} aria-labelledby="next-action-title">
+          <section className={styles.next} aria-label="Current action">
             <p className={styles.eyebrow}>Now</p>
             <h2 id="next-action-title">{state.nextAction.prompt}</h2>
             {renderStageAction()}
