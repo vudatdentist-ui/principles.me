@@ -61,6 +61,11 @@ export function LearningRecenter({
   const activePatterns = learning.patterns.filter(
     (pattern) => pattern.lifecycleState !== "retired",
   );
+  const hasImmediatePatternAction = activePatterns.some(
+    (pattern) =>
+      pattern.lifecycleState === "active" &&
+      Boolean(pattern.principleRevisionProposal),
+  );
   const principles = people.principles.filter(
     (principle) =>
       principle.acceptanceState !== "rejected" &&
@@ -411,7 +416,10 @@ export function LearningRecenter({
 
       <details
         className={styles.lab}
-        open={activePatterns.length === 0 && learning.historyCount >= 2}
+        open={
+          (activePatterns.length === 0 && learning.historyCount >= 2) ||
+          hasImmediatePatternAction
+        }
       >
         <summary>Pattern tools</summary>
         <div className={styles.legacy}>
