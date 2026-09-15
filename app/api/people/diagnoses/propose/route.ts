@@ -10,6 +10,7 @@ import {
   fallbackDiagnosisProposal,
   generateDiagnosisProposal,
 } from "@/features/people/execution-ai";
+import type { GeneratedDiagnosis } from "@/features/people/execution-ai";
 import { getProblemEvidenceContents } from "@/features/people/execution-repository";
 import { supersedePendingExecutionSuggestions } from "@/features/people/execution-suggestions";
 import { getGoal, getProblem, loadPeopleState } from "@/features/people/repository";
@@ -42,7 +43,7 @@ export async function POST(request: Request): Promise<Response> {
       return quotaResponse(quota.retryAfterSeconds);
     }
 
-    let proposal;
+    let proposal: GeneratedDiagnosis;
     try {
       proposal = await generateDiagnosisProposal({
         evidence: evidence.map(({ content, title }) => ({ content, title })),
