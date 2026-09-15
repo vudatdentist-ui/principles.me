@@ -226,7 +226,7 @@ export function AskWorkspace() {
           <div className={styles.sectionHeading}>
             <div>
               <p className={styles.eyebrow}>04 / 05 · Synthesis</p>
-              <h2>What the evidence suggests</h2>
+              <h2 aria-label="Answer">What the evidence suggests</h2>
             </div>
             <span>{sourceLabel}</span>
           </div>
