@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { CurrentActionReadability } from "./current-action-readability";
 import "./globals.css";
 import "./readability.css";
+import "./narrative-density.css";
 
 export const metadata: Metadata = {
   description:
