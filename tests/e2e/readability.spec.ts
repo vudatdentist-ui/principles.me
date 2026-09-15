@@ -18,16 +18,29 @@ async function createAccount(page: import("@playwright/test").Page) {
 }
 
 async function createGoal(page: import("@playwright/test").Page) {
-  for (const value of [
+  const answers = [
     "Build a company that can make routine decisions without depending on me.",
     "I want freedom without sacrificing decision quality.",
     "Routine operating decisions happen without waiting for my approval.",
     "I will stop being the default approver for low-risk operating decisions.",
     "Protect customer trust and irreversible financial decisions.",
-  ]) {
-    await page.getByLabel("Goal discovery answer").fill(value);
-    await page.getByRole("button", { name: "Continue" }).click();
+  ];
+
+  for (const [index, value] of answers.entries()) {
+    const answer = page.getByLabel("Goal discovery answer");
+    const continueButton = page.getByRole("button", { name: "Continue" });
+    await expect(answer).toBeVisible();
+    await answer.fill(value);
+    await expect(continueButton).toBeEnabled();
+    await continueButton.click();
+
+    if (index < answers.length - 1) {
+      await expect(answer).toHaveValue("");
+    } else {
+      await expect(page.getByRole("button", { name: "Add goal" })).toBeVisible();
+    }
   }
+
   await page.getByRole("button", { name: "Add goal" }).click();
 }
 
