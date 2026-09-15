@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { ClientEvidenceReference } from "@/features/evidence/client-reference";
 import styles from "./ask-workspace.module.css";
@@ -110,6 +110,29 @@ export function AskWorkspace() {
       let buffer = "";
       let terminal = false;
 
+      function consume(event: StreamEvent | null) {
+        if (!event) return;
+        if (event.type === "status") {
+          setStatus(event.message);
+        } else if (event.type === "sources") {
+          setSources(event.references);
+          setKnowledgeState(event.private ?? null);
+          setLiveState(event.live ?? null);
+          setPersonalState(event.personal ?? null);
+        } else if (event.type === "token") {
+          setAnswer((current) => current + event.token);
+        } else if (event.type === "error") {
+          terminal = true;
+          setError(event.message);
+          setPhase("error");
+          setStatus(event.retryable ? "Try again" : "Failed");
+        } else if (event.type === "done") {
+          terminal = true;
+          setPhase("done");
+          setStatus("Complete");
+        }
+      }
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -118,41 +141,12 @@ export function AskWorkspace() {
         buffer = lines.pop() ?? "";
 
         for (const streamLine of lines) {
-          const event = parseEvent(streamLine);
-          if (!event) continue;
-          if (event.type === "status") {
-            setStatus(event.message);
-          } else if (event.type === "sources") {
-            setSources(event.references);
-            setKnowledgeState(event.private ?? null);
-            setLiveState(event.live ?? null);
-            setPersonalState(event.personal ?? null);
-          } else if (event.type === "token") {
-            setAnswer((current) => current + event.token);
-          } else if (event.type === "error") {
-            terminal = true;
-            setError(event.message);
-            setPhase("error");
-            setStatus(event.retryable ? "Try again" : "Failed");
-          } else if (event.type === "done") {
-            terminal = true;
-            setPhase("done");
-            setStatus("Complete");
-          }
+          consume(parseEvent(streamLine));
         }
       }
 
-      const tail = parseEvent(buffer);
-      if (tail?.type === "done") {
-        terminal = true;
-        setPhase("done");
-        setStatus("Complete");
-      } else if (tail?.type === "error") {
-        terminal = true;
-        setError(tail.message);
-        setPhase("error");
-        setStatus(tail.retryable ? "Try again" : "Failed");
-      }
+      buffer += decoder.decode();
+      consume(parseEvent(buffer));
       if (!terminal) throw new Error("Stream ended unexpectedly.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Request failed.");
@@ -401,10 +395,12 @@ function AnswerContent({ text }: { text: string }) {
       );
     }
     if (/^#{1,3}\s+/.test(firstLine)) {
+      const body = lines.slice(1).join(" ");
       return (
-        <h3 key={keyFor(`heading-${block}`)}>
-          {inlineMarkdown(firstLine.replace(/^#{1,3}\s+/, ""))}
-        </h3>
+        <Fragment key={keyFor(`heading-${block}`)}>
+          <h3>{inlineMarkdown(firstLine.replace(/^#{1,3}\s+/, ""))}</h3>
+          {body ? <p>{inlineMarkdown(body)}</p> : null}
+        </Fragment>
       );
     }
     return (
