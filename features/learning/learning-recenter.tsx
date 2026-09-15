@@ -24,6 +24,18 @@ async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
   return payload;
 }
 
+async function fetchPeopleState(): Promise<ClientPeopleState> {
+  const response = await fetch("/api/people/state", { cache: "no-store" });
+  if (!response.ok) throw new Error("Could not refresh Learning.");
+  return response.json() as Promise<ClientPeopleState>;
+}
+
+async function fetchLearningState(): Promise<ClientLearningState> {
+  const response = await fetch("/api/learning/state", { cache: "no-store" });
+  if (!response.ok) throw new Error("Could not refresh Learning patterns.");
+  return response.json() as Promise<ClientLearningState>;
+}
+
 export function LearningRecenter({
   email,
   evolution,
@@ -81,9 +93,25 @@ export function LearningRecenter({
         : "Next evidence";
 
   async function refreshPeople() {
-    const response = await fetch("/api/people/state", { cache: "no-store" });
-    if (!response.ok) throw new Error("Could not refresh Learning.");
-    setPeople((await response.json()) as ClientPeopleState);
+    setPeople(await fetchPeopleState());
+  }
+
+  async function refreshAll() {
+    const [nextPeople, nextLearning] = await Promise.all([
+      fetchPeopleState(),
+      fetchLearningState(),
+    ]);
+    setPeople(nextPeople);
+    setLearning(nextLearning);
+  }
+
+  function synchronizeLearning(nextLearning: ClientLearningState) {
+    setLearning(nextLearning);
+    void refreshPeople().catch((cause) => {
+      setError(
+        cause instanceof Error ? cause.message : "Could not refresh Learning.",
+      );
+    });
   }
 
   async function run(label: string, action: () => Promise<void>) {
@@ -109,7 +137,7 @@ export function LearningRecenter({
       setRule("");
       setRationale("");
       setShowAdd(false);
-      await refreshPeople();
+      await refreshAll();
     });
   }
 
@@ -119,7 +147,7 @@ export function LearningRecenter({
         body: JSON.stringify({ reflectionId }),
         method: "POST",
       });
-      await refreshPeople();
+      await refreshAll();
     });
   }
 
@@ -132,7 +160,7 @@ export function LearningRecenter({
         body: JSON.stringify({ action, principleId }),
         method: "POST",
       });
-      await refreshPeople();
+      await refreshAll();
     });
   }
 
@@ -390,7 +418,7 @@ export function LearningRecenter({
           <LearningWorkspace
             email={email}
             initialState={learning}
-            onStateChange={setLearning}
+            onStateChange={synchronizeLearning}
             workspaceName={workspaceName}
           />
         </div>
