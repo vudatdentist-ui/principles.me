@@ -66,6 +66,25 @@ summary {
   background: #d8d2c4;
 }
 
+/* The narrative shell stays bold without hiding identity or exceeding the shared
+   viewport regression contract. These selectors intentionally outrank feature
+   module rules while the narrative direction is evaluated across surfaces. */
+#me-title {
+  font-size: clamp(52px, 5.6vw, 72px);
+}
+
+header span[title*="@"] {
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+header a[aria-label^="Account for "] + button {
+  display: inline-block;
+}
+
 /* Legacy authenticated shells still consume the compatibility aliases above.
    AppShell-based surfaces use the shared paper/ink/line contract directly. */
 main > header:has(nav[aria-label="Primary"]) {
@@ -166,5 +185,15 @@ main > header:has(nav[aria-label="Primary"]) + section {
 
   main > header:has(nav[aria-label="Primary"]) + section {
     padding-top: 44px;
+  }
+
+  header span[title*="@"] {
+    max-width: 92px;
+  }
+}
+
+@media (max-width: 460px) {
+  header span[title*="@"] {
+    max-width: 74px;
   }
 }
