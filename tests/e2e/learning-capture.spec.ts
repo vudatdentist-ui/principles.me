@@ -49,11 +49,27 @@ async function seedReflectionContext(
         statement: "Learning notes are currently fragmented across surfaces.",
       },
     );
-    await post("/api/people/problems", {
-      gap: "The evidence exists but the learning loop is hard to capture.",
+    const problem = await post<{ problem: { id: string } }>(
+      "/api/people/problems",
+      {
+        gap: "The evidence exists but the learning loop is hard to capture.",
+        goalId: goal.goal.id,
+        observationId: reality.reality.observationId,
+        statement:
+          "Learning capture is not available where the user sees the chapter.",
+      },
+    );
+    await post("/api/people/reflections", {
+      expected: "The learning surface would make the next action obvious.",
       goalId: goal.goal.id,
-      observationId: reality.reality.observationId,
-      statement: "Learning capture is not available where the user sees the chapter.",
+      happened:
+        "The previous Learning layout separated evidence from the actions that created it.",
+      learning:
+        "Learning becomes usable when evidence and capture stay in the same narrative scene.",
+      problemId: problem.problem.id,
+      recurrenceNote: "",
+      recurring: false,
+      surprise: "The data model was stronger than the visible interaction model.",
     });
     return true;
   });
@@ -98,29 +114,31 @@ test("Learning keeps the working loop in one scene and lets every chapter captur
   ).toBeVisible();
 
   await page.getByRole("button", { name: "+ Pattern" }).click();
+  await page.getByRole("button", { name: "Synthesize pattern" }).click();
+  await expect(page.getByLabel("Pattern statement")).toBeVisible();
   await page
-    .getByLabel("Manual pattern statement")
+    .getByLabel("Pattern statement")
     .fill("Hidden capture tools make empty narrative sections feel read-only.");
   await page
-    .getByLabel("Manual pattern implication")
+    .getByLabel("Pattern implication")
     .fill("Put capture actions in the chapter itself.");
   await page
-    .getByLabel("Manual pattern evidence for")
+    .getByLabel("Pattern evidence for")
     .fill("The Learning screenshot showed no chapter-level input action.");
   await page
-    .getByLabel("Manual pattern evidence against")
+    .getByLabel("Pattern evidence against")
     .fill("A hero-level action existed but was easy to lose after scrolling.");
   await page
-    .getByLabel("Manual pattern uncertainty")
+    .getByLabel("Pattern uncertainty")
     .fill("More usage is needed to test whether the chapter action is enough.");
-  await page.getByRole("button", { name: "Save pattern hypothesis" }).click();
+  await page.getByRole("button", { name: "Keep pattern" }).click();
   await expect(
     page.getByRole("heading", {
       name: "Hidden capture tools make empty narrative sections feel read-only.",
     }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "+ Principle" }).click();
+  await page.getByRole("button", { name: "+ Add principle" }).click();
   await page
     .getByLabel("Principle trigger")
     .fill("When a narrative chapter asks the user to think");
