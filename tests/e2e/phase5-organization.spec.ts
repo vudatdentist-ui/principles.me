@@ -24,7 +24,10 @@ async function createAccount(
 }
 
 async function signOut(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page
+    .getByRole("banner")
+    .getByRole("button", { name: "Sign out" })
+    .click();
   await expect(
     page.getByRole("button", { name: "Sign in" }).first(),
   ).toBeVisible();
