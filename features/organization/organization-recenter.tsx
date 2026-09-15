@@ -28,32 +28,57 @@ export function OrganizationRecenter({
   );
   const responsibilityCount =
     active?.roles.reduce((total, role) => total + role.responsibilities.length, 0) ?? 0;
+  const currentIssue = openIssues[0] ?? null;
 
   return (
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="organization-title">
-        <div>
-          <p className={styles.eyebrow}>Organization</p>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Organization · living machine</p>
           <h1 id="organization-title">Design the machine around reality.</h1>
+          <p className={styles.heroDeck}>
+            Hold purpose, observed reality, ownership, and the next organizational tension in the same frame. Structure only matters when it helps the organization respond to what is true.
+          </p>
+          <div className={styles.loop} aria-label="Organization narrative arc">
+            <span>Intent</span><b>→</b><span>Reality</span><b>→</b><span>Tension</span><b>→</b><span>Responsibility</span><b>→</b><span>Decision</span>
+          </div>
         </div>
-        <div className={styles.loop}>
-          <span>Dream</span><b>→</b><span>Reality</span><b>→</b><span>Problem</span><b>→</b><span>Design</span>
-        </div>
+
+        <aside className={styles.currentScene} aria-label="Current organization narrative">
+          <span>01 / 06 · Current tension</span>
+          <strong>{currentIssue?.title || "No open issue."}</strong>
+          <p>{currentIssue?.tension || "The machine has no recorded tension that currently needs a decision."}</p>
+          <dl>
+            <div>
+              <dt>Intent</dt>
+              <dd>{active?.purpose || active?.name || "Create an organization to name its purpose."}</dd>
+            </div>
+            <div>
+              <dt>Reality</dt>
+              <dd>{currentIssue?.observedReality || "No open issue is defining current reality."}</dd>
+            </div>
+            <div>
+              <dt>Ownership</dt>
+              <dd>{active ? `${active.roles.length} roles · ${responsibilityCount} responsibilities` : "Not designed yet"}</dd>
+            </div>
+          </dl>
+          <a href="#organization-operations">Work on the machine →</a>
+        </aside>
       </section>
 
       {active ? (
         <>
           <section className={styles.orientation} aria-label="Organization purpose and reality">
             <article className={styles.purpose}>
-              <p className={styles.eyebrow}>Dream</p>
+              <p className={styles.eyebrow}>Intent</p>
               <h2>{active.purpose || active.name}</h2>
               <span>{active.name}</span>
             </article>
             <article className={styles.reality}>
               <p className={styles.eyebrow}>Reality</p>
-              {openIssues[0] ? (
+              {currentIssue ? (
                 <>
-                  <h2>{openIssues[0].observedReality}</h2>
+                  <h2>{currentIssue.observedReality}</h2>
                   <span>{openIssues.length} open issue{openIssues.length === 1 ? "" : "s"}</span>
                 </>
               ) : (
@@ -66,7 +91,7 @@ export function OrganizationRecenter({
             <section className={styles.issueSection} aria-labelledby="issues-title">
               <div className={styles.sectionLead}>
                 <div>
-                  <p className={styles.eyebrow}>Problems</p>
+                  <p className={styles.eyebrow}>Tension</p>
                   <h2 id="issues-title">Where is the machine failing?</h2>
                 </div>
                 <span>{openIssues.length} open</span>
@@ -101,8 +126,8 @@ export function OrganizationRecenter({
           <section className={styles.diagnosisSection} aria-labelledby="diagnosis-title">
             <div className={styles.sectionLead}>
               <div>
-                <p className={styles.eyebrow}>Diagnosis</p>
-                <h2 id="diagnosis-title">Competing models</h2>
+                <p className={styles.eyebrow}>Models</p>
+                <h2 id="diagnosis-title">What are we seeing differently?</h2>
               </div>
               <span>{unresolvedDisagreements.length} unresolved</span>
             </div>
@@ -125,8 +150,8 @@ export function OrganizationRecenter({
           <section className={styles.machineSection} aria-labelledby="machine-title">
             <div className={styles.sectionLead}>
               <div>
-                <p className={styles.eyebrow}>Design</p>
-                <h2 id="machine-title">Ownership and responsibility</h2>
+                <p className={styles.eyebrow}>Responsibility</p>
+                <h2 id="machine-title">Who owns what must change?</h2>
               </div>
               <span>{active.roles.length} roles · {responsibilityCount} responsibilities · {active.teams.length} teams</span>
             </div>
@@ -157,8 +182,8 @@ export function OrganizationRecenter({
             <section className={styles.evidenceSection} aria-labelledby="context-title">
               <div className={styles.sectionLead}>
                 <div>
-                  <p className={styles.eyebrow}>Evidence</p>
-                  <h2 id="context-title">Contextual track record</h2>
+                  <p className={styles.eyebrow}>Consequence</p>
+                  <h2 id="context-title">What does the track record say?</h2>
                 </div>
               </div>
               <div className={styles.evidenceGrid}>
@@ -181,10 +206,11 @@ export function OrganizationRecenter({
         <section className={styles.emptyState}>
           <p className={styles.eyebrow}>Organization</p>
           <h2>Create your organization.</h2>
+          <p>Name the purpose, observe reality, then assign responsibility around the tensions that matter.</p>
         </section>
       )}
 
-      <details className={styles.operations} open={!active}>
+      <details className={styles.operations} id="organization-operations" open={!active}>
         <summary>Operations</summary>
         <div className={styles.legacy}>
           <OrganizationWorkspace email={email} initialState={initialState} />
