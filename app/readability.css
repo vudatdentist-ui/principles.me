@@ -76,7 +76,7 @@ header nav[aria-label="Primary"] a[aria-current="page"] {
   }
 
   section[aria-label="Current action"] > h2,
-  section[aria-label="Current action"] > div {
+  section[aria-label="Current action"] > div[class] {
     grid-column: 1;
   }
 
@@ -84,7 +84,8 @@ header nav[aria-label="Primary"] a[aria-current="page"] {
     max-width: 12ch;
   }
 
-  section[aria-label="Current action"] > div {
+  section[aria-label="Current action"] > div[class] {
+    width: 100%;
     max-width: 760px;
   }
 }
