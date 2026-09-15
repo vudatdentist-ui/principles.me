@@ -40,7 +40,7 @@ export function OrganizationRecenter({
             Hold purpose, observed reality, ownership, and the next organizational tension in the same frame. Structure only matters when it helps the organization respond to what is true.
           </p>
           <div className={styles.loop} aria-label="Organization narrative arc">
-            <span>Intent</span><b>→</b><span>Reality</span><b>→</b><span>Tension</span><b>→</b><span>Responsibility</span><b>→</b><span>Decision</span>
+            <span>Dream / Intent</span><b>→</b><span>Reality</span><b>→</b><span>Tension</span><b>→</b><span>Responsibility</span><b>→</b><span>Decision / Design</span>
           </div>
         </div>
 
@@ -127,7 +127,7 @@ export function OrganizationRecenter({
             <div className={styles.sectionLead}>
               <div>
                 <p className={styles.eyebrow}>Models</p>
-                <h2 id="diagnosis-title">What are we seeing differently?</h2>
+                <h2 aria-label="Competing models" id="diagnosis-title">What are we seeing differently?</h2>
               </div>
               <span>{unresolvedDisagreements.length} unresolved</span>
             </div>
