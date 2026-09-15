@@ -1,0 +1,102 @@
+/*
+ * Narrative density guardrails.
+ *
+ * Primary surfaces should read as complete working scenes, not poster-sized heroes
+ * followed by the useful content below the fold. Display type still marks the
+ * chapter, but context and action must enter the first viewport on tablet/desktop.
+ */
+
+@media (min-width: 761px) {
+  section[aria-labelledby="me-title"] {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr);
+    align-items: center;
+    gap: clamp(30px, 4vw, 58px);
+    padding-top: clamp(28px, 3.2vw, 42px);
+    padding-bottom: clamp(28px, 3.2vw, 42px);
+  }
+
+  section[aria-labelledby="me-title"] h1 {
+    max-width: 13ch;
+    font-size: clamp(42px, 5vw, 68px);
+    line-height: 0.94;
+  }
+
+  section[aria-label="My goals"] > button {
+    min-height: 84px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+
+  section[aria-label="Current action"] {
+    padding-top: clamp(34px, 4vw, 54px);
+    padding-bottom: clamp(38px, 4.6vw, 62px);
+  }
+
+  section[aria-label="Current action"] > h2 {
+    max-width: 12ch;
+    font-size: clamp(38px, 4.5vw, 60px);
+    line-height: 0.98;
+  }
+
+  section[aria-label="Current knowledge narrative"],
+  section[aria-labelledby="organization-title"] {
+    grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+    align-items: center;
+    gap: clamp(30px, 4vw, 58px);
+    padding-top: 24px;
+    padding-bottom: 30px;
+  }
+
+  section[aria-label="Current knowledge narrative"] h1,
+  section[aria-labelledby="organization-title"] h1 {
+    max-width: 12ch;
+    font-size: clamp(38px, 4.4vw, 60px);
+    line-height: 0.98;
+  }
+
+  section[aria-label="Current knowledge narrative"] > form {
+    padding-top: 12px;
+  }
+
+  section[aria-label="Current knowledge narrative"] textarea {
+    min-height: 96px;
+    font-size: clamp(16px, 1.35vw, 19px);
+  }
+
+  section[aria-label="Organization purpose and reality"] {
+    padding-top: clamp(28px, 3.2vw, 40px);
+    padding-bottom: clamp(28px, 3.2vw, 40px);
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  section[aria-labelledby="me-title"] {
+    grid-template-columns: minmax(0, 1fr) minmax(230px, 0.72fr);
+    gap: 28px;
+  }
+
+  section[aria-labelledby="me-title"] h1 {
+    font-size: clamp(40px, 5.8vw, 58px);
+  }
+
+  section[aria-label="Current knowledge narrative"],
+  section[aria-labelledby="organization-title"] {
+    grid-template-columns: minmax(0, 0.82fr) minmax(360px, 1.18fr);
+    gap: 30px;
+  }
+
+  section[aria-label="Current knowledge narrative"] h1,
+  section[aria-labelledby="organization-title"] h1 {
+    font-size: clamp(36px, 4.8vw, 52px);
+  }
+}
+
+@media (max-width: 760px) {
+  section[aria-labelledby="me-title"] h1,
+  section[aria-label="Current knowledge narrative"] h1,
+  section[aria-labelledby="organization-title"] h1 {
+    font-size: clamp(38px, 11vw, 52px);
+    line-height: 0.98;
+  }
+}
