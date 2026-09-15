@@ -63,8 +63,9 @@ export function LearningRecenter({
   );
   const hasImmediatePatternAction = activePatterns.some(
     (pattern) =>
-      pattern.lifecycleState === "active" &&
-      Boolean(pattern.principleRevisionProposal),
+      (pattern.lifecycleState === "active" &&
+        Boolean(pattern.principleRevisionProposal)) ||
+      Boolean(pattern.appliedRevision),
   );
   const principles = people.principles.filter(
     (principle) =>
