@@ -1,51 +1,50 @@
 /*
  * Readability guardrails for the narrative Me surface.
  *
- * The editorial display type stays on chapter headlines. Long-form working
- * text is intentionally utilitarian: readable line lengths, sans-serif body
- * copy, generous leading, and no tiny low-contrast labels.
+ * Viewports are treated as complete scenes: strong thesis, local context,
+ * readable working text, and no internally clipped long-form inputs.
  */
 
 section[aria-labelledby="me-title"] h1 {
-  max-width: 14ch;
-  font-size: clamp(50px, 6.6vw, 88px);
+  max-width: 12ch;
+  font-size: clamp(46px, 5.8vw, 78px);
   line-height: 0.94;
   letter-spacing: -0.055em;
 }
 
 section[aria-label="Current action"] > h2 {
   max-width: 11ch;
-  font-size: clamp(42px, 5vw, 68px);
+  font-size: clamp(40px, 4.8vw, 64px);
   line-height: 0.98;
   letter-spacing: -0.055em;
 }
 
 section[aria-label="Current action"] label[class],
 section[aria-label="Current action"] details[class] summary {
-  color: rgba(247, 244, 237, 0.78);
+  color: #5a564f;
   font-size: 11px;
   line-height: 1.35;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.11em;
 }
 
 section[aria-label="Current action"] textarea,
 section[aria-label="Current action"] input {
   font-family: var(--font-geist), Arial, sans-serif;
-  font-size: clamp(16px, 1.35vw, 18px);
-  font-weight: 450;
-  line-height: 1.6;
-  letter-spacing: -0.012em;
+  font-size: clamp(16px, 1.3vw, 18px);
+  font-weight: 440;
+  line-height: 1.62;
+  letter-spacing: -0.01em;
   text-transform: none;
 }
 
 section[aria-label="Current action"] textarea {
-  min-height: 8lh;
+  min-height: 6lh;
   overflow-y: auto;
 }
 
 section[aria-label="Current action"] textarea::placeholder,
 section[aria-label="Current action"] input::placeholder {
-  color: rgba(247, 244, 237, 0.42);
+  color: #8b867d;
 }
 
 header nav[aria-label="Primary"] a {
@@ -67,23 +66,8 @@ header nav[aria-label="Primary"] a[aria-current="page"] {
   }
 }
 
-/* Tablet landscape is a reading surface, not a compressed desktop. */
 @media (max-width: 1180px) {
-  section[aria-label="Current action"] {
-    grid-template-columns: minmax(0, 1fr);
-    column-gap: 0;
-    row-gap: 28px;
-  }
-
   section[aria-label="Current action"] > h2,
-  section[aria-label="Current action"] > div[class] {
-    grid-column: 1;
-  }
-
-  section[aria-label="Current action"] > h2 {
-    max-width: 12ch;
-  }
-
   section[aria-label="Current action"] > div[class] {
     width: 100%;
     max-width: 760px;
@@ -93,17 +77,12 @@ header nav[aria-label="Primary"] a[aria-current="page"] {
 @media (max-width: 760px) {
   section[aria-labelledby="me-title"] h1 {
     max-width: 11ch;
-    font-size: clamp(46px, 13vw, 64px);
+    font-size: clamp(44px, 12vw, 60px);
     line-height: 0.96;
   }
 
   section[aria-label="Current action"] > h2 {
-    font-size: clamp(38px, 11vw, 52px);
-  }
-
-  section[aria-label="Current action"] label[class],
-  section[aria-label="Current action"] details[class] summary {
-    font-size: 11px;
+    font-size: clamp(38px, 10.5vw, 52px);
   }
 
   section[aria-label="Current action"] textarea,
