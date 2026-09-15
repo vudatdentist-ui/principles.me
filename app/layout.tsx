@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { CurrentActionReadability } from "./current-action-readability";
 import "./globals.css";
+import "./readability.css";
 
 export const metadata: Metadata = {
   description: "Principles — personal and business management, starting with knowledge Q&A.",
@@ -27,7 +29,10 @@ export default function RootLayout({
 }>) {
   return (
     <html className={`${geist.variable} ${geistMono.variable}`} lang="en">
-      <body>{children}</body>
+      <body>
+        <CurrentActionReadability />
+        {children}
+      </body>
     </html>
   );
 }
