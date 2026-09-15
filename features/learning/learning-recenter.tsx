@@ -730,11 +730,7 @@ export function LearningRecenter({
         </section>
       ) : null}
 
-      <div
-        className={styles.chapterDeck}
-        aria-label="Learning working scene"
-        role="group"
-      >
+      <section className={styles.chapterDeck} aria-label="Learning working scene">
         <section
           className={styles.chapter}
           id="learning-reflection"
@@ -897,7 +893,7 @@ export function LearningRecenter({
             </div>
           )}
         </section>
-      </div>
+      </section>
 
       <details
         className={styles.lab}
