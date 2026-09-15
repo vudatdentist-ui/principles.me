@@ -1,0 +1,114 @@
+/*
+ * Readability guardrails for the narrative Me surface.
+ *
+ * The editorial display type stays on chapter headlines. Long-form working
+ * text is intentionally utilitarian: readable line lengths, sans-serif body
+ * copy, generous leading, and no tiny low-contrast labels.
+ */
+
+section[aria-labelledby="me-title"] h1 {
+  max-width: 14ch;
+  font-size: clamp(50px, 6.6vw, 88px);
+  line-height: 0.94;
+  letter-spacing: -0.055em;
+}
+
+section[aria-label="Current action"] > h2 {
+  max-width: 11ch;
+  font-size: clamp(42px, 5vw, 68px);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+section[aria-label="Current action"] label[class],
+section[aria-label="Current action"] details[class] summary {
+  color: rgba(247, 244, 237, 0.78);
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+}
+
+section[aria-label="Current action"] textarea,
+section[aria-label="Current action"] input {
+  font-family: var(--font-geist), Arial, sans-serif;
+  font-size: clamp(16px, 1.35vw, 18px);
+  font-weight: 450;
+  line-height: 1.6;
+  letter-spacing: -0.012em;
+  text-transform: none;
+}
+
+section[aria-label="Current action"] textarea {
+  min-height: 8lh;
+  overflow-y: auto;
+}
+
+section[aria-label="Current action"] textarea::placeholder,
+section[aria-label="Current action"] input::placeholder {
+  color: rgba(247, 244, 237, 0.42);
+}
+
+header nav[aria-label="Primary"] a {
+  color: rgba(247, 244, 237, 0.72);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+header nav[aria-label="Primary"] a[aria-current="page"] {
+  color: #f7f4ed;
+}
+
+@supports (field-sizing: content) {
+  section[aria-label="Current action"] textarea {
+    field-sizing: content;
+    min-height: 5lh;
+    max-height: none;
+    overflow-y: hidden;
+  }
+}
+
+/* Tablet landscape is a reading surface, not a compressed desktop. */
+@media (max-width: 1180px) {
+  section[aria-label="Current action"] {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+    row-gap: 28px;
+  }
+
+  section[aria-label="Current action"] > h2,
+  section[aria-label="Current action"] > div[class] {
+    grid-column: 1;
+  }
+
+  section[aria-label="Current action"] > h2 {
+    max-width: 12ch;
+  }
+
+  section[aria-label="Current action"] > div[class] {
+    width: 100%;
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 760px) {
+  section[aria-labelledby="me-title"] h1 {
+    max-width: 11ch;
+    font-size: clamp(46px, 13vw, 64px);
+    line-height: 0.96;
+  }
+
+  section[aria-label="Current action"] > h2 {
+    font-size: clamp(38px, 11vw, 52px);
+  }
+
+  section[aria-label="Current action"] label[class],
+  section[aria-label="Current action"] details[class] summary {
+    font-size: 11px;
+  }
+
+  section[aria-label="Current action"] textarea,
+  section[aria-label="Current action"] input {
+    font-size: 17px;
+    line-height: 1.62;
+  }
+}
