@@ -81,17 +81,20 @@ test("Organization reuses the evolution language while preserving governed colla
     ).toBeVisible();
   }
 
-  const operations = await openOperations(page);
+  let operations = await openOperations(page);
   const createOrganization = operations.locator("details").filter({
     has: page.getByText("Create organization", { exact: true }),
   });
   await createOrganization.locator('input[name="name"]').fill(organizationName);
   await createOrganization.locator('textarea[name="purpose"]').fill(purpose);
   await createOrganization.getByRole("button", { name: "Create" }).click();
+
+  // The outer narrative must reflect the mutation without a document reload.
+  await expect(page.getByText(purpose).first()).toBeVisible();
+  operations = await openOperations(page);
   await expect(
     operations.getByRole("heading", { name: organizationName }),
   ).toBeVisible();
-  await expect(page.getByText(purpose).first()).toBeVisible();
 
   await operations.getByText("Add existing account", { exact: true }).click();
   const addMember = operations.locator("details").filter({
@@ -99,6 +102,7 @@ test("Organization reuses the evolution language while preserving governed colla
   });
   await addMember.locator('input[name="email"]').fill(memberEmail);
   await addMember.getByRole("button", { name: "Add member" }).click();
+  operations = await openOperations(page);
   await expect(
     operations.getByRole("list").getByText(memberEmail, { exact: true }),
   ).toBeVisible();
@@ -115,11 +119,14 @@ test("Organization reuses the evolution language while preserving governed colla
     .locator('textarea[name="decisionScope"]')
     .fill("Routine engineering sequencing.");
   await roleForm.getByRole("button", { name: "Create role" }).click();
-  await expect(
-    operations.getByText("Engineering Lead", { exact: true }),
-  ).toBeVisible();
+
+  // Role state must project into the narrative before we reopen the tools.
   await expect(
     page.getByText("Engineering Lead", { exact: true }).first(),
+  ).toBeVisible();
+  operations = await openOperations(page);
+  await expect(
+    operations.getByText("Engineering Lead", { exact: true }),
   ).toBeVisible();
 
   await operations.getByText("Record issue", { exact: true }).click();
@@ -134,9 +141,6 @@ test("Organization reuses the evolution language while preserving governed colla
     .locator('textarea[name="tension"]')
     .fill("Delegated responsibility does not match actual decision flow.");
   await issueForm.getByRole("button", { name: "Record" }).click();
-  await expect(
-    operations.getByRole("heading", { name: issueTitle }),
-  ).toBeVisible();
 
   await expect(
     page
@@ -152,10 +156,15 @@ test("Organization reuses the evolution language while preserving governed colla
   ).toBeVisible();
   await expect(page.getByText("Where is the machine failing?")).toBeVisible();
 
+  operations = await openOperations(page);
+  await expect(
+    operations.getByRole("heading", { name: issueTitle }),
+  ).toBeVisible();
+
   await signOut(page);
   await signIn(page, memberEmail);
   await page.goto("/organization");
-  const memberOperations = await openOperations(page);
+  let memberOperations = await openOperations(page);
   await expect(
     memberOperations.getByRole("heading", { name: organizationName }),
   ).toBeVisible();
@@ -198,13 +207,8 @@ test("Organization reuses the evolution language while preserving governed colla
     .locator('textarea[name="reasoning"]')
     .fill("One delay came from unclear acceptance criteria instead.");
   await issueCard.getByRole("button", { name: "Raise disagreement" }).click();
-  await expect(
-    memberOperations.getByText(
-      "The issue overstates the approval bottleneck.",
-      { exact: true },
-    ),
-  ).toBeVisible();
 
+  // Competing models must become visible through live parent state, without reload.
   await expect(
     page.getByRole("heading", { name: "Competing models" }),
   ).toBeVisible();
@@ -214,6 +218,14 @@ test("Organization reuses the evolution language while preserving governed colla
         name: "The issue overstates the approval bottleneck.",
       })
       .first(),
+  ).toBeVisible();
+
+  memberOperations = await openOperations(page);
+  await expect(
+    memberOperations.getByText(
+      "The issue overstates the approval bottleneck.",
+      { exact: true },
+    ),
   ).toBeVisible();
 
   const projected = await page.evaluate(async () => {
