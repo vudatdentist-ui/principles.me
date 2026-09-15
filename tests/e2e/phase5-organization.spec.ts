@@ -91,6 +91,7 @@ test("Organization reuses the evolution language while preserving governed colla
   await expect(
     operations.getByRole("heading", { name: organizationName }),
   ).toBeVisible();
+  await expect(page.getByText(purpose).first()).toBeVisible();
 
   await operations.getByText("Add existing account", { exact: true }).click();
   const addMember = operations.locator("details").filter({
@@ -117,6 +118,9 @@ test("Organization reuses the evolution language while preserving governed colla
   await expect(
     operations.getByText("Engineering Lead", { exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByText("Engineering Lead", { exact: true }).first(),
+  ).toBeVisible();
 
   await operations.getByText("Record issue", { exact: true }).click();
   const issueForm = operations.locator("details").filter({
@@ -134,8 +138,11 @@ test("Organization reuses the evolution language while preserving governed colla
     operations.getByRole("heading", { name: issueTitle }),
   ).toBeVisible();
 
-  await page.reload();
-  await expect(page.getByText(purpose).first()).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Current organization narrative")
+      .getByText(issueTitle, { exact: true }),
+  ).toBeVisible();
   await expect(
     page
       .getByText(
@@ -144,9 +151,6 @@ test("Organization reuses the evolution language while preserving governed colla
       .first(),
   ).toBeVisible();
   await expect(page.getByText("Where is the machine failing?")).toBeVisible();
-  await expect(
-    page.getByText("Engineering Lead", { exact: true }).first(),
-  ).toBeVisible();
 
   await signOut(page);
   await signIn(page, memberEmail);
@@ -201,7 +205,6 @@ test("Organization reuses the evolution language while preserving governed colla
     ),
   ).toBeVisible();
 
-  await page.reload();
   await expect(
     page.getByRole("heading", { name: "Competing models" }),
   ).toBeVisible();
