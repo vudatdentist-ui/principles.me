@@ -172,12 +172,12 @@ export function AskWorkspace() {
           <p className={styles.heroDeck}>
             Start with the question, separate what is known from what is inferred, expose disagreement, then turn the synthesis into a decision implication.
           </p>
-          <div className={styles.arc} aria-label="Knowledge narrative arc">
+          <div className={styles.arc}>
             <span>Question</span><b>→</b><span>Evidence</span><b>→</b><span>Tension</span><b>→</b><span>Synthesis</span><b>→</b><span>Implication</span>
           </div>
         </div>
 
-        <form aria-label="Current knowledge question" className={styles.askForm} onSubmit={onSubmit}>
+        <form aria-label="Knowledge working scene" className={styles.askForm} onSubmit={onSubmit}>
           <div className={styles.formHeading}>
             <span>01 / 05 · Question</span>
             <strong>What are you trying to understand?</strong>
@@ -202,7 +202,7 @@ export function AskWorkspace() {
         </form>
       </section>
 
-      <div className={styles.promptRail} aria-label="Question starters">
+      <div className={styles.promptRail}>
         <span>Start from</span>
         {prompts.map((prompt) => (
           <button disabled={phase === "submitting"} key={prompt} onClick={() => setQuestion(prompt)} type="button">

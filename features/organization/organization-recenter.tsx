@@ -39,7 +39,7 @@ export function OrganizationRecenter({
           <p className={styles.heroDeck}>
             Hold purpose, observed reality, ownership, and the next organizational tension in the same frame. Structure only matters when it helps the organization respond to what is true.
           </p>
-          <div className={styles.loop} aria-label="Organization narrative arc">
+          <div className={styles.loop}>
             <span>Dream / Intent</span><b>→</b><span>Reality</span><b>→</b><span>Tension</span><b>→</b><span>Responsibility</span><b>→</b><span>Decision / Design</span>
           </div>
         </div>
