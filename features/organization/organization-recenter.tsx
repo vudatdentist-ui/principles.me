@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ClientOrganizationState } from "./contracts";
 import { OrganizationWorkspace } from "./organization-workspace";
 import styles from "./organization-recenter.module.css";
@@ -12,38 +12,80 @@ export function OrganizationRecenter({
   email: string;
   initialState: ClientOrganizationState;
 }) {
-  const active = initialState.organizations[0] ?? null;
+  const [state, setState] = useState(initialState);
+  const [activeHandle, setActiveHandle] = useState(
+    initialState.organizations[0]?.handle ?? "",
+  );
+  const active = useMemo(
+    () =>
+      state.organizations.find(
+        (organization) => organization.handle === activeHandle,
+      ) ??
+      state.organizations[0] ??
+      null,
+    [activeHandle, state.organizations],
+  );
   const openIssues = useMemo(
     () => active?.issues.filter((issue) => issue.status === "open") ?? [],
-    [active]
+    [active],
   );
   const unresolvedDisagreements = useMemo(
     () =>
       openIssues.flatMap((issue) =>
         issue.disagreements
           .filter((disagreement) => disagreement.status === "open")
-          .map((disagreement) => ({ disagreement, issue }))
+          .map((disagreement) => ({ disagreement, issue })),
       ),
-    [openIssues]
+    [openIssues],
   );
   const responsibilityCount =
-    active?.roles.reduce((total, role) => total + role.responsibilities.length, 0) ?? 0;
+    active?.roles.reduce(
+      (total, role) => total + role.responsibilities.length,
+      0,
+    ) ?? 0;
 
   return (
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="organization-title">
         <div>
           <p className={styles.eyebrow}>Organization</p>
-          <h1 id="organization-title">Design the machine around reality.</h1>
+          <h1 id="organization-title">What should work differently?</h1>
         </div>
         <div className={styles.loop}>
-          <span>Dream</span><b>→</b><span>Reality</span><b>→</b><span>Problem</span><b>→</b><span>Design</span>
+          <span>Dream</span>
+          <b>→</b>
+          <span>Reality</span>
+          <b>→</b>
+          <span>Problem</span>
+          <b>→</b>
+          <span>Design</span>
         </div>
       </section>
 
+      {state.organizations.length > 1 ? (
+        <fieldset
+          className={styles.organizationSwitcher}
+          aria-label="Organizations"
+        >
+          {state.organizations.map((organization) => (
+            <button
+              aria-pressed={active?.handle === organization.handle}
+              key={organization.handle}
+              onClick={() => setActiveHandle(organization.handle)}
+              type="button"
+            >
+              {organization.name}
+            </button>
+          ))}
+        </fieldset>
+      ) : null}
+
       {active ? (
         <>
-          <section className={styles.orientation} aria-label="Organization purpose and reality">
+          <section
+            className={styles.orientation}
+            aria-label="Organization purpose and reality"
+          >
             <article className={styles.purpose}>
               <p className={styles.eyebrow}>Dream</p>
               <h2>{active.purpose || active.name}</h2>
@@ -54,7 +96,10 @@ export function OrganizationRecenter({
               {openIssues[0] ? (
                 <>
                   <h2>{openIssues[0].observedReality}</h2>
-                  <span>{openIssues.length} open issue{openIssues.length === 1 ? "" : "s"}</span>
+                  <span>
+                    {openIssues.length} open issue
+                    {openIssues.length === 1 ? "" : "s"}
+                  </span>
                 </>
               ) : (
                 <h2>No open issues.</h2>
@@ -63,7 +108,10 @@ export function OrganizationRecenter({
           </section>
 
           {openIssues.length > 0 ? (
-            <section className={styles.issueSection} aria-labelledby="issues-title">
+            <section
+              className={styles.issueSection}
+              aria-labelledby="issues-title"
+            >
               <div className={styles.sectionLead}>
                 <div>
                   <p className={styles.eyebrow}>Problems</p>
@@ -76,18 +124,28 @@ export function OrganizationRecenter({
                   <article key={issue.id}>
                     <div className={styles.issueMeta}>
                       <span>{issue.createdByEmail}</span>
-                      <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(issue.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
                     <h3>{issue.title}</h3>
                     <p>{issue.tension}</p>
                     <details>
                       <summary>Reality and models</summary>
                       <dl>
-                        <div><dt>Reality</dt><dd>{issue.observedReality}</dd></div>
+                        <div>
+                          <dt>Reality</dt>
+                          <dd>{issue.observedReality}</dd>
+                        </div>
                         {issue.disagreements.map((disagreement) => (
                           <div key={disagreement.id}>
                             <dt>{disagreement.raisedByEmail}</dt>
-                            <dd>{disagreement.statement}{disagreement.reasoning ? ` — ${disagreement.reasoning}` : ""}</dd>
+                            <dd>
+                              {disagreement.statement}
+                              {disagreement.reasoning
+                                ? ` — ${disagreement.reasoning}`
+                                : ""}
+                            </dd>
                           </div>
                         ))}
                       </dl>
@@ -98,7 +156,10 @@ export function OrganizationRecenter({
             </section>
           ) : null}
 
-          <section className={styles.diagnosisSection} aria-labelledby="diagnosis-title">
+          <section
+            className={styles.diagnosisSection}
+            aria-labelledby="diagnosis-title"
+          >
             <div className={styles.sectionLead}>
               <div>
                 <p className={styles.eyebrow}>Diagnosis</p>
@@ -108,27 +169,37 @@ export function OrganizationRecenter({
             </div>
             {unresolvedDisagreements.length > 0 ? (
               <div className={styles.disagreements}>
-                {unresolvedDisagreements.slice(0, 4).map(({ disagreement, issue }) => (
-                  <article key={disagreement.id}>
-                    <span>{issue.title}</span>
-                    <h3>{disagreement.statement}</h3>
-                    {disagreement.reasoning ? <p>{disagreement.reasoning}</p> : null}
-                    <small>{disagreement.raisedByEmail}</small>
-                  </article>
-                ))}
+                {unresolvedDisagreements
+                  .slice(0, 4)
+                  .map(({ disagreement, issue }) => (
+                    <article key={disagreement.id}>
+                      <span>{issue.title}</span>
+                      <h3>{disagreement.statement}</h3>
+                      {disagreement.reasoning ? (
+                        <p>{disagreement.reasoning}</p>
+                      ) : null}
+                      <small>{disagreement.raisedByEmail}</small>
+                    </article>
+                  ))}
               </div>
             ) : (
               <div className={styles.empty}>No unresolved disagreements.</div>
             )}
           </section>
 
-          <section className={styles.machineSection} aria-labelledby="machine-title">
+          <section
+            className={styles.machineSection}
+            aria-labelledby="machine-title"
+          >
             <div className={styles.sectionLead}>
               <div>
                 <p className={styles.eyebrow}>Design</p>
                 <h2 id="machine-title">Ownership and responsibility</h2>
               </div>
-              <span>{active.roles.length} roles · {responsibilityCount} responsibilities · {active.teams.length} teams</span>
+              <span>
+                {active.roles.length} roles · {responsibilityCount}{" "}
+                responsibilities · {active.teams.length} teams
+              </span>
             </div>
             <div className={styles.machineGrid}>
               {active.roles.slice(0, 4).map((role) => (
@@ -139,11 +210,21 @@ export function OrganizationRecenter({
                   <details>
                     <summary>Scope</summary>
                     <dl>
-                      {role.decisionScope ? <div><dt>Decisions</dt><dd>{role.decisionScope}</dd></div> : null}
+                      {role.decisionScope ? (
+                        <div>
+                          <dt>Decisions</dt>
+                          <dd>{role.decisionScope}</dd>
+                        </div>
+                      ) : null}
                       {role.responsibilities.map((responsibility) => (
                         <div key={responsibility.id}>
                           <dt>Owns</dt>
-                          <dd>{responsibility.statement}{responsibility.expectedOutcome ? ` → ${responsibility.expectedOutcome}` : ""}</dd>
+                          <dd>
+                            {responsibility.statement}
+                            {responsibility.expectedOutcome
+                              ? ` → ${responsibility.expectedOutcome}`
+                              : ""}
+                          </dd>
                         </div>
                       ))}
                     </dl>
@@ -154,7 +235,10 @@ export function OrganizationRecenter({
           </section>
 
           {active.contextEvidence.length > 0 ? (
-            <section className={styles.evidenceSection} aria-labelledby="context-title">
+            <section
+              className={styles.evidenceSection}
+              aria-labelledby="context-title"
+            >
               <div className={styles.sectionLead}>
                 <div>
                   <p className={styles.eyebrow}>Evidence</p>
@@ -168,8 +252,14 @@ export function OrganizationRecenter({
                     <h3>{evidence.observation}</h3>
                     <details>
                       <summary>For / against</summary>
-                      <p><strong>For:</strong> {evidence.evidenceFor || "Not recorded"}</p>
-                      <p><strong>Against:</strong> {evidence.evidenceAgainst || "Not recorded"}</p>
+                      <p>
+                        <strong>For:</strong>{" "}
+                        {evidence.evidenceFor || "Not recorded"}
+                      </p>
+                      <p>
+                        <strong>Against:</strong>{" "}
+                        {evidence.evidenceAgainst || "Not recorded"}
+                      </p>
                     </details>
                   </article>
                 ))}
@@ -187,7 +277,13 @@ export function OrganizationRecenter({
       <details className={styles.operations} open={!active}>
         <summary>Operations</summary>
         <div className={styles.legacy}>
-          <OrganizationWorkspace email={email} initialState={initialState} />
+          <OrganizationWorkspace
+            activeOrganizationHandle={activeHandle}
+            email={email}
+            initialState={state}
+            onActiveOrganizationChange={setActiveHandle}
+            onStateChange={setState}
+          />
         </div>
       </details>
     </div>

@@ -385,3 +385,101 @@
     flex-direction: column;
   }
 }
+
+/* Operations are a progressive-disclosure layer of Organization. Preserve
+   their forms while matching the primary editorial surface. */
+.shell {
+  min-height: 0;
+  background: transparent;
+}
+
+.topbar {
+  display: none;
+}
+
+.content {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.intro {
+  display: none;
+}
+
+.organizationBar {
+  margin-bottom: 25px;
+}
+
+.switcher {
+  gap: 18px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border);
+}
+
+.switcher button {
+  border-radius: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.switcher button:hover,
+.switcher button:focus-visible,
+.switcher .activeSwitch {
+  border-bottom-color: var(--accent);
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+
+.identity,
+.card,
+.issue,
+.contextItem {
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding: 24px 0;
+}
+
+.identity {
+  border-bottom: 1px solid var(--border);
+}
+
+.grid {
+  gap: 0;
+}
+
+.disagreements {
+  border-radius: 0;
+  border-left: 2px solid var(--accent);
+  background: transparent;
+  padding: 12px 0 12px 16px;
+}
+
+.form input,
+.form textarea,
+.form select,
+.inlineForm input,
+.inlineForm select {
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 0 12px;
+}
+
+.form input:focus,
+.form textarea:focus,
+.form select:focus,
+.inlineForm input:focus,
+.inlineForm select:focus {
+  border-color: var(--text);
+  background: transparent;
+}

@@ -4,46 +4,57 @@
 }
 
 .intro {
-  padding-bottom: 64px;
-  border-bottom: 1px solid rgba(24, 23, 19, 0.16);
+  position: relative;
+  padding: 8px 0 42px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.intro::before {
+  position: absolute;
+  top: 4px;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: var(--accent);
+  content: "";
 }
 
 .kicker {
-  margin: 0 0 18px;
-  color: #8a857b;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  margin: 0 0 15px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .intro h1 {
   max-width: 650px;
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(42px, 7vw, 78px);
+  font-family: var(--display);
+  font-size: clamp(42px, 5.8vw, 76px);
   font-weight: 400;
   letter-spacing: -0.055em;
   line-height: 0.98;
 }
 
 .identity {
-  margin: 22px 0 0;
-  color: #6d685f;
-  font-size: 14px;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .section {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: 72px;
-  padding: 64px 0;
-  border-bottom: 1px solid rgba(24, 23, 19, 0.14);
+  gap: 62px;
+  padding: 55px 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .sectionCopy h2 {
-  margin: 0 0 14px;
-  font-family: Georgia, "Times New Roman", serif;
+  margin: 0 0 12px;
+  font-family: var(--display);
   font-size: 31px;
   font-weight: 400;
   letter-spacing: -0.035em;
@@ -52,8 +63,8 @@
 .sectionCopy p {
   max-width: 500px;
   margin: 0;
-  color: #676259;
-  font-size: 15px;
+  color: var(--muted);
+  font-size: 14px;
   line-height: 1.65;
 }
 
@@ -66,7 +77,7 @@
 .form label {
   margin-top: 3px;
   color: #4e4a43;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.015em;
 }
@@ -76,32 +87,39 @@
   width: 100%;
   box-sizing: border-box;
   border: 0;
-  border-bottom: 1px solid rgba(24, 23, 19, 0.32);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 32%, transparent);
   border-radius: 0;
-  padding: 12px 0;
+  padding: 11px 0;
   background: transparent;
-  color: #181713;
+  color: var(--text);
   font: inherit;
   outline: none;
 }
 
 .form input[type="password"]:focus,
 .form input[type="text"]:focus {
-  border-bottom-color: #181713;
+  border-bottom-color: var(--text);
 }
 
 .form button {
   justify-self: start;
   margin-top: 10px;
-  border: 1px solid #181713;
-  border-radius: 4px;
+  border: 1px solid var(--text);
+  border-radius: 2px;
   padding: 10px 16px;
-  background: #181713;
-  color: #f7f3e9;
+  background: var(--text);
+  color: var(--surface);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 650;
+}
+
+.form button:hover:not(:disabled),
+.form button:focus-visible:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent);
+  outline: none;
 }
 
 .form button:disabled {
@@ -109,14 +127,9 @@
   opacity: 0.38;
 }
 
-.form button:focus-visible {
-  outline: 2px solid #9a4f3d;
-  outline-offset: 3px;
-}
-
 .status {
   margin: 5px 0 0;
-  color: #5f5a51;
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -126,21 +139,22 @@
 }
 
 .form .deleteButton {
-  border-color: #7c3026;
+  border-color: var(--danger);
   background: transparent;
-  color: #7c3026;
+  color: var(--danger);
 }
 
-.form .deleteButton:not(:disabled):hover {
-  background: #7c3026;
-  color: #fffaf1;
+.form .deleteButton:not(:disabled):hover,
+.form .deleteButton:not(:disabled):focus-visible {
+  background: var(--danger);
+  color: #fffaf2;
 }
 
 .organizationWarning {
   margin-top: 8px;
   padding: 15px 0;
-  border-top: 1px solid rgba(124, 48, 38, 0.32);
-  border-bottom: 1px solid rgba(124, 48, 38, 0.32);
+  border-top: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
   color: #5c2b25;
   font-size: 13px;
   line-height: 1.5;
@@ -168,13 +182,13 @@
 
 @media (max-width: 760px) {
   .intro {
-    padding-bottom: 44px;
+    padding-bottom: 38px;
   }
 
   .section {
     grid-template-columns: 1fr;
-    gap: 34px;
-    padding: 46px 0;
+    gap: 31px;
+    padding: 44px 0;
   }
 
   .intro h1 {

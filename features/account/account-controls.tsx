@@ -22,7 +22,8 @@ export function AccountControls({ email }: { email: string }) {
   const [exporting, setExporting] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
-  const [deleteOwnedOrganizations, setDeleteOwnedOrganizations] = useState(false);
+  const [deleteOwnedOrganizations, setDeleteOwnedOrganizations] =
+    useState(false);
   const [ownedOrganizations, setOwnedOrganizations] = useState<
     OwnedOrganization[]
   >([]);
@@ -59,6 +60,10 @@ export function AccountControls({ email }: { email: string }) {
       URL.revokeObjectURL(url);
       setExportPassword("");
       setExportStatus("Export ready.");
+    } catch (cause) {
+      setExportStatus(
+        cause instanceof Error ? cause.message : "Export failed.",
+      );
     } finally {
       setExporting(false);
     }
@@ -78,13 +83,11 @@ export function AccountControls({ email }: { email: string }) {
           password: deletePassword,
         }),
       });
-      const body = (await response.json().catch(() => null)) as
-        | {
-            code?: string;
-            error?: string;
-            organizations?: OwnedOrganization[];
-          }
-        | null;
+      const body = (await response.json().catch(() => null)) as {
+        code?: string;
+        error?: string;
+        organizations?: OwnedOrganization[];
+      } | null;
       if (
         response.status === 409 &&
         body?.code === "OWNED_ORGANIZATIONS_REQUIRE_CONFIRMATION"
@@ -100,6 +103,10 @@ export function AccountControls({ email }: { email: string }) {
         return;
       }
       window.location.href = "/";
+    } catch (cause) {
+      setDeleteStatus(
+        cause instanceof Error ? cause.message : "Account deletion failed.",
+      );
     } finally {
       setDeleting(false);
     }
@@ -117,11 +124,15 @@ export function AccountControls({ email }: { email: string }) {
         <div className={styles.sectionCopy}>
           <h2 id="export-heading">Export your data</h2>
           <p>
-            Get your personal evolution history and your attributable organization
-            participation. Credentials and session/reset tokens are never included.
+            Get your personal evolution history and your attributable
+            organization participation. Credentials and session/reset tokens are
+            never included.
           </p>
         </div>
-        <form className={styles.form} onSubmit={(event) => void exportData(event)}>
+        <form
+          className={styles.form}
+          onSubmit={(event) => void exportData(event)}
+        >
           <label htmlFor="export-password">Confirm password</label>
           <input
             autoComplete="current-password"
@@ -131,7 +142,10 @@ export function AccountControls({ email }: { email: string }) {
             type="password"
             value={exportPassword}
           />
-          <button disabled={exporting || exportPassword.length === 0} type="submit">
+          <button
+            disabled={exporting || exportPassword.length === 0}
+            type="submit"
+          >
             {exporting ? "Preparing…" : "Export data"}
           </button>
           {exportStatus ? (
@@ -149,12 +163,15 @@ export function AccountControls({ email }: { email: string }) {
         <div className={styles.sectionCopy}>
           <h2 id="delete-heading">Delete account</h2>
           <p>
-            This permanently deletes your Personal Workspace. Shared organization
-            history keeps a disabled pseudonymous identity when other members still
-            depend on that history.
+            This permanently deletes your Personal Workspace. Shared
+            organization history keeps a disabled pseudonymous identity when
+            other members still depend on that history.
           </p>
         </div>
-        <form className={styles.form} onSubmit={(event) => void deleteAccount(event)}>
+        <form
+          className={styles.form}
+          onSubmit={(event) => void deleteAccount(event)}
+        >
           <label htmlFor="delete-password">Confirm password</label>
           <input
             autoComplete="current-password"
@@ -179,7 +196,10 @@ export function AccountControls({ email }: { email: string }) {
 
           {ownedOrganizations.length > 0 ? (
             <div className={styles.organizationWarning}>
-              <p>You own organizations that will otherwise block account deletion:</p>
+              <p>
+                You own organizations that will otherwise block account
+                deletion:
+              </p>
               <ul>
                 {ownedOrganizations.map((organization) => (
                   <li key={organization.handle ?? organization.name}>

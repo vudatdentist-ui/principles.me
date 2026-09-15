@@ -454,7 +454,6 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
           </details>
           <div className={styles.actionDrafts}>
             {designDraft.actions.map((action, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: action positions are fixed for the lifetime of an editable design draft.
               <input
                 aria-label={`Action ${index + 1}`}
                 key={index}

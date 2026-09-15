@@ -42,7 +42,10 @@ function parseEvent(line: string): StreamEvent | null {
   }
 }
 
-function retrievalLabel(state: RetrievalState | null, kind: "knowledge" | "live"): string {
+function retrievalLabel(
+  state: RetrievalState | null,
+  kind: "knowledge" | "live",
+): string {
   if (state === "ok") return "Connected";
   if (state === "empty") return "No match";
   if (state === "unavailable") return "Unavailable";
@@ -54,15 +57,19 @@ export function AskWorkspace() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState<ClientEvidenceReference[]>([]);
-  const [knowledgeState, setKnowledgeState] = useState<RetrievalState | null>(null);
+  const [knowledgeState, setKnowledgeState] = useState<RetrievalState | null>(
+    null,
+  );
   const [liveState, setLiveState] = useState<RetrievalState | null>(null);
-  const [personalState, setPersonalState] = useState<PersonalContextState | null>(null);
+  const [personalState, setPersonalState] =
+    useState<PersonalContextState | null>(null);
   const [status, setStatus] = useState("Ready");
   const [phase, setPhase] = useState<AskPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const lastQuestion = useRef("");
 
   const canSubmit = question.trim().length >= 3 && phase !== "submitting";
+  const hasPartialAnswer = answer.trim().length > 0 && phase === "error";
   const sourceLabel = useMemo(() => {
     if (phase === "submitting" && sources.length === 0) return "Searching…";
     if (sources.length === 0) return "No sources";
@@ -163,19 +170,26 @@ export function AskWorkspace() {
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="knowledge-title">
         <p className={styles.eyebrow}>Knowledge</p>
-        <h1 id="knowledge-title">Think from principles.</h1>
+        <h1 id="knowledge-title">What is still unclear?</h1>
       </section>
 
       <div className={styles.promptRail}>
         {prompts.map((prompt) => (
-          <button disabled={phase === "submitting"} key={prompt} onClick={() => setQuestion(prompt)} type="button">
+          <button
+            disabled={phase === "submitting"}
+            key={prompt}
+            onClick={() => setQuestion(prompt)}
+            type="button"
+          >
             {prompt}
           </button>
         ))}
       </div>
 
       <form className={styles.askForm} onSubmit={onSubmit}>
-        <label className={styles.label} htmlFor="question">Question</label>
+        <label className={styles.label} htmlFor="question">
+          Question
+        </label>
         <textarea
           className={styles.textarea}
           disabled={phase === "submitting"}
@@ -187,7 +201,9 @@ export function AskWorkspace() {
           value={question}
         />
         <div className={styles.formFooter}>
-          <span className={styles.status} aria-live="polite">{status}</span>
+          <span className={styles.status} aria-live="polite">
+            {status}
+          </span>
           <button className={styles.submit} disabled={!canSubmit} type="submit">
             {phase === "submitting" ? "Thinking…" : "Ask"}
           </button>
@@ -196,10 +212,23 @@ export function AskWorkspace() {
 
       {error ? (
         <section className={styles.error} role="alert">
-          <strong>Could not finish.</strong>
-          <span>{error}</span>
+          <strong>
+            {hasPartialAnswer ? "Answer paused." : "Could not finish."}
+          </strong>
+          <span>
+            {error}
+            {hasPartialAnswer
+              ? " The answer already received is kept below."
+              : null}
+          </span>
           {lastQuestion.current ? (
-            <button className={styles.retry} onClick={() => void runAsk(lastQuestion.current)} type="button">Try again</button>
+            <button
+              className={styles.retry}
+              onClick={() => void runAsk(lastQuestion.current)}
+              type="button"
+            >
+              Try again
+            </button>
           ) : null}
         </section>
       ) : null}
@@ -210,7 +239,9 @@ export function AskWorkspace() {
             <h2>Answer</h2>
             <span>{sourceLabel}</span>
           </div>
-          <article className={styles.answer}>{answer || "Preparing…"}</article>
+          <article aria-busy={phase === "submitting"} className={styles.answer}>
+            {answer ? <AnswerContent text={answer} /> : "Preparing…"}
+          </article>
           {phase === "done" ? (
             <div className={styles.bridge}>
               <a href="/">Continue in Me →</a>
@@ -232,7 +263,13 @@ export function AskWorkspace() {
             </div>
             <div className={styles.retrievalCard}>
               <span>Personal evolution context</span>
-              <strong>{personalState === "ok" ? "Connected" : personalState === "empty" ? "Empty" : "Not checked"}</strong>
+              <strong>
+                {personalState === "ok"
+                  ? "Connected"
+                  : personalState === "empty"
+                    ? "Empty"
+                    : "Not checked"}
+              </strong>
             </div>
             <div className={styles.retrievalCard}>
               <span>Live public search</span>
@@ -249,8 +286,14 @@ export function AskWorkspace() {
                   </summary>
                   <p>{source.snippet}</p>
                   <div className={styles.sourceMeta}>
-                    <span>{source.sourceType === "live_web" ? "LIVE" : "RAG"}</span>
-                    {source.url ? <a href={source.url} rel="noreferrer" target="_blank">Open</a> : null}
+                    <span>
+                      {source.sourceType === "live_web" ? "LIVE" : "RAG"}
+                    </span>
+                    {source.url ? (
+                      <a href={source.url} rel="noreferrer" target="_blank">
+                        Open
+                      </a>
+                    ) : null}
                   </div>
                 </details>
               ))}
@@ -268,4 +311,85 @@ export function AskWorkspace() {
       ) : null}
     </div>
   );
+}
+
+function AnswerContent({ text }: { text: string }) {
+  const blocks = text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const usedKeys = new Map<string, number>();
+  const keyFor = (value: string) => {
+    const count = usedKeys.get(value) ?? 0;
+    usedKeys.set(value, count + 1);
+    return count === 0 ? value : `${value}-${count}`;
+  };
+  return blocks.map((block) => {
+    const lines = block
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const isList =
+      lines.length > 0 && lines.every((line) => /^[-*]\s+/.test(line));
+    const isQuote =
+      lines.length > 0 && lines.every((line) => line.startsWith(">"));
+    const firstLine = lines[0] ?? "";
+    if (isList) {
+      return (
+        <ul key={keyFor(`list-${block}`)}>
+          {lines.map((line) => (
+            <li key={keyFor(`item-${line}`)}>
+              {inlineMarkdown(line.replace(/^[-*]\s+/, ""))}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    if (isQuote) {
+      return (
+        <blockquote key={keyFor(`quote-${block}`)}>
+          {inlineMarkdown(
+            lines.map((line) => line.replace(/^>\s?/, "")).join(" "),
+          )}
+        </blockquote>
+      );
+    }
+    if (/^#{1,3}\s+/.test(firstLine)) {
+      return (
+        <h3 key={keyFor(`heading-${block}`)}>
+          {inlineMarkdown(firstLine.replace(/^#{1,3}\s+/, ""))}
+        </h3>
+      );
+    }
+    return (
+      <p key={keyFor(`paragraph-${block}`)}>
+        {inlineMarkdown(lines.join(" "))}
+      </p>
+    );
+  });
+}
+
+function inlineMarkdown(value: string) {
+  const parts = value.split(/(\*\*[^*]+\*\*|\[(?:R|W)\d+\])/g);
+  const usedKeys = new Map<string, number>();
+  const keyFor = (part: string) => {
+    const count = usedKeys.get(part) ?? 0;
+    usedKeys.set(part, count + 1);
+    return count === 0 ? part : `${part}-${count}`;
+  };
+  return parts.map((part) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={keyFor(`strong-${part}`)}>{part.slice(2, -2)}</strong>
+      );
+    }
+    if (/^\[(?:R|W)\d+\]$/.test(part)) {
+      return (
+        <span className={styles.citation} key={keyFor(`citation-${part}`)}>
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
 }

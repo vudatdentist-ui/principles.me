@@ -2,46 +2,48 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 44px 22px;
-  background: #f3f0e8;
-  color: #181713;
+  padding: 48px 22px;
+  background: var(--background);
+  color: var(--text);
 }
 
 .panel {
-  width: min(100%, 560px);
+  width: min(100%, 540px);
+  padding-left: 18px;
+  border-left: 2px solid var(--accent);
 }
 
 .panel h1 {
-  margin: 0 0 58px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(60px, 11vw, 104px);
+  margin: 0 0 44px;
+  font-family: var(--display);
+  font-size: clamp(54px, 9vw, 86px);
   font-weight: 400;
   letter-spacing: -0.065em;
-  line-height: 0.88;
+  line-height: 0.9;
 }
 
 .panel h1::after {
+  color: var(--accent);
   content: ".";
-  color: #9a4f3d;
 }
 
 .mode {
   display: flex;
   gap: 24px;
-  margin-bottom: 38px;
-  border-bottom: 1px solid rgba(24, 23, 19, 0.14);
+  margin-bottom: 31px;
+  border-bottom: 1px solid var(--border);
 }
 
 .mode button {
   position: relative;
   cursor: pointer;
   border: 0;
-  padding: 0 0 12px;
+  padding: 0 0 11px;
   background: transparent;
-  color: #777269;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 750;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -51,17 +53,20 @@
   bottom: -1px;
   left: 0;
   height: 1px;
-  background: #181713;
+  background: var(--text);
   content: "";
   opacity: 0;
   transform: scaleX(0.25);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transform-origin: left;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
 }
 
 .mode button:hover,
 .mode button:focus-visible,
 .mode .activeMode {
-  color: #181713;
+  color: var(--text);
   outline: none;
 }
 
@@ -74,21 +79,21 @@
 
 .panel form {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .intro {
   max-width: 430px;
-  margin: 0 0 12px;
-  color: #69645c;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 20px;
-  line-height: 1.5;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 19px;
+  line-height: 1.45;
 }
 
 .panel label {
   margin-top: 7px;
-  color: #625e56;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -98,38 +103,38 @@
 .panel input {
   width: 100%;
   border: 0;
-  border-bottom: 1px solid rgba(24, 23, 19, 0.3);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 32%, transparent);
   border-radius: 0;
   outline: 0;
   background: transparent;
-  color: #181713;
+  color: var(--text);
   padding: 8px 0 12px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--display);
   font-size: 22px;
   line-height: 1.35;
 }
 
 .panel input:focus {
-  border-bottom-color: #181713;
+  border-bottom-color: var(--text);
 }
 
 .error,
 .notice {
   margin-top: 4px;
   padding: 11px 0;
-  border-top: 1px solid rgba(24, 23, 19, 0.1);
-  border-bottom: 1px solid rgba(24, 23, 19, 0.1);
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .error {
-  border-color: rgba(161, 42, 42, 0.28);
-  color: #8a4139;
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  color: var(--danger);
 }
 
 .notice {
-  color: #5e6b58;
+  color: var(--success);
 }
 
 .textButton {
@@ -137,9 +142,9 @@
   cursor: pointer;
   justify-self: start;
   border: 0;
-  border-bottom: 1px solid rgba(24, 23, 19, 0.25);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
   background: transparent;
-  color: #6b665e;
+  color: var(--muted);
   padding: 3px 0;
   font: inherit;
   font-size: 12px;
@@ -148,29 +153,31 @@
 .textButton:hover,
 .textButton:focus-visible {
   border-bottom-color: currentColor;
-  color: #181713;
+  color: var(--text);
   outline: none;
 }
 
 .submit {
   cursor: pointer;
   width: fit-content;
-  margin-top: 18px;
-  border: 1px solid #181713;
+  margin-top: 16px;
+  border: 1px solid var(--accent);
   border-radius: 2px;
-  background: #181713;
-  color: #fffdf8;
+  background: var(--accent);
+  color: #fffaf2;
   padding: 11px 17px;
   font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.03em;
-  transition: background 140ms ease, color 140ms ease;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
 }
 
 .submit:hover,
 .submit:focus-visible {
-  background: transparent;
-  color: #181713;
+  border-color: #d47761;
+  background: #d47761;
   outline: none;
 }
 
@@ -182,12 +189,12 @@
 @media (max-width: 560px) {
   .shell {
     place-items: start stretch;
-    padding-top: 72px;
+    padding-top: 70px;
   }
 
   .panel h1 {
-    margin-bottom: 48px;
-    font-size: clamp(58px, 20vw, 88px);
+    margin-bottom: 40px;
+    font-size: clamp(54px, 19vw, 80px);
   }
 
   .submit {

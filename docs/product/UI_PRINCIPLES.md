@@ -341,3 +341,18 @@ A feature is not UI-complete if:
 - uncertainty is hidden completely.
 
 A feature should feel as though the system has already done most of the organizational work before presenting anything to the user.
+
+## 15. Narrative surface contract
+
+Every brand-defining surface should have a visual premise and a sequence of states. The premise may be a tension between two realities, a changing object, a path, a collection, a quiet scene, or another product-specific idea. The user should be able to feel what changes through composition and interaction before reading an explanation.
+
+Do not use the default announcement pattern of a very large headline followed by a generic tagline that explains the page or product. Do not add a slogan to fill a hero. Start with the user's current moment, the next meaningful action, or a piece of real product state. Use a headline only when it gives orientation or creates a useful question.
+
+Use a limited copy budget on primary screens:
+
+- one orienting question or state;
+- the next action label;
+- concise metadata, provenance and uncertainty;
+- detail copy only where the user cannot infer the meaning from the interface.
+
+Before calling a surface complete, hide non-essential text and inspect whether the visual hierarchy, object, preview, state change or interaction still communicates the product's premise. If it does not, improve the composition before adding more copy.

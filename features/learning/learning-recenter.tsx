@@ -38,6 +38,7 @@ export function LearningRecenter({
   workspaceName: string;
 }) {
   const [people, setPeople] = useState(initialPeople);
+  const [learning, setLearning] = useState(initialState);
   const [showAdd, setShowAdd] = useState(false);
   const [trigger, setTrigger] = useState("");
   const [rule, setRule] = useState("");
@@ -45,20 +46,23 @@ export function LearningRecenter({
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const activePatterns = initialState.patterns.filter(
-    (pattern) => pattern.lifecycleState !== "retired"
+  const activePatterns = learning.patterns.filter(
+    (pattern) => pattern.lifecycleState !== "retired",
   );
   const principles = people.principles.filter(
     (principle) =>
-      principle.acceptanceState !== "rejected" && principle.lifecycleState !== "retired"
+      principle.acceptanceState !== "rejected" &&
+      principle.lifecycleState !== "retired",
   );
   const eligibleReflections = useMemo(
     () =>
       people.reflections.filter(
         (reflection) =>
-          reflection.status === "completed" && Boolean(reflection.goalId) && Boolean(reflection.problemId)
+          reflection.status === "completed" &&
+          Boolean(reflection.goalId) &&
+          Boolean(reflection.problemId),
       ),
-    [people.reflections]
+    [people.reflections],
   );
 
   async function refreshPeople() {
@@ -104,7 +108,10 @@ export function LearningRecenter({
     });
   }
 
-  async function reviewPrinciple(principleId: string, action: "accept" | "reject") {
+  async function reviewPrinciple(
+    principleId: string,
+    action: "accept" | "reject",
+  ) {
     await run(`review:${principleId}`, async () => {
       await jsonRequest("/api/people/principles/review", {
         body: JSON.stringify({ action, principleId }),
@@ -126,26 +133,44 @@ export function LearningRecenter({
           className={styles.equation}
           role="img"
         >
-          <span>Pain</span><b>+</b><span>Reflection</span><b>→</b><strong>Progress</strong>
+          <span>Pain</span>
+          <b>+</b>
+          <span>Reflection</span>
+          <b>→</b>
+          <strong>Progress</strong>
         </div>
       </section>
 
-      {error ? <div className={styles.error} role="alert">{error}</div> : null}
+      {error ? (
+        <div className={styles.error} role="alert">
+          {error}
+        </div>
+      ) : null}
 
       {evolution.reflection?.learning ? (
-        <section className={styles.latest} aria-labelledby="latest-learning-title">
+        <section
+          className={styles.latest}
+          aria-labelledby="latest-learning-title"
+        >
           <p className={styles.eyebrow}>Latest</p>
           <h2 id="latest-learning-title">{evolution.reflection.learning}</h2>
         </section>
       ) : null}
 
-      <section className={styles.principleSection} aria-labelledby="principles-title">
+      <section
+        className={styles.principleSection}
+        aria-labelledby="principles-title"
+      >
         <div className={styles.sectionLead}>
           <div>
             <p className={styles.eyebrow}>Principles</p>
             <h2 id="principles-title">Rules I am testing</h2>
           </div>
-          <button className={styles.primary} onClick={() => setShowAdd((value) => !value)} type="button">
+          <button
+            className={styles.primary}
+            onClick={() => setShowAdd((value) => !value)}
+            type="button"
+          >
             {showAdd ? "Cancel" : "+ Add principle"}
           </button>
         </div>
@@ -154,19 +179,38 @@ export function LearningRecenter({
           <div className={styles.principleEditor}>
             <label>
               <span>When</span>
-              <textarea aria-label="Principle trigger" onChange={(event) => setTrigger(event.target.value)} rows={2} value={trigger} />
+              <textarea
+                aria-label="Principle trigger"
+                onChange={(event) => setTrigger(event.target.value)}
+                rows={2}
+                value={trigger}
+              />
             </label>
             <label>
               <span>Then</span>
-              <textarea aria-label="Principle rule" onChange={(event) => setRule(event.target.value)} rows={3} value={rule} />
+              <textarea
+                aria-label="Principle rule"
+                onChange={(event) => setRule(event.target.value)}
+                rows={3}
+                value={rule}
+              />
             </label>
             <label>
               <span>Why</span>
-              <textarea aria-label="Principle rationale" onChange={(event) => setRationale(event.target.value)} rows={2} value={rationale} />
+              <textarea
+                aria-label="Principle rationale"
+                onChange={(event) => setRationale(event.target.value)}
+                rows={2}
+                value={rationale}
+              />
             </label>
             <button
               className={styles.primary}
-              disabled={working === "manual" || trigger.trim().length < 3 || rule.trim().length < 3}
+              disabled={
+                working === "manual" ||
+                trigger.trim().length < 3 ||
+                rule.trim().length < 3
+              }
               onClick={() => void addPrinciple()}
               type="button"
             >
@@ -180,7 +224,9 @@ export function LearningRecenter({
             {principles.map((principle) => (
               <PrincipleCard
                 key={principle.id}
-                onReview={(action) => void reviewPrinciple(principle.id, action)}
+                onReview={(action) =>
+                  void reviewPrinciple(principle.id, action)
+                }
                 principle={principle}
                 working={working === `review:${principle.id}`}
               />
@@ -191,7 +237,10 @@ export function LearningRecenter({
         )}
       </section>
 
-      <section className={styles.reflectionSection} aria-labelledby="reflections-title">
+      <section
+        className={styles.reflectionSection}
+        aria-labelledby="reflections-title"
+      >
         <div className={styles.sectionLead}>
           <div>
             <p className={styles.eyebrow}>Reflections</p>
@@ -203,7 +252,8 @@ export function LearningRecenter({
             {eligibleReflections.slice(0, 8).map((reflection) => {
               const linked = people.principles.find(
                 (principle) =>
-                  principle.originReflectionId === reflection.id && principle.acceptanceState !== "rejected"
+                  principle.originReflectionId === reflection.id &&
+                  principle.acceptanceState !== "rejected",
               );
               return (
                 <ReflectionCard
@@ -221,7 +271,10 @@ export function LearningRecenter({
         )}
       </section>
 
-      <section className={styles.patternSection} aria-labelledby="patterns-title">
+      <section
+        className={styles.patternSection}
+        aria-labelledby="patterns-title"
+      >
         <div className={styles.sectionLead}>
           <div>
             <p className={styles.eyebrow}>Patterns</p>
@@ -240,9 +293,18 @@ export function LearningRecenter({
                 <details>
                   <summary>Evidence</summary>
                   <dl>
-                    <div><dt>For</dt><dd>{pattern.supportingEvidence || "Not recorded"}</dd></div>
-                    <div><dt>Against</dt><dd>{pattern.contradictingEvidence || "Not recorded"}</dd></div>
-                    <div><dt>Uncertainty</dt><dd>{pattern.uncertainty || "Not recorded"}</dd></div>
+                    <div>
+                      <dt>For</dt>
+                      <dd>{pattern.supportingEvidence || "Not recorded"}</dd>
+                    </div>
+                    <div>
+                      <dt>Against</dt>
+                      <dd>{pattern.contradictingEvidence || "Not recorded"}</dd>
+                    </div>
+                    <div>
+                      <dt>Uncertainty</dt>
+                      <dd>{pattern.uncertainty || "Not recorded"}</dd>
+                    </div>
                   </dl>
                 </details>
               </article>
@@ -257,10 +319,18 @@ export function LearningRecenter({
         )}
       </section>
 
-      <details className={styles.lab} open={activePatterns.length === 0 && initialState.historyCount >= 2}>
+      <details
+        className={styles.lab}
+        open={activePatterns.length === 0 && learning.historyCount >= 2}
+      >
         <summary>Pattern tools</summary>
         <div className={styles.legacy}>
-          <LearningWorkspace email={email} initialState={initialState} workspaceName={workspaceName} />
+          <LearningWorkspace
+            email={email}
+            initialState={learning}
+            onStateChange={setLearning}
+            workspaceName={workspaceName}
+          />
         </div>
       </details>
     </div>
@@ -280,19 +350,36 @@ function PrincipleCard({
     <article className={styles.principle}>
       <div className={styles.principleTop}>
         <span>{principle.lifecycleState}</span>
-        {principle.originReflectionId ? <span>from reflection</span> : <span>mine</span>}
+        {principle.originReflectionId ? (
+          <span>from reflection</span>
+        ) : (
+          <span>mine</span>
+        )}
       </div>
       <p>When {principle.trigger}</p>
       <h3>{principle.rule}</h3>
       {principle.rationale ? (
-        <details><summary>Why</summary><p>{principle.rationale}</p></details>
+        <details>
+          <summary>Why</summary>
+          <p>{principle.rationale}</p>
+        </details>
       ) : null}
       {principle.acceptanceState === "pending" ? (
         <div className={styles.buttonRow}>
-          <button className={styles.primary} disabled={working} onClick={() => onReview("accept")} type="button">
+          <button
+            className={styles.primary}
+            disabled={working}
+            onClick={() => onReview("accept")}
+            type="button"
+          >
             Accept for testing
           </button>
-          <button className={styles.secondary} disabled={working} onClick={() => onReview("reject")} type="button">
+          <button
+            className={styles.secondary}
+            disabled={working}
+            onClick={() => onReview("reject")}
+            type="button"
+          >
             Reject
           </button>
         </div>
@@ -317,9 +404,16 @@ function ReflectionCard({
       <h3>{reflection.learning || reflection.happened}</h3>
       {reflection.surprise ? <p>{reflection.surprise}</p> : null}
       {linkedPrinciple ? (
-        <span className={styles.linked}>Principle · {linkedPrinciple.lifecycleState}</span>
+        <span className={styles.linked}>
+          Principle · {linkedPrinciple.lifecycleState}
+        </span>
       ) : (
-        <button className={styles.secondary} disabled={working} onClick={onDistill} type="button">
+        <button
+          className={styles.secondary}
+          disabled={working}
+          onClick={onDistill}
+          type="button"
+        >
           {working ? "Distilling…" : "Distill principle"}
         </button>
       )}
