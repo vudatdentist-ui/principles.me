@@ -92,17 +92,28 @@ export function snapshotForStep(state: EvolutionState, step: EvolutionFiveStep):
 
   if (step === "do" && state.design) {
     const completed = state.actions.filter((action) => action.status === "completed").length;
+    const cancelled = state.actions.filter((action) => action.status === "cancelled").length;
     const pending = state.actions.find((action) => action.status === "pending");
+    const allCancelled = state.actions.length > 0 && cancelled === state.actions.length;
+    const statusSummary = [
+      completed > 0 ? `${completed} complete` : null,
+      cancelled > 0 ? `${cancelled} cancelled` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
     return {
       kicker: "Do · Execution",
       title:
         pending?.commitment ||
         (state.actions.length > 0
-          ? "Execution complete. Observe the outcome."
+          ? allCancelled
+            ? "Execution closed. Observe the outcome."
+            : "Execution complete. Observe the outcome."
           : "Execute the design."),
       detail:
         state.actions.length > 0
-          ? `${completed} of ${state.actions.length} actions complete. The test is still the resulting reality, not the checklist.`
+          ? `${statusSummary || "No action completed yet"}. The test is the resulting reality, including a decision not to execute.`
           : "Translate the design into accountable actions, then compare expected and actual reality.",
     };
   }

@@ -35,9 +35,27 @@ export function AppShell({
           <a className={styles.brand} href="/" aria-label="Principles home">
             Principles
           </a>
+
+          <nav className={styles.nav} aria-label="Primary">
+            {tabs.map((tab) => (
+              <a
+                aria-current={activeTab === tab.key ? "page" : undefined}
+                className={activeTab === tab.key ? styles.activeTab : undefined}
+                href={tab.href}
+                key={tab.key}
+              >
+                {tab.label}
+              </a>
+            ))}
+          </nav>
+
           <div className={styles.account}>
-            <span className={styles.accountMeta}>{workspaceName}</span>
-            <span className={styles.accountMeta}>{email}</span>
+            <span className={styles.workspaceName} title={workspaceName}>
+              {workspaceName}
+            </span>
+            <span className={styles.accountEmail} title={email}>
+              {email}
+            </span>
             <a className={styles.accountLink} href="/account" aria-label={`Account for ${email}`}>
               Account
             </a>
@@ -46,18 +64,6 @@ export function AppShell({
             </button>
           </div>
         </div>
-        <nav className={styles.nav} aria-label="Primary">
-          {tabs.map((tab) => (
-            <a
-              aria-current={activeTab === tab.key ? "page" : undefined}
-              className={activeTab === tab.key ? styles.activeTab : undefined}
-              href={tab.href}
-              key={tab.key}
-            >
-              {tab.label}
-            </a>
-          ))}
-        </nav>
       </header>
       <main className={styles.main}>{children}</main>
     </div>

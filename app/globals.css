@@ -1,14 +1,27 @@
 :root {
   color-scheme: light;
-  --background: #f6f6f3;
-  --surface: #ffffff;
-  --surface-muted: #f0f0ec;
-  --text: #171714;
-  --muted: #686861;
-  --border: #deded7;
-  --accent: #171714;
-  --danger: #a12a2a;
-  --radius: 16px;
+  --paper: #f3f0e8;
+  --paper-light: #f8f6f0;
+  --surface: #fffdf8;
+  --surface-muted: #ebe7dd;
+  --ink: #181713;
+  --muted-ink: #716d64;
+  --faint-ink: #928c82;
+  --line: rgba(24, 23, 19, 0.14);
+  --line-soft: rgba(24, 23, 19, 0.08);
+  --rust: #9a4f3d;
+  --green: #526a54;
+  --danger: #8a463b;
+  --font-display: Georgia, "Times New Roman", serif;
+  --content-wide: 1240px;
+
+  /* Compatibility aliases while feature CSS moves onto the shared visual contract. */
+  --background: var(--paper);
+  --text: var(--ink);
+  --muted: var(--muted-ink);
+  --border: #d8d3c8;
+  --accent: var(--ink);
+  --radius: 12px;
 }
 
 * {
@@ -17,7 +30,7 @@
 
 html {
   min-height: 100%;
-  background: var(--background);
+  background: var(--paper);
 }
 
 body {
@@ -25,8 +38,8 @@ body {
   margin: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  background: var(--background);
-  color: var(--text);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-geist), Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -41,12 +54,20 @@ button {
   color: inherit;
 }
 
-::selection {
-  background: #d8d8d0;
+a,
+button,
+input,
+textarea,
+summary {
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Shared authenticated app shell.
-   All primary surfaces keep the same header geometry and navigation order. */
+::selection {
+  background: #d8d2c4;
+}
+
+/* Legacy authenticated shells still consume the compatibility aliases above.
+   AppShell-based surfaces use the shared paper/ink/line contract directly. */
 main > header:has(nav[aria-label="Primary"]) {
   position: sticky;
   top: 0;
