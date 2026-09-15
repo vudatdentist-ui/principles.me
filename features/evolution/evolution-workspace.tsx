@@ -31,45 +31,60 @@ const firstGoalQuestion: GoalDiscoveryResult = {
   question: "What do you really want?",
 };
 
-const stageNarrative: Record<EvolutionStage, { index: string; label: string }> =
-  {
-    dream: {
-      index: "01",
-      label: "Dream",
-    },
-    reality: {
-      index: "02",
-      label: "Reality",
-    },
-    problem: {
-      index: "03",
-      label: "Gap",
-    },
-    diagnosis: {
-      index: "04",
-      label: "Diagnosis",
-    },
-    design: {
-      index: "05",
-      label: "Design",
-    },
-    do: {
-      index: "06",
-      label: "Do",
-    },
-    outcome: {
-      index: "07",
-      label: "Outcome",
-    },
-    reflection: {
-      index: "08",
-      label: "Reflection",
-    },
-    principle: {
-      index: "09",
-      label: "Principle",
-    },
-  };
+const stageNarrative: Record<
+  EvolutionStage,
+  { index: string; label: string; thesis: string }
+> = {
+  dream: {
+    index: "01",
+    label: "Dream",
+    thesis: "Name the reality worth creating before you optimize the path.",
+  },
+  reality: {
+    index: "02",
+    label: "Reality",
+    thesis: "See what is true now without softening it to protect the plan.",
+  },
+  problem: {
+    index: "03",
+    label: "Gap",
+    thesis:
+      "Turn the tension between Dream and Reality into one problem worth solving.",
+  },
+  diagnosis: {
+    index: "04",
+    label: "Diagnosis",
+    thesis: "Explain why the gap exists before deciding what should change.",
+  },
+  design: {
+    index: "05",
+    label: "Design",
+    thesis:
+      "Change the machine and state what different reality you expect to observe.",
+  },
+  do: {
+    index: "06",
+    label: "Do",
+    thesis:
+      "Execute the design. Completion is not success; changed reality is the test.",
+  },
+  outcome: {
+    index: "07",
+    label: "Outcome",
+    thesis:
+      "Compare the reality you expected with the reality that actually arrived.",
+  },
+  reflection: {
+    index: "08",
+    label: "Reflection",
+    thesis: "Turn pain and surprise into an explanation you can use next time.",
+  },
+  principle: {
+    index: "09",
+    label: "Principle",
+    thesis: "Keep only the rule that deserves to survive beyond this one cycle.",
+  },
+};
 
 async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -960,6 +975,7 @@ export function EvolutionWorkspace({
             {narrative.index} · {narrative.label}
           </p>
           <h2 id="new-goal-title">{state.nextAction.prompt}</h2>
+          <p className={styles.sceneThesis}>{narrative.thesis}</p>
           <div className={styles.sceneWork}>
             <p className={styles.workLabel}>Write the first scene</p>
             {renderStageAction()}
@@ -972,6 +988,7 @@ export function EvolutionWorkspace({
               {narrative.index} · {narrative.label}
             </p>
             <h2 id="next-action-title">{state.nextAction.prompt}</h2>
+            <p className={styles.sceneThesis}>{narrative.thesis}</p>
 
             <section
               className={styles.sceneContext}
