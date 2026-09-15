@@ -52,6 +52,10 @@ export type GeneratedDesign = z.infer<typeof designSchema> & {
   modelProvider: string;
 };
 
+export function parseDiagnosisProposal(value: unknown) {
+  return diagnosisSchema.parse(value);
+}
+
 function evidenceSummary(
   evidence: Array<{ content: string; title: string | null }>
 ): string {
@@ -138,7 +142,7 @@ export async function generateDiagnosisProposal(input: {
     onMetadata: (value) => {
       metadata = value;
     },
-    parse: (value) => diagnosisSchema.parse(value),
+    parse: parseDiagnosisProposal,
     signal: input.signal,
     temperature: 0.15,
   });
