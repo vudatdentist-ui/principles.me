@@ -11,7 +11,7 @@ import type {
   DesignProposal,
   OutcomeComparison,
 } from "@/features/people/execution-contracts";
-import type { EvolutionState } from "./contracts";
+import type { EvolutionStage, EvolutionState } from "./contracts";
 import { EvolutionStepExplorer } from "./evolution-step-explorer";
 import { ExecutionActionList } from "./execution-action-list";
 import styles from "./evolution-workspace.module.css";
@@ -29,6 +29,57 @@ const firstGoalQuestion: GoalDiscoveryResult = {
   field: "desiredState",
   kind: "question",
   question: "What do you really want?",
+};
+
+const stageNarrative: Record<
+  EvolutionStage,
+  { index: string; label: string; thesis: string }
+> = {
+  dream: {
+    index: "01",
+    label: "Dream",
+    thesis: "Name the reality worth creating before you optimize the path.",
+  },
+  reality: {
+    index: "02",
+    label: "Reality",
+    thesis: "See what is true now without softening it to protect the plan.",
+  },
+  problem: {
+    index: "03",
+    label: "Gap",
+    thesis: "Turn the tension between Dream and Reality into one problem worth solving.",
+  },
+  diagnosis: {
+    index: "04",
+    label: "Diagnosis",
+    thesis: "Explain why the gap exists before deciding what should change.",
+  },
+  design: {
+    index: "05",
+    label: "Design",
+    thesis: "Change the machine and state what different reality you expect to observe.",
+  },
+  do: {
+    index: "06",
+    label: "Do",
+    thesis: "Execute the design. Completion is not success; changed reality is the test.",
+  },
+  outcome: {
+    index: "07",
+    label: "Outcome",
+    thesis: "Compare the reality you expected with the reality that actually arrived.",
+  },
+  reflection: {
+    index: "08",
+    label: "Reflection",
+    thesis: "Turn pain and surprise into an explanation you can use next time.",
+  },
+  principle: {
+    index: "09",
+    label: "Principle",
+    thesis: "Keep only the rule that deserves to survive beyond this one cycle.",
+  },
 };
 
 async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
@@ -74,6 +125,7 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
   const [principleRule, setPrincipleRule] = useState("");
   const [principleTrigger, setPrincipleTrigger] = useState("");
   const [principleRationale, setPrincipleRationale] = useState("");
+  const narrative = stageNarrative[state.stage];
 
   function resetTransient() {
     setProblemProposal(null);
@@ -585,11 +637,19 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
   return (
     <div aria-busy={working !== null} className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="me-title">
-        <div>
-          <p className={styles.eyebrow}>Me</p>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Me · living system</p>
           <h1 id="me-title">What deserves attention now?</h1>
+          <p className={styles.heroDeck}>
+            Move one tension through Dream → Reality → Gap → action → learning. The point is not to finish a workflow. The point is to change reality and notice what happened.
+          </p>
         </div>
-        <button className={styles.addGoal} disabled={working !== null} onClick={() => void startNewGoal()} type="button">+ Goal</button>
+        <aside className={styles.heroMeta} aria-label="Current chapter">
+          <span>{narrative.index} / 09 · Current chapter</span>
+          <strong>{narrative.label}</strong>
+          <p>{narrative.thesis}</p>
+          <button className={styles.addGoal} disabled={working !== null} onClick={() => void startNewGoal()} type="button">+ Goal</button>
+        </aside>
       </section>
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
@@ -615,55 +675,59 @@ export function EvolutionWorkspace({ initialState }: { initialState: EvolutionSt
 
       {!state.dream ? (
         <section className={styles.next} aria-labelledby="new-goal-title">
-          <p className={styles.eyebrow}>New goal</p>
+          <p className={styles.eyebrow}>{narrative.index} · {narrative.label}</p>
           <h2 id="new-goal-title">{state.nextAction.prompt}</h2>
-          {renderStageAction()}
+          <p className={styles.sceneThesis}>{narrative.thesis}</p>
+          <div className={styles.sceneWork}>
+            <p className={styles.workLabel}>Write the first scene</p>
+            {renderStageAction()}
+          </div>
         </section>
       ) : (
         <>
-          <section className={styles.orientation} aria-label="Dream and reality">
-            <article className={`${styles.contextPane} ${styles.dreamPane}`}>
-              <p className={styles.contextLabel}>Dream</p>
-              <h2>{state.dream.desiredState}</h2>
-              <details className={styles.disclosure}>
-                <summary>Details</summary>
-                <dl>
-                  <div><dt>Why</dt><dd>{sentence(state.dream.whyItMatters)}</dd></div>
-                  <div><dt>Success</dt><dd>{sentence(state.dream.successConditions)}</dd></div>
-                </dl>
-              </details>
-            </article>
-            <article className={`${styles.contextPane} ${styles.realityPane}`}>
-              <p className={styles.contextLabel}>Reality</p>
-              <h2>{state.reality?.statement || "Not observed yet"}</h2>
-            </article>
-          </section>
+          <section className={styles.next} aria-label="Current action">
+            <p className={styles.eyebrow}>{narrative.index} · {narrative.label}</p>
+            <h2 id="next-action-title">{state.nextAction.prompt}</h2>
+            <p className={styles.sceneThesis}>{narrative.thesis}</p>
 
-          {state.problem ? (
-            <section className={styles.gap} aria-label="Active gap">
-              <p>Gap</p>
-              <h2>{sentence(state.problem.gap, state.problem.statement)}</h2>
+            <section className={styles.sceneContext} aria-label="Dream and reality">
+              <article className={styles.contextItem}>
+                <span>Dream</span>
+                <strong>{state.dream.desiredState}</strong>
+              </article>
+              <article className={styles.contextItem}>
+                <span>Reality</span>
+                <strong>{state.reality?.statement || "Not observed yet"}</strong>
+              </article>
+              <article className={`${styles.contextItem} ${styles.contextGap}`} aria-label="Active gap">
+                <span>Gap</span>
+                <strong>{state.problem ? sentence(state.problem.gap, state.problem.statement) : "Not named yet"}</strong>
+              </article>
             </section>
-          ) : null}
+
+            {state.attention.length > 0 ? (
+              <aside className={styles.attention} aria-label="Needs attention">
+                <span>Attention</span>
+                {state.attention.slice(0, 2).map((item) => <strong key={item.kind}>{item.title}</strong>)}
+              </aside>
+            ) : null}
+
+            <div className={styles.sceneWork}>
+              <p className={styles.workLabel}>Work this chapter</p>
+              {renderStageAction()}
+            </div>
+          </section>
 
           <section className={styles.fiveSteps} aria-labelledby="five-steps-title">
             <div className={styles.sectionLead}>
-              <h2 id="five-steps-title">5 Steps</h2>
+              <div>
+                <p className={styles.eyebrow}>Story so far</p>
+                <h2 id="five-steps-title">The arc, not a checklist.</h2>
+                <p>Inspect where the cycle came from, what is happening now, and what remains ahead without leaving the current story.</p>
+              </div>
               <span className={styles.stageBadge}>{state.nextAction.label}</span>
             </div>
             <EvolutionStepExplorer state={state} />
-          </section>
-
-          {state.attention.length > 0 ? (
-            <aside className={styles.attention} aria-label="Needs attention">
-              {state.attention.slice(0, 2).map((item) => <strong key={item.kind}>{item.title}</strong>)}
-            </aside>
-          ) : null}
-
-          <section className={styles.next} aria-label="Current action">
-            <p className={styles.eyebrow}>Now</p>
-            <h2 id="next-action-title">{state.nextAction.prompt}</h2>
-            {renderStageAction()}
           </section>
 
           <EvolutionMemory state={state} />
