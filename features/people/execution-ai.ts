@@ -4,15 +4,33 @@ import type { AiResponseMetadata } from "@/lib/ai/providers/types";
 import type { GoalRecord, ProblemRecord, ReflectionRecord } from "./contracts";
 import type { DiagnosisRecord } from "./execution-contracts";
 
+function diagnosisText(max: number) {
+  return z
+    .union([z.string(), z.array(z.string())])
+    .transform((value) => (Array.isArray(value) ? value.join("\n") : value))
+    .pipe(z.string().trim().min(3).max(max));
+}
+
+const diagnosisConfidenceSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : value;
+    }
+    return value;
+  },
+  z.number().min(0).max(1).nullable().optional()
+);
+
 const diagnosisSchema = z.object({
-  alternativeHypotheses: z.string().trim().min(3).max(1400),
-  confidence: z.number().min(0).max(1).nullable().optional(),
-  contradictingEvidence: z.string().trim().min(3).max(1400),
-  proximateCause: z.string().trim().min(3).max(1000),
-  rootCauseHypothesis: z.string().trim().min(3).max(1200),
-  supportingEvidence: z.string().trim().min(3).max(1400),
-  symptom: z.string().trim().min(3).max(1000),
-  uncertainty: z.string().trim().min(3).max(1200),
+  alternativeHypotheses: diagnosisText(1400),
+  confidence: diagnosisConfidenceSchema,
+  contradictingEvidence: diagnosisText(1400),
+  proximateCause: diagnosisText(1000),
+  rootCauseHypothesis: diagnosisText(1200),
+  supportingEvidence: diagnosisText(1400),
+  symptom: diagnosisText(1000),
+  uncertainty: diagnosisText(1200),
 });
 
 const designSchema = z.object({
@@ -34,6 +52,44 @@ export type GeneratedDesign = z.infer<typeof designSchema> & {
   modelProvider: string;
 };
 
+function evidenceSummary(
+  evidence: Array<{ content: string; title: string | null }>
+): string {
+  const summary = evidence
+    .map(({ content, title }) => {
+      const body = content.trim();
+      if (!body) return "";
+      return title?.trim() ? `${title.trim()}: ${body}` : body;
+    })
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 1400)
+    .trim();
+  return summary || "No supporting evidence beyond the accepted Problem and Reality.";
+}
+
+export function fallbackDiagnosisProposal(input: {
+  evidence: Array<{ content: string; title: string | null }>;
+  problemStatement: string;
+}): GeneratedDiagnosis {
+  return {
+    alternativeHypotheses:
+      "Keep multiple causal explanations open until new evidence can distinguish between them.",
+    confidence: null,
+    contradictingEvidence:
+      "No contradicting evidence has been established from the current record.",
+    modelName: null,
+    modelProvider: "deterministic-safety-fallback",
+    proximateCause: "The proximate cause is not established from the current evidence.",
+    rootCauseHypothesis:
+      "The current evidence is insufficient to establish a root cause. Treat this as an editable diagnosis draft, not a conclusion.",
+    supportingEvidence: evidenceSummary(input.evidence),
+    symptom: input.problemStatement.trim() || "The accepted Problem remains unresolved.",
+    uncertainty:
+      "Uncertainty is high. Add observations that could distinguish competing causes before treating the diagnosis as settled.",
+  };
+}
+
 export async function generateDiagnosisProposal(input: {
   evidence: Array<{ content: string; title: string | null }>;
   goal: GoalRecord;
@@ -42,13 +98,13 @@ export async function generateDiagnosisProposal(input: {
   signal?: AbortSignal;
 }): Promise<GeneratedDiagnosis> {
   let metadata: AiResponseMetadata | undefined;
-  const provider = createAiProvider({ maxTokens: 850 });
+  const provider = createAiProvider({ maxTokens: 850, timeoutMs: 25_000 });
   const result = await provider.generateObject({
     messages: [
       {
         role: "system",
         content:
-          "You are the Diagnose capability inside Principles. Diagnose cause and effect; do not propose a remedy or task. Separate the visible symptom, proximate cause, and root-cause hypothesis. Use only the supplied evidence and reflection. Explicitly state evidence that weakens the hypothesis, plausible alternatives, and what remains uncertain. If evidence is insufficient, say so in rootCauseHypothesis/uncertainty and lower confidence rather than inventing certainty. Return JSON only with symptom, proximateCause, rootCauseHypothesis, supportingEvidence, contradictingEvidence, alternativeHypotheses, uncertainty, confidence (0..1 or null).",
+          "You are the Diagnose capability inside Principles. Diagnose cause and effect; do not propose a remedy or task. Separate the visible symptom, proximate cause, and root-cause hypothesis. Use only the supplied evidence and reflection. Explicitly state evidence that weakens the hypothesis, plausible alternatives, and what remains uncertain. If evidence is insufficient, say so in rootCauseHypothesis/uncertainty and lower confidence rather than inventing certainty. Return JSON only with symptom, proximateCause, rootCauseHypothesis, supportingEvidence, contradictingEvidence, alternativeHypotheses, uncertainty, confidence (0..1 or null). Evidence and alternative fields may be either a string or an array of strings.",
       },
       {
         role: "user",
