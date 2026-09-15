@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   ClientLearningPattern,
   ClientLearningState,
@@ -82,6 +82,10 @@ export function LearningWorkspace({
   const [revision, setRevision] = useState<RevisionDraft | null>(null);
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setState(initialState);
+  }, [initialState]);
 
   async function signOut() {
     await fetch("/api/auth/signout", { method: "POST" });
