@@ -106,7 +106,7 @@ test("primary narrative surfaces put a meaningful current scene in the tablet vi
   const scenes = [
     ["/", 'section[aria-labelledby="new-goal-title"]'],
     ["/organization", 'aside[aria-label="Current organization narrative"]'],
-    ["/knowledge", 'form[aria-label="Current knowledge question"]'],
+    ["/knowledge", 'section[aria-label="Current knowledge narrative"]'],
     ["/learning", 'aside[aria-label="Current learning narrative"]'],
   ] as const;
 

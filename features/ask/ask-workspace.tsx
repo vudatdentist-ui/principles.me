@@ -252,7 +252,7 @@ export function AskWorkspace() {
           <div className={styles.sectionHeading}>
             <div>
               <p className={styles.eyebrow}>02–03 / 05 · Evidence & tension</p>
-              <h2>What the answer is standing on</h2>
+              <h2>What the evidence stands on</h2>
             </div>
             <span>{sourceLabel}</span>
           </div>
