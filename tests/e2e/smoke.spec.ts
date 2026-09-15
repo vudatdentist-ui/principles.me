@@ -34,7 +34,11 @@ function ndjson(answer: string): string {
       references: [ragSource, liveSource],
       type: "sources",
     },
-    { message: "Thinking from principles…", stage: "answering", type: "status" },
+    {
+      message: "Thinking from principles…",
+      stage: "answering",
+      type: "status",
+    },
     { token: answer, type: "token" },
     { type: "done" },
   ]
@@ -51,13 +55,14 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByLabel("Password").fill(password);
   const signupResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/auth/signup") && response.request().method() === "POST"
+      response.url().endsWith("/api/auth/signup") &&
+      response.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" })
+    page.getByRole("heading", { name: "What deserves attention now?" }),
   ).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
   return email;
@@ -65,7 +70,7 @@ async function createAccount(page: import("@playwright/test").Page) {
 
 async function answerGoalQuestion(
   page: import("@playwright/test").Page,
-  value: string
+  value: string,
 ) {
   const continueButton = page.getByRole("button", { name: "Continue" });
   await expect(continueButton).toBeVisible();
@@ -76,7 +81,7 @@ async function answerGoalQuestion(
 
 async function createGoal(
   page: import("@playwright/test").Page,
-  values: [string, string, string, string, string]
+  values: [string, string, string, string, string],
 ) {
   for (const value of values) {
     await answerGoalQuestion(page, value);
@@ -109,7 +114,9 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
   expect((await request.get("/api/evolution/state")).status()).toBe(401);
   expect((await request.get("/api/learning/state")).status()).toBe(401);
   expect(
-    (await request.post("/api/ask", { data: { question: "What is private?" } })).status()
+    (
+      await request.post("/api/ask", { data: { question: "What is private?" } })
+    ).status(),
   ).toBe(401);
 
   await createAccount(page);
@@ -131,27 +138,32 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
   ] as const) {
     await page.goto(path);
     for (const tab of ["Me", "Organization", "Knowledge", "Learning"]) {
-      await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: tab, exact: true }).first(),
+      ).toBeVisible();
     }
-    await expect(page.getByRole("link", { name: active, exact: true }).first()).toHaveAttribute(
-      "aria-current",
-      "page"
-    );
+    await expect(
+      page.getByRole("link", { name: active, exact: true }).first(),
+    ).toHaveAttribute("aria-current", "page");
   }
 
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" })
+    page.getByRole("heading", { name: "What is reality teaching you?" }),
   ).toBeVisible();
   await expect(
     page.getByText(
       "Not enough history yet. Live the loop before asking the system to define a pattern.",
-      { exact: true }
-    )
+      { exact: true },
+    ),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Find a pattern" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Find a pattern" }),
+  ).toHaveCount(0);
 });
 
-test("Me keeps multiple goals visible and projects each goal independently", async ({ page }) => {
+test("Me keeps multiple goals visible and projects each goal independently", async ({
+  page,
+}) => {
   await createAccount(page);
   await createGoal(page, companyGoal);
   await expect(page.getByRole("button", { name: "+ Goal" })).toBeVisible();
@@ -167,34 +179,41 @@ test("Me keeps multiple goals visible and projects each goal independently", asy
   });
   expect(portfolio.goals).toHaveLength(2);
   const company = portfolio.goals.find(
-    (goal: { desiredState: string }) => goal.desiredState === companyGoal[0]
+    (goal: { desiredState: string }) => goal.desiredState === companyGoal[0],
   );
   const health = portfolio.goals.find(
-    (goal: { desiredState: string }) => goal.desiredState === healthGoal[0]
+    (goal: { desiredState: string }) => goal.desiredState === healthGoal[0],
   );
   expect(company?.id).toBeTruthy();
   expect(health?.id).toBeTruthy();
 
-  const lanes = await page.evaluate(async ({ companyId, healthId }) => {
-    const [companyResponse, healthResponse] = await Promise.all([
-      fetch(`/api/evolution/state?goalId=${encodeURIComponent(companyId)}`),
-      fetch(`/api/evolution/state?goalId=${encodeURIComponent(healthId)}`),
-    ]);
-    return {
-      company: await companyResponse.json(),
-      health: await healthResponse.json(),
-    };
-  }, { companyId: company.id as string, healthId: health.id as string });
+  const lanes = await page.evaluate(
+    async ({ companyId, healthId }) => {
+      const [companyResponse, healthResponse] = await Promise.all([
+        fetch(`/api/evolution/state?goalId=${encodeURIComponent(companyId)}`),
+        fetch(`/api/evolution/state?goalId=${encodeURIComponent(healthId)}`),
+      ]);
+      return {
+        company: await companyResponse.json(),
+        health: await healthResponse.json(),
+      };
+    },
+    { companyId: company.id as string, healthId: health.id as string },
+  );
 
   expect(lanes.company.dream.desiredState).toBe(companyGoal[0]);
   expect(lanes.health.dream.desiredState).toBe(healthGoal[0]);
   expect(lanes.company.stage).toBe("reality");
   expect(lanes.health.stage).toBe("reality");
 
-  const companyButton = page.locator('button[aria-pressed]').filter({ hasText: companyGoal[0] });
+  const companyButton = page
+    .locator("button[aria-pressed]")
+    .filter({ hasText: companyGoal[0] });
   await companyButton.click();
   await expect(companyButton).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("heading", { name: companyGoal[0] }).first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: companyGoal[0] }).first(),
+  ).toBeVisible();
 });
 
 test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning", async ({
@@ -222,22 +241,24 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
 
   await page.getByRole("button", { name: "Find the problem" }).click();
   await expect(page.getByLabel("Problem")).toHaveValue(
-    "The founder remains a routine operating bottleneck."
+    "The founder remains a routine operating bottleneck.",
   );
   await page.getByRole("button", { name: "Name this problem" }).click();
 
   await page.getByRole("button", { name: "Diagnose the root cause" }).click();
   await expect(page.getByLabel("Root-cause hypothesis")).toHaveValue(
-    "Routine decisions have no explicit default owner with authority to act without founder approval."
+    "Routine decisions have no explicit default owner with authority to act without founder approval.",
   );
   await page.getByRole("button", { name: "Accept this diagnosis" }).click();
 
   await page.getByRole("button", { name: "Design the machine" }).click();
   await expect(page.getByLabel("Machine change")).toHaveValue(
-    "Assign one explicit decision owner and a default authority boundary for routine operating decisions."
+    "Assign one explicit decision owner and a default authority boundary for routine operating decisions.",
   );
   await page.getByRole("button", { name: "Adopt this design" }).click();
-  await expect(page.getByRole("button", { name: /^Complete / }).first()).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Complete / }).first(),
+  ).toBeVisible();
 
   for (let guard = 0; guard < 6; guard += 1) {
     const completeButtons = page.getByRole("button", { name: /^Complete / });
@@ -247,12 +268,14 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
     const actionResponse = page.waitForResponse(
       (response) =>
         response.url().endsWith("/api/people/actions") &&
-        response.request().method() === "POST"
+        response.request().method() === "POST",
     );
     await completeButtons.first().click();
     expect((await actionResponse).status()).toBe(200);
     await expect
-      .poll(async () => page.getByRole("button", { name: /^Complete / }).count())
+      .poll(async () =>
+        page.getByRole("button", { name: /^Complete / }).count(),
+      )
       .toBe(beforeCount - 1);
   }
 
@@ -262,9 +285,11 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
   await page.getByRole("button", { name: "Record outcome" }).click();
 
   await expect(page.getByText("Pain").first()).toBeVisible();
-  await page.getByLabel("What hurt or surprised you?").fill(
-    "A small authority rule removed more waiting than another discussion did."
-  );
+  await page
+    .getByLabel("What hurt or surprised you?")
+    .fill(
+      "A small authority rule removed more waiting than another discussion did.",
+    );
   await page.getByLabel("What did this teach you?").fill(outcomeLearning);
   await page.getByRole("button", { name: "Save reflection" }).click();
 
@@ -272,12 +297,14 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
   await expect(
     page
       .getByText(
-        "Make the decision owner and default authority explicit before the next routine case."
+        "Make the decision owner and default authority explicit before the next routine case.",
       )
-      .first()
+      .first(),
   ).toBeVisible();
   await page.getByRole("button", { name: "Accept for testing" }).click();
-  await expect(page.getByText("testing", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText("testing", { exact: true }).first(),
+  ).toBeVisible();
 
   const finalEvolution = await page.evaluate(async () => {
     const response = await fetch("/api/evolution/state");
@@ -285,7 +312,9 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
   });
   expect(finalEvolution.stage).toBe("principle");
   expect(
-    finalEvolution.fiveSteps.steps.every((step: { status: string }) => step.status === "complete")
+    finalEvolution.fiveSteps.steps.every(
+      (step: { status: string }) => step.status === "complete",
+    ),
   ).toBe(true);
   expect(finalEvolution.outcome.comparison).toBe("improved");
   expect(finalEvolution.reflection.learning).toBe(outcomeLearning);
@@ -298,12 +327,16 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
       body: JSON.stringify({
         expected: "Role discussion would remove the bottleneck.",
         goalId: state.goals[0].id,
-        happened: "The same approval wait returned after another role discussion.",
-        learning: "Discussion without explicit default authority did not change behavior.",
+        happened:
+          "The same approval wait returned after another role discussion.",
+        learning:
+          "Discussion without explicit default authority did not change behavior.",
         problemId: state.problems[0].id,
-        recurrenceNote: "The approval bottleneck repeated before the machine rule changed.",
+        recurrenceNote:
+          "The approval bottleneck repeated before the machine rule changed.",
         recurring: true,
-        surprise: "Clarity in conversation did not create authority in practice.",
+        surprise:
+          "Clarity in conversation did not create authority in practice.",
       }),
       headers: { "content-type": "application/json" },
       method: "POST",
@@ -314,21 +347,29 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
 
   await page.goto("/learning");
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" })
+    page.getByRole("heading", { name: "What is reality teaching you?" }),
   ).toBeVisible();
   await expect(page.getByText(outcomeLearning).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Rules I am testing" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Distill principle" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Rules I am testing" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Distill principle" }),
+  ).toBeVisible();
 
-  await expect(page.getByRole("button", { name: "Find a pattern" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Find a pattern" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Find a pattern" }).click();
   await expect(
     page.getByText(
-      "Explicit default authority changed behavior where discussing responsibilities alone had not."
-    )
+      "Explicit default authority changed behavior where discussing responsibilities alone had not.",
+    ),
   ).toBeVisible();
   await page.getByText("Inspect the evidence").click();
-  await expect(page.getByText("Outcome review", { exact: false }).first()).toBeVisible();
+  await expect(
+    page.getByText("Outcome review", { exact: false }).first(),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Edit" }).click();
   await page.getByLabel("Pattern statement").fill(correctedPattern);
@@ -344,7 +385,7 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
     return response.json();
   });
   const revisedPrinciple = peopleState.principles.find(
-    (item: { rule: string }) => item.rule === revisedRule
+    (item: { rule: string }) => item.rule === revisedRule,
   );
   expect(revisedPrinciple?.acceptanceState).toBe("revised");
   expect(revisedPrinciple?.lifecycleState).toBe("testing");
@@ -365,13 +406,20 @@ test("Learning lets a user add a principle directly", async ({ page }) => {
   await page.getByRole("button", { name: "Save principle" }).click();
 
   await expect(page.getByRole("heading", { name: rule })).toBeVisible();
-  await expect(page.getByText("testing", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText("testing", { exact: true }).first(),
+  ).toBeVisible();
 
-  const saved = await page.evaluate(async ({ expectedRule }) => {
-    const response = await fetch("/api/people/state");
-    const state = await response.json();
-    return state.principles.find((item: { rule: string }) => item.rule === expectedRule);
-  }, { expectedRule: rule });
+  const saved = await page.evaluate(
+    async ({ expectedRule }) => {
+      const response = await fetch("/api/people/state");
+      const state = await response.json();
+      return state.principles.find(
+        (item: { rule: string }) => item.rule === expectedRule,
+      );
+    },
+    { expectedRule: rule },
+  );
 
   expect(saved.originReflectionId).toBeNull();
   expect(saved.acceptanceState).toBe("accepted");
@@ -389,11 +437,15 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
   });
 
   await page.goto("/knowledge");
-  await expect(page.getByRole("heading", { name: "Think from principles." })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "What is still unclear?" }),
+  ).toBeVisible();
 
   await page.route("**/api/ask", async (route) => {
     await route.fulfill({
-      body: ndjson("Shared knowledge [R1] and current evidence [W1] support this answer."),
+      body: ndjson(
+        "Shared knowledge [R1] and **current evidence** [W1] support this answer.",
+      ),
       contentType: "application/x-ndjson; charset=utf-8",
       status: 200,
     });
@@ -403,16 +455,28 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
   await page.getByRole("button", { name: "Ask" }).click();
   await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
   await expect(
-    page.getByText("Shared Principles knowledge").locator("..").getByText("Connected")
+    page
+      .getByText("Shared Principles knowledge")
+      .locator("..")
+      .getByText("Connected"),
   ).toBeVisible();
   await expect(
-    page.getByText("Personal evolution context").locator("..").getByText("Connected")
+    page
+      .getByText("Personal evolution context")
+      .locator("..")
+      .getByText("Connected"),
   ).toBeVisible();
   await expect(
-    page.getByText("Live public search").locator("..").getByText("Connected")
+    page.getByText("Live public search").locator("..").getByText("Connected"),
   ).toBeVisible();
   await expect(page.getByText("Principles knowledge source")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Continue in Me →" })).toBeVisible();
+  const renderedAnswer = page
+    .getByRole("article")
+    .filter({ hasText: "Shared knowledge" });
+  await expect(renderedAnswer.locator("strong")).toHaveText("current evidence");
+  await expect(
+    page.getByRole("link", { name: "Continue in Me →" }),
+  ).toBeVisible();
 
   const after = await page.evaluate(async () => {
     const response = await fetch("/api/evolution/state");
@@ -422,12 +486,15 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
   expect(JSON.stringify(after)).not.toContain("workspaceId");
 });
 
-test("long Knowledge answers keep normal document scrolling", async ({ page }) => {
+test("long Knowledge answers keep normal document scrolling", async ({
+  page,
+}) => {
   await createAccount(page);
   await page.goto("/knowledge");
   const longAnswer = Array.from(
     { length: 80 },
-    (_, index) => `Paragraph ${index + 1}: a deliberately long answer for scrolling verification.`
+    (_, index) =>
+      `Paragraph ${index + 1}: a deliberately long answer for scrolling verification.`,
   ).join("\n\n");
 
   await page.route("**/api/ask", async (route) => {
@@ -448,6 +515,45 @@ test("long Knowledge answers keep normal document scrolling", async ({ page }) =
   }));
   expect(scrollState.height).toBeGreaterThan(scrollState.viewport);
   expect(scrollState.overflow).not.toBe("hidden");
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.evaluate(() =>
+    window.scrollTo(0, document.documentElement.scrollHeight),
+  );
   await expect(page.getByText("Live source")).toBeInViewport();
+});
+
+test("Knowledge keeps a partial answer when the provider times out", async ({
+  page,
+}) => {
+  await createAccount(page);
+  await page.goto("/knowledge");
+  await page.route("**/api/ask", async (route) => {
+    const body = [
+      {
+        message: "Thinking from principles…",
+        stage: "answering",
+        type: "status",
+      },
+      { token: "The first part is still useful.", type: "token" },
+      {
+        code: "timeout",
+        message: "The AI service took too long to respond.",
+        retryable: true,
+        type: "error",
+      },
+    ]
+      .map((event) => JSON.stringify(event))
+      .join("\n");
+    await route.fulfill({
+      body: `${body}\n`,
+      contentType: "application/x-ndjson; charset=utf-8",
+      status: 200,
+    });
+  });
+
+  await page.getByLabel("Question").fill("What needs another look?");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
+  await expect(page.getByText("The first part is still useful.")).toBeVisible();
+  await expect(page.getByText("Answer paused.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 });

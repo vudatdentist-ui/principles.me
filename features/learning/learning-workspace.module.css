@@ -126,8 +126,8 @@
   letter-spacing: -0.025em;
 }
 
-.patternStatement {
-  font-size: clamp(26px, 4vw, 40px) !important;
+.cardHeading .patternStatement {
+  font-size: clamp(26px, 4vw, 40px);
 }
 
 .implication {

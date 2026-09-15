@@ -128,7 +128,9 @@
   letter-spacing: -0.015em;
   line-height: 1.55;
   outline: 0;
-  transition: border-color 140ms ease, background 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
 }
 
 .textarea:focus {
@@ -176,7 +178,10 @@
   padding: 10px 16px;
   background: var(--ink);
   color: #fffdf8;
-  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
 }
 
 .submit:hover,
@@ -589,4 +594,53 @@
   .submit {
     transition: none;
   }
+}
+
+.answer {
+  display: grid;
+  gap: 0;
+  white-space: normal;
+}
+
+.answer p,
+.answer ul,
+.answer blockquote,
+.answer h3 {
+  margin: 0 0 18px;
+}
+
+.answer p:last-child,
+.answer ul:last-child,
+.answer blockquote:last-child,
+.answer h3:last-child {
+  margin-bottom: 0;
+}
+
+.answer ul {
+  padding-left: 24px;
+}
+
+.answer li + li {
+  margin-top: 8px;
+}
+
+.answer blockquote {
+  margin-left: 0;
+  padding-left: 17px;
+  border-left: 3px solid var(--rust);
+  color: #565149;
+}
+
+.answer h3 {
+  font-family: var(--font-display);
+  font-size: 1.18em;
+  line-height: 1.15;
+}
+
+.citation {
+  color: var(--rust);
+  font-family: var(--font-geist-mono), Consolas, monospace;
+  font-size: 0.74em;
+  font-weight: 750;
+  white-space: nowrap;
 }

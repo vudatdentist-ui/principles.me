@@ -131,7 +131,10 @@
   font-weight: 800;
   letter-spacing: 0.11em;
   text-transform: uppercase;
-  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
 }
 
 .heroMeta .addGoal {
@@ -247,7 +250,9 @@
   color: inherit;
   cursor: pointer;
   text-align: left;
-  transition: background 140ms ease, color 140ms ease;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
 }
 
 .goalCard::before {
@@ -455,7 +460,9 @@
   letter-spacing: -0.01em;
   resize: vertical;
   outline: none;
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .actionBody textarea:focus,
@@ -618,7 +625,10 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
 }
 
 .actionToggle:hover,
@@ -656,7 +666,7 @@
   border-bottom: 1px solid rgba(21, 21, 21, 0.18);
 }
 
-.expectedActual > div {
+.expectedActual > :where(div) {
   min-width: 0;
   display: grid;
   align-content: start;
@@ -665,7 +675,7 @@
   padding: 18px 22px 20px 0;
 }
 
-.expectedActual > div + div {
+.expectedActual > :where(div) + :where(div) {
   border-left: 1px solid rgba(21, 21, 21, 0.18);
   padding-right: 0;
   padding-left: 22px;
@@ -798,7 +808,7 @@
   margin-bottom: 34px;
 }
 
-.sectionLead > div {
+.sectionLead > :where(div) {
   display: grid;
   gap: 10px;
 }
@@ -951,8 +961,8 @@
     padding-left: 16px;
   }
 
-  .contextGap {
-    border-left-color: var(--story-signal) !important;
+  .contextItem.contextGap {
+    border-left-color: var(--story-signal);
   }
 
   .attention {
@@ -1062,7 +1072,7 @@
     grid-template-columns: 1fr;
   }
 
-  .expectedActual > div + div {
+  .expectedActual > :where(div) + :where(div) {
     border-top: 1px solid rgba(21, 21, 21, 0.18);
     border-left: 0;
     padding-left: 0;

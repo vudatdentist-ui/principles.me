@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 
 const password = "a strong phase six mobile password";
 
-test("all four authenticated surfaces share one stable mobile shell", async ({ page }) => {
+test("all four authenticated surfaces share one stable mobile shell", async ({
+  page,
+}) => {
   await page.setViewportSize({ height: 844, width: 390 });
   const email = `phase6-mobile-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
 
@@ -12,7 +14,8 @@ test("all four authenticated surfaces share one stable mobile shell", async ({ p
   await page.getByLabel("Password").fill(password);
   const signupResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/auth/signup") && response.request().method() === "POST"
+      response.url().endsWith("/api/auth/signup") &&
+      response.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
@@ -23,8 +26,8 @@ test("all four authenticated surfaces share one stable mobile shell", async ({ p
 
   for (const [path, active, heading] of [
     ["/", "Me", "What deserves attention now?"],
-    ["/organization", "Organization", "Design the machine around reality."],
-    ["/knowledge", "Knowledge", "Think from principles."],
+    ["/organization", "Organization", "What should work differently?"],
+    ["/knowledge", "Knowledge", "What is still unclear?"],
     ["/learning", "Learning", "What is reality teaching you?"],
   ] as const) {
     await page.goto(path);
@@ -32,12 +35,13 @@ test("all four authenticated surfaces share one stable mobile shell", async ({ p
 
     const tabs = ["Me", "Organization", "Knowledge", "Learning"] as const;
     for (const tab of tabs) {
-      await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: tab, exact: true }).first(),
+      ).toBeVisible();
     }
-    await expect(page.getByRole("link", { name: active, exact: true }).first()).toHaveAttribute(
-      "aria-current",
-      "page"
-    );
+    await expect(
+      page.getByRole("link", { name: active, exact: true }).first(),
+    ).toHaveAttribute("aria-current", "page");
 
     const geometry = await page.evaluate(() => {
       const brand = document.querySelector('a[aria-label="Principles home"]');
@@ -52,13 +56,19 @@ test("all four authenticated surfaces share one stable mobile shell", async ({ p
       };
     });
 
-    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(
+      geometry.viewportWidth + 1,
+    );
     if (referenceBrandTop === null || referenceNavTop === null) {
       referenceBrandTop = geometry.brandTop;
       referenceNavTop = geometry.navTop;
     } else {
-      expect(Math.abs(geometry.brandTop - referenceBrandTop)).toBeLessThanOrEqual(2);
-      expect(Math.abs(geometry.navTop - referenceNavTop)).toBeLessThanOrEqual(2);
+      expect(
+        Math.abs(geometry.brandTop - referenceBrandTop),
+      ).toBeLessThanOrEqual(2);
+      expect(Math.abs(geometry.navTop - referenceNavTop)).toBeLessThanOrEqual(
+        2,
+      );
     }
   }
 });

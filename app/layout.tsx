@@ -5,7 +5,8 @@ import "./globals.css";
 import "./readability.css";
 
 export const metadata: Metadata = {
-  description: "Principles — personal and business management, starting with knowledge Q&A.",
+  description:
+    "Principles — notice reality, change the machine, and learn what survives.",
   metadataBase: new URL("https://principles.me"),
   title: "Principles",
 };

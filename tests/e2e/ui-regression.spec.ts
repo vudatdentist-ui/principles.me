@@ -15,13 +15,14 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByLabel("Password").fill(password);
   const signupResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/auth/signup") && response.request().method() === "POST"
+      response.url().endsWith("/api/auth/signup") &&
+      response.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" })
+    page.getByRole("heading", { name: "What deserves attention now?" }),
   ).toBeVisible();
   return email;
 }
@@ -43,7 +44,7 @@ async function createGoal(page: import("@playwright/test").Page) {
 }
 
 async function readEvolution(
-  page: import("@playwright/test").Page
+  page: import("@playwright/test").Page,
 ): Promise<EvolutionSnapshot> {
   return page.evaluate(async () => {
     const response = await fetch("/api/evolution/state");
@@ -51,13 +52,15 @@ async function readEvolution(
   }) as Promise<EvolutionSnapshot>;
 }
 
-test("primary surfaces keep the shared hierarchy without viewport overflow", async ({ page }) => {
+test("primary surfaces keep the shared hierarchy without viewport overflow", async ({
+  page,
+}) => {
   await createAccount(page);
 
   const surfaces = [
     ["/", "What deserves attention now?"],
-    ["/organization", "Design the machine around reality."],
-    ["/knowledge", "Think from principles."],
+    ["/organization", "What should work differently?"],
+    ["/knowledge", "What is still unclear?"],
     ["/learning", "What is reality teaching you?"],
     ["/account", "Your data stays yours."],
   ] as const;
@@ -83,23 +86,40 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
         };
       });
 
-      expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
-      expect(geometry.fontSize).toBeGreaterThanOrEqual(viewport.width < 600 ? 34 : 40);
+      expect(geometry.scrollWidth).toBeLessThanOrEqual(
+        geometry.viewportWidth + 1,
+      );
+      expect(geometry.fontSize).toBeGreaterThanOrEqual(
+        viewport.width < 600 ? 34 : 40,
+      );
       expect(geometry.fontSize).toBeLessThanOrEqual(72);
 
       if (path !== "/account") {
-        for (const tab of ["Me", "Organization", "Knowledge", "Learning"] as const) {
-          await expect(page.getByRole("link", { name: tab, exact: true }).first()).toBeVisible();
+        for (const tab of [
+          "Me",
+          "Organization",
+          "Knowledge",
+          "Learning",
+        ] as const) {
+          await expect(
+            page.getByRole("link", { name: tab, exact: true }).first(),
+          ).toBeVisible();
         }
       }
       const appHeader = page.getByRole("banner");
-      await expect(appHeader.getByRole("link", { name: /^Account for / })).toBeVisible();
-      await expect(appHeader.getByRole("button", { name: "Sign out" })).toBeVisible();
+      await expect(
+        appHeader.getByRole("link", { name: /^Account for / }),
+      ).toBeVisible();
+      await expect(
+        appHeader.getByRole("button", { name: "Sign out" }),
+      ).toBeVisible();
     }
   }
 });
 
-test("primary narrative surfaces put a meaningful current scene in the tablet viewport", async ({ page }) => {
+test("primary narrative surfaces put a meaningful current scene in the tablet viewport", async ({
+  page,
+}) => {
   await page.setViewportSize({ height: 768, width: 1024 });
   await createAccount(page);
 
@@ -128,80 +148,123 @@ test("primary narrative surfaces put a meaningful current scene in the tablet vi
 
     expect(geometry.top).toBeLessThan(720);
     expect(geometry.textLength).toBeGreaterThan(40);
-    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(
+      geometry.viewportWidth + 1,
+    );
   }
 });
 
-test("cancelled execution remains reversible after Outcome becomes available", async ({ page }) => {
+test("cancelled execution remains reversible after Outcome becomes available", async ({
+  page,
+}) => {
   await createAccount(page);
   await createGoal(page);
 
   await page
     .getByLabel("What is actually true?")
-    .fill("Three routine operating decisions waited for my approval this week.");
+    .fill(
+      "Three routine operating decisions waited for my approval this week.",
+    );
   await page.getByRole("button", { name: "Record reality" }).click();
 
   await page.getByRole("button", { name: "Find the problem" }).click();
-  await expect(page.getByRole("textbox", { name: "Problem", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Problem", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Name this problem" }).click();
 
   await page.getByRole("button", { name: "Diagnose the root cause" }).click();
-  await expect(page.getByRole("textbox", { name: "Root-cause hypothesis" })).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Root-cause hypothesis" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Accept this diagnosis" }).click();
 
   await page.getByRole("button", { name: "Design the machine" }).click();
-  await expect(page.getByRole("textbox", { name: "Machine change" })).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Machine change" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Adopt this design" }).click();
 
   const cancelResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/people/actions") && response.request().method() === "POST"
+      response.url().endsWith("/api/people/actions") &&
+      response.request().method() === "POST",
   );
-  await page.getByRole("button", { name: "Cancel", exact: true }).first().click();
+  await page
+    .getByRole("button", { name: "Cancel", exact: true })
+    .first()
+    .click();
   expect((await cancelResponse).status()).toBe(200);
 
   await expect
-    .poll(async () => (await readEvolution(page)).actions.filter((action) => action.status === "cancelled").length)
+    .poll(
+      async () =>
+        (await readEvolution(page)).actions.filter(
+          (action) => action.status === "cancelled",
+        ).length,
+    )
     .toBeGreaterThan(0);
 
   for (let guard = 0; guard < 6; guard += 1) {
     const snapshot = await readEvolution(page);
-    const pendingBefore = snapshot.actions.filter((action) => action.status === "pending").length;
+    const pendingBefore = snapshot.actions.filter(
+      (action) => action.status === "pending",
+    ).length;
     if (pendingBefore === 0) break;
 
-    const completeButton = page.getByRole("button", { name: /^Complete / }).first();
+    const completeButton = page
+      .getByRole("button", { name: /^Complete / })
+      .first();
     await expect(completeButton).toBeVisible();
     const actionResponse = page.waitForResponse(
       (response) =>
-        response.url().endsWith("/api/people/actions") && response.request().method() === "POST"
+        response.url().endsWith("/api/people/actions") &&
+        response.request().method() === "POST",
     );
     await completeButton.click();
     expect((await actionResponse).status()).toBe(200);
 
     await expect
-      .poll(async () => (await readEvolution(page)).actions.filter((action) => action.status === "pending").length)
+      .poll(
+        async () =>
+          (await readEvolution(page)).actions.filter(
+            (action) => action.status === "pending",
+          ).length,
+      )
       .toBe(pendingBefore - 1);
   }
 
-  await expect.poll(async () => (await readEvolution(page)).stage).toBe("outcome");
+  await expect
+    .poll(async () => (await readEvolution(page)).stage)
+    .toBe("outcome");
   await expect(page.getByLabel("Actual outcome")).toBeVisible();
 
-  const executionDetails = page.locator("details").filter({ hasText: "Execution" }).first();
+  const executionDetails = page
+    .locator("details")
+    .filter({ hasText: "Execution" })
+    .first();
   await executionDetails.locator("summary").click();
-  const restore = executionDetails.getByRole("button", { name: /^Restore / }).first();
+  const restore = executionDetails
+    .getByRole("button", { name: /^Restore / })
+    .first();
   await expect(restore).toBeVisible();
 
   const restoreResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith("/api/people/actions") && response.request().method() === "POST"
+      response.url().endsWith("/api/people/actions") &&
+      response.request().method() === "POST",
   );
   await restore.click();
   expect((await restoreResponse).status()).toBe(200);
 
   await expect.poll(async () => (await readEvolution(page)).stage).toBe("do");
   await expect(page.getByLabel("Actual outcome")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /^Complete / }).first()).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Complete / }).first(),
+  ).toBeVisible();
 
   const evolution = await readEvolution(page);
-  expect(evolution.actions.some((action) => action.status === "pending")).toBe(true);
+  expect(evolution.actions.some((action) => action.status === "pending")).toBe(
+    true,
+  );
 });

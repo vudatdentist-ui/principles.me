@@ -27,7 +27,9 @@ async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
   return payload;
 }
 
-function proposalDraft(proposal: LearningPatternProposal): LearningPatternDraft {
+function proposalDraft(
+  proposal: LearningPatternProposal,
+): LearningPatternDraft {
   return {
     confidence: proposal.confidence,
     contradictingEvidence: proposal.contradictingEvidence,
@@ -49,7 +51,7 @@ type RevisionDraft = {
 
 function revisionDraft(
   patternId: string,
-  proposal: PrincipleRevisionProposal
+  proposal: PrincipleRevisionProposal,
 ): RevisionDraft {
   return {
     patternId,
@@ -63,14 +65,18 @@ function revisionDraft(
 export function LearningWorkspace({
   email,
   initialState,
+  onStateChange,
   workspaceName,
 }: {
   email: string;
   initialState: ClientLearningState;
+  onStateChange?: (state: ClientLearningState) => void;
   workspaceName: string;
 }) {
   const [state, setState] = useState(initialState);
-  const [proposal, setProposal] = useState<LearningPatternProposal | null>(null);
+  const [proposal, setProposal] = useState<LearningPatternProposal | null>(
+    null,
+  );
   const [draft, setDraft] = useState<LearningPatternDraft | null>(null);
   const [editing, setEditing] = useState(false);
   const [revision, setRevision] = useState<RevisionDraft | null>(null);
@@ -101,7 +107,7 @@ export function LearningWorkspace({
     await run("proposal", async () => {
       const result = await jsonRequest<LearningPatternProposal>(
         "/api/learning/patterns/propose",
-        { body: "{}", method: "POST" }
+        { body: "{}", method: "POST" },
       );
       setProposal(result);
       setDraft(proposalDraft(result));
@@ -116,9 +122,10 @@ export function LearningWorkspace({
     await run("save", async () => {
       const result = await jsonRequest<ClientLearningState>(
         "/api/learning/patterns",
-        { body: JSON.stringify(draft), method: "POST" }
+        { body: JSON.stringify(draft), method: "POST" },
       );
       setState(result);
+      onStateChange?.(result);
       setProposal(null);
       setDraft(null);
       setEditing(false);
@@ -144,9 +151,10 @@ export function LearningWorkspace({
     await run("revision", async () => {
       const result = await jsonRequest<ClientLearningState>(
         "/api/learning/principles/revise",
-        { body: JSON.stringify(revision), method: "POST" }
+        { body: JSON.stringify(revision), method: "POST" },
       );
       setState(result);
+      onStateChange?.(result);
       setRevision(null);
     });
   }
@@ -154,17 +162,23 @@ export function LearningWorkspace({
   return (
     <main className={styles.shell}>
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/">Principles</a>
+        <a className={styles.brand} href="/">
+          Principles
+        </a>
         <nav className={styles.nav} aria-label="Primary">
           <a href="/">People</a>
           <a href="/knowledge">Knowledge</a>
-          <a aria-current="page" href="/learning">Learning</a>
+          <a aria-current="page" href="/learning">
+            Learning
+          </a>
           <a href="/organization">Organization</a>
         </nav>
         <div className={styles.account}>
           <span>{workspaceName}</span>
           <span>{email}</span>
-          <button onClick={() => void signOut()} type="button">Sign out</button>
+          <button onClick={() => void signOut()} type="button">
+            Sign out
+          </button>
         </div>
       </header>
 
@@ -174,7 +188,11 @@ export function LearningWorkspace({
           <h1>What is your history teaching you?</h1>
         </div>
 
-        {error ? <div className={styles.error} role="alert">{error}</div> : null}
+        {error ? (
+          <div className={styles.error} role="alert">
+            {error}
+          </div>
+        ) : null}
 
         {state.historyCount < 2 && state.patterns.length === 0 ? (
           <section className={styles.card}>
@@ -264,7 +282,9 @@ function PatternProposalCard({
             <textarea
               aria-label="Pattern statement"
               className={styles.textarea}
-              onChange={(event) => onChange({ ...draft, statement: event.target.value })}
+              onChange={(event) =>
+                onChange({ ...draft, statement: event.target.value })
+              }
               rows={4}
               value={draft.statement}
             />
@@ -274,7 +294,9 @@ function PatternProposalCard({
             <textarea
               aria-label="Pattern implication"
               className={styles.textarea}
-              onChange={(event) => onChange({ ...draft, implication: event.target.value })}
+              onChange={(event) =>
+                onChange({ ...draft, implication: event.target.value })
+              }
               rows={3}
               value={draft.implication}
             />
@@ -295,7 +317,10 @@ function PatternProposalCard({
             <textarea
               className={styles.textarea}
               onChange={(event) =>
-                onChange({ ...draft, contradictingEvidence: event.target.value })
+                onChange({
+                  ...draft,
+                  contradictingEvidence: event.target.value,
+                })
               }
               rows={3}
               value={draft.contradictingEvidence}
@@ -305,17 +330,28 @@ function PatternProposalCard({
             Uncertainty
             <textarea
               className={styles.textarea}
-              onChange={(event) => onChange({ ...draft, uncertainty: event.target.value })}
+              onChange={(event) =>
+                onChange({ ...draft, uncertainty: event.target.value })
+              }
               rows={3}
               value={draft.uncertainty}
             />
           </label>
         </div>
         <div className={styles.buttonRow}>
-          <button className={styles.primary} disabled={working} onClick={onKeep} type="button">
+          <button
+            className={styles.primary}
+            disabled={working}
+            onClick={onKeep}
+            type="button"
+          >
             Save corrected pattern
           </button>
-          <button className={styles.secondary} onClick={() => onEdit(false)} type="button">
+          <button
+            className={styles.secondary}
+            onClick={() => onEdit(false)}
+            type="button"
+          >
             Cancel edit
           </button>
         </div>
@@ -338,16 +374,36 @@ function PatternProposalCard({
         uncertainty={draft.uncertainty}
       />
       <div className={styles.buttonRow}>
-        <button className={styles.primary} disabled={working} onClick={onKeep} type="button">
+        <button
+          className={styles.primary}
+          disabled={working}
+          onClick={onKeep}
+          type="button"
+        >
           Keep this pattern
         </button>
-        <button className={styles.secondary} disabled={working} onClick={() => onEdit(true)} type="button">
+        <button
+          className={styles.secondary}
+          disabled={working}
+          onClick={() => onEdit(true)}
+          type="button"
+        >
           Edit
         </button>
-        <button className={styles.secondary} disabled={working} onClick={onReject} type="button">
+        <button
+          className={styles.secondary}
+          disabled={working}
+          onClick={onReject}
+          type="button"
+        >
           Reject
         </button>
-        <button className={styles.secondary} disabled={working} onClick={onTryAnother} type="button">
+        <button
+          className={styles.secondary}
+          disabled={working}
+          onClick={onTryAnother}
+          type="button"
+        >
           Try another
         </button>
       </div>
@@ -372,21 +428,40 @@ function PatternEvidence({
     <details className={styles.detailsBlock}>
       <summary>Inspect the evidence</summary>
       <dl className={styles.details}>
-        <div><dt>For</dt><dd>{supportingEvidence}</dd></div>
-        <div><dt>Against</dt><dd>{contradictingEvidence}</dd></div>
-        <div><dt>Uncertainty</dt><dd>{uncertainty}</dd></div>
+        <div>
+          <dt>For</dt>
+          <dd>{supportingEvidence}</dd>
+        </div>
+        <div>
+          <dt>Against</dt>
+          <dd>{contradictingEvidence}</dd>
+        </div>
+        <div>
+          <dt>Uncertainty</dt>
+          <dd>{uncertainty}</dd>
+        </div>
         {confidence !== null ? (
-          <div><dt>Confidence</dt><dd>{Math.round(confidence * 100)}%</dd></div>
+          <div>
+            <dt>Confidence</dt>
+            <dd>{Math.round(confidence * 100)}%</dd>
+          </div>
         ) : null}
       </dl>
       <div className={styles.caseList}>
         {cases.map((item, index) => (
           <article className={styles.case} key={item.reflectionId}>
-            <span>Case {index + 1} · {item.phase === "outcome_review" ? "Outcome review" : "Reflection"}</span>
+            <span>
+              Case {index + 1} ·{" "}
+              {item.phase === "outcome_review"
+                ? "Outcome review"
+                : "Reflection"}
+            </span>
             <strong>{item.problem}</strong>
             <p>{item.happened}</p>
             {item.outcome ? (
-              <p>Outcome · {item.outcome.comparison}: {item.outcome.actualResult}</p>
+              <p>
+                Outcome · {item.outcome.comparison}: {item.outcome.actualResult}
+              </p>
             ) : null}
           </article>
         ))}
@@ -416,15 +491,23 @@ function PatternCard({
   return (
     <article className={styles.patternCard}>
       <div className={styles.cardHeading}>
-        <span>{pattern.lifecycleState === "applied" ? "Applied learning" : "Self Model"}</span>
+        <span>
+          {pattern.lifecycleState === "applied"
+            ? "Applied learning"
+            : "Self Model"}
+        </span>
         <strong>{pattern.statement}</strong>
       </div>
       <p className={styles.implication}>{pattern.implication}</p>
       <PatternEvidence
         cases={pattern.cases}
         confidence={pattern.confidence}
-        contradictingEvidence={pattern.contradictingEvidence ?? "No counter-evidence recorded."}
-        supportingEvidence={pattern.supportingEvidence ?? "No supporting summary recorded."}
+        contradictingEvidence={
+          pattern.contradictingEvidence ?? "No counter-evidence recorded."
+        }
+        supportingEvidence={
+          pattern.supportingEvidence ?? "No supporting summary recorded."
+        }
         uncertainty={pattern.uncertainty ?? "Uncertainty not recorded."}
       />
 
@@ -482,7 +565,10 @@ function PatternCard({
                 aria-label="Revised principle rationale"
                 className={styles.textarea}
                 onChange={(event) =>
-                  onRevisionChange({ ...revision, rationale: event.target.value })
+                  onRevisionChange({
+                    ...revision,
+                    rationale: event.target.value,
+                  })
                 }
                 rows={3}
                 value={revision.rationale}
@@ -503,7 +589,11 @@ function PatternCard({
             >
               {working ? "Saving…" : "Revise and test"}
             </button>
-            <button className={styles.secondary} onClick={onCancelRevision} type="button">
+            <button
+              className={styles.secondary}
+              onClick={onCancelRevision}
+              type="button"
+            >
               Cancel
             </button>
           </div>

@@ -21,7 +21,10 @@ const secretPatterns = [
 ];
 
 for (const path of tracked) {
-  if (!allowedFiles.has(path) && forbiddenFiles.some((pattern) => pattern.test(path))) {
+  if (
+    !allowedFiles.has(path) &&
+    forbiddenFiles.some((pattern) => pattern.test(path))
+  ) {
     findings.push(`${path}: tracked secret-bearing filename`);
   }
 
@@ -44,14 +47,18 @@ for (const path of tracked) {
 
 const envExample = readFileSync(".env.example", "utf8");
 for (const line of envExample.split(/\r?\n/)) {
-  const match = /^([A-Z0-9_]*(?:KEY|PASSWORD|SECRET|TOKEN))=(.*)$/.exec(line.trim());
-  if (match && match[2]?.trim()) {
+  const match = /^([A-Z0-9_]*(?:KEY|PASSWORD|SECRET|TOKEN))=(.*)$/.exec(
+    line.trim(),
+  );
+  if (match?.[2]?.trim()) {
     findings.push(`.env.example: ${match[1]} must stay empty`);
   }
 }
 
 if (findings.length > 0) {
-  process.stderr.write(`Security scan failed:\n${findings.map((item) => `- ${item}`).join("\n")}\n`);
+  process.stderr.write(
+    `Security scan failed:\n${findings.map((item) => `- ${item}`).join("\n")}\n`,
+  );
   process.exit(1);
 }
 
