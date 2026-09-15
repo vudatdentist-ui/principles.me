@@ -6,10 +6,14 @@ import {
   quotaResponse,
   requirePeopleMutation,
 } from "@/features/people/api";
-import { generateDiagnosisProposal } from "@/features/people/execution-ai";
+import {
+  fallbackDiagnosisProposal,
+  generateDiagnosisProposal,
+} from "@/features/people/execution-ai";
 import { getProblemEvidenceContents } from "@/features/people/execution-repository";
 import { supersedePendingExecutionSuggestions } from "@/features/people/execution-suggestions";
 import { getGoal, getProblem, loadPeopleState } from "@/features/people/repository";
+import { AiProviderError } from "@/lib/ai/providers/provider-error";
 
 const schema = z.object({ problemId: z.string().uuid() });
 
@@ -37,13 +41,33 @@ export async function POST(request: Request): Promise<Response> {
     if (!quota.allowed) {
       return quotaResponse(quota.retryAfterSeconds);
     }
-    const proposal = await generateDiagnosisProposal({
-      evidence: evidence.map(({ content, title }) => ({ content, title })),
-      goal,
-      problem,
-      reflection,
-      signal: request.signal,
-    });
+
+    let proposal;
+    try {
+      proposal = await generateDiagnosisProposal({
+        evidence: evidence.map(({ content, title }) => ({ content, title })),
+        goal,
+        problem,
+        reflection,
+        signal: request.signal,
+      });
+    } catch (error) {
+      if (!(error instanceof AiProviderError) || error.code === "aborted") {
+        throw error;
+      }
+      console.warn(
+        JSON.stringify({
+          code: error.code,
+          event: "people_diagnosis_fallback",
+          providerId: error.providerId ?? null,
+        })
+      );
+      proposal = fallbackDiagnosisProposal({
+        evidence: evidence.map(({ content, title }) => ({ content, title })),
+        problemStatement: problem.statement,
+      });
+    }
+
     await supersedePendingExecutionSuggestions({
       contextId: problem.id,
       contextKey: "problemId",
