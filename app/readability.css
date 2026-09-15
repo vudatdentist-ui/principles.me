@@ -7,7 +7,7 @@
 
 section[aria-labelledby="me-title"] h1 {
   max-width: 12ch;
-  font-size: clamp(46px, 5.8vw, 78px);
+  font-size: clamp(46px, 5.4vw, 72px);
   line-height: 0.94;
   letter-spacing: -0.055em;
 }
