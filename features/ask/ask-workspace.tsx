@@ -161,38 +161,55 @@ export function AskWorkspace() {
 
   return (
     <div className={styles.workspace}>
-      <section className={styles.hero} aria-labelledby="knowledge-title">
-        <p className={styles.eyebrow}>Knowledge</p>
-        <h1 id="knowledge-title">Think from principles.</h1>
+      <section
+        aria-label="Current knowledge narrative"
+        aria-labelledby="knowledge-title"
+        className={styles.hero}
+      >
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Knowledge · question first</p>
+          <h1 id="knowledge-title">Think from principles.</h1>
+          <p className={styles.heroDeck}>
+            Start with the question, separate what is known from what is inferred, expose disagreement, then turn the synthesis into a decision implication.
+          </p>
+          <div className={styles.arc} aria-label="Knowledge narrative arc">
+            <span>Question</span><b>→</b><span>Evidence</span><b>→</b><span>Tension</span><b>→</b><span>Synthesis</span><b>→</b><span>Implication</span>
+          </div>
+        </div>
+
+        <form aria-label="Current knowledge question" className={styles.askForm} onSubmit={onSubmit}>
+          <div className={styles.formHeading}>
+            <span>01 / 05 · Question</span>
+            <strong>What are you trying to understand?</strong>
+          </div>
+          <label className={styles.label} htmlFor="question">Question</label>
+          <textarea
+            className={styles.textarea}
+            disabled={phase === "submitting"}
+            id="question"
+            maxLength={4000}
+            onChange={(event) => setQuestion(event.target.value)}
+            placeholder="Name the decision, tension, or reality you need to understand."
+            rows={4}
+            value={question}
+          />
+          <div className={styles.formFooter}>
+            <span className={styles.status} aria-live="polite">{status}</span>
+            <button className={styles.submit} disabled={!canSubmit} type="submit">
+              {phase === "submitting" ? "Thinking…" : "Ask"}
+            </button>
+          </div>
+        </form>
       </section>
 
-      <div className={styles.promptRail}>
+      <div className={styles.promptRail} aria-label="Question starters">
+        <span>Start from</span>
         {prompts.map((prompt) => (
           <button disabled={phase === "submitting"} key={prompt} onClick={() => setQuestion(prompt)} type="button">
             {prompt}
           </button>
         ))}
       </div>
-
-      <form className={styles.askForm} onSubmit={onSubmit}>
-        <label className={styles.label} htmlFor="question">Question</label>
-        <textarea
-          className={styles.textarea}
-          disabled={phase === "submitting"}
-          id="question"
-          maxLength={4000}
-          onChange={(event) => setQuestion(event.target.value)}
-          placeholder="What are you trying to understand?"
-          rows={5}
-          value={question}
-        />
-        <div className={styles.formFooter}>
-          <span className={styles.status} aria-live="polite">{status}</span>
-          <button className={styles.submit} disabled={!canSubmit} type="submit">
-            {phase === "submitting" ? "Thinking…" : "Ask"}
-          </button>
-        </div>
-      </form>
 
       {error ? (
         <section className={styles.error} role="alert">
@@ -207,12 +224,23 @@ export function AskWorkspace() {
       {answer || phase === "submitting" ? (
         <section className={styles.answerSection} aria-live="polite">
           <div className={styles.sectionHeading}>
-            <h2>Answer</h2>
+            <div>
+              <p className={styles.eyebrow}>04 / 05 · Synthesis</p>
+              <h2>What the evidence suggests</h2>
+            </div>
             <span>{sourceLabel}</span>
+          </div>
+          <div className={styles.answerContext}>
+            <span>Question</span>
+            <strong>{lastQuestion.current || question}</strong>
           </div>
           <article className={styles.answer}>{answer || "Preparing…"}</article>
           {phase === "done" ? (
             <div className={styles.bridge}>
+              <div>
+                <span>05 / 05 · Implication</span>
+                <strong>What should this change in your next decision?</strong>
+              </div>
               <a href="/">Continue in Me →</a>
             </div>
           ) : null}
@@ -222,7 +250,10 @@ export function AskWorkspace() {
       {phase !== "idle" ? (
         <section className={styles.sourcesSection}>
           <div className={styles.sectionHeading}>
-            <h2>Sources</h2>
+            <div>
+              <p className={styles.eyebrow}>02–03 / 05 · Evidence & tension</p>
+              <h2>What the answer is standing on</h2>
+            </div>
             <span>{sourceLabel}</span>
           </div>
           <div className={styles.retrievalGrid}>
