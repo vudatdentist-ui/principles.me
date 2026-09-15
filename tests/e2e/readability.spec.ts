@@ -44,10 +44,26 @@ async function createGoal(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Add goal" }).click();
 }
 
-test("current action stays readable on tablet landscape", async ({ page }) => {
+test("current action stays readable and complete on tablet landscape", async ({ page }) => {
   await page.setViewportSize({ height: 768, width: 1024 });
   await createAccount(page);
   await createGoal(page);
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const firstViewport = await page.evaluate(() => {
+    const hero = document.querySelector<HTMLElement>('section[aria-labelledby="me-title"]');
+    const currentAction = document.querySelector<HTMLElement>('section[aria-label="Current action"]');
+    const goals = document.querySelector<HTMLElement>('section[aria-label="My goals"]');
+    return {
+      actionTop: currentAction?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
+      goalHeight: goals?.getBoundingClientRect().height ?? 0,
+      heroHeight: hero?.getBoundingClientRect().height ?? Number.POSITIVE_INFINITY,
+    };
+  });
+
+  expect(firstViewport.heroHeight).toBeLessThan(420);
+  expect(firstViewport.goalHeight).toBeLessThan(150);
+  expect(firstViewport.actionTop).toBeLessThan(720);
 
   await page
     .getByLabel("What is actually true?")
@@ -62,6 +78,11 @@ test("current action stays readable on tablet landscape", async ({ page }) => {
   await page.getByRole("button", { name: "Accept this diagnosis" }).click();
 
   await page.getByRole("button", { name: "Design the machine" }).click();
+
+  const currentAction = page.locator('section[aria-label="Current action"]');
+  await expect(currentAction.getByText("Dream", { exact: true })).toBeVisible();
+  await expect(currentAction.getByText("Reality", { exact: true })).toBeVisible();
+  await expect(currentAction.getByText("Gap", { exact: true })).toBeVisible();
 
   const machineChange = page.getByRole("textbox", { name: "Machine change" });
   const expectedResult = page.getByRole("textbox", { name: "Expected result" });

@@ -99,6 +99,39 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
   }
 });
 
+test("primary narrative surfaces put a meaningful current scene in the tablet viewport", async ({ page }) => {
+  await page.setViewportSize({ height: 768, width: 1024 });
+  await createAccount(page);
+
+  const scenes = [
+    ["/", 'section[aria-labelledby="new-goal-title"]'],
+    ["/organization", 'aside[aria-label="Current organization narrative"]'],
+    ["/knowledge", 'section[aria-label="Current knowledge narrative"]'],
+    ["/learning", 'aside[aria-label="Current learning narrative"]'],
+  ] as const;
+
+  for (const [path, selector] of scenes) {
+    await page.goto(path);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const scene = page.locator(selector);
+    await expect(scene).toBeVisible();
+
+    const geometry = await scene.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        textLength: element.textContent?.trim().length ?? 0,
+        top: rect.top,
+        viewportWidth: window.innerWidth,
+      };
+    });
+
+    expect(geometry.top).toBeLessThan(720);
+    expect(geometry.textLength).toBeGreaterThan(40);
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+  }
+});
+
 test("cancelled execution remains reversible after Outcome becomes available", async ({ page }) => {
   await createAccount(page);
   await createGoal(page);

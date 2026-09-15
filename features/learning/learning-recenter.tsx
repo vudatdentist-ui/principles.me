@@ -60,6 +60,19 @@ export function LearningRecenter({
       ),
     [people.reflections]
   );
+  const pendingPrinciple = principles.find((principle) => principle.acceptanceState === "pending") ?? null;
+  const currentLearning =
+    evolution.reflection?.learning ||
+    pendingPrinciple?.rule ||
+    activePatterns[0]?.statement ||
+    "Live another cycle before forcing a lesson from too little evidence.";
+  const currentLearningLabel = evolution.reflection?.learning
+    ? "Latest reflection"
+    : pendingPrinciple
+      ? "Principle under review"
+      : activePatterns[0]
+        ? "Recurring pattern"
+        : "Next evidence";
 
   async function refreshPeople() {
     const response = await fetch("/api/people/state", { cache: "no-store" });
@@ -114,44 +127,77 @@ export function LearningRecenter({
     });
   }
 
+  function openPrincipleEditor() {
+    setShowAdd(true);
+    requestAnimationFrame(() => {
+      document.getElementById("principles-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   return (
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="learning-title">
-        <div>
-          <p className={styles.eyebrow}>Learning</p>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Learning · evidence over time</p>
           <h1 id="learning-title">What is reality teaching you?</h1>
+          <p className={styles.heroDeck}>
+            Experience becomes useful only after reflection. Reflection becomes a principle only after patterns survive contact with more reality.
+          </p>
+          <div
+            aria-label="Pain plus Reflection leads to Progress"
+            className={styles.equation}
+            role="img"
+          >
+            <span>Experience</span><b>→</b><span>Reflection</span><b>→</b><span>Pattern</span><b>→</b><strong>Principle</strong><b>→</b><span>Revision</span>
+          </div>
         </div>
-        <div
-          aria-label="Pain plus Reflection leads to Progress"
-          className={styles.equation}
-          role="img"
-        >
-          <span>Pain</span><b>+</b><span>Reflection</span><b>→</b><strong>Progress</strong>
-        </div>
+
+        <aside className={styles.currentScene} aria-label="Current learning narrative">
+          <span>Now · {currentLearningLabel}</span>
+          <strong>{currentLearning}</strong>
+          <dl>
+            <div><dt>Reflections</dt><dd>{eligibleReflections.length}</dd></div>
+            <div><dt>Patterns</dt><dd>{activePatterns.length}</dd></div>
+            <div><dt>Principles</dt><dd>{principles.length}</dd></div>
+          </dl>
+          <p>
+            {pendingPrinciple
+              ? "A candidate rule is waiting for judgment. Keep it only if it deserves to be tested against future reality."
+              : activePatterns.length > 0
+                ? "A recurring pattern is visible. Compare it with evidence against before turning it into a durable rule."
+                : "Collect more lived evidence instead of manufacturing certainty from a single case."}
+          </p>
+          <button className={styles.primary} onClick={openPrincipleEditor} type="button">+ Add principle</button>
+        </aside>
       </section>
 
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
 
       {evolution.reflection?.learning ? (
         <section className={styles.latest} aria-labelledby="latest-learning-title">
-          <p className={styles.eyebrow}>Latest</p>
-          <h2 id="latest-learning-title">{evolution.reflection.learning}</h2>
+          <div>
+            <p className={styles.eyebrow}>01 · Experience → Reflection</p>
+            <h2 id="latest-learning-title">{evolution.reflection.learning}</h2>
+          </div>
+          <p>Keep the lesson close to the event that produced it. Later evidence can strengthen, narrow, or overturn it.</p>
         </section>
       ) : null}
 
       <section className={styles.principleSection} aria-labelledby="principles-title">
         <div className={styles.sectionLead}>
           <div>
-            <p className={styles.eyebrow}>Principles</p>
+            <p className={styles.eyebrow}>03–04 · Pattern → Principle</p>
             <h2 id="principles-title">Rules I am testing</h2>
+            <p>Principles are hypotheses for future decisions, not trophies for completing a reflection.</p>
           </div>
-          <button className={styles.primary} onClick={() => setShowAdd((value) => !value)} type="button">
-            {showAdd ? "Cancel" : "+ Add principle"}
-          </button>
         </div>
 
         {showAdd ? (
           <div className={styles.principleEditor}>
+            <div className={styles.editorLead}>
+              <span>Write a testable rule</span>
+              <button className={styles.textButton} onClick={() => setShowAdd(false)} type="button">Close</button>
+            </div>
             <label>
               <span>When</span>
               <textarea aria-label="Principle trigger" onChange={(event) => setTrigger(event.target.value)} rows={2} value={trigger} />
@@ -194,8 +240,9 @@ export function LearningRecenter({
       <section className={styles.reflectionSection} aria-labelledby="reflections-title">
         <div className={styles.sectionLead}>
           <div>
-            <p className={styles.eyebrow}>Reflections</p>
+            <p className={styles.eyebrow}>02 · Reflection</p>
             <h2 id="reflections-title">Pain worth learning from</h2>
+            <p>Return to what actually happened before turning an interpretation into a general rule.</p>
           </div>
         </div>
         {eligibleReflections.length > 0 ? (
@@ -224,8 +271,9 @@ export function LearningRecenter({
       <section className={styles.patternSection} aria-labelledby="patterns-title">
         <div className={styles.sectionLead}>
           <div>
-            <p className={styles.eyebrow}>Patterns</p>
+            <p className={styles.eyebrow}>03 · Pattern</p>
             <h2 id="patterns-title">Recurring reality</h2>
+            <p>Patterns need multiple cases and evidence against them. Repetition alone is not proof.</p>
           </div>
         </div>
         {activePatterns.length > 0 ? (
