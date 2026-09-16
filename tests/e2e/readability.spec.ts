@@ -131,3 +131,62 @@ test("current action stays readable and complete on tablet landscape", async ({ 
     .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
   expect(navFontSize).toBeGreaterThanOrEqual(11);
 });
+
+test("Me stays a bounded narrative stage on wide desktop", async ({ page }) => {
+  await page.setViewportSize({ height: 1080, width: 1920 });
+  await createAccount(page);
+  await createGoal(page);
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  const metrics = await page.evaluate(() => {
+    const hero = document.querySelector<HTMLElement>('section[aria-labelledby="me-title"]');
+    const heroTitle = hero?.querySelector<HTMLElement>("h1");
+    const goals = document.querySelector<HTMLElement>('section[aria-label="My goals"]');
+    const currentAction = document.querySelector<HTMLElement>('section[aria-label="Current action"]');
+    const actionTitle = currentAction?.querySelector<HTMLElement>(":scope > h2");
+    const context = currentAction?.querySelector<HTMLElement>(
+      ':scope > section[aria-label="Dream and reality"]'
+    );
+    const work = currentAction?.querySelector<HTMLElement>(":scope > div");
+
+    const heroBox = hero?.getBoundingClientRect();
+    const heroTitleBox = heroTitle?.getBoundingClientRect();
+    const goalsBox = goals?.getBoundingClientRect();
+    const actionBox = currentAction?.getBoundingClientRect();
+    const titleBox = actionTitle?.getBoundingClientRect();
+    const contextBox = context?.getBoundingClientRect();
+    const workBox = work?.getBoundingClientRect();
+    const heroTitleStyle = heroTitle ? getComputedStyle(heroTitle) : null;
+
+    return {
+      actionTop: actionBox?.top ?? Number.POSITIVE_INFINITY,
+      contextLeft: contextBox?.left ?? -1,
+      contextWidth: contextBox?.width ?? Number.POSITIVE_INFINITY,
+      goalHeight: goalsBox?.height ?? Number.POSITIVE_INFINITY,
+      heroHeight: heroBox?.height ?? Number.POSITIVE_INFINITY,
+      heroTitleFontSize: heroTitleStyle
+        ? Number.parseFloat(heroTitleStyle.fontSize)
+        : Number.POSITIVE_INFINITY,
+      heroTitleLeft: heroTitleBox?.left ?? -1,
+      heroTitleTransform: heroTitleStyle?.textTransform ?? "unknown",
+      pageWidth: document.documentElement.scrollWidth,
+      titleBottom: titleBox?.bottom ?? Number.POSITIVE_INFINITY,
+      workLeft: workBox?.left ?? -1,
+      workTop: workBox?.top ?? -1,
+      workWidth: workBox?.width ?? Number.POSITIVE_INFINITY,
+    };
+  });
+
+  expect(metrics.pageWidth).toBeLessThanOrEqual(1921);
+  expect(metrics.heroHeight).toBeLessThan(280);
+  expect(metrics.goalHeight).toBeLessThan(100);
+  expect(metrics.actionTop).toBeLessThan(380);
+  expect(metrics.heroTitleFontSize).toBeLessThanOrEqual(64);
+  expect(metrics.heroTitleTransform).toBe("none");
+  expect(metrics.heroTitleLeft).toBeGreaterThan(300);
+  expect(metrics.contextWidth).toBeLessThanOrEqual(280);
+  expect(metrics.workWidth).toBeLessThanOrEqual(780);
+  expect(metrics.workLeft - metrics.contextLeft).toBeGreaterThan(260);
+  expect(metrics.workTop).toBeGreaterThan(metrics.titleBottom);
+  expect(metrics.workLeft + metrics.workWidth - metrics.contextLeft).toBeLessThanOrEqual(1120);
+});
