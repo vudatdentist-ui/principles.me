@@ -119,5 +119,10 @@ test("Learning stays a bounded editorial sequence on wide desktops", async ({
     expect(metrics.chapterBoxes[2].top).toBeGreaterThanOrEqual(
       metrics.chapterBoxes[1].bottom - 1,
     );
+
+    await test.info().attach(`learning-${viewport.width}px`, {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
   }
 });
