@@ -52,7 +52,9 @@ test("nested feature stages keep usable width on wide desktops", async ({
       const copyBox = copy?.getBoundingClientRect();
       const style = scene ? getComputedStyle(scene) : null;
       return {
+        copyTop: copyBox?.top ?? -1,
         copyWidth: copyBox?.width ?? 0,
+        formTop: formBox?.top ?? -2,
         formWidth: formBox?.width ?? 0,
         pageWidth: document.documentElement.scrollWidth,
         paddingLeft: style ? Number.parseFloat(style.paddingLeft) : -1,
@@ -71,6 +73,7 @@ test("nested feature stages keep usable width on wide desktops", async ({
     expect(knowledge.paddingRight).toBeLessThanOrEqual(1);
     expect(knowledge.copyWidth).toBeGreaterThanOrEqual(350);
     expect(knowledge.formWidth).toBeGreaterThanOrEqual(560);
+    expect(Math.abs(knowledge.copyTop - knowledge.formTop)).toBeLessThanOrEqual(2);
 
     await testInfo.attach(`knowledge-${viewport.width}x${viewport.height}`, {
       body: await page.screenshot({ fullPage: true }),
