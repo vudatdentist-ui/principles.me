@@ -1,0 +1,20 @@
+/*
+ * Authenticated feature surfaces already live inside AppShell's bounded main stage.
+ * Do not apply viewport-derived outer gutters again inside those nested scenes:
+ * doing so collapses the usable grid width on wide screens (for example, the
+ * Knowledge scene at 1920px was reduced to roughly 380px of real content).
+ */
+
+@media (min-width: 761px) {
+  section[aria-label="Current knowledge narrative"],
+  section[aria-labelledby="organization-title"] {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  /* The question and its working surface are one scene, not two vertically
+   * independent panels. Start both columns from the same visual edge. */
+  section[aria-label="Current knowledge narrative"] {
+    align-items: start;
+  }
+}
