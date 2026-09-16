@@ -28,14 +28,19 @@ test("account data controls require re-authentication, export and delete the tem
   const email = await createAccount(page);
   await page.getByRole("link", { name: `Account for ${email}` }).click();
   await expect(page.getByRole("heading", { name: "Your data stays yours." })).toBeVisible();
+  await page.waitForLoadState("networkidle");
 
-  await page.getByLabel("Confirm password").first().fill("incorrect password");
-  await page.getByRole("button", { name: "Export data" }).click();
+  const exportPassword = page.getByLabel("Confirm password").first();
+  const exportButton = page.getByRole("button", { name: "Export data" });
+  await exportPassword.fill("incorrect password");
+  await expect(exportButton).toBeEnabled();
+  await exportButton.click();
   await expect(page.getByText("Password confirmation failed.").first()).toBeVisible();
 
-  await page.getByLabel("Confirm password").first().fill(password);
+  await exportPassword.fill(password);
+  await expect(exportButton).toBeEnabled();
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export data" }).click();
+  await exportButton.click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^principles-export-\d{4}-\d{2}-\d{2}\.json$/);
   await expect(page.getByText("Export ready.")).toBeVisible();

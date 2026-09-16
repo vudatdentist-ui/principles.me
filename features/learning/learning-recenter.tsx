@@ -7,7 +7,11 @@ import type {
   ClientPrincipleRecord,
   ReflectionRecord,
 } from "@/features/people/contracts";
-import type { ClientLearningState } from "./contracts";
+import type {
+  ClientLearningState,
+  LearningPatternDraft,
+  LearningPatternProposal,
+} from "./contracts";
 import { LearningWorkspace } from "./learning-workspace";
 import styles from "./learning-recenter.module.css";
 
@@ -19,22 +23,66 @@ async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
   const payload = (await response.json().catch(() => null)) as
     | (T & { error?: string })
     | null;
-  if (!response.ok) throw new Error(payload?.error || "Request failed.");
-  if (!payload) throw new Error("Request failed.");
+  if (!response.ok) {
+    throw new Error(payload?.error || "Request failed.");
+  }
+  if (!payload) {
+    throw new Error("Request failed.");
+  }
   return payload;
 }
 
 async function fetchPeopleState(): Promise<ClientPeopleState> {
   const response = await fetch("/api/people/state", { cache: "no-store" });
-  if (!response.ok) throw new Error("Could not refresh Learning.");
+  if (!response.ok) {
+    throw new Error("Could not refresh Learning.");
+  }
   return response.json() as Promise<ClientPeopleState>;
 }
 
 async function fetchLearningState(): Promise<ClientLearningState> {
   const response = await fetch("/api/learning/state", { cache: "no-store" });
-  if (!response.ok) throw new Error("Could not refresh Learning patterns.");
+  if (!response.ok) {
+    throw new Error("Could not refresh Learning patterns.");
+  }
   return response.json() as Promise<ClientLearningState>;
 }
+
+function proposalDraft(proposal: LearningPatternProposal): LearningPatternDraft {
+  return {
+    confidence: proposal.confidence,
+    contradictingEvidence: proposal.contradictingEvidence,
+    implication: proposal.implication,
+    kind: proposal.kind,
+    statement: proposal.statement,
+    supportingEvidence: proposal.supportingEvidence,
+    uncertainty: proposal.uncertainty,
+  };
+}
+
+type EditorKind = "reflection" | "pattern" | "principle" | null;
+
+type ReflectionDraft = {
+  expected: string;
+  goalId: string;
+  happened: string;
+  learning: string;
+  problemId: string;
+  recurrenceNote: string;
+  recurring: boolean;
+  surprise: string;
+};
+
+const emptyReflection: ReflectionDraft = {
+  expected: "",
+  goalId: "",
+  happened: "",
+  learning: "",
+  problemId: "",
+  recurrenceNote: "",
+  recurring: false,
+  surprise: "",
+};
 
 export function LearningRecenter({
   email,
@@ -51,7 +99,13 @@ export function LearningRecenter({
 }) {
   const [people, setPeople] = useState(initialPeople);
   const [learning, setLearning] = useState(initialState);
-  const [showAdd, setShowAdd] = useState(false);
+  const [editor, setEditor] = useState<EditorKind>(null);
+  const [reflectionDraft, setReflectionDraft] =
+    useState<ReflectionDraft>(emptyReflection);
+  const [patternProposal, setPatternProposal] =
+    useState<LearningPatternProposal | null>(null);
+  const [patternDraft, setPatternDraft] =
+    useState<LearningPatternDraft | null>(null);
   const [trigger, setTrigger] = useState("");
   const [rule, setRule] = useState("");
   const [rationale, setRationale] = useState("");
@@ -82,21 +136,48 @@ export function LearningRecenter({
       ),
     [people.reflections],
   );
+  const usableGoals = useMemo(
+    () => people.goals.filter((goal) => goal.status !== "retired"),
+    [people.goals],
+  );
+  const usableProblems = useMemo(
+    () =>
+      people.problems.filter(
+        (problem) =>
+          problem.status !== "retired" &&
+          (!reflectionDraft.goalId || problem.goalId === reflectionDraft.goalId),
+      ),
+    [people.problems, reflectionDraft.goalId],
+  );
+
   const pendingPrinciple =
     principles.find((principle) => principle.acceptanceState === "pending") ??
     null;
+  const latestReflection = eligibleReflections[0] ?? null;
+  const latestPattern = activePatterns[0] ?? null;
+  const leadPrinciple = pendingPrinciple ?? principles[0] ?? null;
   const currentLearning =
     evolution.reflection?.learning ||
     pendingPrinciple?.rule ||
-    activePatterns[0]?.statement ||
-    "Live another cycle before forcing a lesson from too little evidence.";
+    latestPattern?.statement ||
+    latestReflection?.learning ||
+    "Capture one real experience. Learning starts with evidence, not a slogan.";
   const currentLearningLabel = evolution.reflection?.learning
     ? "Latest reflection"
     : pendingPrinciple
       ? "Principle under review"
-      : activePatterns[0]
+      : latestPattern
         ? "Recurring pattern"
-        : "Next evidence";
+        : latestReflection
+          ? "Reflection"
+          : "Next evidence";
+  const learningKey =
+    learning.patterns
+      .map(
+        (pattern) =>
+          `${pattern.id}:${pattern.lifecycleState}:${pattern.appliedRevision?.revisedRule ?? ""}`,
+      )
+      .join("|") || `history-${learning.historyCount}`;
 
   async function refreshPeople() {
     setPeople(await fetchPeopleState());
@@ -121,7 +202,9 @@ export function LearningRecenter({
   }
 
   async function run(label: string, action: () => Promise<void>) {
-    if (working) return;
+    if (working) {
+      return;
+    }
     setWorking(label);
     setError(null);
     try {
@@ -133,8 +216,99 @@ export function LearningRecenter({
     }
   }
 
+  function revealEditor(kind: Exclude<EditorKind, null>) {
+    if (kind === "reflection") {
+      const goal =
+        usableGoals.find((item) => item.status === "chosen") ??
+        usableGoals[0] ??
+        null;
+      const problem = goal
+        ? people.problems.find(
+            (item) => item.goalId === goal.id && item.status !== "retired",
+          ) ?? null
+        : null;
+      setReflectionDraft((current) => ({
+        ...current,
+        goalId: current.goalId || goal?.id || "",
+        problemId: current.problemId || problem?.id || "",
+      }));
+    }
+    setEditor(kind);
+    requestAnimationFrame(() => {
+      document
+        .getElementById("learning-editor")
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
+
+  async function addReflection() {
+    await run("reflection", async () => {
+      await jsonRequest<{ reflection: ReflectionRecord }>(
+        "/api/people/reflections",
+        {
+          body: JSON.stringify(reflectionDraft),
+          method: "POST",
+        },
+      );
+      setReflectionDraft(emptyReflection);
+      setEditor(null);
+      await refreshAll();
+    });
+  }
+
+  async function proposePattern() {
+    if (learning.historyCount < 2) {
+      return;
+    }
+    await run("pattern:propose", async () => {
+      const result = await jsonRequest<LearningPatternProposal>(
+        "/api/learning/patterns/propose",
+        { body: "{}", method: "POST" },
+      );
+      setPatternProposal(result);
+      setPatternDraft(proposalDraft(result));
+    });
+  }
+
+  async function keepPattern() {
+    if (!patternDraft) {
+      return;
+    }
+    await run("pattern:save", async () => {
+      const result = await jsonRequest<ClientLearningState>(
+        "/api/learning/patterns",
+        {
+          body: JSON.stringify(patternDraft),
+          method: "POST",
+        },
+      );
+      setLearning(result);
+      setPatternProposal(null);
+      setPatternDraft(null);
+      setEditor(null);
+      await refreshPeople();
+    });
+  }
+
+  async function rejectPattern() {
+    if (!patternProposal) {
+      setPatternDraft(null);
+      setEditor(null);
+      return;
+    }
+    await run("pattern:reject", async () => {
+      await jsonRequest<{ ok: true }>("/api/learning/patterns/reject", {
+        body: "{}",
+        method: "POST",
+      });
+      setPatternProposal(null);
+      setPatternDraft(null);
+      setEditor(null);
+    });
+  }
+
   async function addPrinciple() {
-    await run("manual", async () => {
+    await run("principle", async () => {
       await jsonRequest("/api/people/principles", {
         body: JSON.stringify({ rationale, rule, trigger }),
         method: "POST",
@@ -142,7 +316,7 @@ export function LearningRecenter({
       setTrigger("");
       setRule("");
       setRationale("");
-      setShowAdd(false);
+      setEditor(null);
       await refreshAll();
     });
   }
@@ -170,14 +344,32 @@ export function LearningRecenter({
     });
   }
 
-  function openPrincipleEditor() {
-    setShowAdd(true);
-    requestAnimationFrame(() => {
-      document
-        .getElementById("principles-title")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+  function updateReflectionGoal(goalId: string) {
+    const firstProblem =
+      people.problems.find(
+        (problem) => problem.goalId === goalId && problem.status !== "retired",
+      ) ?? null;
+    setReflectionDraft((current) => ({
+      ...current,
+      goalId,
+      problemId: firstProblem?.id ?? "",
+    }));
   }
+
+  const canSaveReflection =
+    reflectionDraft.goalId.length > 0 &&
+    reflectionDraft.problemId.length > 0 &&
+    reflectionDraft.happened.trim().length >= 3 &&
+    reflectionDraft.learning.trim().length >= 3;
+  const canSavePattern =
+    patternDraft !== null &&
+    patternDraft.statement.trim().length >= 3 &&
+    patternDraft.implication.trim().length >= 3 &&
+    patternDraft.supportingEvidence.trim().length >= 3 &&
+    patternDraft.contradictingEvidence.trim().length >= 3 &&
+    patternDraft.uncertainty.trim().length >= 3;
+  const canSavePrinciple =
+    trigger.trim().length >= 3 && rule.trim().length >= 3;
 
   return (
     <div className={styles.workspace}>
@@ -185,21 +377,10 @@ export function LearningRecenter({
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Learning · evidence over time</p>
           <h1 id="learning-title">What is reality teaching you?</h1>
-          <div
-            aria-label="Pain plus Reflection leads to Progress"
-            className={styles.equation}
-            role="img"
-          >
-            <span>Experience</span>
-            <b>→</b>
-            <span>Reflection</span>
-            <b>→</b>
-            <span>Pattern</span>
-            <b>→</b>
-            <strong>Principle</strong>
-            <b>→</b>
-            <span>Revision</span>
-          </div>
+          <p className={styles.heroDeck}>
+            Reflection explains one experience. Pattern asks whether it repeats.
+            Principle turns the pattern into a rule you can test against reality.
+          </p>
         </div>
 
         <aside
@@ -222,15 +403,47 @@ export function LearningRecenter({
               <dd>{principles.length}</dd>
             </div>
           </dl>
-          <button
-            className={styles.primary}
-            onClick={openPrincipleEditor}
-            type="button"
-          >
-            + Add principle
-          </button>
+          <div className={styles.sceneActions}>
+            <button
+              className={styles.primaryLight}
+              onClick={() => revealEditor("reflection")}
+              type="button"
+            >
+              Capture reflection
+            </button>
+            <button
+              className={styles.textLight}
+              onClick={() => revealEditor("principle")}
+              type="button"
+            >
+              Write principle
+            </button>
+          </div>
         </aside>
       </section>
+
+      <nav className={styles.chapterRail} aria-label="Learning chapters">
+        <a href="#learning-reflection">
+          <span>02</span>
+          <strong>Reflection</strong>
+          <small>{eligibleReflections.length} recorded</small>
+        </a>
+        <a href="#learning-pattern">
+          <span>03</span>
+          <strong>Pattern</strong>
+          <small>{activePatterns.length} hypotheses</small>
+        </a>
+        <a href="#learning-principle">
+          <span>04</span>
+          <strong>Principle</strong>
+          <small>{principles.length} testing</small>
+        </a>
+        <a href="#pattern-tools">
+          <span>05</span>
+          <strong>Revision</strong>
+          <small>Change the rule when reality disagrees</small>
+        </a>
+      </nav>
 
       {error ? (
         <div className={styles.error} role="alert">
@@ -238,200 +451,623 @@ export function LearningRecenter({
         </div>
       ) : null}
 
-      {evolution.reflection?.learning ? (
+      {editor ? (
         <section
-          className={styles.latest}
-          aria-labelledby="latest-learning-title"
+          className={styles.editorPanel}
+          id="learning-editor"
+          aria-label={`Add ${editor}`}
         >
-          <div>
-            <p className={styles.eyebrow}>01 · Experience → Reflection</p>
-            <h2 id="latest-learning-title">{evolution.reflection.learning}</h2>
+          <div className={styles.editorHeader}>
+            <div>
+              <p className={styles.eyebrow}>
+                {editor === "reflection"
+                  ? "02 · Reflection"
+                  : editor === "pattern"
+                    ? "03 · Pattern"
+                    : "04 · Principle"}
+              </p>
+              <h2>
+                {editor === "reflection"
+                  ? "What happened, and what did it teach you?"
+                  : editor === "pattern"
+                    ? "What seems to repeat across reality?"
+                    : "What rule deserves a real-world test?"}
+              </h2>
+            </div>
+            <button
+              className={styles.textButton}
+              onClick={() => setEditor(null)}
+              type="button"
+            >
+              Close
+            </button>
           </div>
+
+          {editor === "reflection" ? (
+            usableGoals.length === 0 || people.problems.length === 0 ? (
+              <div className={styles.contextMissing}>
+                <strong>Reflection needs a Dream and a Problem context.</strong>
+                <p>
+                  Start the cycle in Me first. Once a real gap exists, Learning can
+                  attach the reflection to that evidence instead of creating an
+                  orphan note.
+                </p>
+                <a href="/">Open Me →</a>
+              </div>
+            ) : (
+              <div className={styles.editorGrid}>
+                <label className={styles.field}>
+                  <span>Dream / Goal</span>
+                  <select
+                    aria-label="Reflection goal"
+                    onChange={(event) => updateReflectionGoal(event.target.value)}
+                    value={reflectionDraft.goalId}
+                  >
+                    <option value="">Choose a goal</option>
+                    {usableGoals.map((goal) => (
+                      <option key={goal.id} value={goal.id}>
+                        {goal.desiredState}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span>Problem / Gap</span>
+                  <select
+                    aria-label="Reflection problem"
+                    onChange={(event) =>
+                      setReflectionDraft((current) => ({
+                        ...current,
+                        problemId: event.target.value,
+                      }))
+                    }
+                    value={reflectionDraft.problemId}
+                  >
+                    <option value="">Choose a problem</option>
+                    {usableProblems.map((problem) => (
+                      <option key={problem.id} value={problem.id}>
+                        {problem.statement}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={`${styles.field} ${styles.fieldWide}`}>
+                  <span>What actually happened?</span>
+                  <textarea
+                    aria-label="Reflection happened"
+                    onChange={(event) =>
+                      setReflectionDraft((current) => ({
+                        ...current,
+                        happened: event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    value={reflectionDraft.happened}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>What did you expect?</span>
+                  <textarea
+                    aria-label="Reflection expected"
+                    onChange={(event) =>
+                      setReflectionDraft((current) => ({
+                        ...current,
+                        expected: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    value={reflectionDraft.expected}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>What surprised you?</span>
+                  <textarea
+                    aria-label="Reflection surprise"
+                    onChange={(event) =>
+                      setReflectionDraft((current) => ({
+                        ...current,
+                        surprise: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    value={reflectionDraft.surprise}
+                  />
+                </label>
+                <label className={`${styles.field} ${styles.fieldWide}`}>
+                  <span>What did you learn?</span>
+                  <textarea
+                    aria-label="Reflection learning"
+                    onChange={(event) =>
+                      setReflectionDraft((current) => ({
+                        ...current,
+                        learning: event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    value={reflectionDraft.learning}
+                  />
+                </label>
+                <label className={styles.checkField}>
+                  <input
+                    checked={reflectionDraft.recurring}
+                    onChange={(event) =>
+                      setReflectionDraft((current) => ({
+                        ...current,
+                        recurring: event.target.checked,
+                      }))
+                    }
+                    type="checkbox"
+                  />
+                  <span>This looks recurring</span>
+                </label>
+                {reflectionDraft.recurring ? (
+                  <label className={styles.field}>
+                    <span>Recurrence note</span>
+                    <textarea
+                      aria-label="Reflection recurrence note"
+                      onChange={(event) =>
+                        setReflectionDraft((current) => ({
+                          ...current,
+                          recurrenceNote: event.target.value,
+                        }))
+                      }
+                      rows={2}
+                      value={reflectionDraft.recurrenceNote}
+                    />
+                  </label>
+                ) : null}
+                <div className={styles.editorActions}>
+                  <button
+                    className={styles.primary}
+                    disabled={!canSaveReflection || working === "reflection"}
+                    onClick={() => void addReflection()}
+                    type="button"
+                  >
+                    {working === "reflection" ? "Saving…" : "Save reflection"}
+                  </button>
+                </div>
+              </div>
+            )
+          ) : null}
+
+          {editor === "pattern" ? (
+            learning.historyCount < 2 ? (
+              <div className={styles.contextMissing}>
+                <strong>Pattern needs at least two completed Reflections.</strong>
+                <p>
+                  A pattern is not a free-floating note. Capture another real case
+                  first, then compare the evidence and decide what actually repeats.
+                </p>
+                <button
+                  className={styles.primary}
+                  onClick={() => revealEditor("reflection")}
+                  type="button"
+                >
+                  Capture another reflection
+                </button>
+              </div>
+            ) : patternProposal && patternDraft ? (
+              <div className={styles.editorGrid}>
+                <div className={styles.contextMissing}>
+                  <strong>
+                    Evidence base · {patternProposal.cases.length} durable cases
+                  </strong>
+                  <p>
+                    The system compared completed Reflections. Correct the proposal
+                    before keeping it if the evidence does not support the wording.
+                  </p>
+                </div>
+                <label className={styles.field}>
+                  <span>Pattern type</span>
+                  <select
+                    aria-label="Pattern kind"
+                    onChange={(event) =>
+                      setPatternDraft((current) =>
+                        current
+                          ? {
+                              ...current,
+                              kind: event.target
+                                .value as LearningPatternDraft["kind"],
+                            }
+                          : current,
+                      )
+                    }
+                    value={patternDraft.kind}
+                  >
+                    <option value="recurring_pattern">Recurring pattern</option>
+                    <option value="design_learning">Design learning</option>
+                    <option value="principle_effectiveness">
+                      Principle effectiveness
+                    </option>
+                    <option value="constraint_hypothesis">
+                      Constraint hypothesis
+                    </option>
+                  </select>
+                </label>
+                <label className={`${styles.field} ${styles.fieldWide}`}>
+                  <span>Pattern hypothesis</span>
+                  <textarea
+                    aria-label="Pattern statement"
+                    onChange={(event) =>
+                      setPatternDraft((current) =>
+                        current
+                          ? { ...current, statement: event.target.value }
+                          : current,
+                      )
+                    }
+                    rows={3}
+                    value={patternDraft.statement}
+                  />
+                </label>
+                <label className={`${styles.field} ${styles.fieldWide}`}>
+                  <span>If true, what does it imply?</span>
+                  <textarea
+                    aria-label="Pattern implication"
+                    onChange={(event) =>
+                      setPatternDraft((current) =>
+                        current
+                          ? { ...current, implication: event.target.value }
+                          : current,
+                      )
+                    }
+                    rows={2}
+                    value={patternDraft.implication}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Evidence for</span>
+                  <textarea
+                    aria-label="Pattern evidence for"
+                    onChange={(event) =>
+                      setPatternDraft((current) =>
+                        current
+                          ? {
+                              ...current,
+                              supportingEvidence: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    rows={3}
+                    value={patternDraft.supportingEvidence}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Evidence against</span>
+                  <textarea
+                    aria-label="Pattern evidence against"
+                    onChange={(event) =>
+                      setPatternDraft((current) =>
+                        current
+                          ? {
+                              ...current,
+                              contradictingEvidence: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    rows={3}
+                    value={patternDraft.contradictingEvidence}
+                  />
+                </label>
+                <label className={`${styles.field} ${styles.fieldWide}`}>
+                  <span>What remains uncertain?</span>
+                  <textarea
+                    aria-label="Pattern uncertainty"
+                    onChange={(event) =>
+                      setPatternDraft((current) =>
+                        current
+                          ? { ...current, uncertainty: event.target.value }
+                          : current,
+                      )
+                    }
+                    rows={2}
+                    value={patternDraft.uncertainty}
+                  />
+                </label>
+                <div className={styles.contextMissing}>
+                  <strong>Cases used in this proposal</strong>
+                  {patternProposal.cases.map((item, index) => (
+                    <p key={item.reflectionId}>
+                      Case {index + 1} · {item.problem} — {item.happened}
+                    </p>
+                  ))}
+                </div>
+                <div className={styles.editorActions}>
+                  <button
+                    className={styles.primary}
+                    disabled={!canSavePattern || working === "pattern:save"}
+                    onClick={() => void keepPattern()}
+                    type="button"
+                  >
+                    {working === "pattern:save" ? "Saving…" : "Keep pattern"}
+                  </button>
+                  <button
+                    className={styles.secondary}
+                    disabled={working !== null}
+                    onClick={() => void proposePattern()}
+                    type="button"
+                  >
+                    Try another
+                  </button>
+                  <button
+                    className={styles.secondary}
+                    disabled={working !== null}
+                    onClick={() => void rejectPattern()}
+                    type="button"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.contextMissing}>
+                <strong>Compare the evidence before naming the pattern.</strong>
+                <p>
+                  Learning has {learning.historyCount} completed Reflections. Ask the
+                  system to compare them, then edit the hypothesis before you keep
+                  it.
+                </p>
+                <button
+                  className={styles.primary}
+                  disabled={working === "pattern:propose"}
+                  onClick={() => void proposePattern()}
+                  type="button"
+                >
+                  {working === "pattern:propose"
+                    ? "Comparing reflections…"
+                    : "Synthesize pattern"}
+                </button>
+              </div>
+            )
+          ) : null}
+
+          {editor === "principle" ? (
+            <div className={styles.editorGrid}>
+              <label className={styles.field}>
+                <span>When</span>
+                <textarea
+                  aria-label="Principle trigger"
+                  onChange={(event) => setTrigger(event.target.value)}
+                  rows={2}
+                  value={trigger}
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Then</span>
+                <textarea
+                  aria-label="Principle rule"
+                  onChange={(event) => setRule(event.target.value)}
+                  rows={3}
+                  value={rule}
+                />
+              </label>
+              <label className={`${styles.field} ${styles.fieldWide}`}>
+                <span>Why</span>
+                <textarea
+                  aria-label="Principle rationale"
+                  onChange={(event) => setRationale(event.target.value)}
+                  rows={2}
+                  value={rationale}
+                />
+              </label>
+              <div className={styles.editorActions}>
+                <button
+                  className={styles.primary}
+                  disabled={!canSavePrinciple || working === "principle"}
+                  onClick={() => void addPrinciple()}
+                  type="button"
+                >
+                  {working === "principle" ? "Saving…" : "Save principle"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
-      <section
-        className={styles.principleSection}
-        aria-labelledby="principles-title"
-      >
-        <div className={styles.sectionLead}>
-          <div>
-            <p className={styles.eyebrow}>03–04 · Pattern → Principle</p>
-            <h2 id="principles-title">Rules I am testing</h2>
-          </div>
-        </div>
-
-        {showAdd ? (
-          <div className={styles.principleEditor}>
-            <div className={styles.editorLead}>
-              <span>Write a testable rule</span>
-              <button
-                className={styles.textButton}
-                onClick={() => setShowAdd(false)}
-                type="button"
-              >
-                Close
-              </button>
+      <section className={styles.chapterDeck} aria-label="Learning working scene">
+        <section
+          className={styles.chapter}
+          id="learning-reflection"
+          aria-labelledby="reflections-title"
+        >
+          <div className={styles.chapterHeader}>
+            <div>
+              <p className={styles.eyebrow}>02 · Reflection</p>
+              <h2 id="reflections-title">Pain worth learning from</h2>
             </div>
-            <label>
-              <span>When</span>
-              <textarea
-                aria-label="Principle trigger"
-                onChange={(event) => setTrigger(event.target.value)}
-                rows={2}
-                value={trigger}
-              />
-            </label>
-            <label>
-              <span>Then</span>
-              <textarea
-                aria-label="Principle rule"
-                onChange={(event) => setRule(event.target.value)}
-                rows={3}
-                value={rule}
-              />
-            </label>
-            <label>
-              <span>Why</span>
-              <textarea
-                aria-label="Principle rationale"
-                onChange={(event) => setRationale(event.target.value)}
-                rows={2}
-                value={rationale}
-              />
-            </label>
             <button
-              className={styles.primary}
-              disabled={
-                working === "manual" ||
-                trigger.trim().length < 3 ||
-                rule.trim().length < 3
-              }
-              onClick={() => void addPrinciple()}
+              className={styles.chapterAction}
+              onClick={() => revealEditor("reflection")}
               type="button"
             >
-              {working === "manual" ? "Saving…" : "Save principle"}
+              + Reflection
             </button>
           </div>
-        ) : null}
+          <p className={styles.chapterIntro}>
+            Record what happened, what surprised you, and the lesson you think is
+            worth carrying forward.
+          </p>
+          {eligibleReflections.length > 0 ? (
+            <div className={styles.chapterList}>
+              {eligibleReflections.slice(0, 3).map((reflection) => {
+                const linked = people.principles.find(
+                  (principle) =>
+                    principle.originReflectionId === reflection.id &&
+                    principle.acceptanceState !== "rejected",
+                );
+                return (
+                  <ReflectionCard
+                    key={reflection.id}
+                    linkedPrinciple={linked ?? null}
+                    onDistill={() => void distill(reflection.id)}
+                    reflection={reflection}
+                    working={working === `distill:${reflection.id}`}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <strong>No reflection yet.</strong>
+              <span>Do not wait for the system to infer one. Capture the event.</span>
+            </div>
+          )}
+        </section>
 
-        {principles.length > 0 ? (
-          <div className={styles.principles}>
-            {principles.map((principle) => (
-              <PrincipleCard
-                key={principle.id}
-                onReview={(action) =>
-                  void reviewPrinciple(principle.id, action)
-                }
-                principle={principle}
-                working={working === `review:${principle.id}`}
-              />
-            ))}
+        <section
+          className={styles.chapter}
+          id="learning-pattern"
+          aria-labelledby="patterns-title"
+        >
+          <div className={styles.chapterHeader}>
+            <div>
+              <p className={styles.eyebrow}>03 · Pattern</p>
+              <h2 id="patterns-title">Recurring reality</h2>
+            </div>
+            <button
+              className={styles.chapterAction}
+              onClick={() => revealEditor("pattern")}
+              type="button"
+            >
+              + Pattern
+            </button>
           </div>
-        ) : (
-          <div className={styles.empty}>No principles yet.</div>
-        )}
-      </section>
+          <p className={styles.chapterIntro}>
+            Compare multiple completed Reflections before you name what repeats.
+            Keep evidence for, against, and uncertainty visible beside it.
+          </p>
+          {activePatterns.length > 0 ? (
+            <div className={styles.chapterList}>
+              {activePatterns.slice(0, 3).map((pattern) => (
+                <article className={styles.pattern} key={pattern.id}>
+                  <div className={styles.patternMeta}>
+                    <span>{pattern.lifecycleState}</span>
+                    <span>{pattern.cases.length} cases</span>
+                  </div>
+                  <h3>{pattern.statement}</h3>
+                  <p>{pattern.implication}</p>
+                  <details>
+                    <summary>Inspect evidence</summary>
+                    <dl>
+                      <div>
+                        <dt>For</dt>
+                        <dd>{pattern.supportingEvidence || "Not recorded"}</dd>
+                      </div>
+                      <div>
+                        <dt>Against</dt>
+                        <dd>{pattern.contradictingEvidence || "Not recorded"}</dd>
+                      </div>
+                      <div>
+                        <dt>Uncertainty</dt>
+                        <dd>{pattern.uncertainty || "Not recorded"}</dd>
+                      </div>
+                    </dl>
+                  </details>
+                  {pattern.appliedRevision ? (
+                    <span className={styles.revisionState}>
+                      Principle revised · testing
+                    </span>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <strong>No pattern kept yet.</strong>
+              <span>
+                {learning.historyCount < 2
+                  ? "Not enough history yet. Live the loop before asking the system to define a pattern."
+                  : "You have enough history. Synthesize a hypothesis, inspect the cases, then keep only what the evidence supports."}
+              </span>
+            </div>
+          )}
+          <a className={styles.chapterLink} href="#pattern-tools">
+            Open revision tools →
+          </a>
+        </section>
 
-      <section
-        className={styles.reflectionSection}
-        aria-labelledby="reflections-title"
-      >
-        <div className={styles.sectionLead}>
-          <div>
-            <p className={styles.eyebrow}>02 · Reflection</p>
-            <h2 id="reflections-title">Pain worth learning from</h2>
+        <section
+          className={styles.chapter}
+          id="learning-principle"
+          aria-labelledby="principles-title"
+        >
+          <div className={styles.chapterHeader}>
+            <div>
+              <p className={styles.eyebrow}>04 · Principle</p>
+              <h2 id="principles-title">Rules I am testing</h2>
+            </div>
+            <button
+              className={styles.chapterAction}
+              onClick={() => revealEditor("principle")}
+              type="button"
+            >
+              + Add principle
+            </button>
           </div>
-        </div>
-        {eligibleReflections.length > 0 ? (
-          <div className={styles.reflections}>
-            {eligibleReflections.slice(0, 8).map((reflection) => {
-              const linked = people.principles.find(
-                (principle) =>
-                  principle.originReflectionId === reflection.id &&
-                  principle.acceptanceState !== "rejected",
-              );
-              return (
-                <ReflectionCard
-                  key={reflection.id}
-                  linkedPrinciple={linked ?? null}
-                  onDistill={() => void distill(reflection.id)}
-                  reflection={reflection}
-                  working={working === `distill:${reflection.id}`}
+          <p className={styles.chapterIntro}>
+            Write the trigger and the rule clearly enough that reality can prove
+            you wrong.
+          </p>
+          {principles.length > 0 ? (
+            <div className={styles.chapterList}>
+              {principles.slice(0, 3).map((principle) => (
+                <PrincipleCard
+                  key={principle.id}
+                  onReview={(action) =>
+                    void reviewPrinciple(principle.id, action)
+                  }
+                  principle={principle}
+                  working={working === `review:${principle.id}`}
                 />
-              );
-            })}
-          </div>
-        ) : (
-          <div className={styles.empty}>No completed reflections yet.</div>
-        )}
-      </section>
-
-      <section
-        className={styles.patternSection}
-        aria-labelledby="patterns-title"
-      >
-        <div className={styles.sectionLead}>
-          <div>
-            <p className={styles.eyebrow}>03 · Pattern</p>
-            <h2 id="patterns-title">Recurring reality</h2>
-          </div>
-        </div>
-        {activePatterns.length > 0 ? (
-          <div className={styles.patterns}>
-            {activePatterns.slice(0, 4).map((pattern) => (
-              <article key={pattern.id}>
-                <div className={styles.patternMeta}>
-                  <span>{pattern.lifecycleState}</span>
-                  <span>{pattern.cases.length} cases</span>
-                </div>
-                <h3>{pattern.statement}</h3>
-                <details>
-                  <summary>Evidence</summary>
-                  <dl>
-                    <div>
-                      <dt>For</dt>
-                      <dd>{pattern.supportingEvidence || "Not recorded"}</dd>
-                    </div>
-                    <div>
-                      <dt>Against</dt>
-                      <dd>{pattern.contradictingEvidence || "Not recorded"}</dd>
-                    </div>
-                    <div>
-                      <dt>Uncertainty</dt>
-                      <dd>{pattern.uncertainty || "Not recorded"}</dd>
-                    </div>
-                  </dl>
-                </details>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.empty}>
-            {learning.historyCount < 2
-              ? "Not enough history yet. Live the loop before asking the system to define a pattern."
-              : "No pattern kept yet."}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <strong>No principle yet.</strong>
+              <span>Write one as a testable rule, not as a quote.</span>
+            </div>
+          )}
+        </section>
       </section>
 
       <details
         className={styles.lab}
+        id="pattern-tools"
         open={
           (activePatterns.length === 0 && learning.historyCount >= 2) ||
           hasImmediatePatternAction
         }
       >
-        <summary>Pattern tools</summary>
+        <summary>
+          <span>05 · Revision</span>
+          <strong>Pattern synthesis & principle revision</strong>
+        </summary>
+        <p className={styles.labIntro}>
+          Inspect the longer evidence trail, generate another hypothesis, or revise
+          a principle when reality no longer supports the rule.
+        </p>
         <div className={styles.legacy}>
           <LearningWorkspace
             email={email}
             initialState={learning}
+            key={learningKey}
             onStateChange={synchronizeLearning}
             workspaceName={workspaceName}
           />
         </div>
       </details>
+
+      {leadPrinciple || latestPattern || latestReflection ? (
+        <footer className={styles.epilogue}>
+          <span>Learning is provisional.</span>
+          <p>
+            Keep the rule only while reality continues to support it. A principle
+            that cannot be revised is a belief, not a learning system.
+          </p>
+        </footer>
+      ) : null}
     </div>
   );
 }
@@ -500,6 +1136,7 @@ function ReflectionCard({
 }) {
   return (
     <article className={styles.reflection}>
+      <span className={styles.itemMeta}>Experience → Reflection</span>
       <h3>{reflection.learning || reflection.happened}</h3>
       {reflection.surprise ? <p>{reflection.surprise}</p> : null}
       {linkedPrinciple ? (

@@ -513,7 +513,7 @@ function PatternCard({
 
       {pattern.appliedRevision ? (
         <div className={styles.revisionSummary}>
-          <span>Principle revised · testing</span>
+          <span>Revision applied · testing</span>
           <strong>{pattern.appliedRevision.revisedRule}</strong>
         </div>
       ) : null}

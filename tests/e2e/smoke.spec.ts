@@ -88,7 +88,24 @@ async function createGoal(
   }
   const addGoal = page.getByRole("button", { name: "Add goal" });
   await expect(addGoal).toBeVisible();
+  const goalResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/people/goals") &&
+      response.request().method() === "POST",
+  );
   await addGoal.click();
+  expect((await goalResponse).status()).toBe(201);
+  await expect
+    .poll(async () => {
+      const state = await page.evaluate(async () => {
+        const response = await fetch("/api/evolution/state");
+        return response.json();
+      });
+      return state.goals.some(
+        (goal: { desiredState: string }) => goal.desiredState === values[0],
+      );
+    })
+    .toBe(true);
 }
 
 const companyGoal: [string, string, string, string, string] = [

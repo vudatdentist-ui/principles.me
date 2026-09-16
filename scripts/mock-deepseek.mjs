@@ -30,6 +30,42 @@ function goalDiscovery(userContent) {
     : { kind: "ready", summary: String(draft.desiredState) };
 }
 
+function learningPattern(userContent) {
+  let input = {};
+  try {
+    input = JSON.parse(userContent || "{}");
+  } catch {
+    // Keep the fixture bounded to context the application actually supplied.
+  }
+  const hasPrinciple = Array.isArray(input.principles) && input.principles.length > 0;
+  return {
+    caseKeys: ["C1", "C2"],
+    confidence: 0.78,
+    contradictingEvidence:
+      "The history covers one Problem before and after one intervention, so it does not prove a broad recurring trait.",
+    implication:
+      "When a recurring decision depends on you, change the default authority rule and observe behavior instead of relying on role discussion alone.",
+    kind: "design_learning",
+    principleRevision: hasPrinciple
+      ? {
+          principleKey: "P1",
+          proposedRationale:
+            "The before/after cases show that explicit default authority changed behavior while discussing responsibilities alone did not.",
+          proposedRule:
+            "Name the decision owner and their default authority before the next routine case, then verify the next real outcome.",
+          proposedTrigger:
+            "When routine decisions wait for me after responsibilities have already been discussed",
+        }
+      : null,
+    statement:
+      "Explicit default authority changed behavior where discussing responsibilities alone had not.",
+    supportingEvidence:
+      "Before the machine change, routine decisions waited for founder input; after the authority rule, the next cases moved without waiting.",
+    uncertainty:
+      "This is one before/after cycle, so the causal interpretation should remain a hypothesis and be tested again.",
+  };
+}
+
 function completionFor(body) {
   const messages = Array.isArray(body?.messages) ? body.messages : [];
   const system = String(messages.find((item) => item?.role === "system")?.content || "");
@@ -80,30 +116,7 @@ function completionFor(body) {
     };
   }
   if (system.includes("Learning Pattern capability")) {
-    return {
-      caseKeys: ["C1", "C2"],
-      confidence: 0.78,
-      contradictingEvidence:
-        "The history covers one Problem before and after one intervention, so it does not prove a broad recurring trait.",
-      implication:
-        "When a recurring decision depends on you, change the default authority rule and observe behavior instead of relying on role discussion alone.",
-      kind: "design_learning",
-      principleRevision: {
-        principleKey: "P1",
-        proposedRationale:
-          "The before/after cases show that explicit default authority changed behavior while discussing responsibilities alone did not.",
-        proposedRule:
-          "Name the decision owner and their default authority before the next routine case, then verify the next real outcome.",
-        proposedTrigger:
-          "When routine decisions wait for me after responsibilities have already been discussed",
-      },
-      statement:
-        "Explicit default authority changed behavior where discussing responsibilities alone had not.",
-      supportingEvidence:
-        "Before the machine change, routine decisions waited for founder input; after the authority rule, the next cases moved without waiting.",
-      uncertainty:
-        "This is one before/after cycle, so the causal interpretation should remain a hypothesis and be tested again.",
-    };
+    return learningPattern(user);
   }
   if (system.includes("Reflect capability")) {
     return {
