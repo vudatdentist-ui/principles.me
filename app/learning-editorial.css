@@ -1,0 +1,313 @@
+/*
+ * Learning editorial composition.
+ *
+ * Learning is a longitudinal story: Experience -> Reflection -> Pattern ->
+ * Principle -> Revision. On desktop, keep that story in one bounded reading
+ * sequence rather than presenting three equally weighted dashboard columns.
+ */
+
+body:has(#learning-title) {
+  --learning-editorial-stage: 1120px;
+  --learning-editorial-reading: 760px;
+  --learning-editorial-rail: 260px;
+}
+
+/* Counts already exist in the chapter content. Repeating them beside the current
+ * learning statement turns the opening into a dashboard, so keep the opening
+ * focused on the current evidence and next action. */
+body:has(#learning-title)
+  aside[aria-label="Current learning narrative"]
+  dl {
+  display: none;
+}
+
+/* The chapter index is orientation, not a second information surface. */
+body:has(#learning-title) nav[aria-label="Learning chapters"] small {
+  display: none;
+}
+
+@media (min-width: 821px) {
+  /* Keep the hero inside AppShell's layout width and bleed only its paint. The
+   * previous 100vw + negative-margin technique fed scrollbar width back into
+   * the centering math on ultra-wide screens, shifting the stage by 20px. */
+  body:has(#learning-title) main section[aria-labelledby="learning-title"] {
+    position: relative;
+    width: 100%;
+    margin-left: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    justify-content: center;
+    gap: clamp(44px, 4.5vw, 72px);
+    padding-top: clamp(34px, 3vw, 46px);
+    padding-right: max(
+      0px,
+      calc((100% - var(--learning-editorial-stage)) / 2)
+    );
+    padding-bottom: clamp(34px, 3vw, 46px);
+    padding-left: max(
+      0px,
+      calc((100% - var(--learning-editorial-stage)) / 2)
+    );
+    box-shadow: 0 0 0 100vmax #171816;
+    clip-path: inset(0 -100vmax);
+  }
+
+  body:has(#learning-title) #learning-title {
+    max-width: 13ch;
+    font-size: clamp(42px, 3.7vw, 58px);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+  }
+
+  body:has(#learning-title) #learning-title + p {
+    max-width: 58ch;
+    font-size: 15px;
+    line-height: 1.62;
+  }
+
+  body:has(#learning-title) aside[aria-label="Current learning narrative"] {
+    width: 100%;
+    max-width: 360px;
+    justify-self: end;
+    gap: 14px;
+    padding-left: 24px;
+  }
+
+  body:has(#learning-title)
+    aside[aria-label="Current learning narrative"]
+    > strong {
+    max-width: 20ch;
+    font-size: clamp(23px, 2vw, 30px);
+    line-height: 1.1;
+  }
+
+  body:has(#learning-title) main nav[aria-label="Learning chapters"] {
+    width: min(100%, var(--learning-editorial-stage));
+    margin-right: auto;
+    margin-left: auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 0;
+    border-bottom: 1px solid rgba(26, 26, 23, 0.16);
+  }
+
+  body:has(#learning-title) main nav[aria-label="Learning chapters"] > a,
+  body:has(#learning-title)
+    main
+    nav[aria-label="Learning chapters"]
+    > a:first-child {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 10px;
+    align-items: baseline;
+    min-height: 54px;
+    padding: 18px 0 17px;
+    border: 0;
+    background: transparent;
+  }
+
+  body:has(#learning-title)
+    main
+    nav[aria-label="Learning chapters"]
+    > a
+    + a {
+    margin-left: 24px;
+    padding-left: 24px;
+    border-left: 1px solid rgba(26, 26, 23, 0.12);
+  }
+
+  body:has(#learning-title)
+    main
+    nav[aria-label="Learning chapters"]
+    > a:hover {
+    background: transparent;
+  }
+
+  body:has(#learning-title)
+    main
+    nav[aria-label="Learning chapters"]
+    > a:hover
+    strong,
+  body:has(#learning-title)
+    main
+    nav[aria-label="Learning chapters"]
+    > a:focus-visible
+    strong {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  /* One vertical story. Each chapter has a quiet context rail and one bounded
+   * reading column. This keeps the hierarchy stable from laptop through 5K. */
+  body:has(#learning-title) main section[aria-label="Learning working scene"] {
+    width: min(100%, var(--learning-editorial-stage));
+    margin-right: auto;
+    margin-left: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    border-bottom: 0;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section {
+    min-width: 0;
+    display: grid;
+    grid-template-columns:
+      minmax(210px, var(--learning-editorial-rail))
+      minmax(0, var(--learning-editorial-reading));
+    grid-template-rows: auto auto 1fr;
+    justify-content: space-between;
+    align-items: start;
+    column-gap: clamp(44px, 5vw, 78px);
+    row-gap: 14px;
+    padding: clamp(44px, 4vw, 62px) 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(26, 26, 23, 0.16);
+    border-left: 0;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section:first-child {
+    border-top: 0;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section
+    > div:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    gap: 18px;
+    align-content: start;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section
+    > div:first-child
+    > div {
+    display: grid;
+    gap: 7px;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section
+    > div:first-child
+    h2 {
+    max-width: 12ch;
+    font-size: clamp(29px, 2.4vw, 36px);
+    line-height: 1.02;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section
+    > div:first-child
+    button {
+    justify-self: start;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section
+    > p {
+    grid-column: 1;
+    grid-row: 2;
+    max-width: 32ch;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.62;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section
+    > div:not(:first-child) {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    width: 100%;
+    max-width: var(--learning-editorial-reading);
+    margin-top: 0;
+    padding-top: 2px;
+    border-top: 2px solid rgba(26, 26, 23, 0.2);
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section
+    > a {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: start;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    article
+    h3 {
+    max-width: 30ch;
+    font-size: clamp(20px, 1.7vw, 25px);
+    line-height: 1.15;
+  }
+
+  body:has(#learning-title) main section[aria-label^="Add "] {
+    width: min(100%, var(--learning-editorial-stage));
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  body:has(#learning-title) main section[aria-label^="Add "] > div:first-child,
+  body:has(#learning-title) main section[aria-label^="Add "] > div:last-child {
+    width: min(100%, 920px);
+  }
+
+  body:has(#learning-title) main details#pattern-tools,
+  body:has(#learning-title) main footer {
+    width: min(100%, var(--learning-editorial-stage));
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  body:has(#learning-title) main details#pattern-tools > summary strong {
+    max-width: 24ch;
+    font-size: clamp(25px, 2.2vw, 32px);
+    line-height: 1.08;
+  }
+}
+
+@media (min-width: 1440px) {
+  body:has(#learning-title) main section[aria-labelledby="learning-title"] {
+    grid-template-columns: minmax(0, 680px) minmax(0, 340px);
+  }
+}
+
+@media (min-width: 821px) and (max-width: 980px) {
+  body:has(#learning-title)
+    main
+    nav[aria-label="Learning chapters"]
+    > a
+    + a {
+    margin-left: 14px;
+    padding-left: 14px;
+  }
+
+  body:has(#learning-title)
+    main
+    section[aria-label="Learning working scene"]
+    > section {
+    grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+    column-gap: 34px;
+  }
+}
