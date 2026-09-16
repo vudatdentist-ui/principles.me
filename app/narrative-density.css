@@ -56,15 +56,31 @@
 
   section[aria-label="My goals"] > button {
     flex-basis: min(340px, 38vw);
-    min-height: 72px;
-    padding-top: 13px;
-    padding-bottom: 13px;
+    min-height: 64px;
+    grid-template-columns: 26px minmax(0, 1fr) 20px;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 10px 16px;
   }
 
   section[aria-label="My goals"] > button strong {
     font-size: clamp(15px, 1.15vw, 18px);
-    line-height: 1.2;
+    line-height: 1.16;
     letter-spacing: -0.025em;
+  }
+
+  section[aria-label="My goals"] > button > span {
+    display: none;
+  }
+
+  section[aria-label="My goals"] > button > b {
+    position: absolute;
+    right: 14px;
+    bottom: 9px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 8px;
   }
 
   section[aria-label="My goals"] > button[aria-pressed="true"] {
