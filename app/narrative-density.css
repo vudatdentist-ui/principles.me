@@ -1,83 +1,309 @@
 /*
- * Narrative density guardrails.
+ * Narrative stage guardrails.
  *
- * Primary surfaces should read as complete working scenes, not poster-sized heroes
- * followed by the useful content below the fold. Display type still marks the
- * chapter, but context and action must enter the first viewport on tablet/desktop.
+ * The product should feel like a sequence of complete editorial scenes, not a
+ * dashboard stretched across whatever screen happens to be available. Full-bleed
+ * backgrounds are allowed, but the actual story lives inside a bounded stage.
+ * Display type introduces a chapter; working text stays readable and secondary
+ * context never competes with the action itself.
  */
 
+:root {
+  --narrative-stage: 1180px;
+  --narrative-reading: 760px;
+  --narrative-rail: 260px;
+}
+
 @media (min-width: 761px) {
+  /* Me opening: keep the declaration, but stop treating it like a billboard. */
   section[aria-labelledby="me-title"] {
     min-height: 0;
-    grid-template-columns: minmax(0, 1.08fr) minmax(260px, 0.92fr);
-    align-items: center;
-    gap: clamp(30px, 4vw, 58px);
-    padding-top: clamp(28px, 3.2vw, 42px);
-    padding-bottom: clamp(28px, 3.2vw, 42px);
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 250px);
+    justify-content: center;
+    align-items: end;
+    gap: clamp(28px, 4vw, 52px);
+    padding-top: clamp(28px, 3vw, 40px);
+    padding-right: max(28px, calc((100vw - var(--narrative-stage)) / 2));
+    padding-bottom: clamp(28px, 3vw, 40px);
+    padding-left: max(28px, calc((100vw - var(--narrative-stage)) / 2));
   }
 
   section[aria-labelledby="me-title"] h1 {
-    max-width: 13ch;
-    font-size: clamp(42px, 5vw, 68px);
-    line-height: 0.94;
+    max-width: 11ch;
+    font-size: clamp(44px, 3.8vw, 62px);
+    line-height: 0.96;
+    letter-spacing: -0.05em;
+    text-transform: none;
+  }
+
+  section[aria-labelledby="me-title"] > aside[aria-label="Current chapter"] {
+    width: 100%;
+    max-width: 250px;
+    justify-self: end;
+  }
+
+  section[aria-labelledby="me-title"] > aside[aria-label="Current chapter"] > strong {
+    font-size: clamp(24px, 2.1vw, 32px);
+    line-height: 1.05;
+  }
+
+  /* Goals are a quiet selector, not a second hero made out of cards. */
+  section[aria-label="My goals"] {
+    min-height: 0;
+    padding-right: max(28px, calc((100vw - var(--narrative-stage)) / 2));
+    padding-left: max(28px, calc((100vw - var(--narrative-stage)) / 2));
   }
 
   section[aria-label="My goals"] > button {
-    min-height: 84px;
-    padding-top: 15px;
-    padding-bottom: 15px;
+    flex-basis: min(340px, 38vw);
+    min-height: 64px;
+    grid-template-columns: 26px minmax(0, 1fr) 20px;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 10px 16px;
   }
 
-  section[aria-label="Current action"] {
-    padding-top: clamp(34px, 4vw, 54px);
-    padding-bottom: clamp(38px, 4.6vw, 62px);
+  section[aria-label="My goals"] > button strong {
+    font-size: clamp(15px, 1.15vw, 18px);
+    line-height: 1.16;
+    letter-spacing: -0.025em;
   }
 
-  section[aria-label="Current action"] > h2 {
-    max-width: 12ch;
-    font-size: clamp(38px, 4.5vw, 60px);
-    line-height: 0.98;
+  section[aria-label="My goals"] > button > span {
+    display: none;
   }
 
+  section[aria-label="My goals"] > button > b {
+    position: absolute;
+    right: 14px;
+    bottom: 9px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 8px;
+  }
+
+  section[aria-label="My goals"] > button[aria-pressed="true"] {
+    background: rgba(255, 255, 255, 0.035);
+    color: inherit;
+    box-shadow: inset 0 -2px 0 var(--story-signal);
+  }
+
+  section[aria-label="My goals"] > button:hover {
+    background: rgba(255, 255, 255, 0.055);
+    color: inherit;
+  }
+
+  section[aria-label="My goals"]:has(> button:only-child) > button {
+    flex-basis: min(620px, 100%);
+  }
+
+  /* Other primary surfaces use the same bounded stage on desktop. */
   section[aria-label="Current knowledge narrative"],
   section[aria-labelledby="organization-title"] {
-    grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+    grid-template-columns: minmax(0, 430px) minmax(0, 650px);
+    justify-content: center;
     align-items: center;
-    gap: clamp(30px, 4vw, 58px);
-    padding-top: 24px;
-    padding-bottom: 30px;
+    gap: clamp(36px, 4vw, 60px);
+    padding-top: 28px;
+    padding-right: max(28px, calc((100vw - var(--narrative-stage)) / 2));
+    padding-bottom: 34px;
+    padding-left: max(28px, calc((100vw - var(--narrative-stage)) / 2));
   }
 
   section[aria-label="Current knowledge narrative"] h1,
   section[aria-labelledby="organization-title"] h1 {
     max-width: 12ch;
-    font-size: clamp(38px, 4.4vw, 60px);
-    line-height: 0.98;
+    font-size: clamp(38px, 3.3vw, 50px);
+    line-height: 1;
+    letter-spacing: -0.045em;
   }
 
   section[aria-label="Current knowledge narrative"] > form {
-    padding-top: 12px;
+    padding-top: 10px;
   }
 
   section[aria-label="Current knowledge narrative"] textarea {
     min-height: 96px;
-    font-size: clamp(16px, 1.35vw, 19px);
+    font-size: clamp(16px, 1.15vw, 18px);
   }
 
   section[aria-label="Organization purpose and reality"] {
-    padding-top: clamp(28px, 3.2vw, 40px);
-    padding-bottom: clamp(28px, 3.2vw, 40px);
+    padding-top: clamp(26px, 3vw, 38px);
+    padding-bottom: clamp(26px, 3vw, 38px);
+  }
+
+  section[aria-label="Learning working scene"] {
+    width: min(calc(100% - 56px), var(--narrative-stage));
+    margin-right: auto;
+    margin-left: auto;
   }
 }
 
+/*
+ * Large desktop: one clear reading order.
+ * Prompt first, then a compact context rail beside a bounded work surface.
+ * Nothing is allowed to keep scaling merely because the monitor is wider.
+ */
+@media (min-width: 1181px) {
+  section[aria-labelledby="me-title"] {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+
+  section[aria-label="Current action"] {
+    grid-template-columns: var(--narrative-rail) minmax(0, var(--narrative-reading));
+    grid-template-areas:
+      "kicker kicker"
+      "title title"
+      "thesis thesis"
+      "context work"
+      "attention work";
+    justify-content: center;
+    align-items: start;
+    column-gap: clamp(38px, 3.6vw, 58px);
+    row-gap: 14px;
+    padding-top: clamp(38px, 3vw, 48px);
+    padding-right: max(28px, calc((100vw - var(--narrative-stage)) / 2));
+    padding-bottom: clamp(48px, 4vw, 64px);
+    padding-left: max(28px, calc((100vw - var(--narrative-stage)) / 2));
+  }
+
+  section[aria-label="Current action"] > h2 {
+    max-width: 18ch;
+    margin-top: 2px;
+    font-size: clamp(36px, 2.7vw, 46px);
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+
+  section[aria-label="Current action"] > p {
+    max-width: 68ch;
+  }
+
+  section[aria-label="Current action"] > section[aria-label="Dream and reality"] {
+    width: 100%;
+    max-width: var(--narrative-rail);
+    margin-top: 18px;
+    border-top-width: 2px;
+  }
+
+  section[aria-label="Current action"]
+    > section[aria-label="Dream and reality"]
+    > article {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 12px 0 14px;
+  }
+
+  section[aria-label="Current action"]
+    > section[aria-label="Dream and reality"]
+    > article
+    > strong {
+    font-size: 13px;
+    font-weight: 560;
+    line-height: 1.48;
+  }
+
+  section[aria-label="Current action"] > aside[aria-label="Needs attention"] {
+    width: 100%;
+    max-width: var(--narrative-rail);
+    grid-template-columns: 1fr;
+    gap: 7px;
+    margin-top: 4px;
+  }
+
+  section[aria-label="Current action"]
+    > aside[aria-label="Needs attention"]
+    > strong {
+    grid-column: 1;
+  }
+
+  section[aria-label="Current action"] > div[class] {
+    width: 100%;
+    max-width: var(--narrative-reading);
+    margin: 18px 0 0;
+    padding-top: 14px;
+    border-top-width: 2px;
+  }
+
+  section[aria-label="Current action"] > div[class] > div[class] {
+    gap: 17px;
+  }
+
+  /* The machine change is working copy, not a billboard headline. */
+  section[aria-label="Current action"] > div[class] strong[class] {
+    max-width: 34ch;
+    font-size: clamp(24px, 1.75vw, 31px);
+    font-weight: 690;
+    line-height: 1.18;
+    letter-spacing: -0.03em;
+  }
+
+  section[aria-label="Current action"] button[aria-label^="Complete"] + span,
+  section[aria-label="Current action"] button[aria-label^="Reopen"] + span,
+  section[aria-label="Current action"] button[aria-label^="Restore"] + span {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  section[aria-labelledby="new-goal-title"] {
+    grid-template-columns: minmax(0, var(--narrative-reading));
+    grid-template-areas:
+      "kicker"
+      "title"
+      "thesis"
+      "work";
+    justify-content: center;
+    row-gap: 14px;
+    padding-right: max(28px, calc((100vw - var(--narrative-stage)) / 2));
+    padding-left: max(28px, calc((100vw - var(--narrative-stage)) / 2));
+  }
+
+  section[aria-labelledby="new-goal-title"] > h2 {
+    max-width: 16ch;
+    font-size: clamp(36px, 2.7vw, 46px);
+  }
+
+  section[aria-labelledby="five-steps-title"] {
+    padding-top: clamp(44px, 3.5vw, 58px);
+    padding-bottom: clamp(48px, 4vw, 64px);
+  }
+
+  section[aria-labelledby="five-steps-title"] h2 {
+    font-size: clamp(34px, 2.8vw, 44px);
+    line-height: 1;
+  }
+}
+
+/* Tablet: preserve one-column flow and keep all meaningful context above work. */
 @media (min-width: 761px) and (max-width: 1180px) {
   section[aria-labelledby="me-title"] {
-    grid-template-columns: minmax(0, 1fr) minmax(230px, 0.72fr);
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 0.7fr);
     gap: 28px;
   }
 
   section[aria-labelledby="me-title"] h1 {
-    font-size: clamp(40px, 5.8vw, 58px);
+    font-size: clamp(40px, 5.4vw, 56px);
+  }
+
+  section[aria-label="Current action"] {
+    padding-top: 36px;
+    padding-bottom: 48px;
+  }
+
+  section[aria-label="Current action"] > h2 {
+    max-width: 15ch;
+    font-size: clamp(36px, 4.6vw, 50px);
+  }
+
+  section[aria-label="Current action"] > h2,
+  section[aria-label="Current action"] > p,
+  section[aria-label="Current action"] > section,
+  section[aria-label="Current action"] > aside,
+  section[aria-label="Current action"] > div[class] {
+    width: 100%;
+    max-width: 760px;
   }
 
   section[aria-label="Current knowledge narrative"],
@@ -88,7 +314,7 @@
 
   section[aria-label="Current knowledge narrative"] h1,
   section[aria-labelledby="organization-title"] h1 {
-    font-size: clamp(36px, 4.8vw, 52px);
+    font-size: clamp(36px, 4.6vw, 50px);
   }
 }
 
@@ -98,5 +324,13 @@
   section[aria-labelledby="organization-title"] h1 {
     font-size: clamp(38px, 11vw, 52px);
     line-height: 0.98;
+  }
+
+  section[aria-labelledby="me-title"] h1 {
+    text-transform: none;
+  }
+
+  section[aria-label="Learning working scene"] {
+    width: 100%;
   }
 }
