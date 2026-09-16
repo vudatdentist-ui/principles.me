@@ -66,11 +66,11 @@ summary {
   background: #d8d2c4;
 }
 
-/* The narrative shell stays bold without hiding identity or exceeding the shared
-   viewport regression contract. These selectors intentionally outrank feature
-   module rules while the narrative direction is evaluated across surfaces. */
+/* Keep the opening declaration legible without letting it become a billboard.
+   The ID remains a compatibility guard, while narrative-density.css owns the
+   responsive composition and sentence-case treatment. */
 #me-title {
-  font-size: clamp(52px, 5.6vw, 72px);
+  font-size: clamp(48px, 4.6vw, 62px);
 }
 
 header span[title*="@"] {
