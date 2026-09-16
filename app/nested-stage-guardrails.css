@@ -11,4 +11,10 @@
     padding-right: 0;
     padding-left: 0;
   }
+
+  /* The question and its working surface are one scene, not two vertically
+   * independent panels. Start both columns from the same visual edge. */
+  section[aria-label="Current knowledge narrative"] {
+    align-items: start;
+  }
 }
