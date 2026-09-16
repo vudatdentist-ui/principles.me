@@ -146,6 +146,11 @@
  * Nothing is allowed to keep scaling merely because the monitor is wider.
  */
 @media (min-width: 1181px) {
+  section[aria-labelledby="me-title"] {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+
   section[aria-label="Current action"] {
     grid-template-columns: var(--narrative-rail) minmax(0, var(--narrative-reading));
     grid-template-areas:
