@@ -27,20 +27,28 @@ body:has(#learning-title) nav[aria-label="Learning chapters"] small {
 }
 
 @media (min-width: 821px) {
+  /* Keep the hero inside AppShell's layout width and bleed only its paint. The
+   * previous 100vw + negative-margin technique fed scrollbar width back into
+   * the centering math on ultra-wide screens, shifting the stage by 20px. */
   body:has(#learning-title) main section[aria-labelledby="learning-title"] {
+    position: relative;
+    width: 100%;
+    margin-left: 0;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
     justify-content: center;
     gap: clamp(44px, 4.5vw, 72px);
     padding-top: clamp(34px, 3vw, 46px);
     padding-right: max(
-      32px,
-      calc((100vw - var(--learning-editorial-stage)) / 2)
+      0px,
+      calc((100% - var(--learning-editorial-stage)) / 2)
     );
     padding-bottom: clamp(34px, 3vw, 46px);
     padding-left: max(
-      32px,
-      calc((100vw - var(--learning-editorial-stage)) / 2)
+      0px,
+      calc((100% - var(--learning-editorial-stage)) / 2)
     );
+    box-shadow: 0 0 0 100vmax #171816;
+    clip-path: inset(0 -100vmax);
   }
 
   body:has(#learning-title) #learning-title {
