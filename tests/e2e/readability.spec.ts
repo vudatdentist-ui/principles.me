@@ -136,6 +136,12 @@ test("Me stays a bounded narrative stage on wide desktop", async ({ page }) => {
   await page.setViewportSize({ height: 1080, width: 1920 });
   await createAccount(page);
   await createGoal(page);
+
+  const goals = page.locator('section[aria-label="My goals"]');
+  const currentAction = page.locator('section[aria-label="Current action"]');
+  await expect(goals).toBeVisible();
+  await expect(currentAction).toBeVisible();
+  await expect(goals.locator('button[aria-pressed="true"]')).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
 
   const metrics = await page.evaluate(() => {
