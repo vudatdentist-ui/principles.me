@@ -5,6 +5,7 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
 
 function fit(element: HTMLTextAreaElement) {
@@ -22,10 +23,12 @@ export function AutoTextarea({
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const [hydrated, setHydrated] = useState(false);
   useLayoutEffect(() => {
     if (ref.current) fit(ref.current);
   });
   useEffect(() => {
+    setHydrated(true);
     const element = ref.current;
     if (!element) return;
     let width = element.clientWidth;
@@ -40,6 +43,7 @@ export function AutoTextarea({
   return (
     <textarea
       {...props}
+      disabled={!hydrated || props.disabled}
       ref={ref}
       value={value}
       style={{ ...style, overflowY: "hidden" }}

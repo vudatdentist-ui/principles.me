@@ -11,7 +11,7 @@
 .secondary { composes: secondary from "../ui/surface.module.css"; }
 .tertiary { composes: textButton from "../ui/surface.module.css"; margin-left: auto; }
 .error { composes: error from "../ui/surface.module.css"; margin: 12px 0; }
-.goalPortfolio { display: flex; gap: 12px; overflow-x: auto; padding: 8px 0 14px; border-bottom: 1px solid var(--line); }
+.goalPortfolio { display: flex; gap: 12px; overflow-x: auto; padding: 6px 0 12px; border-bottom: 1px solid var(--line); }
 .goalCard { flex: 0 0 auto; display: grid; gap: 4px; position: relative; width: min(300px, 85%); padding: 8px 12px; text-align: left; }
 .goalCard strong { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; font-weight: 500; }
 .goalCard > span { color: var(--muted-ink); font-size: 12px; }
