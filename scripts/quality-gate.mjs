@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFileSync } from "node:fs";
+import { checkUiContracts } from "./check-ui-contracts.mjs";
 
 function read(path) {
   return readFileSync(path, "utf8");
@@ -43,4 +44,5 @@ for (const key of ["password", "token", "secret", "prompt", "content", "question
   requireCondition(logger.toLowerCase().includes(key), `Observability redaction must cover ${key}.`);
 }
 
+checkUiContracts();
 process.stdout.write("QUALITY_GATE_OK=1\n");

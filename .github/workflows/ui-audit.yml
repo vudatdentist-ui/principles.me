@@ -1,11 +1,13 @@
 name: UI audit verification
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [audit/ui-restructure-20260920]
 permissions:
   contents: read
 concurrency:
-  group: ui-audit-${{ github.ref }}
+  group: ui-audit-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 jobs:
   browser:
@@ -20,7 +22,7 @@ jobs:
           POSTGRES_DB: postgres
         ports: ['55433:5432']
         options: >-
-          --health-cmd pg_isready --health-interval 5s
+          --health-cmd "pg_isready -U principles" --health-interval 5s
           --health-timeout 5s --health-retries 10
     env:
       APP_ORIGIN: http://127.0.0.1:3000
@@ -34,7 +36,9 @@ jobs:
       POSTGRES_PASSWORD: principles_e2e
       POSTGRES_PORT: 55433
       POSTGRES_USER: principles
-      RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS: 'false'
+      PGPASSWORD: principles_e2e
+      RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS: 'true'
+      RAGFLOW_DATASET_IDS: dataset-a,dataset-b
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
@@ -48,12 +52,26 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Static, unit, privacy, and UI contracts
+        run: |
+          pnpm security:secrets
+          pnpm quality:gate
+          pnpm lint
+          pnpm typecheck
+          pnpm test:unit
+          bash -n scripts/deploy-production.sh scripts/restore-drill.sh scripts/ci-postgres.sh
       - run: pnpm db:migrate
+      - run: pnpm test:integration
+      - name: Backup restore drill
+        run: |
+          mkdir -p "$RUNNER_TEMP/principles-ci-postgres-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          pnpm restore:drill
+      - run: pnpm build
       - name: Start deterministic AI fixture
         run: node scripts/mock-deepseek.mjs > /tmp/mock-ai.log 2>&1 &
       - run: pnpm exec playwright install --with-deps chromium
-      - name: Reproduce audit regressions
-        run: pnpm exec playwright test tests/e2e/audit-regression.spec.ts --retries=0
+      - name: Browser flows and fresh screenshots
+        run: pnpm exec playwright test --retries=0
       - uses: actions/upload-artifact@v4
         if: always()
         with:

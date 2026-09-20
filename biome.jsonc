@@ -17,12 +17,24 @@
       "recommended": true,
       "suspicious": {
         "noConsole": "off"
+      },
+      "a11y": {
+        "noLabelWithoutControl": {
+          "level": "error",
+          "options": {
+            "inputComponents": [
+              "AutoTextarea"
+            ]
+          }
+        }
       }
     }
   },
   "overrides": [
     {
-      "includes": ["features/evolution/evolution-workspace.tsx"],
+      "includes": [
+        "features/evolution/evolution-workspace.tsx"
+      ],
       "linter": {
         "rules": {
           "a11y": {

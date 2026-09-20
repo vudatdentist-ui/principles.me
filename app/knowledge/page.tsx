@@ -5,6 +5,7 @@ import { AskWorkspace } from "@/features/ask/ask-workspace";
 import { sessionContext } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
 import { AppShell } from "@/features/shell/app-shell";
+import { RouteLoading } from "@/features/ui/route-loading";
 
 async function KnowledgeEntry() {
   const cookieStore = await cookies();
@@ -25,7 +26,7 @@ async function KnowledgeEntry() {
 
 export default function KnowledgePage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading />}>
       <KnowledgeEntry />
     </Suspense>
   );

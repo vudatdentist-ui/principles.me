@@ -1,0 +1,28 @@
+.state {
+  composes: frame from "./surface.module.css";
+  max-width: 560px;
+  margin: clamp(60px, 12vh, 140px) auto;
+  padding: 24px;
+}
+.state h1 {
+  font-size: 36px;
+  margin-bottom: 20px;
+}
+.state p {
+  color: var(--muted-ink);
+  line-height: 1.65;
+  margin-bottom: 24px;
+}
+.state a {
+  color: var(--accent);
+  text-underline-offset: 4px;
+}
+.action {
+  composes: primary from "./surface.module.css";
+  margin-right: 20px;
+}
+.loading {
+  padding: 40px var(--gutter);
+  color: var(--muted-ink);
+  font-size: 16px;
+}
