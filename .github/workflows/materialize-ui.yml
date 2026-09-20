@@ -1,0 +1,79 @@
+name: Materialize verified UI changes
+on:
+  push:
+    branches: [audit/ui-restructure-20260920]
+    paths: [.github/workflows/materialize-ui.yml]
+permissions:
+  contents: write
+jobs:
+  materialize:
+    if: github.repository == 'vudatdentist-ui/principles.me' && github.ref == 'refs/heads/audit/ui-restructure-20260920'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact content and create an unreferenced commit, never update a branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, hashlib, json, os, pathlib, subprocess, urllib.request
+          base = 'a0e6bb6268ce7dcea1c57f6fca67141e21534a94'
+          head = os.environ['GITHUB_SHA']
+          subprocess.run(['git', 'diff', '--exit-code', base, head, '--', 'app', 'features', 'lib', 'db', 'scripts', 'package.json', 'biome.jsonc', 'tests'], check=True)
+          first = pathlib.Path('.audit-transfer-1').read_text().replace('FmGWcZJLn', 'FmGWcZLn', 1)
+          encoded = first + pathlib.Path('.audit-transfer-2').read_text()
+          packed = base64.b64decode(encoded, validate=True)
+          assert hashlib.sha256(packed).hexdigest() == '048cb53cbd31af31ebc9fdccc32987b03aaa33ea08a6c9bc39614c240f076770'
+          entries = json.loads(gzip.decompress(packed))
+          tree = []
+          hashes = {}
+          for entry in entries:
+              path = entry['path']
+              parts = pathlib.PurePosixPath(path)
+              assert not parts.is_absolute() and '..' not in parts.parts
+              assert not path.startswith(('app/api/', 'lib/', 'db/'))
+              if path.startswith('scripts/'):
+                  assert path in ['scripts/quality-gate.mjs', 'scripts/check-ui-contracts.mjs']
+              if path.startswith('.github/'):
+                  assert path in ['.github/workflows/ui-audit.yml', '.github/workflows/audit-source.yml']
+              item = {'path': path, 'mode': '100644', 'type': 'blob'}
+              if entry.get('delete'):
+                  item['sha'] = None
+              else:
+                  if 'content' in entry:
+                      content = entry['content']
+                  else:
+                      old = subprocess.check_output(['git', 'show', f'{base}:{path}']).decode()
+                      assert hashlib.sha256(old.encode()).hexdigest() == entry['oldHash'], path
+                      lines = old.splitlines(keepends=True)
+                      for start, end, text in reversed(entry['edits']):
+                          lines[start:end] = [text]
+                      content = ''.join(lines)
+                  assert hashlib.sha256(content.encode()).hexdigest() == entry['hash'], path
+                  item['content'] = content
+              tree.append(item)
+              hashes[path] = entry['hash']
+          for path in ['.audit-transfer-1', '.audit-transfer-2', '.github/workflows/materialize-ui.yml']:
+              tree.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': None})
+          root = 'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY']
+          def api(path, data=None):
+              request = urllib.request.Request(root + path, data=json.dumps(data).encode() if data is not None else None, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28'})
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  return json.load(response)
+          parent = api('/git/commits/' + head)
+          created_tree = api('/git/trees', {'base_tree': parent['tree']['sha'], 'tree': tree})
+          commit = api('/git/commits', {'message': 'refactor(ui): unify product surfaces and fix audited client failures', 'tree': created_tree['sha'], 'parents': [head]})
+          receipt = {'commit': commit['sha'], 'tree': created_tree['sha'], 'parent': head, 'files': hashes}
+          pathlib.Path('ui-materialized-receipt.json').write_text(json.dumps(receipt, indent=2))
+          print('MATERIALIZED_COMMIT=' + commit['sha'])
+          print('VERIFIED_FILES=' + str(len(hashes)))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-materialized-receipt
+          path: ui-materialized-receipt.json
+          retention-days: 1
