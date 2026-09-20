@@ -1,0 +1,64 @@
+name: UI audit verification
+on:
+  push:
+    branches: [audit/ui-restructure-20260920]
+permissions:
+  contents: read
+concurrency:
+  group: ui-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: principles
+          POSTGRES_PASSWORD: principles_e2e
+          POSTGRES_DB: postgres
+        ports: ['55433:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      APP_ORIGIN: http://127.0.0.1:3000
+      AUTH_ATTEMPTS_PER_15_MINUTES: 10000
+      AUTH_EMAIL_VERIFICATION_MODE: optional
+      AUTH_SIGNUP_MODE: open
+      DEEPSEEK_API_KEY: phase2-e2e-key
+      DEEPSEEK_BASE_URL: http://127.0.0.1:4111
+      POSTGRES_DB: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PASSWORD: principles_e2e
+      POSTGRES_PORT: 55433
+      POSTGRES_USER: principles
+      RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS: 'false'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - name: Start deterministic AI fixture
+        run: node scripts/mock-deepseek.mjs > /tmp/mock-ai.log 2>&1 &
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Reproduce audit regressions
+        run: pnpm exec playwright test tests/e2e/audit-regression.spec.ts --retries=0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-audit-${{ github.sha }}
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
