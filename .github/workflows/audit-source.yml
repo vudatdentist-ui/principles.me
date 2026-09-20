@@ -14,28 +14,31 @@ concurrency:
 
 jobs:
   snapshot:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.32.1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: pnpm install --frozen-lockfile
-      - name: Package tracked source and installed packages only
+      - name: Package PostgreSQL executables and libraries, never database data
+        shell: bash
         run: |
-          git archive --format=tar.gz --output=audit-source.tar.gz HEAD
-          tar -czf audit-packages.tar.gz node_modules
+          set -euo pipefail
+          test -x /usr/lib/postgresql/16/bin/postgres
+          mkdir -p audit-pg/lib
+          cp -a /usr/lib/postgresql/16 audit-pg/postgresql
+          cp -a /usr/share/postgresql/16 audit-pg/share
+          (ldd /usr/lib/postgresql/16/bin/* /usr/lib/postgresql/16/lib/*.so || true) | awk '/=> \// {print $3}' | sort -u > /tmp/pg-libs.txt
+          while IFS= read -r library; do
+            case "$(basename "$library")" in
+              libc.so.6|libm.so.6|libpthread.so.0|libdl.so.2|librt.so.1|libresolv.so.2) continue ;;
+            esac
+            cp -L "$library" audit-pg/lib/
+          done < /tmp/pg-libs.txt
+          tar -czf audit-postgres.tar.gz audit-pg
       - uses: actions/upload-artifact@v4
         with:
-          name: audit-source-snapshot
-          path: |
-            audit-source.tar.gz
-            audit-packages.tar.gz
+          name: audit-postgres-runtime
+          path: audit-postgres.tar.gz
           retention-days: 1
           if-no-files-found: error
