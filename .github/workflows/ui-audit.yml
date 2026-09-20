@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: ui-audit-${{ github.head_ref || github.ref }}
+  group: ui-audit-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
   browser:

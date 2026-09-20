@@ -15,7 +15,6 @@ async function createAccount(page: import("@playwright/test").Page) {
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
-  await page.reload();
   await expect(
     page.getByRole("heading", { name: "What deserves attention now?" }),
   ).toBeVisible();
@@ -27,7 +26,7 @@ test("account data controls require re-authentication, export and delete the tem
 }) => {
   const email = await createAccount(page);
   await page.getByRole("link", { name: `Account for ${email}` }).click();
-  await expect(page.getByRole("heading", { name: "Your data stays yours." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Account & data" })).toBeVisible();
   await page.waitForLoadState("networkidle");
 
   const exportPassword = page.getByLabel("Confirm password").first();

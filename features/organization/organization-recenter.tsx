@@ -56,10 +56,11 @@ export function OrganizationRecenter({
           className={styles.currentScene}
           aria-label="Current organization narrative"
         >
-          <span>Current tension</span>
-          <strong>{currentIssue?.title || "No open issue."}</strong>
+          <span>{active ? "Current tension" : "Start here"}</span>
+          <strong>{active ? currentIssue?.title || "No open issue." : "Create an organization"}</strong>
+          {!active ? <p>Name your team and the purpose it serves.</p> : null}
           {currentIssue?.tension ? <p>{currentIssue.tension}</p> : null}
-          <dl>
+          {active ? <dl>
             <div>
               <dt>Intent</dt>
               <dd>
@@ -83,7 +84,7 @@ export function OrganizationRecenter({
                   : "Not designed yet"}
               </dd>
             </div>
-          </dl>
+          </dl> : null}
           <button className={styles.openOperations} type="button" onClick={() => { const operations = operationsRef.current; if (!operations) return; operations.open = true; operations.querySelector("summary")?.focus(); operations.scrollIntoView({ block: "start" }); }}>Open operations</button>
         </aside>
       </section>
@@ -295,12 +296,7 @@ export function OrganizationRecenter({
             </section>
           ) : null}
         </>
-      ) : (
-        <section className={styles.emptyState}>
-          <p className={styles.eyebrow}>Organization</p>
-          <h2>Create your organization.</h2>
-        </section>
-      )}
+      ) : null}
 
       <details
         className={styles.operations}

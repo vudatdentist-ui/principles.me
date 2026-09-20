@@ -19,7 +19,9 @@ test("all four authenticated surfaces share one stable mobile shell", async ({
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
-  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "What deserves attention now?" }),
+  ).toBeVisible();
 
   let referenceBrandTop: number | null = null;
   let referenceNavTop: number | null = null;

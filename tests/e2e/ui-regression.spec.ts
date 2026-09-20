@@ -20,7 +20,6 @@ async function createAccount(page: import("@playwright/test").Page) {
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
-  await page.reload();
   await expect(
     page.getByRole("heading", { name: "What deserves attention now?" }),
   ).toBeVisible();
@@ -62,7 +61,7 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
     ["/organization", "What should work differently?"],
     ["/knowledge", "What is still unclear?"],
     ["/learning", "What is reality teaching you?"],
-    ["/account", "Your data stays yours."],
+    ["/account", "Account & data"],
   ] as const;
 
   for (const viewport of [

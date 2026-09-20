@@ -927,7 +927,7 @@ export function EvolutionWorkspace({
           <p className={styles.eyebrow}>
             {narrative.label}
           </p>
-          <h2 id="new-goal-title">{state.nextAction.prompt}</h2>
+          <h2 id="new-goal-title">Clarify a goal</h2>
           
           <div className={styles.sceneWork}>
             
