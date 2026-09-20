@@ -1,0 +1,37 @@
+name: Audit source snapshot
+
+on:
+  push:
+    branches: [audit/ui-restructure-20260920]
+    paths: [.github/workflows/audit-source.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: [self-hosted, linux, x64, principles-ci]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - name: Package tracked source and installed packages only
+        run: |
+          git archive --format=tar.gz --output=audit-source.tar.gz HEAD
+          tar -czf audit-packages.tar.gz node_modules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audit-source-snapshot
+          path: |
+            audit-source.tar.gz
+            audit-packages.tar.gz
+          retention-days: 1
+          if-no-files-found: error
