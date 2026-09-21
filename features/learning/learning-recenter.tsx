@@ -1,6 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { AutoTextarea } from "@/features/ui/auto-textarea";
+
+import { jsonRequest } from "@/features/ui/json-request";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EvolutionState } from "@/features/evolution/contracts";
 import type {
   ClientPeopleState,
@@ -15,22 +19,6 @@ import type {
 import { LearningWorkspace } from "./learning-workspace";
 import styles from "./learning-recenter.module.css";
 
-async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init.headers ?? {}) },
-  });
-  const payload = (await response.json().catch(() => null)) as
-    | (T & { error?: string })
-    | null;
-  if (!response.ok) {
-    throw new Error(payload?.error || "Request failed.");
-  }
-  if (!payload) {
-    throw new Error("Request failed.");
-  }
-  return payload;
-}
 
 async function fetchPeopleState(): Promise<ClientPeopleState> {
   const response = await fetch("/api/people/state", { cache: "no-store" });
@@ -85,21 +73,25 @@ const emptyReflection: ReflectionDraft = {
 };
 
 export function LearningRecenter({
-  email,
   evolution,
   initialPeople,
   initialState,
-  workspaceName,
 }: {
-  email: string;
   evolution: EvolutionState;
   initialPeople: ClientPeopleState;
   initialState: ClientLearningState;
-  workspaceName: string;
 }) {
   const [people, setPeople] = useState(initialPeople);
   const [learning, setLearning] = useState(initialState);
   const [editor, setEditor] = useState<EditorKind>(null);
+  const [principleQuery, setPrincipleQuery] = useState("");
+  const editorRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!editor) return;
+    const panel = editorRef.current;
+    panel?.scrollIntoView({ behavior: "auto", block: "nearest" });
+    panel?.querySelector<HTMLElement>("textarea, select, input, button")?.focus({ preventScroll: true });
+  }, [editor]);
   const [reflectionDraft, setReflectionDraft] =
     useState<ReflectionDraft>(emptyReflection);
   const [patternProposal, setPatternProposal] =
@@ -150,18 +142,21 @@ export function LearningRecenter({
     [people.problems, reflectionDraft.goalId],
   );
 
+  const matchingPrinciples = principles.filter((principle) =>
+    `${principle.rule} ${principle.trigger} ${principle.rationale ?? ""}`.toLocaleLowerCase().includes(principleQuery.trim().toLocaleLowerCase()),
+  );
+
   const pendingPrinciple =
     principles.find((principle) => principle.acceptanceState === "pending") ??
     null;
   const latestReflection = eligibleReflections[0] ?? null;
   const latestPattern = activePatterns[0] ?? null;
-  const leadPrinciple = pendingPrinciple ?? principles[0] ?? null;
   const currentLearning =
     evolution.reflection?.learning ||
     pendingPrinciple?.rule ||
     latestPattern?.statement ||
     latestReflection?.learning ||
-    "Capture one real experience. Learning starts with evidence, not a slogan.";
+    "Record an experience, then decide what it teaches you.";
   const currentLearningLabel = evolution.reflection?.learning
     ? "Latest reflection"
     : pendingPrinciple
@@ -234,11 +229,7 @@ export function LearningRecenter({
       }));
     }
     setEditor(kind);
-    requestAnimationFrame(() => {
-      document
-        .getElementById("learning-editor")
-        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
+
   }
 
   async function addReflection() {
@@ -375,12 +366,8 @@ export function LearningRecenter({
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="learning-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Learning · evidence over time</p>
+          <p className={styles.eyebrow}>Learning</p>
           <h1 id="learning-title">What is reality teaching you?</h1>
-          <p className={styles.heroDeck}>
-            Reflection explains one experience. Pattern asks whether it repeats.
-            Principle turns the pattern into a rule you can test against reality.
-          </p>
         </div>
 
         <aside
@@ -389,20 +376,6 @@ export function LearningRecenter({
         >
           <span>Now · {currentLearningLabel}</span>
           <strong>{currentLearning}</strong>
-          <dl>
-            <div>
-              <dt>Reflections</dt>
-              <dd>{eligibleReflections.length}</dd>
-            </div>
-            <div>
-              <dt>Patterns</dt>
-              <dd>{activePatterns.length}</dd>
-            </div>
-            <div>
-              <dt>Principles</dt>
-              <dd>{principles.length}</dd>
-            </div>
-          </dl>
           <div className={styles.sceneActions}>
             <button
               className={styles.primaryLight}
@@ -411,38 +384,15 @@ export function LearningRecenter({
             >
               Capture reflection
             </button>
-            <button
-              className={styles.textLight}
-              onClick={() => revealEditor("principle")}
-              type="button"
-            >
-              Write principle
-            </button>
           </div>
         </aside>
       </section>
 
       <nav className={styles.chapterRail} aria-label="Learning chapters">
-        <a href="#learning-reflection">
-          <span>02</span>
-          <strong>Reflection</strong>
-          <small>{eligibleReflections.length} recorded</small>
-        </a>
-        <a href="#learning-pattern">
-          <span>03</span>
-          <strong>Pattern</strong>
-          <small>{activePatterns.length} hypotheses</small>
-        </a>
-        <a href="#learning-principle">
-          <span>04</span>
-          <strong>Principle</strong>
-          <small>{principles.length} testing</small>
-        </a>
-        <a href="#pattern-tools">
-          <span>05</span>
-          <strong>Revision</strong>
-          <small>Change the rule when reality disagrees</small>
-        </a>
+        <a href="#learning-principle">Principles <span>{principles.length}</span></a>
+        <a href="#learning-reflection">Reflections <span>{eligibleReflections.length}</span></a>
+        <a href="#learning-pattern">Patterns <span>{activePatterns.length}</span></a>
+        <a href="#pattern-tools">Revision tools</a>
       </nav>
 
       {error ? (
@@ -455,16 +405,17 @@ export function LearningRecenter({
         <section
           className={styles.editorPanel}
           id="learning-editor"
+          ref={editorRef}
           aria-label={`Add ${editor}`}
         >
           <div className={styles.editorHeader}>
             <div>
               <p className={styles.eyebrow}>
                 {editor === "reflection"
-                  ? "02 · Reflection"
+                  ? "Reflection"
                   : editor === "pattern"
-                    ? "03 · Pattern"
-                    : "04 · Principle"}
+                    ? "Pattern"
+                    : "Principle"}
               </p>
               <h2>
                 {editor === "reflection"
@@ -533,7 +484,7 @@ export function LearningRecenter({
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
                   <span>What actually happened?</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Reflection happened"
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
@@ -547,7 +498,7 @@ export function LearningRecenter({
                 </label>
                 <label className={styles.field}>
                   <span>What did you expect?</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Reflection expected"
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
@@ -561,7 +512,7 @@ export function LearningRecenter({
                 </label>
                 <label className={styles.field}>
                   <span>What surprised you?</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Reflection surprise"
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
@@ -575,7 +526,7 @@ export function LearningRecenter({
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
                   <span>What did you learn?</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Reflection learning"
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
@@ -603,7 +554,7 @@ export function LearningRecenter({
                 {reflectionDraft.recurring ? (
                   <label className={styles.field}>
                     <span>Recurrence note</span>
-                    <textarea
+                    <AutoTextarea
                       aria-label="Reflection recurrence note"
                       onChange={(event) =>
                         setReflectionDraft((current) => ({
@@ -686,7 +637,7 @@ export function LearningRecenter({
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
                   <span>Pattern hypothesis</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Pattern statement"
                     onChange={(event) =>
                       setPatternDraft((current) =>
@@ -701,7 +652,7 @@ export function LearningRecenter({
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
                   <span>If true, what does it imply?</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Pattern implication"
                     onChange={(event) =>
                       setPatternDraft((current) =>
@@ -716,7 +667,7 @@ export function LearningRecenter({
                 </label>
                 <label className={styles.field}>
                   <span>Evidence for</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Pattern evidence for"
                     onChange={(event) =>
                       setPatternDraft((current) =>
@@ -734,7 +685,7 @@ export function LearningRecenter({
                 </label>
                 <label className={styles.field}>
                   <span>Evidence against</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Pattern evidence against"
                     onChange={(event) =>
                       setPatternDraft((current) =>
@@ -752,7 +703,7 @@ export function LearningRecenter({
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
                   <span>What remains uncertain?</span>
-                  <textarea
+                  <AutoTextarea
                     aria-label="Pattern uncertainty"
                     onChange={(event) =>
                       setPatternDraft((current) =>
@@ -826,7 +777,7 @@ export function LearningRecenter({
             <div className={styles.editorGrid}>
               <label className={styles.field}>
                 <span>When</span>
-                <textarea
+                <AutoTextarea
                   aria-label="Principle trigger"
                   onChange={(event) => setTrigger(event.target.value)}
                   rows={2}
@@ -835,7 +786,7 @@ export function LearningRecenter({
               </label>
               <label className={styles.field}>
                 <span>Then</span>
-                <textarea
+                <AutoTextarea
                   aria-label="Principle rule"
                   onChange={(event) => setRule(event.target.value)}
                   rows={3}
@@ -844,7 +795,7 @@ export function LearningRecenter({
               </label>
               <label className={`${styles.field} ${styles.fieldWide}`}>
                 <span>Why</span>
-                <textarea
+                <AutoTextarea
                   aria-label="Principle rationale"
                   onChange={(event) => setRationale(event.target.value)}
                   rows={2}
@@ -869,12 +820,62 @@ export function LearningRecenter({
       <section className={styles.chapterDeck} aria-label="Learning working scene">
         <section
           className={styles.chapter}
+          id="learning-principle"
+          aria-labelledby="principles-title"
+        >
+          <div className={styles.chapterHeader}>
+            <div>
+              <p className={styles.eyebrow}>Principle</p>
+              <h2 id="principles-title">Rules I am testing</h2>
+            </div>
+            <button
+              className={styles.chapterAction}
+              onClick={() => revealEditor("principle")}
+              type="button"
+            >
+              + Add principle
+            </button>
+          </div>
+          <p className={styles.chapterIntro}>
+            Write the trigger and the rule clearly enough that reality can prove
+            you wrong.
+          </p>
+          {principles.length > 0 ? (
+            <div className={styles.librarySearch}>
+              <label htmlFor="principle-search">Find a principle</label>
+              <input id="principle-search" type="search" value={principleQuery} onChange={(event) => setPrincipleQuery(event.target.value)} placeholder="Search rule, trigger, or rationale" />
+              <span role="status">{matchingPrinciples.length} of {principles.length} principles</span>
+            </div>
+          ) : null}
+          {principles.length > 0 && matchingPrinciples.length === 0 ? <p className={styles.noResults}>No matching principles. Try another word.</p> : null}
+          {principles.length > 0 ? (
+            <div className={styles.chapterList}>
+              {matchingPrinciples.map((principle) => (
+                <PrincipleCard
+                  key={principle.id}
+                  onReview={(action) =>
+                    void reviewPrinciple(principle.id, action)
+                  }
+                  principle={principle}
+                  working={working === `review:${principle.id}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <strong>No principle yet.</strong>
+              <span>Add a trigger and a rule to test in your next decision.</span>
+            </div>
+          )}
+        </section>
+        <section
+          className={styles.chapter}
           id="learning-reflection"
           aria-labelledby="reflections-title"
         >
           <div className={styles.chapterHeader}>
             <div>
-              <p className={styles.eyebrow}>02 · Reflection</p>
+              <p className={styles.eyebrow}>Reflection</p>
               <h2 id="reflections-title">Pain worth learning from</h2>
             </div>
             <button
@@ -891,7 +892,7 @@ export function LearningRecenter({
           </p>
           {eligibleReflections.length > 0 ? (
             <div className={styles.chapterList}>
-              {eligibleReflections.slice(0, 3).map((reflection) => {
+              {eligibleReflections.map((reflection) => {
                 const linked = people.principles.find(
                   (principle) =>
                     principle.originReflectionId === reflection.id &&
@@ -911,7 +912,7 @@ export function LearningRecenter({
           ) : (
             <div className={styles.empty}>
               <strong>No reflection yet.</strong>
-              <span>Do not wait for the system to infer one. Capture the event.</span>
+              <span>Capture an event to begin your evidence trail.</span>
             </div>
           )}
         </section>
@@ -923,7 +924,7 @@ export function LearningRecenter({
         >
           <div className={styles.chapterHeader}>
             <div>
-              <p className={styles.eyebrow}>03 · Pattern</p>
+              <p className={styles.eyebrow}>Pattern</p>
               <h2 id="patterns-title">Recurring reality</h2>
             </div>
             <button
@@ -940,7 +941,7 @@ export function LearningRecenter({
           </p>
           {activePatterns.length > 0 ? (
             <div className={styles.chapterList}>
-              {activePatterns.slice(0, 3).map((pattern) => (
+              {activePatterns.map((pattern) => (
                 <article className={styles.pattern} key={pattern.id}>
                   <div className={styles.patternMeta}>
                     <span>{pattern.lifecycleState}</span>
@@ -988,48 +989,7 @@ export function LearningRecenter({
           </a>
         </section>
 
-        <section
-          className={styles.chapter}
-          id="learning-principle"
-          aria-labelledby="principles-title"
-        >
-          <div className={styles.chapterHeader}>
-            <div>
-              <p className={styles.eyebrow}>04 · Principle</p>
-              <h2 id="principles-title">Rules I am testing</h2>
-            </div>
-            <button
-              className={styles.chapterAction}
-              onClick={() => revealEditor("principle")}
-              type="button"
-            >
-              + Add principle
-            </button>
-          </div>
-          <p className={styles.chapterIntro}>
-            Write the trigger and the rule clearly enough that reality can prove
-            you wrong.
-          </p>
-          {principles.length > 0 ? (
-            <div className={styles.chapterList}>
-              {principles.slice(0, 3).map((principle) => (
-                <PrincipleCard
-                  key={principle.id}
-                  onReview={(action) =>
-                    void reviewPrinciple(principle.id, action)
-                  }
-                  principle={principle}
-                  working={working === `review:${principle.id}`}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>
-              <strong>No principle yet.</strong>
-              <span>Write one as a testable rule, not as a quote.</span>
-            </div>
-          )}
-        </section>
+
       </section>
 
       <details
@@ -1041,7 +1001,7 @@ export function LearningRecenter({
         }
       >
         <summary>
-          <span>05 · Revision</span>
+          <span>Revision</span>
           <strong>Pattern synthesis & principle revision</strong>
         </summary>
         <p className={styles.labIntro}>
@@ -1050,24 +1010,14 @@ export function LearningRecenter({
         </p>
         <div className={styles.legacy}>
           <LearningWorkspace
-            email={email}
             initialState={learning}
             key={learningKey}
             onStateChange={synchronizeLearning}
-            workspaceName={workspaceName}
           />
         </div>
       </details>
 
-      {leadPrinciple || latestPattern || latestReflection ? (
-        <footer className={styles.epilogue}>
-          <span>Learning is provisional.</span>
-          <p>
-            Keep the rule only while reality continues to support it. A principle
-            that cannot be revised is a belief, not a learning system.
-          </p>
-        </footer>
-      ) : null}
+
     </div>
   );
 }

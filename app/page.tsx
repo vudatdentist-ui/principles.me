@@ -6,6 +6,7 @@ import { SESSION_COOKIE } from "@/features/auth/session";
 import { EvolutionWorkspace } from "@/features/evolution/evolution-workspace";
 import { loadEvolutionState } from "@/features/evolution/service";
 import { AppShell } from "@/features/shell/app-shell";
+import { RouteLoading } from "@/features/ui/route-loading";
 
 async function WorkspaceEntry() {
   const cookieStore = await cookies();
@@ -22,14 +23,16 @@ async function WorkspaceEntry() {
       email={session.user.email}
       workspaceName={session.workspace.name}
     >
-      <EvolutionWorkspace initialState={await loadEvolutionState(session.workspace.id)} />
+      <EvolutionWorkspace
+        initialState={await loadEvolutionState(session.workspace.id)}
+      />
     </AppShell>
   );
 }
 
 export default function HomePage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading />}>
       <WorkspaceEntry />
     </Suspense>
   );

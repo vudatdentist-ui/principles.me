@@ -1,0 +1,182 @@
+.frame {
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+}
+.frame :where(section, article, aside, div, form, fieldset) {
+  min-width: 0;
+}
+.frame :where(h1, h2, h3, p, strong, dd, a, span) {
+  overflow-wrap: anywhere;
+}
+.frame :where(h1, h2, h3) {
+  text-wrap: pretty;
+}
+.frame :where(h1) {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 3.8vw, 52px);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+.frame :where(h2) {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.7vw, 36px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+.frame :where(h3) {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 550;
+  line-height: 1.45;
+}
+.frame :where(p) {
+  margin: 0;
+}
+.frame :where(label) {
+  display: grid;
+  gap: 8px;
+  color: var(--muted-ink);
+  font-size: 14px;
+  font-weight: 500;
+}
+.frame :where(input:not([type="checkbox"]), textarea, select) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-geist);
+  font-size: 17px;
+  line-height: 1.6;
+}
+.frame :where(input:not([type="checkbox"]), select) {
+  min-height: 48px;
+}
+.frame :where(textarea) {
+  min-height: 5lh;
+  resize: vertical;
+}
+.frame :where(textarea::placeholder, input::placeholder) {
+  color: var(--faint-ink);
+}
+.frame :where(button) {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.4;
+}
+.frame :where(button:hover:not(:disabled)) {
+  border-color: var(--green);
+}
+.frame :where(details) {
+  min-width: 0;
+}
+.frame :where(summary) {
+  padding: 12px 0;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 550;
+}
+.frame :where(details[open] > summary) {
+  margin-bottom: 8px;
+}
+.frame :where(dl) {
+  display: grid;
+  gap: 16px;
+  margin: 16px 0 0;
+}
+.frame :where(dl > div) {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 20px;
+}
+.frame :where(dt) {
+  color: var(--muted-ink);
+  font-size: 13px;
+}
+.frame :where(dd) {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--muted-ink);
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.primary {
+  min-height: 44px;
+  width: fit-content;
+  border: 1px solid var(--green);
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  background: var(--green);
+  color: var(--surface);
+  font-size: 14px;
+  font-weight: 550;
+}
+.primary:hover:not(:disabled) {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.secondary {
+  min-height: 44px;
+  width: fit-content;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 550;
+}
+.secondary:hover:not(:disabled) {
+  border-color: var(--green);
+}
+.textButton {
+  min-height: 44px;
+  width: fit-content;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.error {
+  border-left: 3px solid var(--danger);
+  padding: 12px 18px;
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 15px;
+}
+@media (max-width: 600px) {
+  .frame :where(dl > div) {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

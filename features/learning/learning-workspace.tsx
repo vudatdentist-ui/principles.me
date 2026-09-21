@@ -1,5 +1,9 @@
 "use client";
 
+import { AutoTextarea } from "@/features/ui/auto-textarea";
+
+import { jsonRequest } from "@/features/ui/json-request";
+
 import { useState } from "react";
 import type {
   ClientLearningPattern,
@@ -10,22 +14,6 @@ import type {
 } from "./contracts";
 import styles from "./learning-workspace.module.css";
 
-async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init.headers ?? {}) },
-  });
-  const payload = (await response.json().catch(() => null)) as
-    | (T & { error?: string })
-    | null;
-  if (!response.ok) {
-    throw new Error(payload?.error || "Request failed.");
-  }
-  if (!payload) {
-    throw new Error("Request failed.");
-  }
-  return payload;
-}
 
 function proposalDraft(
   proposal: LearningPatternProposal,
@@ -63,15 +51,11 @@ function revisionDraft(
 }
 
 export function LearningWorkspace({
-  email,
   initialState,
   onStateChange,
-  workspaceName,
 }: {
-  email: string;
   initialState: ClientLearningState;
   onStateChange?: (state: ClientLearningState) => void;
-  workspaceName: string;
 }) {
   const [state, setState] = useState(initialState);
   const [proposal, setProposal] = useState<LearningPatternProposal | null>(
@@ -83,10 +67,6 @@ export function LearningWorkspace({
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function signOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
-    window.location.href = "/";
-  }
 
   async function run(label: string, action: () => Promise<void>) {
     if (working) {
@@ -160,33 +140,9 @@ export function LearningWorkspace({
   }
 
   return (
-    <main className={styles.shell}>
-      <header className={styles.topbar}>
-        <a className={styles.brand} href="/">
-          Principles
-        </a>
-        <nav className={styles.nav} aria-label="Primary">
-          <a href="/">People</a>
-          <a href="/knowledge">Knowledge</a>
-          <a aria-current="page" href="/learning">
-            Learning
-          </a>
-          <a href="/organization">Organization</a>
-        </nav>
-        <div className={styles.account}>
-          <span>{workspaceName}</span>
-          <span>{email}</span>
-          <button onClick={() => void signOut()} type="button">
-            Sign out
-          </button>
-        </div>
-      </header>
+    <div className={styles.shell}>
 
       <section className={styles.content}>
-        <div className={styles.intro}>
-          <p className={styles.eyebrow}>Learning</p>
-          <h1>What is your history teaching you?</h1>
-        </div>
 
         {error ? (
           <div className={styles.error} role="alert">
@@ -244,7 +200,7 @@ export function LearningWorkspace({
           </section>
         ) : null}
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -279,7 +235,7 @@ function PatternProposalCard({
         <div className={styles.stack}>
           <label>
             Pattern
-            <textarea
+            <AutoTextarea
               aria-label="Pattern statement"
               className={styles.textarea}
               onChange={(event) =>
@@ -291,7 +247,7 @@ function PatternProposalCard({
           </label>
           <label>
             Implication
-            <textarea
+            <AutoTextarea
               aria-label="Pattern implication"
               className={styles.textarea}
               onChange={(event) =>
@@ -303,7 +259,7 @@ function PatternProposalCard({
           </label>
           <label>
             Evidence for
-            <textarea
+            <AutoTextarea
               className={styles.textarea}
               onChange={(event) =>
                 onChange({ ...draft, supportingEvidence: event.target.value })
@@ -314,7 +270,7 @@ function PatternProposalCard({
           </label>
           <label>
             Evidence against
-            <textarea
+            <AutoTextarea
               className={styles.textarea}
               onChange={(event) =>
                 onChange({
@@ -328,7 +284,7 @@ function PatternProposalCard({
           </label>
           <label>
             Uncertainty
-            <textarea
+            <AutoTextarea
               className={styles.textarea}
               onChange={(event) =>
                 onChange({ ...draft, uncertainty: event.target.value })
@@ -537,7 +493,7 @@ function PatternCard({
           <div className={styles.stack}>
             <label>
               Trigger
-              <textarea
+              <AutoTextarea
                 aria-label="Revised principle trigger"
                 className={styles.textarea}
                 onChange={(event) =>
@@ -549,7 +505,7 @@ function PatternCard({
             </label>
             <label>
               Rule
-              <textarea
+              <AutoTextarea
                 aria-label="Revised principle rule"
                 className={styles.textarea}
                 onChange={(event) =>
@@ -561,7 +517,7 @@ function PatternCard({
             </label>
             <label>
               Rationale
-              <textarea
+              <AutoTextarea
                 aria-label="Revised principle rationale"
                 className={styles.textarea}
                 onChange={(event) =>

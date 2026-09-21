@@ -1,26 +1,14 @@
 "use client";
 
-import { Fragment, useMemo, useRef, useState } from "react";
+import { AutoTextarea } from "@/features/ui/auto-textarea";
+
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { ClientEvidenceReference } from "@/features/evidence/client-reference";
 import styles from "./ask-workspace.module.css";
 
 type AskPhase = "idle" | "submitting" | "done" | "error";
-type RetrievalState = "disabled" | "empty" | "ok" | "unavailable";
-type PersonalContextState = "empty" | "ok";
-
-type StreamEvent =
-  | { type: "status"; message: string; stage: "retrieving" | "answering" }
-  | {
-      type: "sources";
-      references: ClientEvidenceReference[];
-      live?: RetrievalState;
-      personal?: PersonalContextState;
-      private?: RetrievalState;
-    }
-  | { type: "token"; token: string }
-  | { type: "error"; code: string; message: string; retryable: boolean }
-  | { type: "done" };
+import { consumeAskStream, type PersonalContextState, type RetrievalState } from "./stream";
 
 const prompts = [
   "What is reality here?",
@@ -30,17 +18,6 @@ const prompts = [
   "Which principle applies here?",
   "What should I reflect on?",
 ];
-
-function parseEvent(line: string): StreamEvent | null {
-  const trimmed = line.trim();
-  if (!trimmed) return null;
-  try {
-    const value = JSON.parse(trimmed) as StreamEvent;
-    return value && typeof value === "object" && "type" in value ? value : null;
-  } catch {
-    return null;
-  }
-}
 
 function retrievalLabel(
   state: RetrievalState | null,
@@ -67,6 +44,15 @@ export function AskWorkspace() {
   const [phase, setPhase] = useState<AskPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const lastQuestion = useRef("");
+  const activeRequest = useRef<AbortController | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      activeRequest.current?.abort();
+    };
+  }, []);
 
   const canSubmit = question.trim().length >= 3 && phase !== "submitting";
   const hasPartialAnswer = answer.trim().length > 0 && phase === "error";
@@ -78,7 +64,9 @@ export function AskWorkspace() {
 
   async function runAsk(rawQuestion: string) {
     const trimmed = rawQuestion.trim();
-    if (trimmed.length < 3 || phase === "submitting") return;
+    if (trimmed.length < 3 || activeRequest.current) return;
+    const controller = new AbortController();
+    activeRequest.current = controller;
 
     lastQuestion.current = trimmed;
     setQuestion(trimmed);
@@ -96,6 +84,7 @@ export function AskWorkspace() {
         body: JSON.stringify({ question: trimmed }),
         headers: { "content-type": "application/json" },
         method: "POST",
+        signal: controller.signal,
       });
 
       if (response.status === 401) {
@@ -105,53 +94,32 @@ export function AskWorkspace() {
       if (response.status === 429) throw new Error("Limit reached. Try later.");
       if (!response.ok || !response.body) throw new Error("Request failed.");
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let terminal = false;
-
-      function consume(event: StreamEvent | null) {
-        if (!event) return;
-        if (event.type === "status") {
-          setStatus(event.message);
-        } else if (event.type === "sources") {
+      await consumeAskStream(response.body, (event) => {
+        if (!mounted.current || controller.signal.aborted) return;
+        if (event.type === "status") setStatus(event.message);
+        else if (event.type === "sources") {
           setSources(event.references);
           setKnowledgeState(event.private ?? null);
           setLiveState(event.live ?? null);
           setPersonalState(event.personal ?? null);
-        } else if (event.type === "token") {
-          setAnswer((current) => current + event.token);
-        } else if (event.type === "error") {
-          terminal = true;
+        } else if (event.type === "token") setAnswer((current) => current + event.token);
+        else if (event.type === "error") {
           setError(event.message);
           setPhase("error");
           setStatus(event.retryable ? "Try again" : "Failed");
         } else if (event.type === "done") {
-          terminal = true;
           setPhase("done");
           setStatus("Complete");
         }
-      }
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split(/\r?\n/);
-        buffer = lines.pop() ?? "";
-
-        for (const streamLine of lines) {
-          consume(parseEvent(streamLine));
-        }
-      }
-
-      buffer += decoder.decode();
-      consume(parseEvent(buffer));
-      if (!terminal) throw new Error("Stream ended unexpectedly.");
+      }, controller.signal);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed.");
+      if (!mounted.current) return;
+      const stopped = controller.signal.aborted;
+      setError(stopped ? "Stopped before the answer was complete." : cause instanceof Error ? cause.message : "Request failed.");
       setPhase("error");
-      setStatus("Try again");
+      setStatus(stopped ? "Stopped" : "Try again");
+    } finally {
+      if (activeRequest.current === controller) activeRequest.current = null;
     }
   }
 
@@ -168,19 +136,9 @@ export function AskWorkspace() {
         className={styles.hero}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Knowledge · question first</p>
+          <p className={styles.eyebrow}>Knowledge</p>
           <h1 id="knowledge-title">What is still unclear?</h1>
-          <div className={styles.arc}>
-            <span>Question</span>
-            <b>→</b>
-            <span>Evidence</span>
-            <b>→</b>
-            <span>Tension</span>
-            <b>→</b>
-            <span>Synthesis</span>
-            <b>→</b>
-            <span>Implication</span>
-          </div>
+          <p>Ask a question. Inspect the sources before using the answer.</p>
         </div>
 
         <form
@@ -188,14 +146,10 @@ export function AskWorkspace() {
           className={styles.askForm}
           onSubmit={onSubmit}
         >
-          <div className={styles.formHeading}>
-            <span>01 / 05 · Question</span>
-            <strong>What are you trying to understand?</strong>
-          </div>
           <label className={styles.label} htmlFor="question">
             Question
           </label>
-          <textarea
+          <AutoTextarea
             className={styles.textarea}
             disabled={phase === "submitting"}
             id="question"
@@ -209,6 +163,7 @@ export function AskWorkspace() {
             <span className={styles.status} aria-live="polite">
               {status}
             </span>
+            {phase === "submitting" ? <button className={styles.stop} onClick={() => activeRequest.current?.abort()} type="button">Stop</button> : null}
             <button
               className={styles.submit}
               disabled={!canSubmit}
@@ -220,8 +175,9 @@ export function AskWorkspace() {
         </form>
       </section>
 
-      <div className={styles.promptRail}>
-        <span>Start from</span>
+      <details className={styles.promptRail}>
+        <summary>Need a starting question?</summary>
+        <div>
         {prompts.map((prompt) => (
           <button
             disabled={phase === "submitting"}
@@ -232,7 +188,8 @@ export function AskWorkspace() {
             {prompt}
           </button>
         ))}
-      </div>
+        </div>
+      </details>
 
       {error ? (
         <section className={styles.error} role="alert">
@@ -261,7 +218,7 @@ export function AskWorkspace() {
         <section className={styles.answerSection} aria-live="polite">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}>04 / 05 · Synthesis</p>
+              <p className={styles.eyebrow}>Answer</p>
               <h2 aria-label="Answer">What the evidence suggests</h2>
             </div>
             <span>{sourceLabel}</span>
@@ -276,7 +233,7 @@ export function AskWorkspace() {
           {phase === "done" ? (
             <div className={styles.bridge}>
               <div>
-                <span>05 / 05 · Implication</span>
+                <span>Next decision</span>
                 <strong>What should this change in your next decision?</strong>
               </div>
               <a href="/">Continue in Me →</a>
@@ -289,7 +246,7 @@ export function AskWorkspace() {
         <section className={styles.sourcesSection}>
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}>02–03 / 05 · Evidence & tension</p>
+              <p className={styles.eyebrow}>Sources</p>
               <h2>What the evidence stands on</h2>
             </div>
             <span>{sourceLabel}</span>

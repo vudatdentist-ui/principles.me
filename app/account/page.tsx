@@ -5,6 +5,7 @@ import { AccountControls } from "@/features/account/account-controls";
 import { sessionContext } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
 import { AppShell } from "@/features/shell/app-shell";
+import { RouteLoading } from "@/features/ui/route-loading";
 
 async function AccountEntry() {
   const cookieStore = await cookies();
@@ -13,10 +14,7 @@ async function AccountEntry() {
   if (!session) redirect("/");
 
   return (
-    <AppShell
-      email={session.user.email}
-      workspaceName={session.workspace.name}
-    >
+    <AppShell email={session.user.email} workspaceName={session.workspace.name}>
       <AccountControls email={session.user.email} />
     </AppShell>
   );
@@ -24,7 +22,7 @@ async function AccountEntry() {
 
 export default function AccountPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading />}>
       <AccountEntry />
     </Suspense>
   );

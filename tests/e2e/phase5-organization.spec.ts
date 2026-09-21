@@ -17,7 +17,6 @@ async function createAccount(
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await response).status()).toBe(201);
-  await page.reload();
   await expect(
     page.getByRole("heading", { name: "What deserves attention now?" }),
   ).toBeVisible();
@@ -76,8 +75,8 @@ test("Organization reuses the evolution language while preserving governed colla
   await expect(
     page.getByRole("heading", { name: "What should work differently?" }),
   ).toBeVisible();
-  await expect(page.getByText("Dream").first()).toBeVisible();
-  await expect(page.getByText("Design").first()).toBeVisible();
+  await expect(page.getByLabel("Current organization narrative")).toContainText("Create an organization");
+  await expect(page.getByRole("button", { name: "Open operations", exact: true })).toBeVisible();
   for (const tab of ["Me", "Organization", "Knowledge", "Learning"]) {
     await expect(
       page.getByRole("link", { name: tab, exact: true }).first(),

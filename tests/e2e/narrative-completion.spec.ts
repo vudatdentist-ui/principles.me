@@ -15,20 +15,19 @@ async function createAccount(page: import("@playwright/test").Page) {
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signup).status()).toBe(201);
-  await page.reload();
   await expect(
     page.getByRole("heading", { name: "What deserves attention now?" }),
   ).toBeVisible();
 }
 
-test("Me keeps the meaning of the current chapter inside the working scene", async ({
+test("Me keeps the goal question and input visible without a decorative chapter thesis", async ({
   page,
 }) => {
   await createAccount(page);
 
   await expect(
     page.getByText(
-      "Name the reality worth creating before you optimize the path.",
+      "What do you really want?",
       { exact: true },
     ),
   ).toBeVisible();

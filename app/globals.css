@@ -1,199 +1,91 @@
 :root {
   color-scheme: light;
-  --paper: #f3f0e8;
-  --paper-light: #f8f6f0;
-  --surface: #fffdf8;
-  --surface-muted: #ebe7dd;
-  --ink: #181713;
-  --muted-ink: #716d64;
-  --faint-ink: #928c82;
-  --line: rgba(24, 23, 19, 0.14);
-  --line-soft: rgba(24, 23, 19, 0.08);
-  --rust: #9a4f3d;
-  --green: #526a54;
-  --danger: #8a463b;
+  --paper: #f6f5f0;
+  --paper-light: #faf9f5;
+  --surface: #fffefa;
+  --surface-muted: #eaece5;
+  --ink: #242a25;
+  --muted-ink: #62685f;
+  --faint-ink: #73796f;
+  --line: #d3d7cd;
+  --line-soft: #e3e6dd;
+  --rust: #855044;
+  --green: #365343;
+  --danger: #9a3932;
+  --font-geist: "Inter", "Segoe UI", Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, monospace;
   --font-display: Georgia, "Times New Roman", serif;
   --content-wide: 1240px;
-
-  /* Compatibility aliases while feature CSS moves onto the shared visual contract. */
+  --content-reading: 1120px;
+  --gutter: 32px;
   --background: var(--paper);
   --text: var(--ink);
   --muted: var(--muted-ink);
-  --border: #d8d3c8;
-  --accent: var(--ink);
-  --radius: 12px;
+  --border: var(--line);
+  --accent: var(--green);
+  --radius: 3px;
 }
-
 * {
   box-sizing: border-box;
 }
-
 html {
   min-height: 100%;
   background: var(--paper);
+  scroll-padding-top: 140px;
 }
-
 body {
   min-height: 100vh;
   margin: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-geist), Arial, sans-serif;
+  font-family: var(--font-geist);
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
-
 button,
 textarea,
-input {
+input,
+select {
+  color: inherit;
   font: inherit;
 }
-
-button {
-  color: inherit;
-}
-
-a,
 button,
-input,
-textarea,
 summary {
-  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
-
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+a {
+  color: var(--green);
+  text-underline-offset: 4px;
+}
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+:target {
+  scroll-margin-top: 140px;
+}
 ::selection {
-  background: #d8d2c4;
+  background: #dce6d8;
 }
-
-/* Keep the opening declaration legible without letting it become a billboard.
-   The ID remains a compatibility guard, while narrative-density.css owns the
-   responsive composition and sentence-case treatment. */
-#me-title {
-  font-size: clamp(48px, 4.6vw, 62px);
-}
-
-header span[title*="@"] {
-  display: inline-block;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-header a[aria-label^="Account for "] + button {
-  display: inline-block;
-}
-
-/* Legacy authenticated shells still consume the compatibility aliases above.
-   AppShell-based surfaces use the shared paper/ink/line contract directly. */
-main > header:has(nav[aria-label="Primary"]) {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 24px;
-  min-height: 68px;
-  padding: 0 32px;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--background) 94%, transparent);
-  backdrop-filter: blur(12px);
-}
-
-main > header:has(nav[aria-label="Primary"]) > a:first-child {
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  text-decoration: none;
-}
-
-main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"] {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"] > a {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"] > a[href="/"] {
-  order: 1;
-}
-
-main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"] > a[href="/organization"] {
-  order: 2;
-}
-
-main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"] > a[href="/knowledge"] {
-  order: 3;
-}
-
-main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"] > a[href="/learning"] {
-  order: 4;
-}
-
-main > header:has(nav[aria-label="Primary"]) > div:last-child {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-main > header:has(nav[aria-label="Primary"]) + section {
-  padding-top: 72px;
-}
-
-@media (max-width: 760px) {
-  main > header:has(nav[aria-label="Primary"]) {
-    grid-template-columns: 1fr auto;
-    gap: 0 16px;
-    min-height: 0;
-    padding: 0 18px;
-  }
-
-  main > header:has(nav[aria-label="Primary"]) > a:first-child,
-  main > header:has(nav[aria-label="Primary"]) > div:last-child {
-    min-height: 64px;
-    display: flex;
-    align-items: center;
-  }
-
-  main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"] {
-    order: 3;
-    grid-column: 1 / -1;
-    width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    padding: 0 0 10px;
-  }
-
-  main > header:has(nav[aria-label="Primary"]) > nav[aria-label="Primary"]::-webkit-scrollbar {
-    display: none;
-  }
-
-  main > header:has(nav[aria-label="Primary"]) > div:last-child > span {
-    display: none;
-  }
-
-  main > header:has(nav[aria-label="Primary"]) + section {
-    padding-top: 44px;
-  }
-
-  header span[title*="@"] {
-    max-width: 92px;
+@media (max-width: 720px) {
+  :root {
+    --gutter: 20px;
   }
 }
-
-@media (max-width: 460px) {
-  header span[title*="@"] {
-    max-width: 74px;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
   }
 }

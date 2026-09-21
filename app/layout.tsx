@@ -1,11 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { CurrentActionReadability } from "./current-action-readability";
 import "./globals.css";
-import "./readability.css";
-import "./narrative-density.css";
-import "./nested-stage-guardrails.css";
-import "./learning-editorial.css";
 
 export const metadata: Metadata = {
   description:
@@ -14,29 +8,14 @@ export const metadata: Metadata = {
   title: "Principles",
 };
 
-const geist = Geist({
-  display: "swap",
-  subsets: ["latin"],
-  variable: "--font-geist",
-});
-
-const geistMono = Geist_Mono({
-  display: "swap",
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html className={`${geist.variable} ${geistMono.variable}`} lang="en">
-      <body>
-        <CurrentActionReadability />
-        {children}
-      </body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   );
 }

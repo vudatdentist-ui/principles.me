@@ -1,26 +1,14 @@
 "use client";
 
+import { AutoTextarea } from "@/features/ui/auto-textarea";
+
+import { jsonRequest } from "@/features/ui/json-request";
+
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { ClientOrganization, ClientOrganizationState } from "./contracts";
 import styles from "./organization-workspace.module.css";
 
-async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init.headers ?? {}) },
-  });
-  const payload = (await response.json().catch(() => null)) as
-    | (T & { error?: string })
-    | null;
-  if (!response.ok) {
-    throw new Error(payload?.error || "Request failed.");
-  }
-  if (!payload) {
-    throw new Error("Request failed.");
-  }
-  return payload;
-}
 
 function field(form: HTMLFormElement, name: string): string {
   return String(new FormData(form).get(name) ?? "").trim();
@@ -28,13 +16,11 @@ function field(form: HTMLFormElement, name: string): string {
 
 export function OrganizationWorkspace({
   activeOrganizationHandle,
-  email,
   initialState,
   onActiveOrganizationChange,
   onStateChange,
 }: {
   activeOrganizationHandle?: string;
-  email: string;
   initialState: ClientOrganizationState;
   onActiveOrganizationChange?: (handle: string) => void;
   onStateChange?: (state: ClientOrganizationState) => void;
@@ -63,10 +49,6 @@ export function OrganizationWorkspace({
     onActiveOrganizationChange?.(handle);
   }
 
-  async function signOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
-    window.location.href = "/";
-  }
 
   async function run(label: string, action: () => Promise<void>) {
     if (working) {
@@ -170,32 +152,9 @@ export function OrganizationWorkspace({
   }
 
   return (
-    <main className={styles.shell}>
-      <header className={styles.topbar}>
-        <a className={styles.brand} href="/">
-          Principles
-        </a>
-        <nav className={styles.nav} aria-label="Primary">
-          <a href="/">People</a>
-          <a href="/knowledge">Knowledge</a>
-          <a href="/learning">Learning</a>
-          <a aria-current="page" href="/organization">
-            Organization
-          </a>
-        </nav>
-        <div className={styles.account}>
-          <span>{email}</span>
-          <button onClick={() => void signOut()} type="button">
-            Sign out
-          </button>
-        </div>
-      </header>
+    <div className={styles.shell}>
 
       <section className={styles.content}>
-        <div className={styles.intro}>
-          <p className={styles.eyebrow}>Principles for Organizations</p>
-          <h1>Design the machine together.</h1>
-        </div>
 
         {error ? (
           <div className={styles.error} role="alert">
@@ -242,7 +201,7 @@ export function OrganizationWorkspace({
               </label>
               <label>
                 Purpose
-                <textarea name="purpose" maxLength={1200} rows={3} />
+                <AutoTextarea name="purpose" maxLength={1200} rows={3} />
               </label>
               <button
                 className={styles.primary}
@@ -264,7 +223,7 @@ export function OrganizationWorkspace({
           />
         ) : null}
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -470,11 +429,11 @@ function OrganizationBody({
                   </label>
                   <label>
                     Purpose
-                    <textarea name="purpose" rows={2} />
+                    <AutoTextarea name="purpose" rows={2} />
                   </label>
                   <label>
                     Decision scope
-                    <textarea name="decisionScope" rows={2} />
+                    <AutoTextarea name="decisionScope" rows={2} />
                   </label>
                   <button disabled={working !== null} type="submit">
                     Create role
@@ -553,7 +512,7 @@ function OrganizationBody({
                   </label>
                   <label>
                     Purpose
-                    <textarea name="purpose" rows={2} />
+                    <AutoTextarea name="purpose" rows={2} />
                   </label>
                   <button disabled={working !== null} type="submit">
                     Create team
@@ -593,11 +552,11 @@ function OrganizationBody({
             </label>
             <label>
               Observed reality
-              <textarea name="observedReality" required rows={3} />
+              <AutoTextarea name="observedReality" required rows={3} />
             </label>
             <label>
               Tension
-              <textarea name="tension" required rows={3} />
+              <AutoTextarea name="tension" required rows={3} />
             </label>
             <button
               className={styles.primary}
@@ -692,11 +651,11 @@ function OrganizationBody({
                   >
                     <label>
                       What do you disagree with?
-                      <textarea name="statement" required rows={2} />
+                      <AutoTextarea name="statement" required rows={2} />
                     </label>
                     <label>
                       Reasoning
-                      <textarea name="reasoning" rows={2} />
+                      <AutoTextarea name="reasoning" rows={2} />
                     </label>
                     <button disabled={working !== null} type="submit">
                       Raise disagreement
@@ -783,15 +742,15 @@ function OrganizationBody({
             </label>
             <label>
               Observation
-              <textarea name="observation" required rows={3} />
+              <AutoTextarea name="observation" required rows={3} />
             </label>
             <label>
               Evidence for
-              <textarea name="evidenceFor" rows={2} />
+              <AutoTextarea name="evidenceFor" rows={2} />
             </label>
             <label>
               Evidence against
-              <textarea name="evidenceAgainst" rows={2} />
+              <AutoTextarea name="evidenceAgainst" rows={2} />
             </label>
             <button
               className={styles.primary}

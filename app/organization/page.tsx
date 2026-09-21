@@ -6,6 +6,7 @@ import { SESSION_COOKIE } from "@/features/auth/session";
 import { OrganizationRecenter } from "@/features/organization/organization-recenter";
 import { loadOrganizationState } from "@/features/organization/repository";
 import { AppShell } from "@/features/shell/app-shell";
+import { RouteLoading } from "@/features/ui/route-loading";
 
 async function OrganizationEntry() {
   const cookieStore = await cookies();
@@ -20,7 +21,6 @@ async function OrganizationEntry() {
       workspaceName={session.workspace.name}
     >
       <OrganizationRecenter
-        email={session.user.email}
         initialState={await loadOrganizationState(session.user.id)}
       />
     </AppShell>
@@ -29,7 +29,7 @@ async function OrganizationEntry() {
 
 export default function OrganizationPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading />}>
       <OrganizationEntry />
     </Suspense>
   );

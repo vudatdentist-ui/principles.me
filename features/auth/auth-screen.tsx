@@ -7,6 +7,7 @@ import styles from "./auth-screen.module.css";
 type Mode = "forgot" | "signin" | "signup";
 
 type AuthPayload = {
+  verificationRequired?: boolean;
   code?: string;
   error?: string;
 };
@@ -64,7 +65,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
         }
         throw new Error(payload?.error || "Request failed.");
       }
-      if (mode === "signup") {
+      if (mode === "signup" && payload?.verificationRequired) {
         setMode("signin");
         setPassword("");
         setNotice(
@@ -108,6 +109,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
   }
 
   function switchMode(nextMode: Mode) {
+    if (working) return;
     setMode(nextMode);
     setError(null);
     setNotice(null);
@@ -120,6 +122,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
         <h1>Principles</h1>
         <div className={styles.mode}>
           <button
+            disabled={working}
             aria-pressed={mode === "signin"}
             className={mode === "signin" ? styles.activeMode : undefined}
             onClick={() => switchMode("signin")}
@@ -129,6 +132,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
           </button>
           {signupAvailable ? (
             <button
+              disabled={working}
               aria-pressed={mode === "signup"}
               className={mode === "signup" ? styles.activeMode : undefined}
               onClick={() => switchMode("signup")}
@@ -153,8 +157,8 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               type="email"
               value={email}
             />
-            {error ? <div className={styles.error}>{error}</div> : null}
-            {notice ? <div className={styles.notice}>{notice}</div> : null}
+            {error ? <div className={styles.error} role="alert">{error}</div> : null}
+            {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
             <button className={styles.submit} disabled={working} type="submit">
               {working ? "Sending…" : "Send reset link"}
             </button>
@@ -189,8 +193,8 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               type="password"
               value={password}
             />
-            {error ? <div className={styles.error}>{error}</div> : null}
-            {notice ? <div className={styles.notice}>{notice}</div> : null}
+            {error ? <div className={styles.error} role="alert">{error}</div> : null}
+            {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
             {unverifiedEmail ? (
               <button
                 className={styles.textButton}

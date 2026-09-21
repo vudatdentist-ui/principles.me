@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { AutoTextarea } from "@/features/ui/auto-textarea";
+
+import { jsonRequest } from "@/features/ui/json-request";
+
+import { useRef, useState } from "react";
 import type {
   GoalDiscoveryResult,
   GoalDraft,
@@ -12,6 +16,7 @@ import type {
   OutcomeComparison,
 } from "@/features/people/execution-contracts";
 import type { EvolutionStage, EvolutionState } from "./contracts";
+import { EvolutionMemory } from "./evolution-memory";
 import { EvolutionStepExplorer } from "./evolution-step-explorer";
 import { ExecutionActionList } from "./execution-action-list";
 import styles from "./evolution-workspace.module.css";
@@ -31,73 +36,13 @@ const firstGoalQuestion: GoalDiscoveryResult = {
   question: "What do you really want?",
 };
 
-const stageNarrative: Record<
-  EvolutionStage,
-  { index: string; label: string; thesis: string }
-> = {
-  dream: {
-    index: "01",
-    label: "Dream",
-    thesis: "Name the reality worth creating before you optimize the path.",
-  },
-  reality: {
-    index: "02",
-    label: "Reality",
-    thesis: "See what is true now without softening it to protect the plan.",
-  },
-  problem: {
-    index: "03",
-    label: "Gap",
-    thesis:
-      "Turn the tension between Dream and Reality into one problem worth solving.",
-  },
-  diagnosis: {
-    index: "04",
-    label: "Diagnosis",
-    thesis: "Explain why the gap exists before deciding what should change.",
-  },
-  design: {
-    index: "05",
-    label: "Design",
-    thesis:
-      "Change the machine and state what different reality you expect to observe.",
-  },
-  do: {
-    index: "06",
-    label: "Do",
-    thesis:
-      "Execute the design. Completion is not success; changed reality is the test.",
-  },
-  outcome: {
-    index: "07",
-    label: "Outcome",
-    thesis:
-      "Compare the reality you expected with the reality that actually arrived.",
-  },
-  reflection: {
-    index: "08",
-    label: "Reflection",
-    thesis: "Turn pain and surprise into an explanation you can use next time.",
-  },
-  principle: {
-    index: "09",
-    label: "Principle",
-    thesis: "Keep only the rule that deserves to survive beyond this one cycle.",
-  },
+const stageNarrative: Record<EvolutionStage, { label: string }> = {
+  dream: { label: "Dream" }, reality: { label: "Reality" },
+  problem: { label: "Gap" }, diagnosis: { label: "Diagnosis" },
+  design: { label: "Design" }, do: { label: "Do" },
+  outcome: { label: "Outcome" }, reflection: { label: "Reflection" },
+  principle: { label: "Principle" },
 };
-
-async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init.headers ?? {}) },
-  });
-  const payload = (await response.json().catch(() => null)) as
-    | (T & { error?: string })
-    | null;
-  if (!response.ok) throw new Error(payload?.error || "Request failed.");
-  if (!payload) throw new Error("Request failed.");
-  return payload;
-}
 
 function sentence(value: string | null | undefined, fallback = "—") {
   return value?.trim() || fallback;
@@ -117,6 +62,7 @@ export function EvolutionWorkspace({
   initialState: EvolutionState;
 }) {
   const [state, setState] = useState(initialState);
+  const operationPending = useRef(false);
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,9 +81,9 @@ export function EvolutionWorkspace({
   const [comparison, setComparison] = useState<OutcomeComparison | null>(null);
   const [surprise, setSurprise] = useState("");
   const [learning, setLearning] = useState("");
-  const [principleRule, setPrincipleRule] = useState("");
-  const [principleTrigger, setPrincipleTrigger] = useState("");
-  const [principleRationale, setPrincipleRationale] = useState("");
+  const [principleRule, setPrincipleRule] = useState<string | null>(null);
+  const [principleTrigger, setPrincipleTrigger] = useState<string | null>(null);
+  const [principleRationale, setPrincipleRationale] = useState<string | null>(null);
   const narrative = stageNarrative[state.stage];
 
   function resetTransient() {
@@ -150,9 +96,9 @@ export function EvolutionWorkspace({
     setComparison(null);
     setSurprise("");
     setLearning("");
-    setPrincipleRule("");
-    setPrincipleTrigger("");
-    setPrincipleRationale("");
+    setPrincipleRule(null);
+    setPrincipleTrigger(null);
+    setPrincipleRationale(null);
     setRealityText("");
   }
 
@@ -164,7 +110,8 @@ export function EvolutionWorkspace({
   }
 
   async function run(label: string, action: () => Promise<void>) {
-    if (working) return;
+    if (operationPending.current) return;
+    operationPending.current = true;
     setWorking(label);
     setError(null);
     try {
@@ -172,25 +119,30 @@ export function EvolutionWorkspace({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Request failed.");
     } finally {
+      operationPending.current = false;
       setWorking(null);
     }
   }
 
   async function selectGoal(goalId: string) {
+    if (goalId === state.selectedGoalId) return;
     await run("switch", async () => {
+      const next = await fetchEvolution(`?goalId=${encodeURIComponent(goalId)}`);
       resetTransient();
       setGoalDraft(emptyGoal);
       setGoalDiscovery(firstGoalQuestion);
-      setState(await fetchEvolution(`?goalId=${encodeURIComponent(goalId)}`));
+      setState(next);
     });
   }
 
   async function startNewGoal() {
+    if (!state.dream) return;
     await run("switch", async () => {
+      const next = await fetchEvolution("?new=1");
       resetTransient();
       setGoalDraft(emptyGoal);
       setGoalDiscovery(firstGoalQuestion);
-      setState(await fetchEvolution("?new=1"));
+      setState(next);
     });
   }
 
@@ -393,17 +345,17 @@ export function EvolutionWorkspace({
           ...(action === "revise"
             ? {
                 rationale:
-                  principleRationale || state.principle?.rationale || "",
-                rule: principleRule || state.principle?.rule,
-                trigger: principleTrigger || state.principle?.trigger,
+                  principleRationale ?? state.principle?.rationale ?? "",
+                rule: principleRule ?? state.principle?.rule,
+                trigger: principleTrigger ?? state.principle?.trigger,
               }
             : {}),
         }),
         method: "POST",
       });
-      setPrincipleRule("");
-      setPrincipleTrigger("");
-      setPrincipleRationale("");
+      setPrincipleRule(null);
+      setPrincipleTrigger(null);
+      setPrincipleRationale(null);
       await refresh();
     });
   }
@@ -466,7 +418,7 @@ export function EvolutionWorkspace({
           <label htmlFor="goal-discovery-answer">
             {goalDiscovery.question}
           </label>
-          <textarea
+          <AutoTextarea
             aria-label="Goal discovery answer"
             id="goal-discovery-answer"
             onChange={(event) =>
@@ -491,7 +443,7 @@ export function EvolutionWorkspace({
       return (
         <div className={styles.actionBody}>
           <label htmlFor="reality">What is actually true?</label>
-          <textarea
+          <AutoTextarea
             id="reality"
             onChange={(event) => setRealityText(event.target.value)}
             rows={5}
@@ -728,6 +680,7 @@ export function EvolutionWorkspace({
             {state.design?.machineChange}
           </strong>
           {executionActions()}
+          <p className={styles.outcomeNote}>Completing actions is not an outcome. Record what actually changed.</p>
         </div>
       );
     }
@@ -746,7 +699,7 @@ export function EvolutionWorkspace({
             </div>
             <div>
               <span>Actual</span>
-              <textarea
+              <AutoTextarea
                 aria-label="Actual outcome"
                 onChange={(event) => setOutcomeText(event.target.value)}
                 rows={4}
@@ -851,17 +804,17 @@ export function EvolutionWorkspace({
             <Field
               label="When"
               onChange={setPrincipleTrigger}
-              value={principleTrigger || principle.trigger}
+              value={principleTrigger ?? principle.trigger}
             />
             <Field
               label="Then"
               onChange={setPrincipleRule}
-              value={principleRule || principle.rule}
+              value={principleRule ?? principle.rule}
             />
             <Field
               label="Why"
               onChange={setPrincipleRationale}
-              value={principleRationale || principle.rationale || ""}
+              value={principleRationale ?? principle.rationale ?? ""}
             />
             <button
               className={styles.secondary}
@@ -902,7 +855,7 @@ export function EvolutionWorkspace({
           <p>When {principle.trigger}</p>
         </div>
         <label htmlFor="principle-reality">What is true now?</label>
-        <textarea
+        <AutoTextarea
           id="principle-reality"
           onChange={(event) => setRealityText(event.target.value)}
           rows={4}
@@ -927,11 +880,11 @@ export function EvolutionWorkspace({
     <div aria-busy={working !== null} className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="me-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Me · living system</p>
+          <p className={styles.eyebrow}>Me</p>
           <h1 id="me-title">What deserves attention now?</h1>
         </div>
         <aside className={styles.heroMeta} aria-label="Current chapter">
-          <span>{narrative.index} / 09 · Current chapter</span>
+          <span>Current step</span>
           <strong>{narrative.label}</strong>
           <button
             className={styles.addGoal}
@@ -970,14 +923,14 @@ export function EvolutionWorkspace({
       ) : null}
 
       {!state.dream ? (
-        <section className={styles.next} aria-labelledby="new-goal-title">
+        <section className={styles.next} aria-label="Current action" aria-labelledby="new-goal-title" data-empty="true">
           <p className={styles.eyebrow}>
-            {narrative.index} · {narrative.label}
+            {narrative.label}
           </p>
-          <h2 id="new-goal-title">{state.nextAction.prompt}</h2>
-          <p className={styles.sceneThesis}>{narrative.thesis}</p>
+          <h2 id="new-goal-title">Clarify a goal</h2>
+          
           <div className={styles.sceneWork}>
-            <p className={styles.workLabel}>Write the first scene</p>
+            
             {renderStageAction()}
           </div>
         </section>
@@ -985,10 +938,10 @@ export function EvolutionWorkspace({
         <>
           <section className={styles.next} aria-label="Current action">
             <p className={styles.eyebrow}>
-              {narrative.index} · {narrative.label}
+              {narrative.label}
             </p>
             <h2 id="next-action-title">{state.nextAction.prompt}</h2>
-            <p className={styles.sceneThesis}>{narrative.thesis}</p>
+            
 
             <section
               className={styles.sceneContext}
@@ -996,7 +949,7 @@ export function EvolutionWorkspace({
             >
               <article className={styles.contextItem}>
                 <span>Dream</span>
-                <strong>{state.dream.desiredState}</strong>
+                <h3>{state.dream.desiredState}</h3>
               </article>
               <article className={styles.contextItem}>
                 <span>Reality</span>
@@ -1027,7 +980,7 @@ export function EvolutionWorkspace({
             ) : null}
 
             <div className={styles.sceneWork}>
-              <p className={styles.workLabel}>Work this chapter</p>
+              {state.stage === "do" ? <p className={styles.outcomeNote}>Completing actions is not an outcome. Record what actually changed.</p> : null}
               {renderStageAction()}
             </div>
           </section>
@@ -1038,12 +991,10 @@ export function EvolutionWorkspace({
           >
             <div className={styles.sectionLead}>
               <div>
-                <p className={styles.eyebrow}>Story so far</p>
+                
                 <h2 id="five-steps-title">5 Steps</h2>
               </div>
-              <span className={styles.stageBadge}>
-                {state.nextAction.label}
-              </span>
+              
             </div>
             <EvolutionStepExplorer state={state} />
           </section>
@@ -1067,7 +1018,7 @@ function Field({
   return (
     <label className={styles.field}>
       <span>{label}</span>
-      <textarea
+      <AutoTextarea
         aria-label={label}
         onChange={(event) => onChange(event.target.value)}
         rows={3}
@@ -1077,52 +1028,3 @@ function Field({
   );
 }
 
-function EvolutionMemory({ state }: { state: EvolutionState }) {
-  if (
-    !state.diagnosis &&
-    !state.design &&
-    !state.outcome &&
-    !state.reflection &&
-    !state.principle
-  )
-    return null;
-  return (
-    <details className={styles.memory}>
-      <summary>Details</summary>
-      <div className={styles.memoryGrid}>
-        {state.diagnosis ? (
-          <article>
-            <span>Diagnosis</span>
-            <strong>{state.diagnosis.rootCauseHypothesis}</strong>
-          </article>
-        ) : null}
-        {state.design ? (
-          <article>
-            <span>Design</span>
-            <strong>{state.design.machineChange}</strong>
-          </article>
-        ) : null}
-        {state.outcome ? (
-          <article>
-            <span>Outcome · {state.outcome.comparison}</span>
-            <strong>{state.outcome.actualResult}</strong>
-          </article>
-        ) : null}
-        {state.reflection ? (
-          <article>
-            <span>Reflection</span>
-            <strong>
-              {sentence(state.reflection.learning, state.reflection.happened)}
-            </strong>
-          </article>
-        ) : null}
-        {state.principle && state.principle.acceptanceState !== "rejected" ? (
-          <article>
-            <span>Principle · {state.principle.lifecycleState}</span>
-            <strong>{state.principle.rule}</strong>
-          </article>
-        ) : null}
-      </div>
-    </details>
-  );
-}

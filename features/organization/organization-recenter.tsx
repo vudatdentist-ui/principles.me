@@ -1,18 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ClientOrganizationState } from "./contracts";
 import { OrganizationWorkspace } from "./organization-workspace";
 import styles from "./organization-recenter.module.css";
 
 export function OrganizationRecenter({
-  email,
   initialState,
 }: {
-  email: string;
   initialState: ClientOrganizationState;
 }) {
   const [state, setState] = useState(initialState);
+  const operationsRef = useRef<HTMLDetailsElement>(null);
   const [activeHandle, setActiveHandle] = useState(
     initialState.organizations[0]?.handle ?? "",
   );
@@ -49,29 +48,19 @@ export function OrganizationRecenter({
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="organization-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Organization · living machine</p>
+          <p className={styles.eyebrow}>Organization</p>
           <h1 id="organization-title">What should work differently?</h1>
-          <div className={styles.loop}>
-            <span>Dream / Intent</span>
-            <b>→</b>
-            <span>Reality</span>
-            <b>→</b>
-            <span>Tension</span>
-            <b>→</b>
-            <span>Responsibility</span>
-            <b>→</b>
-            <span>Decision / Design</span>
-          </div>
         </div>
 
         <aside
           className={styles.currentScene}
           aria-label="Current organization narrative"
         >
-          <span>01 / 06 · Current tension</span>
-          <strong>{currentIssue?.title || "No open issue."}</strong>
+          <span>{active ? "Current tension" : "Start here"}</span>
+          <strong>{active ? currentIssue?.title || "No open issue." : "Create an organization"}</strong>
+          {!active ? <p>Name your team and the purpose it serves.</p> : null}
           {currentIssue?.tension ? <p>{currentIssue.tension}</p> : null}
-          <dl>
+          {active ? <dl>
             <div>
               <dt>Intent</dt>
               <dd>
@@ -95,8 +84,8 @@ export function OrganizationRecenter({
                   : "Not designed yet"}
               </dd>
             </div>
-          </dl>
-          <a href="#organization-operations">Work on the machine →</a>
+          </dl> : null}
+          <button className={styles.openOperations} type="button" onClick={() => { const operations = operationsRef.current; if (!operations) return; operations.open = true; operations.querySelector("summary")?.focus(); operations.scrollIntoView({ block: "start" }); }}>Open operations</button>
         </aside>
       </section>
 
@@ -307,23 +296,18 @@ export function OrganizationRecenter({
             </section>
           ) : null}
         </>
-      ) : (
-        <section className={styles.emptyState}>
-          <p className={styles.eyebrow}>Organization</p>
-          <h2>Create your organization.</h2>
-        </section>
-      )}
+      ) : null}
 
       <details
         className={styles.operations}
         id="organization-operations"
+        ref={operationsRef}
         open={!active}
       >
         <summary>Operations</summary>
         <div className={styles.legacy}>
           <OrganizationWorkspace
             activeOrganizationHandle={activeHandle}
-            email={email}
             initialState={state}
             onActiveOrganizationChange={setActiveHandle}
             onStateChange={setState}

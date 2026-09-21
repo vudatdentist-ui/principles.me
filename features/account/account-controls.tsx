@@ -116,7 +116,7 @@ export function AccountControls({ email }: { email: string }) {
     <div className={styles.accountPage}>
       <header className={styles.intro}>
         <p className={styles.kicker}>Account</p>
-        <h1>Your data stays yours.</h1>
+        <h1>Account &amp; data</h1>
         <p className={styles.identity}>{email}</p>
       </header>
 

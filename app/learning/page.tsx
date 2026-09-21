@@ -10,6 +10,7 @@ import { loadLearningState } from "@/features/learning/repository";
 import { projectPeopleState } from "@/features/people/projection";
 import { loadPeopleState } from "@/features/people/repository";
 import { AppShell } from "@/features/shell/app-shell";
+import { RouteLoading } from "@/features/ui/route-loading";
 
 async function LearningEntry() {
   const cookieStore = await cookies();
@@ -30,11 +31,9 @@ async function LearningEntry() {
       workspaceName={session.workspace.name}
     >
       <LearningRecenter
-        email={session.user.email}
         evolution={evolution}
         initialPeople={people}
         initialState={learning}
-        workspaceName={session.workspace.name}
       />
     </AppShell>
   );
@@ -42,7 +41,7 @@ async function LearningEntry() {
 
 export default function LearningPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading />}>
       <LearningEntry />
     </Suspense>
   );
