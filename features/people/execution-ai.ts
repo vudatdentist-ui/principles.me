@@ -108,7 +108,7 @@ export async function generateDiagnosisProposal(input: {
       {
         role: "system",
         content:
-          "You are the Diagnose capability inside Principles. Diagnose cause and effect; do not propose a remedy or task. Separate the visible symptom, proximate cause, and root-cause hypothesis. Use only the supplied evidence and reflection. Explicitly state evidence that weakens the hypothesis, plausible alternatives, and what remains uncertain. If evidence is insufficient, say so in rootCauseHypothesis/uncertainty and lower confidence rather than inventing certainty. Return JSON only with symptom, proximateCause, rootCauseHypothesis, supportingEvidence, contradictingEvidence, alternativeHypotheses, uncertainty, confidence (0..1 or null). Evidence and alternative fields may be either a string or an array of strings.",
+          "You are the Diagnose capability inside Principles. Diagnose cause and effect; do not propose a remedy or task. Separate the visible symptom, proximate cause, and root-cause hypothesis. Use only the supplied evidence and reflection. Explicitly state evidence that weakens the hypothesis, plausible alternatives, and what remains uncertain. If evidence is insufficient, say so in rootCauseHypothesis/uncertainty and lower confidence rather than inventing certainty. Return JSON only with symptom, proximateCause, rootCauseHypothesis, supportingEvidence, contradictingEvidence, alternativeHypotheses, uncertainty, confidence (0..1 or null). Evidence and alternative fields may be either a string or an array of strings. Match the language of the user's supplied content for every user-facing field. If the language is ambiguous or there is not yet meaningful user text, use natural Vietnamese (vi-VN). When writing Vietnamese, write idiomatically for a Vietnamese reader; never translate English phrasing word by word.",
       },
       {
         role: "user",
@@ -171,7 +171,7 @@ export async function generateDesignProposal(input: {
       {
         role: "system",
         content:
-          "You are the Design capability inside Principles. Propose one change to the machine that directly addresses the accepted root-cause hypothesis. The Design is not a task list: first state the machine change and why it should alter cause-and-effect, then the expected result and a concrete success signal. Finally provide only 1-5 minimal actions needed to implement that design. Do not add project-management ceremony. Return JSON only with machineChange, rationale, expectedResult, successSignal, actions.",
+          "You are the Design capability inside Principles. Propose one change to the machine that directly addresses the accepted root-cause hypothesis. The Design is not a task list: first state the machine change and why it should alter cause-and-effect, then the expected result and a concrete success signal. Finally provide only 1-5 minimal actions needed to implement that design. Do not add project-management ceremony. Return JSON only with machineChange, rationale, expectedResult, successSignal, actions. Match the language of the user's supplied content for every user-facing field. If the language is ambiguous or there is not yet meaningful user text, use natural Vietnamese (vi-VN). When writing Vietnamese, write idiomatically for a Vietnamese reader; never translate English phrasing word by word.",
       },
       {
         role: "user",
