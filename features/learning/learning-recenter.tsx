@@ -957,9 +957,11 @@ export function LearningRecenter({
             <div className={styles.empty}>
               <strong><T>No pattern kept yet.</T></strong>
               <span>
-                {learning.historyCount < 2
-                  ? "Not enough history yet. Live the loop before asking the system to define a pattern."
-                  : "You have enough history. Synthesize a hypothesis, inspect the cases, then keep only what the evidence supports."}
+                {t(
+                  learning.historyCount < 2
+                    ? "Not enough history yet. Live the loop before asking the system to define a pattern."
+                    : "You have enough history. Synthesize a hypothesis, inspect the cases, then keep only what the evidence supports.",
+                )}
               </span>
             </div>
           )}
