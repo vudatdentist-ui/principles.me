@@ -31,6 +31,7 @@ export function AccountControls({ email }: { email: string }) {
   >([]);
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const deleteConfirmation = t("DELETE MY ACCOUNT");
 
   async function exportData(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,7 +65,7 @@ export function AccountControls({ email }: { email: string }) {
       setExportStatus(t("Export ready."));
     } catch (cause) {
       setExportStatus(
-        cause instanceof Error ? cause.message : t("Export failed."),
+        cause instanceof Error ? t(cause.message) : t("Export failed."),
       );
     } finally {
       setExporting(false);
@@ -80,7 +81,8 @@ export function AccountControls({ email }: { email: string }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          confirmation,
+          confirmation:
+            confirmation === deleteConfirmation ? "DELETE MY ACCOUNT" : confirmation,
           deleteOwnedOrganizations,
           password: deletePassword,
         }),
@@ -107,7 +109,7 @@ export function AccountControls({ email }: { email: string }) {
       window.location.href = "/";
     } catch (cause) {
       setDeleteStatus(
-        cause instanceof Error ? cause.message : t("Account deletion failed."),
+        cause instanceof Error ? t(cause.message) : t("Account deletion failed."),
       );
     } finally {
       setDeleting(false);
@@ -150,7 +152,7 @@ export function AccountControls({ email }: { email: string }) {
           </button>
           {exportStatus ? (
             <p className={styles.status} role="status">
-              {exportStatus}
+              {t(exportStatus)}
             </p>
           ) : null}
         </form>
@@ -181,7 +183,7 @@ export function AccountControls({ email }: { email: string }) {
           />
 
           <label htmlFor="delete-confirmation">
-            <T>Type exactly</T> <strong>DELETE MY ACCOUNT</strong>
+            <T>Type exactly</T> <strong>{deleteConfirmation}</strong>
           </label>
           <input
             autoComplete="off"
@@ -222,7 +224,7 @@ export function AccountControls({ email }: { email: string }) {
             className={styles.deleteButton}
             disabled={
               deleting ||
-              confirmation !== "DELETE MY ACCOUNT" ||
+              confirmation !== deleteConfirmation ||
               deletePassword.length === 0 ||
               (ownedOrganizations.length > 0 && !deleteOwnedOrganizations)
             }
@@ -232,7 +234,7 @@ export function AccountControls({ email }: { email: string }) {
           </button>
           {deleteStatus ? (
             <p className={styles.status} role="status">
-              {deleteStatus}
+              {t(deleteStatus)}
             </p>
           ) : null}
         </form>
