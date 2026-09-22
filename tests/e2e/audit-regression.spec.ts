@@ -297,10 +297,10 @@ test("opening organization operations exposes one nested workflow, not another a
   await page
     .getByRole("button", { name: "Open operations", exact: true })
     .click();
-  await expect(page.locator("#organization-operations")).toHaveAttribute(
-    "open",
-    "",
-  );
+  const operations = page
+    .locator("#organization-operations")
+    .filter({ has: page.getByText("Operations", { exact: true }) });
+  await expect(operations).toHaveAttribute("open", "");
   await expect(
     page.getByRole("navigation", { name: "Primary", exact: true }),
   ).toHaveCount(1);
