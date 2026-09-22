@@ -1,5 +1,6 @@
 "use client";
 
+import { T, useI18n } from "@/features/i18n/locale";
 import { AutoTextarea } from "@/features/ui/auto-textarea";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -31,6 +32,7 @@ function retrievalLabel(
 }
 
 export function AskWorkspace() {
+  const { t } = useI18n();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState<ClientEvidenceReference[]>([]);
@@ -57,10 +59,12 @@ export function AskWorkspace() {
   const canSubmit = question.trim().length >= 3 && phase !== "submitting";
   const hasPartialAnswer = answer.trim().length > 0 && phase === "error";
   const sourceLabel = useMemo(() => {
-    if (phase === "submitting" && sources.length === 0) return "Searching…";
-    if (sources.length === 0) return "No sources";
-    return `${sources.length} source${sources.length === 1 ? "" : "s"}`;
-  }, [phase, sources.length]);
+    if (phase === "submitting" && sources.length === 0) return t("Searching…");
+    if (sources.length === 0) return t("No sources");
+    return sources.length === 1
+      ? t("{count} source", { count: sources.length })
+      : t("{count} sources", { count: sources.length });
+  }, [phase, sources.length, t]);
 
   async function runAsk(rawQuestion: string) {
     const trimmed = rawQuestion.trim();
@@ -91,8 +95,8 @@ export function AskWorkspace() {
         window.location.reload();
         return;
       }
-      if (response.status === 429) throw new Error("Limit reached. Try later.");
-      if (!response.ok || !response.body) throw new Error("Request failed.");
+      if (response.status === 429) throw new Error(t("Limit reached. Try later."));
+      if (!response.ok || !response.body) throw new Error(t("Request failed."));
 
       await consumeAskStream(response.body, (event) => {
         if (!mounted.current || controller.signal.aborted) return;
@@ -115,7 +119,7 @@ export function AskWorkspace() {
     } catch (cause) {
       if (!mounted.current) return;
       const stopped = controller.signal.aborted;
-      setError(stopped ? "Stopped before the answer was complete." : cause instanceof Error ? cause.message : "Request failed.");
+      setError(stopped ? t("Stopped before the answer was complete.") : cause instanceof Error ? cause.message : t("Request failed."));
       setPhase("error");
       setStatus(stopped ? "Stopped" : "Try again");
     } finally {
@@ -131,23 +135,23 @@ export function AskWorkspace() {
   return (
     <div className={styles.workspace}>
       <section
-        aria-label="Current knowledge narrative"
+        aria-label={t("Current knowledge narrative")}
         aria-labelledby="knowledge-title"
         className={styles.hero}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Knowledge</p>
-          <h1 id="knowledge-title">What is still unclear?</h1>
-          <p>Ask a question. Inspect the sources before using the answer.</p>
+          <p className={styles.eyebrow}><T>Knowledge</T></p>
+          <h1 id="knowledge-title"><T>What is still unclear?</T></h1>
+          <p><T>Ask a question. Inspect the sources before using the answer.</T></p>
         </div>
 
         <form
-          aria-label="Knowledge working scene"
+          aria-label={t("Knowledge working scene")}
           className={styles.askForm}
           onSubmit={onSubmit}
         >
           <label className={styles.label} htmlFor="question">
-            Question
+            <T>Question</T>
           </label>
           <AutoTextarea
             className={styles.textarea}
@@ -155,37 +159,37 @@ export function AskWorkspace() {
             id="question"
             maxLength={4000}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Name the decision, tension, or reality you need to understand."
+            placeholder={t("Name the decision, tension, or reality you need to understand.")}
             rows={4}
             value={question}
           />
           <div className={styles.formFooter}>
             <span className={styles.status} aria-live="polite">
-              {status}
+              {t(status)}
             </span>
-            {phase === "submitting" ? <button className={styles.stop} onClick={() => activeRequest.current?.abort()} type="button">Stop</button> : null}
+            {phase === "submitting" ? <button className={styles.stop} onClick={() => activeRequest.current?.abort()} type="button"><T>Stop</T></button> : null}
             <button
               className={styles.submit}
               disabled={!canSubmit}
               type="submit"
             >
-              {phase === "submitting" ? "Thinking…" : "Ask"}
+              {phase === "submitting" ? t("Thinking…") : t("Ask")}
             </button>
           </div>
         </form>
       </section>
 
       <details className={styles.promptRail}>
-        <summary>Need a starting question?</summary>
+        <summary><T>Need a starting question?</T></summary>
         <div>
         {prompts.map((prompt) => (
           <button
             disabled={phase === "submitting"}
             key={prompt}
-            onClick={() => setQuestion(prompt)}
+            onClick={() => setQuestion(t(prompt))}
             type="button"
           >
-            {prompt}
+            {t(prompt)}
           </button>
         ))}
         </div>
@@ -194,12 +198,12 @@ export function AskWorkspace() {
       {error ? (
         <section className={styles.error} role="alert">
           <strong>
-            {hasPartialAnswer ? "Answer paused." : "Could not finish."}
+            {hasPartialAnswer ? t("Answer paused.") : t("Could not finish.")}
           </strong>
           <span>
-            {error}
+            {t(error)}
             {hasPartialAnswer
-              ? " The answer already received is kept below."
+              ? ` ${t("The answer already received is kept below.")}`
               : null}
           </span>
           {lastQuestion.current ? (
@@ -208,7 +212,7 @@ export function AskWorkspace() {
               onClick={() => void runAsk(lastQuestion.current)}
               type="button"
             >
-              Try again
+              <T>Try again</T>
             </button>
           ) : null}
         </section>
@@ -218,25 +222,25 @@ export function AskWorkspace() {
         <section className={styles.answerSection} aria-live="polite">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}>Answer</p>
-              <h2 aria-label="Answer">What the evidence suggests</h2>
+              <p className={styles.eyebrow}><T>Answer</T></p>
+              <h2 aria-label={t("Answer")}><T>What the evidence suggests</T></h2>
             </div>
             <span>{sourceLabel}</span>
           </div>
           <div className={styles.answerContext}>
-            <span>Question</span>
+            <span><T>Question</T></span>
             <strong>{lastQuestion.current || question}</strong>
           </div>
           <article aria-busy={phase === "submitting"} className={styles.answer}>
-            {answer ? <AnswerContent text={answer} /> : "Preparing…"}
+            {answer ? <AnswerContent text={answer} /> : t("Preparing…")}
           </article>
           {phase === "done" ? (
             <div className={styles.bridge}>
               <div>
-                <span>Next decision</span>
-                <strong>What should this change in your next decision?</strong>
+                <span><T>Next decision</T></span>
+                <strong><T>What should this change in your next decision?</T></strong>
               </div>
-              <a href="/">Continue in Me →</a>
+              <a href="/"><T>Continue in Me →</T></a>
             </div>
           ) : null}
         </section>
@@ -246,29 +250,29 @@ export function AskWorkspace() {
         <section className={styles.sourcesSection}>
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}>Sources</p>
-              <h2>What the evidence stands on</h2>
+              <p className={styles.eyebrow}><T>Sources</T></p>
+              <h2><T>What the evidence stands on</T></h2>
             </div>
             <span>{sourceLabel}</span>
           </div>
           <div className={styles.retrievalGrid}>
             <div className={styles.retrievalCard}>
-              <span>Shared Principles knowledge</span>
-              <strong>{retrievalLabel(knowledgeState, "knowledge")}</strong>
+              <span><T>Shared Principles knowledge</T></span>
+              <strong>{t(retrievalLabel(knowledgeState, "knowledge"))}</strong>
             </div>
             <div className={styles.retrievalCard}>
-              <span>Personal evolution context</span>
+              <span><T>Personal evolution context</T></span>
               <strong>
                 {personalState === "ok"
-                  ? "Connected"
-                  : personalState === "empty"
-                    ? "Empty"
-                    : "Not checked"}
+                   ? t("Connected")
+                   : personalState === "empty"
+                     ? t("Empty")
+                     : t("Not checked")}
               </strong>
             </div>
             <div className={styles.retrievalCard}>
-              <span>Live public search</span>
-              <strong>{retrievalLabel(liveState, "live")}</strong>
+              <span><T>Live public search</T></span>
+              <strong>{t(retrievalLabel(liveState, "live"))}</strong>
             </div>
           </div>
           {sources.length > 0 ? (
@@ -286,7 +290,7 @@ export function AskWorkspace() {
                     </span>
                     {source.url ? (
                       <a href={source.url} rel="noreferrer" target="_blank">
-                        Open
+                        <T>Open</T>
                       </a>
                     ) : null}
                   </div>
@@ -296,10 +300,10 @@ export function AskWorkspace() {
           ) : (
             <p className={styles.emptySources}>
               {knowledgeState === "unavailable"
-                ? "Shared knowledge unavailable."
+                ? t("Shared knowledge unavailable.")
                 : knowledgeState === "empty"
-                  ? "No shared match."
-                  : "No sources returned."}
+                  ? t("No shared match.")
+                  : t("No sources returned.")}
             </p>
           )}
         </section>
