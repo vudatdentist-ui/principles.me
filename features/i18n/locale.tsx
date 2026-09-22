@@ -9,9 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  LOCALE_STORAGE_KEY,
+  parseLocale,
+  type Locale,
+} from "./config";
 import { viMessages } from "./messages";
-
-export type Locale = "vi" | "en";
 type Vars = Record<string, string | number>;
 
 type LocaleContextValue = {
@@ -20,7 +25,6 @@ type LocaleContextValue = {
   t: (source: string, vars?: Vars) => string;
 };
 
-const STORAGE_KEY = "principles.locale";
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 function interpolate(template: string, vars?: Vars) {
@@ -35,20 +39,28 @@ export function translate(locale: Locale, source: string, vars?: Vars) {
   return interpolate(template, vars);
 }
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("vi");
+export function LocaleProvider({
+  children,
+  initialLocale = DEFAULT_LOCALE,
+}: {
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "vi" || stored === "en") setLocaleState(stored);
-  }, []);
+    const stored = parseLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
+    if (stored && stored !== initialLocale) setLocaleState(stored);
+  }, [initialLocale]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
-    window.localStorage.setItem(STORAGE_KEY, next);
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
+    document.cookie = `${LOCALE_COOKIE}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    document.documentElement.lang = next;
     setLocaleState(next);
   }, []);
 
