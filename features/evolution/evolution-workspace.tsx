@@ -1,5 +1,6 @@
 "use client";
 
+import { T, useI18n } from "@/features/i18n/locale";
 import { AutoTextarea } from "@/features/ui/auto-textarea";
 
 import { jsonRequest } from "@/features/ui/json-request";
@@ -61,6 +62,7 @@ export function EvolutionWorkspace({
 }: {
   initialState: EvolutionState;
 }) {
+  const { t } = useI18n();
   const [state, setState] = useState(initialState);
   const operationPending = useRef(false);
   const [working, setWorking] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export function EvolutionWorkspace({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed.");
+      setError(cause instanceof Error ? cause.message : t("Request failed."));
     } finally {
       operationPending.current = false;
       setWorking(null);
@@ -380,22 +382,22 @@ export function EvolutionWorkspace({
             <div className={styles.goalReview}>
               <strong>{goalDraft.desiredState}</strong>
               <details>
-                <summary>Details</summary>
+                <summary><T>Details</T></summary>
                 <dl>
                   <div>
-                    <dt>Why</dt>
+                    <dt><T>Why</T></dt>
                     <dd>{sentence(goalDraft.whyItMatters)}</dd>
                   </div>
                   <div>
-                    <dt>Success</dt>
+                    <dt><T>Success</T></dt>
                     <dd>{sentence(goalDraft.successConditions)}</dd>
                   </div>
                   <div>
-                    <dt>Trade-offs</dt>
+                    <dt><T>Trade-offs</T></dt>
                     <dd>{sentence(goalDraft.acceptedTradeoffs)}</dd>
                   </div>
                   <div>
-                    <dt>Protect</dt>
+                    <dt><T>Protect</T></dt>
                     <dd>{sentence(goalDraft.nonNegotiables)}</dd>
                   </div>
                 </dl>
@@ -407,7 +409,7 @@ export function EvolutionWorkspace({
               onClick={() => void commitGoal()}
               type="button"
             >
-              {working === "dream" ? "Saving…" : "Add goal"}
+              {working === "dream" ? t("Saving…") : t("Add goal")}
             </button>
           </div>
         );
@@ -416,10 +418,10 @@ export function EvolutionWorkspace({
       return (
         <div className={styles.actionBody}>
           <label htmlFor="goal-discovery-answer">
-            {goalDiscovery.question}
+            {t(goalDiscovery.question)}
           </label>
           <AutoTextarea
-            aria-label="Goal discovery answer"
+            aria-label={t("Goal discovery answer")}
             id="goal-discovery-answer"
             onChange={(event) =>
               setGoalDraft({ ...goalDraft, [field]: event.target.value })
@@ -433,7 +435,7 @@ export function EvolutionWorkspace({
             onClick={() => void continueGoalDiscovery()}
             type="button"
           >
-            {working === "dream" ? "Thinking…" : "Continue"}
+            {working === "dream" ? t("Thinking…") : t("Continue")}
           </button>
         </div>
       );
@@ -442,7 +444,7 @@ export function EvolutionWorkspace({
     if (state.stage === "reality") {
       return (
         <div className={styles.actionBody}>
-          <label htmlFor="reality">What is actually true?</label>
+          <label htmlFor="reality"><T>What is actually true?</T></label>
           <AutoTextarea
             id="reality"
             onChange={(event) => setRealityText(event.target.value)}
@@ -455,7 +457,7 @@ export function EvolutionWorkspace({
             onClick={() => void recordReality()}
             type="button"
           >
-            {working === "reality" ? "Saving…" : "Record reality"}
+            {working === "reality" ? t("Saving…") : t("Record reality")}
           </button>
         </div>
       );
@@ -471,7 +473,7 @@ export function EvolutionWorkspace({
               onClick={() => void proposeProblem()}
               type="button"
             >
-              {working === "problem" ? "Looking…" : "Find the problem"}
+              {working === "problem" ? t("Looking…") : t("Find the problem")}
             </button>
           </div>
         );
@@ -492,7 +494,7 @@ export function EvolutionWorkspace({
             onClick={() => void confirmProblem()}
             type="button"
           >
-            {working === "problem" ? "Saving…" : "Name this problem"}
+            {working === "problem" ? t("Saving…") : t("Name this problem")}
           </button>
         </div>
       );
@@ -509,8 +511,8 @@ export function EvolutionWorkspace({
               type="button"
             >
               {working === "diagnosis"
-                ? "Diagnosing…"
-                : "Diagnose the root cause"}
+                ? t("Diagnosing…")
+                : t("Diagnose the root cause")}
             </button>
           </div>
         );
@@ -542,7 +544,7 @@ export function EvolutionWorkspace({
             value={diagnosisDraft.rootCauseHypothesis}
           />
           <details className={styles.disclosure}>
-            <summary>Evidence</summary>
+            <summary><T>Evidence</T></summary>
             <Field
               label="For"
               onChange={(value) =>
@@ -590,7 +592,7 @@ export function EvolutionWorkspace({
             onClick={() => void confirmDiagnosis()}
             type="button"
           >
-            {working === "diagnosis" ? "Saving…" : "Accept this diagnosis"}
+            {working === "diagnosis" ? t("Saving…") : t("Accept this diagnosis")}
           </button>
         </div>
       );
@@ -606,7 +608,7 @@ export function EvolutionWorkspace({
               onClick={() => void proposeDesign()}
               type="button"
             >
-              {working === "design" ? "Designing…" : "Design the machine"}
+              {working === "design" ? t("Designing…") : t("Design the machine")}
             </button>
           </div>
         );
@@ -635,7 +637,7 @@ export function EvolutionWorkspace({
             value={designDraft.successSignal}
           />
           <details className={styles.disclosure}>
-            <summary>Why</summary>
+            <summary><T>Why</T></summary>
             <Field
               label="Rationale"
               onChange={(value) =>
@@ -647,7 +649,7 @@ export function EvolutionWorkspace({
           <div className={styles.actionDrafts}>
             {designDraft.actions.map((action, index) => (
               <input
-                aria-label={`Action ${index + 1}`}
+                aria-label={t("Action {count}", { count: index + 1 })}
                 key={index}
                 onChange={(event) => {
                   const actions = [...designDraft.actions];
@@ -667,7 +669,7 @@ export function EvolutionWorkspace({
             onClick={() => void confirmDesign()}
             type="button"
           >
-            {working === "design" ? "Saving…" : "Adopt this design"}
+            {working === "design" ? t("Saving…") : t("Adopt this design")}
           </button>
         </div>
       );
@@ -680,7 +682,7 @@ export function EvolutionWorkspace({
             {state.design?.machineChange}
           </strong>
           {executionActions()}
-          <p className={styles.outcomeNote}>Completing actions is not an outcome. Record what actually changed.</p>
+          <p className={styles.outcomeNote}><T>Completing actions is not an outcome. Record what actually changed.</T></p>
         </div>
       );
     }
@@ -689,18 +691,18 @@ export function EvolutionWorkspace({
       return (
         <div className={styles.actionBody}>
           <details className={styles.disclosure}>
-            <summary>Execution</summary>
+            <summary><T>Execution</T></summary>
             {executionActions()}
           </details>
           <div className={styles.expectedActual}>
             <div>
-              <span>Expected</span>
+              <span><T>Expected</T></span>
               <strong>{state.design?.expectedResult}</strong>
             </div>
             <div>
-              <span>Actual</span>
+              <span><T>Actual</T></span>
               <AutoTextarea
-                aria-label="Actual outcome"
+                aria-label={t("Actual outcome")}
                 onChange={(event) => setOutcomeText(event.target.value)}
                 rows={4}
                 value={outcomeText}
@@ -709,7 +711,7 @@ export function EvolutionWorkspace({
           </div>
           <div
             className={styles.choiceRow}
-            aria-label="Outcome comparison"
+            aria-label={t("Outcome comparison")}
             role="group"
           >
             {(
@@ -721,7 +723,7 @@ export function EvolutionWorkspace({
                 onClick={() => setComparison(value)}
                 type="button"
               >
-                {value}
+                {t(value)}
               </button>
             ))}
           </div>
@@ -735,7 +737,7 @@ export function EvolutionWorkspace({
             onClick={() => void recordOutcome()}
             type="button"
           >
-            {working === "outcome" ? "Saving…" : "Record outcome"}
+            {working === "outcome" ? t("Saving…") : t("Record outcome")}
           </button>
         </div>
       );
@@ -745,11 +747,11 @@ export function EvolutionWorkspace({
       return (
         <div className={styles.actionBody}>
           <div className={styles.painEquation}>
-            <span>Pain</span>
+            <span><T>Pain</T></span>
             <b>+</b>
-            <span>Reflection</span>
+            <span><T>Reflection</T></span>
             <b>→</b>
-            <strong>Progress</strong>
+            <strong><T>Progress</T></strong>
           </div>
           <Field
             label="What hurt or surprised you?"
@@ -767,7 +769,7 @@ export function EvolutionWorkspace({
             onClick={() => void saveReflection()}
             type="button"
           >
-            {working === "reflection" ? "Saving…" : "Save reflection"}
+            {working === "reflection" ? t("Saving…") : t("Save reflection")}
           </button>
         </div>
       );
@@ -783,10 +785,10 @@ export function EvolutionWorkspace({
             onClick={() => void proposePrinciple()}
             type="button"
           >
-            {working === "principle" ? "Distilling…" : "Distill a principle"}
+            {working === "principle" ? t("Distilling…") : t("Distill a principle")}
           </button>
           <a className={styles.textLink} href="/learning">
-            Principles library →
+            <T>Principles library →</T>
           </a>
         </div>
       );
@@ -796,11 +798,11 @@ export function EvolutionWorkspace({
       return (
         <div className={styles.actionBody}>
           <div className={styles.principleCandidate}>
-            <p>When {principle.trigger}</p>
+            <p><T>When</T> {principle.trigger}</p>
             <h3>{principle.rule}</h3>
           </div>
           <details className={styles.disclosure}>
-            <summary>Edit</summary>
+            <summary><T>Edit</T></summary>
             <Field
               label="When"
               onChange={setPrincipleTrigger}
@@ -822,7 +824,7 @@ export function EvolutionWorkspace({
               onClick={() => void reviewPrinciple("revise")}
               type="button"
             >
-              Revise and test
+              <T>Revise and test</T>
             </button>
           </details>
           <div className={styles.buttonRow}>
@@ -832,7 +834,7 @@ export function EvolutionWorkspace({
               onClick={() => void reviewPrinciple("accept")}
               type="button"
             >
-              Accept for testing
+              <T>Accept for testing</T>
             </button>
             <button
               className={styles.secondary}
@@ -840,7 +842,7 @@ export function EvolutionWorkspace({
               onClick={() => void reviewPrinciple("reject")}
               type="button"
             >
-              Reject
+              <T>Reject</T>
             </button>
           </div>
         </div>
@@ -850,11 +852,11 @@ export function EvolutionWorkspace({
     return (
       <div className={styles.actionBody}>
         <div className={styles.livePrinciple}>
-          <span>{principle.lifecycleState}</span>
+          <span>{t(principle.lifecycleState)}</span>
           <h3>{principle.rule}</h3>
-          <p>When {principle.trigger}</p>
+          <p><T>When</T> {principle.trigger}</p>
         </div>
-        <label htmlFor="principle-reality">What is true now?</label>
+        <label htmlFor="principle-reality"><T>What is true now?</T></label>
         <AutoTextarea
           id="principle-reality"
           onChange={(event) => setRealityText(event.target.value)}
@@ -867,7 +869,7 @@ export function EvolutionWorkspace({
           onClick={() => void recordReality()}
           type="button"
         >
-          Record reality
+          <T>Record reality</T>
         </button>
         <a className={styles.textLink} href="/learning">
           Principles library →
@@ -880,31 +882,31 @@ export function EvolutionWorkspace({
     <div aria-busy={working !== null} className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="me-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Me</p>
-          <h1 id="me-title">What deserves attention now?</h1>
+          <p className={styles.eyebrow}><T>Me</T></p>
+          <h1 id="me-title"><T>What deserves attention now?</T></h1>
         </div>
-        <aside className={styles.heroMeta} aria-label="Current chapter">
-          <span>Current step</span>
-          <strong>{narrative.label}</strong>
+        <aside className={styles.heroMeta} aria-label={t("Current chapter")}>
+          <span><T>Current step</T></span>
+          <strong>{t(narrative.label)}</strong>
           <button
             className={styles.addGoal}
             disabled={working !== null}
             onClick={() => void startNewGoal()}
             type="button"
           >
-            + Goal
+            + {t("Goal")}
           </button>
         </aside>
       </section>
 
       {error ? (
         <div className={styles.error} role="alert">
-          {error}
+          {t(error)}
         </div>
       ) : null}
 
       {state.goals.length > 0 ? (
-        <section className={styles.goalPortfolio} aria-label="My goals">
+        <section className={styles.goalPortfolio} aria-label={t("My goals")}>
           {state.goals.map((goal) => (
             <button
               aria-pressed={state.selectedGoalId === goal.id}
@@ -915,7 +917,7 @@ export function EvolutionWorkspace({
               type="button"
             >
               <strong>{goal.desiredState}</strong>
-              <span>{goal.nextAction.label}</span>
+              <span>{t(goal.nextAction.label)}</span>
               {goal.attentionCount > 0 ? <b>{goal.attentionCount}</b> : null}
             </button>
           ))}
@@ -923,11 +925,11 @@ export function EvolutionWorkspace({
       ) : null}
 
       {!state.dream ? (
-        <section className={styles.next} aria-label="Current action" aria-labelledby="new-goal-title" data-empty="true">
+        <section className={styles.next} aria-label={t("Current action")} aria-labelledby="new-goal-title" data-empty="true">
           <p className={styles.eyebrow}>
-            {narrative.label}
+            {t(narrative.label)}
           </p>
-          <h2 id="new-goal-title">Clarify a goal</h2>
+          <h2 id="new-goal-title"><T>Clarify a goal</T></h2>
           
           <div className={styles.sceneWork}>
             
@@ -936,51 +938,51 @@ export function EvolutionWorkspace({
         </section>
       ) : (
         <>
-          <section className={styles.next} aria-label="Current action">
+          <section className={styles.next} aria-label={t("Current action")}>
             <p className={styles.eyebrow}>
-              {narrative.label}
+              {t(narrative.label)}
             </p>
-            <h2 id="next-action-title">{state.nextAction.prompt}</h2>
+            <h2 id="next-action-title">{t(state.nextAction.prompt)}</h2>
             
 
             <section
               className={styles.sceneContext}
-              aria-label="Dream and reality"
+              aria-label={t("Dream and reality")}
             >
               <article className={styles.contextItem}>
-                <span>Dream</span>
+                <span><T>Dream</T></span>
                 <h3>{state.dream.desiredState}</h3>
               </article>
               <article className={styles.contextItem}>
-                <span>Reality</span>
+                <span><T>Reality</T></span>
                 <strong>
-                  {state.reality?.statement || "Not observed yet"}
+                  {state.reality?.statement || t("Not observed yet")}
                 </strong>
               </article>
               <article
                 className={`${styles.contextItem} ${styles.contextGap}`}
-                aria-label="Active gap"
+                aria-label={t("Active gap")}
               >
-                <span>Gap</span>
+                <span><T>Gap</T></span>
                 <strong>
                   {state.problem
                     ? sentence(state.problem.gap, state.problem.statement)
-                    : "Not named yet"}
+                    : t("Not named yet")}
                 </strong>
               </article>
             </section>
 
             {state.attention.length > 0 ? (
-              <aside className={styles.attention} aria-label="Needs attention">
-                <span>Attention</span>
+              <aside className={styles.attention} aria-label={t("Needs attention")}>
+                <span><T>Attention</T></span>
                 {state.attention.slice(0, 2).map((item) => (
-                  <strong key={item.kind}>{item.title}</strong>
+                  <strong key={item.kind}>{t(item.title)}</strong>
                 ))}
               </aside>
             ) : null}
 
             <div className={styles.sceneWork}>
-              {state.stage === "do" ? <p className={styles.outcomeNote}>Completing actions is not an outcome. Record what actually changed.</p> : null}
+              {state.stage === "do" ? <p className={styles.outcomeNote}><T>Completing actions is not an outcome. Record what actually changed.</T></p> : null}
               {renderStageAction()}
             </div>
           </section>
@@ -992,7 +994,7 @@ export function EvolutionWorkspace({
             <div className={styles.sectionLead}>
               <div>
                 
-                <h2 id="five-steps-title">5 Steps</h2>
+                <h2 id="five-steps-title"><T>5 Steps</T></h2>
               </div>
               
             </div>
@@ -1015,11 +1017,12 @@ function Field({
   onChange: (value: string) => void;
   value: string;
 }) {
+  const { t } = useI18n();
   return (
     <label className={styles.field}>
-      <span>{label}</span>
+      <span>{t(label)}</span>
       <AutoTextarea
-        aria-label={label}
+        aria-label={t(label)}
         onChange={(event) => onChange(event.target.value)}
         rows={3}
         value={value}
