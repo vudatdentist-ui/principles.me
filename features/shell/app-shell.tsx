@@ -1,5 +1,6 @@
 "use client";
 
+import { LanguageSwitcher, T, useI18n } from "@/features/i18n/locale";
 import { useRef, useState, type ReactNode } from "react";
 import styles from "./app-shell.module.css";
 
@@ -23,6 +24,7 @@ export function AppShell({
   email: string;
   workspaceName?: string;
 }) {
+  const { t } = useI18n();
   const pending = useRef(false);
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,25 +36,30 @@ export function AppShell({
     setError(null);
     try {
       const response = await fetch("/api/auth/signout", { method: "POST" });
-      if (!response.ok) throw new Error("Could not sign out. Try again.");
+      if (!response.ok) throw new Error(t("Could not sign out. Try again."));
       window.location.assign("/");
     } catch {
-      setError("Could not sign out. Try again.");
+      setError(t("Could not sign out. Try again."));
       pending.current = false;
       setSigningOut(false);
     }
   }
 
+  const displayedWorkspace =
+    workspaceName === "Personal" ? t("Personal") : workspaceName;
+
   return (
     <div className={styles.shell}>
-      <a className={styles.skip} href="#main-content">Skip to content</a>
+      <a className={styles.skip} href="#main-content">
+        <T>Skip to content</T>
+      </a>
       <header className={styles.header}>
         <div className={styles.headerRow}>
-          <a className={styles.brand} href="/" aria-label="Principles home">
+          <a className={styles.brand} href="/" aria-label={t("Principles home")}>
             Principles
           </a>
 
-          <nav className={styles.nav} aria-label="Primary">
+          <nav className={styles.nav} aria-label={t("Primary")}>
             {tabs.map((tab) => (
               <a
                 aria-current={activeTab === tab.key ? "page" : undefined}
@@ -60,23 +67,33 @@ export function AppShell({
                 href={tab.href}
                 key={tab.key}
               >
-                {tab.label}
+                <T>{tab.label}</T>
               </a>
             ))}
           </nav>
 
           <div className={styles.account}>
-            <span className={styles.workspaceName} title={workspaceName}>
-              {workspaceName}
+            <LanguageSwitcher className={styles.languageSelect} />
+            <span className={styles.workspaceName} title={displayedWorkspace}>
+              {displayedWorkspace}
             </span>
             <span className={styles.accountEmail} title={email}>
               {email}
             </span>
-            <a className={styles.accountLink} href="/account" aria-label={`Account for ${email}`}>
-              Account
+            <a
+              className={styles.accountLink}
+              href="/account"
+              aria-label={t("Account for {email}", { email })}
+            >
+              <T>Account</T>
             </a>
-            <button className={styles.signOut} disabled={signingOut} onClick={() => void signOut()} type="button">
-              {signingOut ? "Signing out..." : "Sign out"}
+            <button
+              className={styles.signOut}
+              disabled={signingOut}
+              onClick={() => void signOut()}
+              type="button"
+            >
+              {signingOut ? t("Signing out...") : t("Sign out")}
             </button>
           </div>
         </div>
