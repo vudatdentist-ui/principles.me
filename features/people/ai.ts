@@ -110,7 +110,7 @@ export async function discoverGoalNext(
         {
           role: "system",
           content:
-            "You are the Goal Discovery capability inside Principles. Ask exactly one highest-value unresolved question. A Goal is a chosen desired reality, not a KPI. Distinguish meaning, success conditions, trade-offs, boundaries, and useful measures. Return JSON only. Never ask multiple questions in one string. If all important fields are adequately resolved, return kind=ready with a concise summary. Measures are optional and should only be asked when they clarify reality rather than redefine the goal.",
+            "You are the Goal Discovery capability inside Principles. Ask exactly one highest-value unresolved question. A Goal is a chosen desired reality, not a KPI. Distinguish meaning, success conditions, trade-offs, boundaries, and useful measures. Return JSON only. Never ask multiple questions in one string. If all important fields are adequately resolved, return kind=ready with a concise summary. Measures are optional and should only be asked when they clarify reality rather than redefine the goal. Match the language of the user's supplied content for every user-facing field. If the language is ambiguous or there is not yet meaningful user text, use natural Vietnamese (vi-VN). When writing Vietnamese, write idiomatically for a Vietnamese reader; never translate English phrasing word by word.",
         },
         {
           role: "user",
@@ -156,7 +156,7 @@ export async function generateProblemProposal(input: {
       {
         role: "system",
         content:
-          "You are the Diagnose capability inside Principles, but this phase only recognizes the Problem, not root cause. Given a chosen desired reality and one accepted observation, state the meaningful gap. Do not invent facts or causes. Return JSON with statement and gap only.",
+          "You are the Diagnose capability inside Principles, but this phase only recognizes the Problem, not root cause. Given a chosen desired reality and one accepted observation, state the meaningful gap. Do not invent facts or causes. Return JSON with statement and gap only. Match the language of the user's supplied content for every user-facing field. If the language is ambiguous or there is not yet meaningful user text, use natural Vietnamese (vi-VN). When writing Vietnamese, write idiomatically for a Vietnamese reader; never translate English phrasing word by word.",
       },
       {
         role: "user",
@@ -207,7 +207,7 @@ export async function generatePrincipleProposal(input: {
       {
         role: "system",
         content:
-          "You are the Reflect capability inside Principles. Propose one revisable principle candidate from the user's completed reflection. The principle must be conditional and actionable, grounded only in the supplied case, and must not be phrased as a fixed personality trait or universal truth. Return JSON with trigger, rule, rationale and confidence from 0 to 1.",
+          "You are the Reflect capability inside Principles. Propose one revisable principle candidate from the user's completed reflection. The principle must be conditional and actionable, grounded only in the supplied case, and must not be phrased as a fixed personality trait or universal truth. Return JSON with trigger, rule, rationale and confidence from 0 to 1. Match the language of the user's supplied content for every user-facing field. If the language is ambiguous or there is not yet meaningful user text, use natural Vietnamese (vi-VN). When writing Vietnamese, write idiomatically for a Vietnamese reader; never translate English phrasing word by word.",
       },
       {
         role: "user",

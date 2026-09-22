@@ -32,20 +32,32 @@ test("Diagnosis proposal normalizes array evidence and numeric confidence string
   );
 });
 
-test("Diagnosis fallback never invents a root cause when providers fail", () => {
+test("Diagnosis fallback defaults to Vietnamese without inventing a root cause", () => {
   const proposal = fallbackDiagnosisProposal({
     evidence: [
       {
-        content: "Three routine decisions waited for founder approval this week.",
-        title: "Accepted reality",
+        content: "Ba quyết định vận hành thường ngày vẫn chờ người sáng lập phê duyệt.",
+        title: "Thực tế đã xác nhận",
       },
     ],
-    problemStatement: "The founder remains a routine operating bottleneck.",
+    problemStatement: "Người sáng lập vẫn là nút thắt trong vận hành thường ngày.",
   });
 
   assert.equal(proposal.confidence, null);
   assert.equal(proposal.modelProvider, "deterministic-safety-fallback");
+  assert.match(proposal.rootCauseHypothesis, /chưa đủ/i);
+  assert.match(proposal.uncertainty, /chưa chắc chắn/i);
+  assert.match(proposal.supportingEvidence, /Thực tế đã xác nhận/);
+});
+
+test("Diagnosis fallback preserves English when English is selected", () => {
+  const proposal = fallbackDiagnosisProposal({
+    evidence: [],
+    locale: "en",
+    problemStatement: "The founder remains a routine operating bottleneck.",
+  });
+
   assert.match(proposal.rootCauseHypothesis, /insufficient/i);
-  assert.match(proposal.uncertainty, /high/i);
-  assert.match(proposal.supportingEvidence, /Accepted reality/);
+  assert.match(proposal.uncertainty, /uncertainty is high/i);
+  assert.match(proposal.supportingEvidence, /No supporting evidence/i);
 });

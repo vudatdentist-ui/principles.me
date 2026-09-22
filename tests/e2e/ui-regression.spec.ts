@@ -123,7 +123,7 @@ test("primary narrative surfaces put a meaningful current scene in the tablet vi
   await createAccount(page);
 
   const scenes = [
-    ["/", 'section[aria-labelledby="new-goal-title"]'],
+    ["/", 'section[aria-label="Current action"]'],
     ["/organization", 'aside[aria-label="Current organization narrative"]'],
     ["/knowledge", 'section[aria-label="Current knowledge narrative"]'],
     ["/learning", 'aside[aria-label="Current learning narrative"]'],

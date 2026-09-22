@@ -1,5 +1,6 @@
 "use client";
 
+import { T, useI18n } from "@/features/i18n/locale";
 import { AutoTextarea } from "@/features/ui/auto-textarea";
 
 import { jsonRequest } from "@/features/ui/json-request";
@@ -25,6 +26,7 @@ export function OrganizationWorkspace({
   onActiveOrganizationChange?: (handle: string) => void;
   onStateChange?: (state: ClientOrganizationState) => void;
 }) {
+  const { t } = useI18n();
   const [state, setState] = useState(initialState);
   const [internalActiveHandle, setInternalActiveHandle] = useState(
     initialState.organizations[0]?.handle ?? "",
@@ -59,7 +61,7 @@ export function OrganizationWorkspace({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed.");
+      setError(cause instanceof Error ? cause.message : t("Request failed."));
     } finally {
       setWorking(null);
     }
@@ -158,7 +160,7 @@ export function OrganizationWorkspace({
 
         {error ? (
           <div className={styles.error} role="alert">
-            {error}
+            {t(error)}
           </div>
         ) : null}
 
@@ -187,20 +189,22 @@ export function OrganizationWorkspace({
             open={state.organizations.length === 0}
           >
             <summary>
-              {state.organizations.length === 0
-                ? "Create organization"
-                : "New organization"}
+              {t(
+                state.organizations.length === 0
+                  ? "Create organization"
+                  : "New organization",
+              )}
             </summary>
             <form
               className={styles.form}
               onSubmit={(event) => void createOrganization(event)}
             >
               <label>
-                Name
+                <T>Name</T>
                 <input name="name" required maxLength={120} />
               </label>
               <label>
-                Purpose
+                <T>Purpose</T>
                 <AutoTextarea name="purpose" maxLength={1200} rows={3} />
               </label>
               <button
@@ -208,7 +212,7 @@ export function OrganizationWorkspace({
                 disabled={working !== null}
                 type="submit"
               >
-                Create
+                <T>Create</T>
               </button>
             </form>
           </details>
@@ -249,13 +253,14 @@ function OrganizationBody({
     method?: "PATCH" | "POST",
   ) => Promise<void>;
 }) {
+  const { t } = useI18n();
   const owner = organization.membershipRole === "owner";
 
   return (
     <>
       <section className={styles.identity}>
         <div>
-          <p className={styles.eyebrow}>{owner ? "Owner" : "Member"}</p>
+          <p className={styles.eyebrow}>{t(owner ? "Owner" : "Member")}</p>
           <h2>{organization.name}</h2>
         </div>
         {organization.purpose ? <p>{organization.purpose}</p> : null}
@@ -263,27 +268,27 @@ function OrganizationBody({
 
       <section className={styles.section}>
         <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Machine</p>
-          <h2>People, roles, responsibilities, teams.</h2>
+          <p className={styles.eyebrow}><T>Machine</T></p>
+          <h2><T>People, roles, responsibilities, teams.</T></h2>
         </div>
 
         <div className={styles.grid}>
           <article className={styles.card}>
             <div className={styles.cardHeading}>
-              <h3>People</h3>
+              <h3><T>People</T></h3>
               <span>{organization.members.length}</span>
             </div>
             <ul className={styles.list}>
               {organization.members.map((member) => (
                 <li key={member.email}>
                   <strong>{member.email}</strong>
-                  <span>{member.membershipRole}</span>
+                  <span>{t(member.membershipRole)}</span>
                 </li>
               ))}
             </ul>
             {owner ? (
               <details className={styles.disclosure}>
-                <summary>Add existing account</summary>
+                <summary><T>Add existing account</T></summary>
                 <form
                   className={styles.form}
                   onSubmit={(event) =>
@@ -296,11 +301,11 @@ function OrganizationBody({
                   }
                 >
                   <label>
-                    Email
+                    <T>Email</T>
                     <input name="email" required type="email" />
                   </label>
                   <button disabled={working !== null} type="submit">
-                    Add member
+                    <T>Add member</T>
                   </button>
                 </form>
               </details>
@@ -309,7 +314,7 @@ function OrganizationBody({
 
           <article className={styles.card}>
             <div className={styles.cardHeading}>
-              <h3>Roles</h3>
+              <h3><T>Roles</T></h3>
               <span>{organization.roles.length}</span>
             </div>
             <div className={styles.stack}>
@@ -319,12 +324,12 @@ function OrganizationBody({
                   {role.purpose ? <p>{role.purpose}</p> : null}
                   {role.decisionScope ? (
                     <p>
-                      <b>Decision scope:</b> {role.decisionScope}
+                      <b><T>Decision scope:</T></b> {role.decisionScope}
                     </p>
                   ) : null}
                   {role.memberEmails.length > 0 ? (
                     <p>
-                      <b>People:</b> {role.memberEmails.join(", ")}
+                      <b><T>People:</T></b> {role.memberEmails.join(", ")}
                     </p>
                   ) : null}
                   {role.responsibilities.length > 0 ? (
@@ -341,7 +346,7 @@ function OrganizationBody({
                   ) : null}
                   {owner ? (
                     <details className={styles.disclosure}>
-                      <summary>Edit structure</summary>
+                      <summary><T>Edit structure</T></summary>
                       <form
                         className={styles.form}
                         onSubmit={(event) =>
@@ -358,15 +363,15 @@ function OrganizationBody({
                         }
                       >
                         <label>
-                          Responsibility
+                          <T>Responsibility</T>
                           <input name="statement" required />
                         </label>
                         <label>
-                          Expected outcome
+                          <T>Expected outcome</T>
                           <input name="expectedOutcome" />
                         </label>
                         <button disabled={working !== null} type="submit">
-                          Add responsibility
+                          <T>Add responsibility</T>
                         </button>
                       </form>
                       <form
@@ -384,10 +389,10 @@ function OrganizationBody({
                         }
                       >
                         <label>
-                          Assign member
+                          <T>Assign member</T>
                           <select name="email" required defaultValue="">
                             <option value="" disabled>
-                              Select
+                              {t("Select")}
                             </option>
                             {organization.members.map((member) => (
                               <option key={member.email} value={member.email}>
@@ -397,7 +402,7 @@ function OrganizationBody({
                           </select>
                         </label>
                         <button disabled={working !== null} type="submit">
-                          Assign role
+                          <T>Assign role</T>
                         </button>
                       </form>
                     </details>
@@ -407,7 +412,7 @@ function OrganizationBody({
             </div>
             {owner ? (
               <details className={styles.disclosure}>
-                <summary>New role</summary>
+                <summary><T>New role</T></summary>
                 <form
                   className={styles.form}
                   onSubmit={(event) =>
@@ -424,19 +429,19 @@ function OrganizationBody({
                   }
                 >
                   <label>
-                    Name
+                    <T>Name</T>
                     <input name="name" required />
                   </label>
                   <label>
-                    Purpose
+                    <T>Purpose</T>
                     <AutoTextarea name="purpose" rows={2} />
                   </label>
                   <label>
-                    Decision scope
+                    <T>Decision scope</T>
                     <AutoTextarea name="decisionScope" rows={2} />
                   </label>
                   <button disabled={working !== null} type="submit">
-                    Create role
+                    <T>Create role</T>
                   </button>
                 </form>
               </details>
@@ -445,7 +450,7 @@ function OrganizationBody({
 
           <article className={styles.card}>
             <div className={styles.cardHeading}>
-              <h3>Teams</h3>
+              <h3><T>Teams</T></h3>
               <span>{organization.teams.length}</span>
             </div>
             <div className={styles.stack}>
@@ -473,7 +478,7 @@ function OrganizationBody({
                     >
                       <select name="email" required defaultValue="">
                         <option value="" disabled>
-                          Add member
+                          {t("Add member")}
                         </option>
                         {organization.members.map((member) => (
                           <option key={member.email} value={member.email}>
@@ -482,7 +487,7 @@ function OrganizationBody({
                         ))}
                       </select>
                       <button disabled={working !== null} type="submit">
-                        Add
+                        <T>Add</T>
                       </button>
                     </form>
                   ) : null}
@@ -491,7 +496,7 @@ function OrganizationBody({
             </div>
             {owner ? (
               <details className={styles.disclosure}>
-                <summary>New team</summary>
+                <summary><T>New team</T></summary>
                 <form
                   className={styles.form}
                   onSubmit={(event) =>
@@ -507,15 +512,15 @@ function OrganizationBody({
                   }
                 >
                   <label>
-                    Name
+                    <T>Name</T>
                     <input name="name" required />
                   </label>
                   <label>
-                    Purpose
+                    <T>Purpose</T>
                     <AutoTextarea name="purpose" rows={2} />
                   </label>
                   <button disabled={working !== null} type="submit">
-                    Create team
+                    <T>Create team</T>
                   </button>
                 </form>
               </details>
@@ -526,11 +531,11 @@ function OrganizationBody({
 
       <section className={styles.section}>
         <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Reality</p>
-          <h2>Surface issues and disagreement.</h2>
+          <p className={styles.eyebrow}><T>Reality</T></p>
+          <h2><T>Surface issues and disagreement.</T></h2>
         </div>
         <details className={styles.disclosure}>
-          <summary>Record issue</summary>
+          <summary><T>Record issue</T></summary>
           <form
             className={styles.form}
             onSubmit={(event) =>
@@ -547,15 +552,15 @@ function OrganizationBody({
             }
           >
             <label>
-              Issue
+              <T>Issue</T>
               <input name="title" required />
             </label>
             <label>
-              Observed reality
+              <T>Observed reality</T>
               <AutoTextarea name="observedReality" required rows={3} />
             </label>
             <label>
-              Tension
+              <T>Tension</T>
               <AutoTextarea name="tension" required rows={3} />
             </label>
             <button
@@ -563,7 +568,7 @@ function OrganizationBody({
               disabled={working !== null}
               type="submit"
             >
-              Record
+              <T>Record</T>
             </button>
           </form>
         </details>
@@ -573,16 +578,16 @@ function OrganizationBody({
             <article className={styles.issue} key={issue.id}>
               <div className={styles.cardHeading}>
                 <h3>{issue.title}</h3>
-                <span>{issue.status}</span>
+                <span>{t(issue.status)}</span>
               </div>
               <p>{issue.observedReality}</p>
               <p>
-                <b>Tension:</b> {issue.tension}
+                <b><T>Tension:</T></b> {issue.tension}
               </p>
-              <p className={styles.meta}>Raised by {issue.createdByEmail}</p>
+              <p className={styles.meta}>{t("Raised by {email}", { email: issue.createdByEmail })}</p>
               {issue.resolution ? (
                 <p>
-                  <b>Resolution:</b> {issue.resolution}
+                  <b><T>Resolution:</T></b> {issue.resolution}
                 </p>
               ) : null}
 
@@ -597,7 +602,7 @@ function OrganizationBody({
                       ) : null}
                       {disagreement.resolution ? (
                         <p>
-                          <b>Resolution:</b> {disagreement.resolution}
+                          <b><T>Resolution:</T></b> {disagreement.resolution}
                         </p>
                       ) : null}
                       {owner && disagreement.status === "open" ? (
@@ -618,11 +623,11 @@ function OrganizationBody({
                         >
                           <input
                             name="resolution"
-                            placeholder="Resolution"
+                            placeholder={t("Resolution")}
                             required
                           />
                           <button disabled={working !== null} type="submit">
-                            Resolve
+                            <T>Resolve</T>
                           </button>
                         </form>
                       ) : null}
@@ -633,7 +638,7 @@ function OrganizationBody({
 
               {issue.status === "open" ? (
                 <details className={styles.disclosure}>
-                  <summary>Disagree</summary>
+                  <summary><T>Disagree</T></summary>
                   <form
                     className={styles.form}
                     onSubmit={(event) =>
@@ -650,15 +655,15 @@ function OrganizationBody({
                     }
                   >
                     <label>
-                      What do you disagree with?
+                      <T>What do you disagree with?</T>
                       <AutoTextarea name="statement" required rows={2} />
                     </label>
                     <label>
-                      Reasoning
+                      <T>Reasoning</T>
                       <AutoTextarea name="reasoning" rows={2} />
                     </label>
                     <button disabled={working !== null} type="submit">
-                      Raise disagreement
+                      <T>Raise disagreement</T>
                     </button>
                   </form>
                 </details>
@@ -682,11 +687,11 @@ function OrganizationBody({
                 >
                   <input
                     name="resolution"
-                    placeholder="Resolve issue"
+                    placeholder={t("Resolve issue")}
                     required
                   />
                   <button disabled={working !== null} type="submit">
-                    Resolve
+                    <T>Resolve</T>
                   </button>
                 </form>
               ) : null}
@@ -697,11 +702,11 @@ function OrganizationBody({
 
       <section className={styles.section}>
         <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Context</p>
-          <h2>Track record without a people score.</h2>
+          <p className={styles.eyebrow}><T>Context</T></p>
+          <h2><T>Track record without a people score.</T></h2>
         </div>
         <details className={styles.disclosure}>
-          <summary>Add context evidence</summary>
+          <summary><T>Add context evidence</T></summary>
           <form
             className={styles.form}
             onSubmit={(event) =>
@@ -720,10 +725,10 @@ function OrganizationBody({
             }
           >
             <label>
-              Person
+              <T>Person</T>
               <select name="email" required defaultValue="">
                 <option value="" disabled>
-                  Select
+                  <T>Select</T>
                 </option>
                 {organization.members.map((member) => (
                   <option key={member.email} value={member.email}>
@@ -733,23 +738,23 @@ function OrganizationBody({
               </select>
             </label>
             <label>
-              Context
+              <T>Context</T>
               <input
                 name="context"
                 required
-                placeholder="e.g. hiring senior engineers"
+                placeholder={t("e.g. hiring senior engineers")}
               />
             </label>
             <label>
-              Observation
+              <T>Observation</T>
               <AutoTextarea name="observation" required rows={3} />
             </label>
             <label>
-              Evidence for
+              <T>Evidence for</T>
               <AutoTextarea name="evidenceFor" rows={2} />
             </label>
             <label>
-              Evidence against
+              <T>Evidence against</T>
               <AutoTextarea name="evidenceAgainst" rows={2} />
             </label>
             <button
@@ -757,7 +762,7 @@ function OrganizationBody({
               disabled={working !== null}
               type="submit"
             >
-              Record evidence
+              <T>Record evidence</T>
             </button>
           </form>
         </details>
@@ -771,15 +776,15 @@ function OrganizationBody({
               <p>{item.observation}</p>
               {item.evidenceFor ? (
                 <p>
-                  <b>For:</b> {item.evidenceFor}
+                  <b><T>For:</T></b> {item.evidenceFor}
                 </p>
               ) : null}
               {item.evidenceAgainst ? (
                 <p>
-                  <b>Against:</b> {item.evidenceAgainst}
+                  <b><T>Against:</T></b> {item.evidenceAgainst}
                 </p>
               ) : null}
-              <p className={styles.meta}>Recorded by {item.createdByEmail}</p>
+              <p className={styles.meta}>{t("Recorded by {email}", { email: item.createdByEmail })}</p>
             </article>
           ))}
         </div>

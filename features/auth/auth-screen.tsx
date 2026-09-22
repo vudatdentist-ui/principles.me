@@ -1,5 +1,6 @@
 "use client";
 
+import { LanguageSwitcher, T, useI18n } from "@/features/i18n/locale";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import styles from "./auth-screen.module.css";
@@ -13,6 +14,7 @@ type AuthPayload = {
 };
 
 export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
+  const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,9 +43,9 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
           .json()
           .catch(() => null)) as AuthPayload | null;
         if (!response.ok) {
-          throw new Error(payload?.error || "Request failed.");
+          throw new Error(payload?.error || t("Request failed."));
         }
-        setNotice("If that email exists, a password reset link is on its way.");
+        setNotice(t("If that email exists, a password reset link is on its way."));
         setWorking(false);
         return;
       }
@@ -63,20 +65,20 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
         if (payload?.code === "EMAIL_NOT_VERIFIED") {
           setUnverifiedEmail(email);
         }
-        throw new Error(payload?.error || "Request failed.");
+        throw new Error(payload?.error || t("Request failed."));
       }
       if (mode === "signup" && payload?.verificationRequired) {
         setMode("signin");
         setPassword("");
         setNotice(
-          "Account created. Check your email to verify your address before signing in.",
+          t("Account created. Check your email to verify your address before signing in."),
         );
         setWorking(false);
         return;
       }
       window.location.reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed.");
+      setError(cause instanceof Error ? cause.message : t("Request failed."));
       setWorking(false);
     }
   }
@@ -97,12 +99,12 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
         .json()
         .catch(() => null)) as AuthPayload | null;
       if (!response.ok) {
-        throw new Error(payload?.error || "Request failed.");
+        throw new Error(payload?.error || t("Request failed."));
       }
-      setNotice("A new verification link has been sent.");
+      setNotice(t("A new verification link has been sent."));
       setUnverifiedEmail(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed.");
+      setError(cause instanceof Error ? cause.message : t("Request failed."));
     } finally {
       setWorking(false);
     }
@@ -119,6 +121,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
   return (
     <main className={styles.shell}>
       <section className={styles.panel}>
+        <LanguageSwitcher className={styles.languageSelect} />
         <h1>Principles</h1>
         <div className={styles.mode}>
           <button
@@ -128,7 +131,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
             onClick={() => switchMode("signin")}
             type="button"
           >
-            Sign in
+            <T>Sign in</T>
           </button>
           {signupAvailable ? (
             <button
@@ -138,7 +141,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               onClick={() => switchMode("signup")}
               type="button"
             >
-              Create account
+              <T>Create account</T>
             </button>
           ) : null}
         </div>
@@ -146,9 +149,9 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
         {mode === "forgot" ? (
           <form onSubmit={submit}>
             <p className={styles.intro}>
-              We will email a secure link to reset your password.
+              <T>We will email a secure link to reset your password.</T>
             </p>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email"><T>Email</T></label>
             <input
               autoComplete="email"
               id="email"
@@ -157,22 +160,22 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               type="email"
               value={email}
             />
-            {error ? <div className={styles.error} role="alert">{error}</div> : null}
+            {error ? <div className={styles.error} role="alert">{t(error)}</div> : null}
             {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
             <button className={styles.submit} disabled={working} type="submit">
-              {working ? "Sending…" : "Send reset link"}
+              {working ? t("Sending…") : t("Send reset link")}
             </button>
             <button
               className={styles.textButton}
               onClick={() => switchMode("signin")}
               type="button"
             >
-              Back to sign in
+              <T>Back to sign in</T>
             </button>
           </form>
         ) : (
           <form onSubmit={submit}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email"><T>Email</T></label>
             <input
               autoComplete="email"
               id="email"
@@ -181,7 +184,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               type="email"
               value={email}
             />
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password"><T>Password</T></label>
             <input
               autoComplete={
                 mode === "signup" ? "new-password" : "current-password"
@@ -193,7 +196,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               type="password"
               value={password}
             />
-            {error ? <div className={styles.error} role="alert">{error}</div> : null}
+            {error ? <div className={styles.error} role="alert">{t(error)}</div> : null}
             {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
             {unverifiedEmail ? (
               <button
@@ -201,15 +204,15 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
                 onClick={resendVerification}
                 type="button"
               >
-                Resend verification email
+                <T>Resend verification email</T>
               </button>
             ) : null}
             <button className={styles.submit} disabled={working} type="submit">
               {working
-                ? "Working…"
+                ? t("Working…")
                 : mode === "signup"
-                  ? "Create account"
-                  : "Sign in"}
+                  ? t("Create account")
+                  : t("Sign in")}
             </button>
             {mode === "signin" ? (
               <button
@@ -217,7 +220,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
                 onClick={() => switchMode("forgot")}
                 type="button"
               >
-                Forgot password?
+                <T>Forgot password?</T>
               </button>
             ) : null}
           </form>

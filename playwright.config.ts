@@ -26,6 +26,15 @@ export default defineConfig({
   timeout: 30_000,
   use: {
     baseURL,
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          localStorage: [{ name: "principles.locale", value: "en" }],
+          origin: baseURL,
+        },
+      ],
+    },
     trace: "retain-on-failure",
   },
   webServer: {

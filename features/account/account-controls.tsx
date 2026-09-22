@@ -1,5 +1,6 @@
 "use client";
 
+import { T, useI18n } from "@/features/i18n/locale";
 import { type FormEvent, useState } from "react";
 import styles from "./account-controls.module.css";
 
@@ -17,6 +18,7 @@ function filenameFromDisposition(value: string | null): string {
 }
 
 export function AccountControls({ email }: { email: string }) {
+  const { t } = useI18n();
   const [exportPassword, setExportPassword] = useState("");
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -29,6 +31,7 @@ export function AccountControls({ email }: { email: string }) {
   >([]);
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const deleteConfirmation = t("DELETE MY ACCOUNT");
 
   async function exportData(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,7 +47,7 @@ export function AccountControls({ email }: { email: string }) {
         const body = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
-        setExportStatus(body?.error || "Export failed.");
+        setExportStatus(body?.error || t("Export failed."));
         return;
       }
       const blob = await response.blob();
@@ -59,10 +62,10 @@ export function AccountControls({ email }: { email: string }) {
       anchor.remove();
       URL.revokeObjectURL(url);
       setExportPassword("");
-      setExportStatus("Export ready.");
+      setExportStatus(t("Export ready."));
     } catch (cause) {
       setExportStatus(
-        cause instanceof Error ? cause.message : "Export failed.",
+        cause instanceof Error ? t(cause.message) : t("Export failed."),
       );
     } finally {
       setExporting(false);
@@ -78,7 +81,8 @@ export function AccountControls({ email }: { email: string }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          confirmation,
+          confirmation:
+            confirmation === deleteConfirmation ? "DELETE MY ACCOUNT" : confirmation,
           deleteOwnedOrganizations,
           password: deletePassword,
         }),
@@ -94,18 +98,18 @@ export function AccountControls({ email }: { email: string }) {
       ) {
         setOwnedOrganizations(body.organizations ?? []);
         setDeleteStatus(
-          body.error || "Owned organizations require explicit confirmation.",
+          body.error || t("Owned organizations require explicit confirmation."),
         );
         return;
       }
       if (!response.ok) {
-        setDeleteStatus(body?.error || "Account deletion failed.");
+        setDeleteStatus(body?.error || t("Account deletion failed."));
         return;
       }
       window.location.href = "/";
     } catch (cause) {
       setDeleteStatus(
-        cause instanceof Error ? cause.message : "Account deletion failed.",
+        cause instanceof Error ? t(cause.message) : t("Account deletion failed."),
       );
     } finally {
       setDeleting(false);
@@ -115,25 +119,23 @@ export function AccountControls({ email }: { email: string }) {
   return (
     <div className={styles.accountPage}>
       <header className={styles.intro}>
-        <p className={styles.kicker}>Account</p>
-        <h1>Account &amp; data</h1>
+        <p className={styles.kicker}><T>Account</T></p>
+        <h1><T>Account & data</T></h1>
         <p className={styles.identity}>{email}</p>
       </header>
 
       <section className={styles.section} aria-labelledby="export-heading">
         <div className={styles.sectionCopy}>
-          <h2 id="export-heading">Export your data</h2>
+          <h2 id="export-heading"><T>Export your data</T></h2>
           <p>
-            Get your personal evolution history and your attributable
-            organization participation. Credentials and session/reset tokens are
-            never included.
+            <T>Get your personal evolution history and your attributable organization participation. Credentials and session/reset tokens are never included.</T>
           </p>
         </div>
         <form
           className={styles.form}
           onSubmit={(event) => void exportData(event)}
         >
-          <label htmlFor="export-password">Confirm password</label>
+          <label htmlFor="export-password"><T>Confirm password</T></label>
           <input
             autoComplete="current-password"
             id="export-password"
@@ -146,11 +148,11 @@ export function AccountControls({ email }: { email: string }) {
             disabled={exporting || exportPassword.length === 0}
             type="submit"
           >
-            {exporting ? "Preparing…" : "Export data"}
+            {exporting ? t("Preparing…") : t("Export data")}
           </button>
           {exportStatus ? (
             <p className={styles.status} role="status">
-              {exportStatus}
+              {t(exportStatus)}
             </p>
           ) : null}
         </form>
@@ -161,18 +163,16 @@ export function AccountControls({ email }: { email: string }) {
         aria-labelledby="delete-heading"
       >
         <div className={styles.sectionCopy}>
-          <h2 id="delete-heading">Delete account</h2>
+          <h2 id="delete-heading"><T>Delete account</T></h2>
           <p>
-            This permanently deletes your Personal Workspace. Shared
-            organization history keeps a disabled pseudonymous identity when
-            other members still depend on that history.
+            <T>This permanently deletes your Personal Workspace. Shared organization history keeps a disabled pseudonymous identity when other members still depend on that history.</T>
           </p>
         </div>
         <form
           className={styles.form}
           onSubmit={(event) => void deleteAccount(event)}
         >
-          <label htmlFor="delete-password">Confirm password</label>
+          <label htmlFor="delete-password"><T>Confirm password</T></label>
           <input
             autoComplete="current-password"
             id="delete-password"
@@ -183,7 +183,7 @@ export function AccountControls({ email }: { email: string }) {
           />
 
           <label htmlFor="delete-confirmation">
-            Type <strong>DELETE MY ACCOUNT</strong>
+            <T>Type exactly</T> <strong>{deleteConfirmation}</strong>
           </label>
           <input
             autoComplete="off"
@@ -197,8 +197,7 @@ export function AccountControls({ email }: { email: string }) {
           {ownedOrganizations.length > 0 ? (
             <div className={styles.organizationWarning}>
               <p>
-                You own organizations that will otherwise block account
-                deletion:
+                <T>You own organizations that will otherwise block account deletion:</T>
               </p>
               <ul>
                 {ownedOrganizations.map((organization) => (
@@ -216,7 +215,7 @@ export function AccountControls({ email }: { email: string }) {
                   }
                   type="checkbox"
                 />
-                Also permanently delete these organizations and their data.
+                <T>Also permanently delete these organizations and their data.</T>
               </label>
             </div>
           ) : null}
@@ -225,17 +224,17 @@ export function AccountControls({ email }: { email: string }) {
             className={styles.deleteButton}
             disabled={
               deleting ||
-              confirmation !== "DELETE MY ACCOUNT" ||
+              confirmation !== deleteConfirmation ||
               deletePassword.length === 0 ||
               (ownedOrganizations.length > 0 && !deleteOwnedOrganizations)
             }
             type="submit"
           >
-            {deleting ? "Deleting…" : "Delete account"}
+            {deleting ? t("Deleting…") : t("Delete account")}
           </button>
           {deleteStatus ? (
             <p className={styles.status} role="status">
-              {deleteStatus}
+              {t(deleteStatus)}
             </p>
           ) : null}
         </form>

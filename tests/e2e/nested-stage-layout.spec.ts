@@ -86,12 +86,12 @@ test("nested feature stages keep usable width on wide desktops", async ({
     await expect(page.getByLabel("Current organization narrative")).toBeVisible();
 
     const organization = await page.evaluate(() => {
-      const scene = document.querySelector<HTMLElement>(
-        'section[aria-labelledby="organization-title"]',
-      );
-      const current = scene?.querySelector<HTMLElement>(
+      const current = document.querySelector<HTMLElement>(
         'aside[aria-label="Current organization narrative"]',
       );
+      const scene = current?.closest<HTMLElement>(
+        'section[aria-labelledby="organization-title"]',
+      ) ?? null;
       const sceneBox = scene?.getBoundingClientRect();
       const currentBox = current?.getBoundingClientRect();
       const style = scene ? getComputedStyle(scene) : null;

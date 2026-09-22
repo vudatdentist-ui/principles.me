@@ -1,5 +1,6 @@
 "use client";
 
+import { T, useI18n } from "@/features/i18n/locale";
 import { AutoTextarea } from "@/features/ui/auto-textarea";
 
 import { jsonRequest } from "@/features/ui/json-request";
@@ -57,6 +58,7 @@ export function LearningWorkspace({
   initialState: ClientLearningState;
   onStateChange?: (state: ClientLearningState) => void;
 }) {
+  const { t } = useI18n();
   const [state, setState] = useState(initialState);
   const [proposal, setProposal] = useState<LearningPatternProposal | null>(
     null,
@@ -77,7 +79,7 @@ export function LearningWorkspace({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed.");
+      setError(cause instanceof Error ? cause.message : t("Request failed."));
     } finally {
       setWorking(null);
     }
@@ -146,13 +148,13 @@ export function LearningWorkspace({
 
         {error ? (
           <div className={styles.error} role="alert">
-            {error}
+            {t(error)}
           </div>
         ) : null}
 
         {state.historyCount < 2 && state.patterns.length === 0 ? (
           <section className={styles.card}>
-            <strong>Not enough history yet.</strong>
+            <strong><T>Not enough history yet.</T></strong>
           </section>
         ) : null}
 
@@ -164,7 +166,7 @@ export function LearningWorkspace({
               onClick={() => void findPattern()}
               type="button"
             >
-              {working === "proposal" ? "Thinking…" : "Find a pattern"}
+              {working === "proposal" ? t("Thinking…") : t("Find a pattern")}
             </button>
           </section>
         ) : null}
@@ -184,7 +186,7 @@ export function LearningWorkspace({
         ) : null}
 
         {state.patterns.length > 0 ? (
-          <section className={styles.patterns} aria-label="Self Model patterns">
+          <section className={styles.patterns} aria-label={t("Self Model patterns")}>
             {state.patterns.map((pattern) => (
               <PatternCard
                 key={pattern.id}
@@ -225,18 +227,19 @@ function PatternProposalCard({
   proposal: LearningPatternProposal;
   working: boolean;
 }) {
+  const { t } = useI18n();
   if (editing) {
     return (
       <section className={styles.card}>
         <div className={styles.cardHeading}>
-          <span>Pattern hypothesis</span>
-          <strong>Correct the model.</strong>
+          <span><T>Pattern hypothesis</T></span>
+          <strong><T>Correct the model.</T></strong>
         </div>
         <div className={styles.stack}>
           <label>
-            Pattern
+            <T>Pattern</T>
             <AutoTextarea
-              aria-label="Pattern statement"
+              aria-label={t("Pattern statement")}
               className={styles.textarea}
               onChange={(event) =>
                 onChange({ ...draft, statement: event.target.value })
@@ -246,9 +249,9 @@ function PatternProposalCard({
             />
           </label>
           <label>
-            Implication
+            <T>Implication</T>
             <AutoTextarea
-              aria-label="Pattern implication"
+              aria-label={t("Pattern implication")}
               className={styles.textarea}
               onChange={(event) =>
                 onChange({ ...draft, implication: event.target.value })
@@ -258,7 +261,7 @@ function PatternProposalCard({
             />
           </label>
           <label>
-            Evidence for
+            <T>Evidence for</T>
             <AutoTextarea
               className={styles.textarea}
               onChange={(event) =>
@@ -269,7 +272,7 @@ function PatternProposalCard({
             />
           </label>
           <label>
-            Evidence against
+            <T>Evidence against</T>
             <AutoTextarea
               className={styles.textarea}
               onChange={(event) =>
@@ -283,7 +286,7 @@ function PatternProposalCard({
             />
           </label>
           <label>
-            Uncertainty
+            <T>Uncertainty</T>
             <AutoTextarea
               className={styles.textarea}
               onChange={(event) =>
@@ -301,14 +304,14 @@ function PatternProposalCard({
             onClick={onKeep}
             type="button"
           >
-            Save corrected pattern
+            <T>Save corrected pattern</T>
           </button>
           <button
             className={styles.secondary}
             onClick={() => onEdit(false)}
             type="button"
           >
-            Cancel edit
+            <T>Cancel edit</T>
           </button>
         </div>
       </section>
@@ -318,7 +321,7 @@ function PatternProposalCard({
   return (
     <section className={styles.card}>
       <div className={styles.cardHeading}>
-        <span>Pattern hypothesis</span>
+        <span><T>Pattern hypothesis</T></span>
         <strong className={styles.patternStatement}>{draft.statement}</strong>
       </div>
       <p className={styles.implication}>{draft.implication}</p>
@@ -336,7 +339,7 @@ function PatternProposalCard({
           onClick={onKeep}
           type="button"
         >
-          Keep this pattern
+          <T>Keep this pattern</T>
         </button>
         <button
           className={styles.secondary}
@@ -344,7 +347,7 @@ function PatternProposalCard({
           onClick={() => onEdit(true)}
           type="button"
         >
-          Edit
+          <T>Edit</T>
         </button>
         <button
           className={styles.secondary}
@@ -352,7 +355,7 @@ function PatternProposalCard({
           onClick={onReject}
           type="button"
         >
-          Reject
+          <T>Reject</T>
         </button>
         <button
           className={styles.secondary}
@@ -360,7 +363,7 @@ function PatternProposalCard({
           onClick={onTryAnother}
           type="button"
         >
-          Try another
+          <T>Try another</T>
         </button>
       </div>
     </section>
@@ -380,25 +383,26 @@ function PatternEvidence({
   supportingEvidence: string;
   uncertainty: string;
 }) {
+  const { t } = useI18n();
   return (
     <details className={styles.detailsBlock}>
-      <summary>Inspect the evidence</summary>
+      <summary><T>Inspect the evidence</T></summary>
       <dl className={styles.details}>
         <div>
-          <dt>For</dt>
+          <dt><T>For</T></dt>
           <dd>{supportingEvidence}</dd>
         </div>
         <div>
-          <dt>Against</dt>
+          <dt><T>Against</T></dt>
           <dd>{contradictingEvidence}</dd>
         </div>
         <div>
-          <dt>Uncertainty</dt>
+          <dt><T>Uncertainty</T></dt>
           <dd>{uncertainty}</dd>
         </div>
         {confidence !== null ? (
           <div>
-            <dt>Confidence</dt>
+            <dt><T>Confidence</T></dt>
             <dd>{Math.round(confidence * 100)}%</dd>
           </div>
         ) : null}
@@ -407,16 +411,13 @@ function PatternEvidence({
         {cases.map((item, index) => (
           <article className={styles.case} key={item.reflectionId}>
             <span>
-              Case {index + 1} ·{" "}
-              {item.phase === "outcome_review"
-                ? "Outcome review"
-                : "Reflection"}
+              {t("Case {count} · {phase}", { count: index + 1, phase: t(item.phase === "outcome_review" ? "Outcome review" : "Reflection") })}
             </span>
             <strong>{item.problem}</strong>
             <p>{item.happened}</p>
             {item.outcome ? (
               <p>
-                Outcome · {item.outcome.comparison}: {item.outcome.actualResult}
+                {t("Outcome · {comparison}", { comparison: t(item.outcome.comparison) })}: {item.outcome.actualResult}
               </p>
             ) : null}
           </article>
@@ -443,14 +444,17 @@ function PatternCard({
   revision: RevisionDraft | null;
   working: boolean;
 }) {
+  const { t } = useI18n();
   const proposal = pattern.principleRevisionProposal;
   return (
     <article className={styles.patternCard}>
       <div className={styles.cardHeading}>
         <span>
-          {pattern.lifecycleState === "applied"
-            ? "Applied learning"
-            : "Self Model"}
+          {t(
+            pattern.lifecycleState === "applied"
+              ? "Applied learning"
+              : "Self Model",
+          )}
         </span>
         <strong>{pattern.statement}</strong>
       </div>
@@ -459,17 +463,17 @@ function PatternCard({
         cases={pattern.cases}
         confidence={pattern.confidence}
         contradictingEvidence={
-          pattern.contradictingEvidence ?? "No counter-evidence recorded."
+          pattern.contradictingEvidence ?? t("No counter-evidence recorded.")
         }
         supportingEvidence={
-          pattern.supportingEvidence ?? "No supporting summary recorded."
+          pattern.supportingEvidence ?? t("No supporting summary recorded.")
         }
-        uncertainty={pattern.uncertainty ?? "Uncertainty not recorded."}
+        uncertainty={pattern.uncertainty ?? t("Uncertainty not recorded.")}
       />
 
       {pattern.appliedRevision ? (
         <div className={styles.revisionSummary}>
-          <span>Revision applied · testing</span>
+          <span><T>Revision applied · testing</T></span>
           <strong>{pattern.appliedRevision.revisedRule}</strong>
         </div>
       ) : null}
@@ -480,21 +484,21 @@ function PatternCard({
           onClick={() => onBeginRevision(revisionDraft(pattern.id, proposal))}
           type="button"
         >
-          Revise this principle
+          <T>Revise this principle</T>
         </button>
       ) : null}
 
       {revision ? (
         <div className={styles.revisionEditor}>
           <div className={styles.cardHeading}>
-            <span>Principle revision</span>
-            <strong>Test a better rule.</strong>
+            <span><T>Principle revision</T></span>
+            <strong><T>Test a better rule.</T></strong>
           </div>
           <div className={styles.stack}>
             <label>
-              Trigger
+              <T>Trigger</T>
               <AutoTextarea
-                aria-label="Revised principle trigger"
+                aria-label={t("Revised principle trigger")}
                 className={styles.textarea}
                 onChange={(event) =>
                   onRevisionChange({ ...revision, trigger: event.target.value })
@@ -504,9 +508,9 @@ function PatternCard({
               />
             </label>
             <label>
-              Rule
+              <T>Rule</T>
               <AutoTextarea
-                aria-label="Revised principle rule"
+                aria-label={t("Revised principle rule")}
                 className={styles.textarea}
                 onChange={(event) =>
                   onRevisionChange({ ...revision, rule: event.target.value })
@@ -516,9 +520,9 @@ function PatternCard({
               />
             </label>
             <label>
-              Rationale
+              <T>Rationale</T>
               <AutoTextarea
-                aria-label="Revised principle rationale"
+                aria-label={t("Revised principle rationale")}
                 className={styles.textarea}
                 onChange={(event) =>
                   onRevisionChange({
@@ -543,14 +547,14 @@ function PatternCard({
               onClick={onApplyRevision}
               type="button"
             >
-              {working ? "Saving…" : "Revise and test"}
+              {working ? t("Saving…") : t("Revise and test")}
             </button>
             <button
               className={styles.secondary}
               onClick={onCancelRevision}
               type="button"
             >
-              Cancel
+              <T>Cancel</T>
             </button>
           </div>
         </div>

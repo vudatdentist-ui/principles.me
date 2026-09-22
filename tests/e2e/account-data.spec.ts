@@ -45,7 +45,7 @@ test("account data controls require re-authentication, export and delete the tem
   await expect(page.getByText("Export ready.")).toBeVisible();
 
   await page.getByLabel("Confirm password").last().fill(password);
-  await page.getByLabel(/Type DELETE MY ACCOUNT/).fill("DELETE MY ACCOUNT");
+  await page.getByLabel(/DELETE MY ACCOUNT/).fill("DELETE MY ACCOUNT");
   const deleteResponse = page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/account/delete") &&
