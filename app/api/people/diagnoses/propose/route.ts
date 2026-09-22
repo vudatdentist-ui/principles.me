@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { localeFromHeaders } from "@/features/i18n/config";
 import { createAiSuggestion } from "@/features/kernel/repository";
 import {
   consumePeopleAiQuota,
@@ -65,6 +66,7 @@ export async function POST(request: Request): Promise<Response> {
       );
       proposal = fallbackDiagnosisProposal({
         evidence: evidence.map(({ content, title }) => ({ content, title })),
+        locale: localeFromHeaders(request.headers),
         problemStatement: problem.statement,
       });
     }
