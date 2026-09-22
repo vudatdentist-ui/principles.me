@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_LOCALE, type Locale } from "@/features/i18n/config";
 import { createAiProvider } from "@/lib/ai/providers/factory";
 import type { AiResponseMetadata } from "@/lib/ai/providers/types";
 import type { GoalRecord, ProblemRecord, ReflectionRecord } from "./contracts";
@@ -56,8 +57,53 @@ export function parseDiagnosisProposal(value: unknown) {
   return diagnosisSchema.parse(value);
 }
 
+const diagnosisFallbackCopy = {
+  en: {
+    alternativeHypotheses:
+      "Keep multiple causal explanations open until new evidence can distinguish between them.",
+    contradictingEvidence:
+      "No contradicting evidence has been established from the current record.",
+    noSupportingEvidence:
+      "No supporting evidence beyond the accepted Problem and Reality.",
+    proximateCause:
+      "The proximate cause is not established from the current evidence.",
+    rootCauseHypothesis:
+      "The current evidence is insufficient to establish a root cause. Treat this as an editable diagnosis draft, not a conclusion.",
+    symptom: "The accepted Problem remains unresolved.",
+    uncertainty:
+      "Uncertainty is high. Add observations that could distinguish competing causes before treating the diagnosis as settled.",
+  },
+  vi: {
+    alternativeHypotheses:
+      "Giữ mở nhiều cách lý giải nguyên nhân cho đến khi có bằng chứng mới đủ để phân biệt chúng.",
+    contradictingEvidence:
+      "Từ dữ liệu hiện có, chưa xác lập được bằng chứng phản bác giả thuyết.",
+    noSupportingEvidence:
+      "Chưa có thêm bằng chứng ủng hộ ngoài Vấn đề và Thực tế đã được xác nhận.",
+    proximateCause:
+      "Bằng chứng hiện tại chưa đủ để xác định nguyên nhân trực tiếp.",
+    rootCauseHypothesis:
+      "Bằng chứng hiện tại chưa đủ để xác định nguyên nhân gốc. Hãy coi đây là bản phân tích nháp để chỉnh sửa, không phải kết luận.",
+    symptom: "Vấn đề đã xác nhận vẫn chưa được giải quyết.",
+    uncertainty:
+      "Mức độ chưa chắc chắn còn cao. Hãy bổ sung các quan sát có thể phân biệt những giả thuyết nguyên nhân đang cạnh tranh trước khi coi phần phân tích là đã rõ.",
+  },
+} satisfies Record<
+  Locale,
+  {
+    alternativeHypotheses: string;
+    contradictingEvidence: string;
+    noSupportingEvidence: string;
+    proximateCause: string;
+    rootCauseHypothesis: string;
+    symptom: string;
+    uncertainty: string;
+  }
+>;
+
 function evidenceSummary(
-  evidence: Array<{ content: string; title: string | null }>
+  evidence: Array<{ content: string; title: string | null }>,
+  locale: Locale,
 ): string {
   const summary = evidence
     .map(({ content, title }) => {
@@ -69,28 +115,27 @@ function evidenceSummary(
     .join("\n\n")
     .slice(0, 1400)
     .trim();
-  return summary || "No supporting evidence beyond the accepted Problem and Reality.";
+  return summary || diagnosisFallbackCopy[locale].noSupportingEvidence;
 }
 
 export function fallbackDiagnosisProposal(input: {
   evidence: Array<{ content: string; title: string | null }>;
+  locale?: Locale;
   problemStatement: string;
 }): GeneratedDiagnosis {
+  const locale = input.locale ?? DEFAULT_LOCALE;
+  const copy = diagnosisFallbackCopy[locale];
   return {
-    alternativeHypotheses:
-      "Keep multiple causal explanations open until new evidence can distinguish between them.",
+    alternativeHypotheses: copy.alternativeHypotheses,
     confidence: null,
-    contradictingEvidence:
-      "No contradicting evidence has been established from the current record.",
+    contradictingEvidence: copy.contradictingEvidence,
     modelName: null,
     modelProvider: "deterministic-safety-fallback",
-    proximateCause: "The proximate cause is not established from the current evidence.",
-    rootCauseHypothesis:
-      "The current evidence is insufficient to establish a root cause. Treat this as an editable diagnosis draft, not a conclusion.",
-    supportingEvidence: evidenceSummary(input.evidence),
-    symptom: input.problemStatement.trim() || "The accepted Problem remains unresolved.",
-    uncertainty:
-      "Uncertainty is high. Add observations that could distinguish competing causes before treating the diagnosis as settled.",
+    proximateCause: copy.proximateCause,
+    rootCauseHypothesis: copy.rootCauseHypothesis,
+    supportingEvidence: evidenceSummary(input.evidence, locale),
+    symptom: input.problemStatement.trim() || copy.symptom,
+    uncertainty: copy.uncertainty,
   };
 }
 
