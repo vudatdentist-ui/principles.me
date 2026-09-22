@@ -87,7 +87,7 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }) => {
     page.getByRole("heading", { name: "Điều gì cần vận hành khác đi?" }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Tài khoản", exact: true }).click();
+  await page.getByRole("link", { name: `Tài khoản của ${email}`, exact: true }).click();
   await expect(page.getByRole("heading", { name: "Tài khoản và dữ liệu" })).toBeVisible();
   await expect(page.getByText("XÓA TÀI KHOẢN CỦA TÔI", { exact: true })).toBeVisible();
   await expect(page.getByText("DELETE MY ACCOUNT", { exact: true })).toHaveCount(0);
