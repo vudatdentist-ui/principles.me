@@ -39,7 +39,7 @@ test("Vietnamese is the natural default and language choice persists", async ({
 });
 
 
-test("Vietnamese also covers authentication failures", async ({ page }) => {
+test("Vietnamese also covers authentication failures", async ({ page }, testInfo) => {
   await page.goto("/");
 
   await page.getByLabel("Email").fill("missing@example.com");
@@ -52,10 +52,15 @@ test("Vietnamese also covers authentication failures", async ({ page }) => {
   await expect(
     page.getByText("Invalid email or password.", { exact: true }),
   ).toHaveCount(0);
+
+  await testInfo.attach("vietnamese-auth-error", {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: "image/png",
+  });
 });
 
 
-test("authenticated core surfaces default to Vietnamese", async ({ page }) => {
+test("authenticated core surfaces default to Vietnamese", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     window.localStorage.removeItem("principles.locale");
   });
@@ -95,4 +100,9 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Tài khoản và dữ liệu" })).toBeVisible();
   await expect(page.getByText("XÓA TÀI KHOẢN CỦA TÔI", { exact: true })).toBeVisible();
   await expect(page.getByText("DELETE MY ACCOUNT", { exact: true })).toHaveCount(0);
+
+  await testInfo.attach("vietnamese-account-confirmation", {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: "image/png",
+  });
 });
