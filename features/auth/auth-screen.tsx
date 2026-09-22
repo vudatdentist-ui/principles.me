@@ -160,7 +160,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               type="email"
               value={email}
             />
-            {error ? <div className={styles.error} role="alert">{error}</div> : null}
+            {error ? <div className={styles.error} role="alert">{t(error)}</div> : null}
             {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
             <button className={styles.submit} disabled={working} type="submit">
               {working ? t("Sending…") : t("Send reset link")}
@@ -196,7 +196,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               type="password"
               value={password}
             />
-            {error ? <div className={styles.error} role="alert">{error}</div> : null}
+            {error ? <div className={styles.error} role="alert">{t(error)}</div> : null}
             {notice ? <div className={styles.notice} role="status">{notice}</div> : null}
             {unverifiedEmail ? (
               <button
