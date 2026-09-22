@@ -389,6 +389,18 @@ export const viMessages: Record<string, string> = {
   "Tension:": "Căng thẳng:",
   "People:": "Con người:",
   Confidence: "Mức độ tin cậy",
+  Ready: "Sẵn sàng",
+  Connected: "Đã kết nối",
+  Unavailable: "Không khả dụng",
+  Off: "Đang tắt",
+  Empty: "Chưa có dữ liệu",
+  Failed: "Không thành công",
+  Complete: "Hoàn tất",
+  Stopped: "Đã dừng",
+  Ask: "Hỏi",
+  Open: "Mở nguồn",
+  "{count} source": "{count} nguồn",
+  "{count} sources": "{count} nguồn",
 
   // Account details
   "Get your personal evolution history and your attributable organization participation. Credentials and session/reset tokens are never included.":
