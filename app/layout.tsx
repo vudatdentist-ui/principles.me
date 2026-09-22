@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import {
-  DEFAULT_LOCALE,
-  LOCALE_COOKIE,
-  parseLocale,
-} from "@/features/i18n/config";
+import { DEFAULT_LOCALE } from "@/features/i18n/config";
 import { LocaleProvider } from "@/features/i18n/locale";
 import "./globals.css";
 
@@ -15,19 +10,15 @@ export const metadata: Metadata = {
   title: "Principles",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const locale =
-    parseLocale(cookieStore.get(LOCALE_COOKIE)?.value) ?? DEFAULT_LOCALE;
-
   return (
-    <html lang={locale}>
+    <html lang={DEFAULT_LOCALE}>
       <body>
-        <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
+        <LocaleProvider>{children}</LocaleProvider>
       </body>
     </html>
   );

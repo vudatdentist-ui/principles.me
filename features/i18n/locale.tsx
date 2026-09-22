@@ -11,7 +11,6 @@ import {
 } from "react";
 import {
   DEFAULT_LOCALE,
-  LOCALE_COOKIE,
   LOCALE_STORAGE_KEY,
   parseLocale,
   type Locale,
@@ -59,7 +58,6 @@ export function LocaleProvider({
 
   const setLocale = useCallback((next: Locale) => {
     window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
-    document.cookie = `${LOCALE_COOKIE}=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
     document.documentElement.lang = next;
     setLocaleState(next);
   }, []);
