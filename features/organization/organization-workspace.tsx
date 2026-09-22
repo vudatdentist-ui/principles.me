@@ -189,9 +189,11 @@ export function OrganizationWorkspace({
             open={state.organizations.length === 0}
           >
             <summary>
-              {state.organizations.length === 0
-                ? "Create organization"
-                : "New organization"}
+              {t(
+                state.organizations.length === 0
+                  ? "Create organization"
+                  : "New organization",
+              )}
             </summary>
             <form
               className={styles.form}
@@ -476,7 +478,7 @@ function OrganizationBody({
                     >
                       <select name="email" required defaultValue="">
                         <option value="" disabled>
-                          <T>Add</T> member
+                          {t("Add member")}
                         </option>
                         {organization.members.map((member) => (
                           <option key={member.email} value={member.email}>
@@ -485,7 +487,7 @@ function OrganizationBody({
                         ))}
                       </select>
                       <button disabled={working !== null} type="submit">
-                        Add
+                        <T>Add</T>
                       </button>
                     </form>
                   ) : null}
@@ -510,11 +512,11 @@ function OrganizationBody({
                   }
                 >
                   <label>
-                    Name
+                    <T>Name</T>
                     <input name="name" required />
                   </label>
                   <label>
-                    Purpose
+                    <T>Purpose</T>
                     <AutoTextarea name="purpose" rows={2} />
                   </label>
                   <button disabled={working !== null} type="submit">
@@ -726,7 +728,7 @@ function OrganizationBody({
               <T>Person</T>
               <select name="email" required defaultValue="">
                 <option value="" disabled>
-                  Select
+                  <T>Select</T>
                 </option>
                 {organization.members.map((member) => (
                   <option key={member.email} value={member.email}>
