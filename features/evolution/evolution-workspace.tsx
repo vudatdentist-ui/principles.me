@@ -872,7 +872,7 @@ export function EvolutionWorkspace({
           <T>Record reality</T>
         </button>
         <a className={styles.textLink} href="/learning">
-          Principles library →
+          <T>Principles library →</T>
         </a>
       </div>
     );
