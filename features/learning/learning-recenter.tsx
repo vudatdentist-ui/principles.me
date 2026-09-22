@@ -1,5 +1,6 @@
 "use client";
 
+import { T, useI18n } from "@/features/i18n/locale";
 import { AutoTextarea } from "@/features/ui/auto-textarea";
 
 import { jsonRequest } from "@/features/ui/json-request";
@@ -81,6 +82,7 @@ export function LearningRecenter({
   initialPeople: ClientPeopleState;
   initialState: ClientLearningState;
 }) {
+  const { t } = useI18n();
   const [people, setPeople] = useState(initialPeople);
   const [learning, setLearning] = useState(initialState);
   const [editor, setEditor] = useState<EditorKind>(null);
@@ -191,7 +193,7 @@ export function LearningRecenter({
     setLearning(nextLearning);
     void refreshPeople().catch((cause) => {
       setError(
-        cause instanceof Error ? cause.message : "Could not refresh Learning.",
+        cause instanceof Error ? cause.message : t("Could not refresh Learning."),
       );
     });
   }
@@ -205,7 +207,7 @@ export function LearningRecenter({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed.");
+      setError(cause instanceof Error ? cause.message : t("Request failed."));
     } finally {
       setWorking(null);
     }
@@ -366,38 +368,38 @@ export function LearningRecenter({
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="learning-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Learning</p>
-          <h1 id="learning-title">What is reality teaching you?</h1>
+          <p className={styles.eyebrow}><T>Learning</T></p>
+          <h1 id="learning-title"><T>What is reality teaching you?</T></h1>
         </div>
 
         <aside
           className={styles.currentScene}
-          aria-label="Current learning narrative"
+          aria-label={t("Current learning narrative")}
         >
-          <span>Now · {currentLearningLabel}</span>
-          <strong>{currentLearning}</strong>
+          <span>{t("Now")} · {t(currentLearningLabel)}</span>
+          <strong>{currentLearning === "Record an experience, then decide what it teaches you." ? t(currentLearning) : currentLearning}</strong>
           <div className={styles.sceneActions}>
             <button
               className={styles.primaryLight}
               onClick={() => revealEditor("reflection")}
               type="button"
             >
-              Capture reflection
+              <T>Capture reflection</T>
             </button>
           </div>
         </aside>
       </section>
 
-      <nav className={styles.chapterRail} aria-label="Learning chapters">
-        <a href="#learning-principle">Principles <span>{principles.length}</span></a>
-        <a href="#learning-reflection">Reflections <span>{eligibleReflections.length}</span></a>
-        <a href="#learning-pattern">Patterns <span>{activePatterns.length}</span></a>
-        <a href="#pattern-tools">Revision tools</a>
+      <nav className={styles.chapterRail} aria-label={t("Learning chapters")}>
+        <a href="#learning-principle"><T>Principles</T> <span>{principles.length}</span></a>
+        <a href="#learning-reflection"><T>Reflections</T> <span>{eligibleReflections.length}</span></a>
+        <a href="#learning-pattern"><T>Patterns</T> <span>{activePatterns.length}</span></a>
+        <a href="#pattern-tools"><T>Revision tools</T></a>
       </nav>
 
       {error ? (
         <div className={styles.error} role="alert">
-          {error}
+          {t(error)}
         </div>
       ) : null}
 
@@ -406,23 +408,15 @@ export function LearningRecenter({
           className={styles.editorPanel}
           id="learning-editor"
           ref={editorRef}
-          aria-label={`Add ${editor}`}
+          aria-label={t("Add {item}", { item: t(editor === "reflection" ? "Reflection" : editor === "pattern" ? "Pattern" : "Principle") })}
         >
           <div className={styles.editorHeader}>
             <div>
               <p className={styles.eyebrow}>
-                {editor === "reflection"
-                  ? "Reflection"
-                  : editor === "pattern"
-                    ? "Pattern"
-                    : "Principle"}
+                {t(editor === "reflection" ? "Reflection" : editor === "pattern" ? "Pattern" : "Principle")}
               </p>
               <h2>
-                {editor === "reflection"
-                  ? "What happened, and what did it teach you?"
-                  : editor === "pattern"
-                    ? "What seems to repeat across reality?"
-                    : "What rule deserves a real-world test?"}
+                {t(editor === "reflection" ? "What happened, and what did it teach you?" : editor === "pattern" ? "What seems to repeat across reality?" : "What rule deserves a real-world test?")}
               </h2>
             </div>
             <button
@@ -430,31 +424,29 @@ export function LearningRecenter({
               onClick={() => setEditor(null)}
               type="button"
             >
-              Close
+              <T>Close</T>
             </button>
           </div>
 
           {editor === "reflection" ? (
             usableGoals.length === 0 || people.problems.length === 0 ? (
               <div className={styles.contextMissing}>
-                <strong>Reflection needs a Dream and a Problem context.</strong>
+                <strong><T>Reflection needs a Dream and a Problem context.</T></strong>
                 <p>
-                  Start the cycle in Me first. Once a real gap exists, Learning can
-                  attach the reflection to that evidence instead of creating an
-                  orphan note.
+                  <T>Start the cycle in Me first. Once a real gap exists, Learning can attach the reflection to that evidence instead of creating an orphan note.</T>
                 </p>
-                <a href="/">Open Me →</a>
+                <a href="/"><T>Open Me →</T></a>
               </div>
             ) : (
               <div className={styles.editorGrid}>
                 <label className={styles.field}>
-                  <span>Dream / Goal</span>
+                  <span><T>Dream / Goal</T></span>
                   <select
-                    aria-label="Reflection goal"
+                    aria-label={t("Reflection goal")}
                     onChange={(event) => updateReflectionGoal(event.target.value)}
                     value={reflectionDraft.goalId}
                   >
-                    <option value="">Choose a goal</option>
+                    <option value="">{t("Choose a goal")}</option>
                     {usableGoals.map((goal) => (
                       <option key={goal.id} value={goal.id}>
                         {goal.desiredState}
@@ -463,9 +455,9 @@ export function LearningRecenter({
                   </select>
                 </label>
                 <label className={styles.field}>
-                  <span>Problem / Gap</span>
+                  <span><T>Problem / Gap</T></span>
                   <select
-                    aria-label="Reflection problem"
+                    aria-label={t("Reflection problem")}
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
                         ...current,
@@ -474,7 +466,7 @@ export function LearningRecenter({
                     }
                     value={reflectionDraft.problemId}
                   >
-                    <option value="">Choose a problem</option>
+                    <option value="">{t("Choose a problem")}</option>
                     {usableProblems.map((problem) => (
                       <option key={problem.id} value={problem.id}>
                         {problem.statement}
@@ -483,9 +475,9 @@ export function LearningRecenter({
                   </select>
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span>What actually happened?</span>
+                  <span><T>What actually happened?</T></span>
                   <AutoTextarea
-                    aria-label="Reflection happened"
+                    aria-label={t("Reflection happened")}
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
                         ...current,
@@ -497,9 +489,9 @@ export function LearningRecenter({
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>What did you expect?</span>
+                  <span><T>What did you expect?</T></span>
                   <AutoTextarea
-                    aria-label="Reflection expected"
+                    aria-label={t("Reflection expected")}
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
                         ...current,
@@ -511,9 +503,9 @@ export function LearningRecenter({
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>What surprised you?</span>
+                  <span><T>What surprised you?</T></span>
                   <AutoTextarea
-                    aria-label="Reflection surprise"
+                    aria-label={t("Reflection surprise")}
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
                         ...current,
@@ -525,9 +517,9 @@ export function LearningRecenter({
                   />
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span>What did you learn?</span>
+                  <span><T>What did you learn?</T></span>
                   <AutoTextarea
-                    aria-label="Reflection learning"
+                    aria-label={t("Reflection learning")}
                     onChange={(event) =>
                       setReflectionDraft((current) => ({
                         ...current,
@@ -549,13 +541,13 @@ export function LearningRecenter({
                     }
                     type="checkbox"
                   />
-                  <span>This looks recurring</span>
+                  <span><T>This looks recurring</T></span>
                 </label>
                 {reflectionDraft.recurring ? (
                   <label className={styles.field}>
-                    <span>Recurrence note</span>
+                    <span><T>Recurrence note</T></span>
                     <AutoTextarea
-                      aria-label="Reflection recurrence note"
+                      aria-label={t("Reflection recurrence note")}
                       onChange={(event) =>
                         setReflectionDraft((current) => ({
                           ...current,
@@ -574,7 +566,7 @@ export function LearningRecenter({
                     onClick={() => void addReflection()}
                     type="button"
                   >
-                    {working === "reflection" ? "Saving…" : "Save reflection"}
+                    {working === "reflection" ? t("Saving…") : t("Save reflection")}
                   </button>
                 </div>
               </div>
@@ -584,34 +576,32 @@ export function LearningRecenter({
           {editor === "pattern" ? (
             learning.historyCount < 2 ? (
               <div className={styles.contextMissing}>
-                <strong>Pattern needs at least two completed Reflections.</strong>
+                <strong><T>Pattern needs at least two completed Reflections.</T></strong>
                 <p>
-                  A pattern is not a free-floating note. Capture another real case
-                  first, then compare the evidence and decide what actually repeats.
+                  <T>A pattern is not a free-floating note. Capture another real case first, then compare the evidence and decide what actually repeats.</T>
                 </p>
                 <button
                   className={styles.primary}
                   onClick={() => revealEditor("reflection")}
                   type="button"
                 >
-                  Capture another reflection
+                  <T>Capture another reflection</T>
                 </button>
               </div>
             ) : patternProposal && patternDraft ? (
               <div className={styles.editorGrid}>
                 <div className={styles.contextMissing}>
                   <strong>
-                    Evidence base · {patternProposal.cases.length} durable cases
+                    {t("Evidence base · {count} durable cases", { count: patternProposal.cases.length })}
                   </strong>
                   <p>
-                    The system compared completed Reflections. Correct the proposal
-                    before keeping it if the evidence does not support the wording.
+                    <T>The system compared completed Reflections. Correct the proposal before keeping it if the evidence does not support the wording.</T>
                   </p>
                 </div>
                 <label className={styles.field}>
-                  <span>Pattern type</span>
+                  <span><T>Pattern type</T></span>
                   <select
-                    aria-label="Pattern kind"
+                    aria-label={t("Pattern kind")}
                     onChange={(event) =>
                       setPatternDraft((current) =>
                         current
@@ -625,20 +615,16 @@ export function LearningRecenter({
                     }
                     value={patternDraft.kind}
                   >
-                    <option value="recurring_pattern">Recurring pattern</option>
-                    <option value="design_learning">Design learning</option>
-                    <option value="principle_effectiveness">
-                      Principle effectiveness
-                    </option>
-                    <option value="constraint_hypothesis">
-                      Constraint hypothesis
-                    </option>
+                    <option value="recurring_pattern">{t("Recurring pattern")}</option>
+                    <option value="design_learning">{t("Design learning")}</option>
+                    <option value="principle_effectiveness">{t("Principle effectiveness")}</option>
+                    <option value="constraint_hypothesis">{t("Constraint hypothesis")}</option>
                   </select>
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span>Pattern hypothesis</span>
+                  <span><T>Pattern hypothesis</T></span>
                   <AutoTextarea
-                    aria-label="Pattern statement"
+                    aria-label={t("Pattern statement")}
                     onChange={(event) =>
                       setPatternDraft((current) =>
                         current
@@ -651,9 +637,9 @@ export function LearningRecenter({
                   />
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span>If true, what does it imply?</span>
+                  <span><T>If true, what does it imply?</T></span>
                   <AutoTextarea
-                    aria-label="Pattern implication"
+                    aria-label={t("Pattern implication")}
                     onChange={(event) =>
                       setPatternDraft((current) =>
                         current
@@ -666,9 +652,9 @@ export function LearningRecenter({
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>Evidence for</span>
+                  <span><T>Evidence for</T></span>
                   <AutoTextarea
-                    aria-label="Pattern evidence for"
+                    aria-label={t("Pattern evidence for")}
                     onChange={(event) =>
                       setPatternDraft((current) =>
                         current
@@ -684,9 +670,9 @@ export function LearningRecenter({
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>Evidence against</span>
+                  <span><T>Evidence against</T></span>
                   <AutoTextarea
-                    aria-label="Pattern evidence against"
+                    aria-label={t("Pattern evidence against")}
                     onChange={(event) =>
                       setPatternDraft((current) =>
                         current
@@ -702,9 +688,9 @@ export function LearningRecenter({
                   />
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span>What remains uncertain?</span>
+                  <span><T>What remains uncertain?</T></span>
                   <AutoTextarea
-                    aria-label="Pattern uncertainty"
+                    aria-label={t("Pattern uncertainty")}
                     onChange={(event) =>
                       setPatternDraft((current) =>
                         current
@@ -717,10 +703,10 @@ export function LearningRecenter({
                   />
                 </label>
                 <div className={styles.contextMissing}>
-                  <strong>Cases used in this proposal</strong>
+                  <strong><T>Cases used in this proposal</T></strong>
                   {patternProposal.cases.map((item, index) => (
                     <p key={item.reflectionId}>
-                      Case {index + 1} · {item.problem} — {item.happened}
+                      {t("Case {count}", { count: index + 1 })} · {item.problem} — {item.happened}
                     </p>
                   ))}
                 </div>
@@ -731,7 +717,7 @@ export function LearningRecenter({
                     onClick={() => void keepPattern()}
                     type="button"
                   >
-                    {working === "pattern:save" ? "Saving…" : "Keep pattern"}
+                    {working === "pattern:save" ? t("Saving…") : t("Keep pattern")}
                   </button>
                   <button
                     className={styles.secondary}
@@ -739,7 +725,7 @@ export function LearningRecenter({
                     onClick={() => void proposePattern()}
                     type="button"
                   >
-                    Try another
+                    <T>Try another</T>
                   </button>
                   <button
                     className={styles.secondary}
@@ -747,17 +733,15 @@ export function LearningRecenter({
                     onClick={() => void rejectPattern()}
                     type="button"
                   >
-                    Reject
+                    <T>Reject</T>
                   </button>
                 </div>
               </div>
             ) : (
               <div className={styles.contextMissing}>
-                <strong>Compare the evidence before naming the pattern.</strong>
+                <strong><T>Compare the evidence before naming the pattern.</T></strong>
                 <p>
-                  Learning has {learning.historyCount} completed Reflections. Ask the
-                  system to compare them, then edit the hypothesis before you keep
-                  it.
+                  {t("Learning has {count} completed Reflections. Ask the system to compare them, then edit the hypothesis before you keep it.", { count: learning.historyCount })}
                 </p>
                 <button
                   className={styles.primary}
@@ -765,9 +749,7 @@ export function LearningRecenter({
                   onClick={() => void proposePattern()}
                   type="button"
                 >
-                  {working === "pattern:propose"
-                    ? "Comparing reflections…"
-                    : "Synthesize pattern"}
+                  {working === "pattern:propose" ? t("Comparing reflections…") : t("Synthesize pattern")}
                 </button>
               </div>
             )
@@ -776,27 +758,27 @@ export function LearningRecenter({
           {editor === "principle" ? (
             <div className={styles.editorGrid}>
               <label className={styles.field}>
-                <span>When</span>
+                <span><T>When</T></span>
                 <AutoTextarea
-                  aria-label="Principle trigger"
+                  aria-label={t("Principle trigger")}
                   onChange={(event) => setTrigger(event.target.value)}
                   rows={2}
                   value={trigger}
                 />
               </label>
               <label className={styles.field}>
-                <span>Then</span>
+                <span><T>Then</T></span>
                 <AutoTextarea
-                  aria-label="Principle rule"
+                  aria-label={t("Principle rule")}
                   onChange={(event) => setRule(event.target.value)}
                   rows={3}
                   value={rule}
                 />
               </label>
               <label className={`${styles.field} ${styles.fieldWide}`}>
-                <span>Why</span>
+                <span><T>Why</T></span>
                 <AutoTextarea
-                  aria-label="Principle rationale"
+                  aria-label={t("Principle rationale")}
                   onChange={(event) => setRationale(event.target.value)}
                   rows={2}
                   value={rationale}
@@ -809,7 +791,7 @@ export function LearningRecenter({
                   onClick={() => void addPrinciple()}
                   type="button"
                 >
-                  {working === "principle" ? "Saving…" : "Save principle"}
+                  {working === "principle" ? t("Saving…") : t("Save principle")}
                 </button>
               </div>
             </div>
@@ -817,7 +799,7 @@ export function LearningRecenter({
         </section>
       ) : null}
 
-      <section className={styles.chapterDeck} aria-label="Learning working scene">
+      <section className={styles.chapterDeck} aria-label={t("Learning working scene")}>
         <section
           className={styles.chapter}
           id="learning-principle"
@@ -825,29 +807,28 @@ export function LearningRecenter({
         >
           <div className={styles.chapterHeader}>
             <div>
-              <p className={styles.eyebrow}>Principle</p>
-              <h2 id="principles-title">Rules I am testing</h2>
+              <p className={styles.eyebrow}><T>Principle</T></p>
+              <h2 id="principles-title"><T>Rules I am testing</T></h2>
             </div>
             <button
               className={styles.chapterAction}
               onClick={() => revealEditor("principle")}
               type="button"
             >
-              + Add principle
+              <T>+ Add principle</T>
             </button>
           </div>
           <p className={styles.chapterIntro}>
-            Write the trigger and the rule clearly enough that reality can prove
-            you wrong.
+            <T>Write the trigger and the rule clearly enough that reality can prove you wrong.</T>
           </p>
           {principles.length > 0 ? (
             <div className={styles.librarySearch}>
-              <label htmlFor="principle-search">Find a principle</label>
-              <input id="principle-search" type="search" value={principleQuery} onChange={(event) => setPrincipleQuery(event.target.value)} placeholder="Search rule, trigger, or rationale" />
-              <span role="status">{matchingPrinciples.length} of {principles.length} principles</span>
+              <label htmlFor="principle-search"><T>Find a principle</T></label>
+              <input id="principle-search" type="search" value={principleQuery} onChange={(event) => setPrincipleQuery(event.target.value)} placeholder={t("Search rule, trigger, or rationale")} />
+              <span role="status">{t("{shown} of {total} principles", { shown: matchingPrinciples.length, total: principles.length })}</span>
             </div>
           ) : null}
-          {principles.length > 0 && matchingPrinciples.length === 0 ? <p className={styles.noResults}>No matching principles. Try another word.</p> : null}
+          {principles.length > 0 && matchingPrinciples.length === 0 ? <p className={styles.noResults}><T>No matching principles. Try another word.</T></p> : null}
           {principles.length > 0 ? (
             <div className={styles.chapterList}>
               {matchingPrinciples.map((principle) => (
@@ -863,8 +844,8 @@ export function LearningRecenter({
             </div>
           ) : (
             <div className={styles.empty}>
-              <strong>No principle yet.</strong>
-              <span>Add a trigger and a rule to test in your next decision.</span>
+              <strong><T>No principle yet.</T></strong>
+              <span><T>Add a trigger and a rule to test in your next decision.</T></span>
             </div>
           )}
         </section>
@@ -875,20 +856,19 @@ export function LearningRecenter({
         >
           <div className={styles.chapterHeader}>
             <div>
-              <p className={styles.eyebrow}>Reflection</p>
-              <h2 id="reflections-title">Pain worth learning from</h2>
+              <p className={styles.eyebrow}><T>Reflection</T></p>
+              <h2 id="reflections-title"><T>Pain worth learning from</T></h2>
             </div>
             <button
               className={styles.chapterAction}
               onClick={() => revealEditor("reflection")}
               type="button"
             >
-              + Reflection
+              <T>+ Reflection</T>
             </button>
           </div>
           <p className={styles.chapterIntro}>
-            Record what happened, what surprised you, and the lesson you think is
-            worth carrying forward.
+            <T>Record what happened, what surprised you, and the lesson you think is worth carrying forward.</T>
           </p>
           {eligibleReflections.length > 0 ? (
             <div className={styles.chapterList}>
@@ -911,8 +891,8 @@ export function LearningRecenter({
             </div>
           ) : (
             <div className={styles.empty}>
-              <strong>No reflection yet.</strong>
-              <span>Capture an event to begin your evidence trail.</span>
+              <strong><T>No reflection yet.</T></strong>
+              <span><T>Capture an event to begin your evidence trail.</T></span>
             </div>
           )}
         </section>
@@ -924,51 +904,50 @@ export function LearningRecenter({
         >
           <div className={styles.chapterHeader}>
             <div>
-              <p className={styles.eyebrow}>Pattern</p>
-              <h2 id="patterns-title">Recurring reality</h2>
+              <p className={styles.eyebrow}><T>Pattern</T></p>
+              <h2 id="patterns-title"><T>Recurring reality</T></h2>
             </div>
             <button
               className={styles.chapterAction}
               onClick={() => revealEditor("pattern")}
               type="button"
             >
-              + Pattern
+              <T>+ Pattern</T>
             </button>
           </div>
           <p className={styles.chapterIntro}>
-            Compare multiple completed Reflections before you name what repeats.
-            Keep evidence for, against, and uncertainty visible beside it.
+            <T>Compare multiple completed Reflections before you name what repeats. Keep evidence for, against, and uncertainty visible beside it.</T>
           </p>
           {activePatterns.length > 0 ? (
             <div className={styles.chapterList}>
               {activePatterns.map((pattern) => (
                 <article className={styles.pattern} key={pattern.id}>
                   <div className={styles.patternMeta}>
-                    <span>{pattern.lifecycleState}</span>
-                    <span>{pattern.cases.length} cases</span>
+                    <span>{t(pattern.lifecycleState)}</span>
+                    <span>{t("{count} cases", { count: pattern.cases.length })}</span>
                   </div>
                   <h3>{pattern.statement}</h3>
                   <p>{pattern.implication}</p>
                   <details>
-                    <summary>Inspect evidence</summary>
+                    <summary><T>Inspect evidence</T></summary>
                     <dl>
                       <div>
-                        <dt>For</dt>
-                        <dd>{pattern.supportingEvidence || "Not recorded"}</dd>
+                        <dt><T>For</T></dt>
+                        <dd>{pattern.supportingEvidence || t("Not recorded")}</dd>
                       </div>
                       <div>
-                        <dt>Against</dt>
-                        <dd>{pattern.contradictingEvidence || "Not recorded"}</dd>
+                        <dt><T>Against</T></dt>
+                        <dd>{pattern.contradictingEvidence || t("Not recorded")}</dd>
                       </div>
                       <div>
-                        <dt>Uncertainty</dt>
-                        <dd>{pattern.uncertainty || "Not recorded"}</dd>
+                        <dt><T>Uncertainty</T></dt>
+                        <dd>{pattern.uncertainty || t("Not recorded")}</dd>
                       </div>
                     </dl>
                   </details>
                   {pattern.appliedRevision ? (
                     <span className={styles.revisionState}>
-                      Principle revised · testing
+                      <T>Principle revised · testing</T>
                     </span>
                   ) : null}
                 </article>
@@ -976,7 +955,7 @@ export function LearningRecenter({
             </div>
           ) : (
             <div className={styles.empty}>
-              <strong>No pattern kept yet.</strong>
+              <strong><T>No pattern kept yet.</T></strong>
               <span>
                 {learning.historyCount < 2
                   ? "Not enough history yet. Live the loop before asking the system to define a pattern."
@@ -985,7 +964,7 @@ export function LearningRecenter({
             </div>
           )}
           <a className={styles.chapterLink} href="#pattern-tools">
-            Open revision tools →
+            <T>Open revision tools →</T>
           </a>
         </section>
 
@@ -1001,12 +980,11 @@ export function LearningRecenter({
         }
       >
         <summary>
-          <span>Revision</span>
-          <strong>Pattern synthesis & principle revision</strong>
+          <span><T>Revision</T></span>
+          <strong><T>Pattern synthesis & principle revision</T></strong>
         </summary>
         <p className={styles.labIntro}>
-          Inspect the longer evidence trail, generate another hypothesis, or revise
-          a principle when reality no longer supports the rule.
+          <T>Inspect the longer evidence trail, generate another hypothesis, or revise a principle when reality no longer supports the rule.</T>
         </p>
         <div className={styles.legacy}>
           <LearningWorkspace
@@ -1031,21 +1009,22 @@ function PrincipleCard({
   principle: ClientPrincipleRecord;
   working: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <article className={styles.principle}>
       <div className={styles.principleTop}>
-        <span>{principle.lifecycleState}</span>
+        <span>{t(principle.lifecycleState)}</span>
         {principle.originReflectionId ? (
-          <span>from reflection</span>
+          <span><T>from reflection</T></span>
         ) : (
-          <span>mine</span>
+          <span><T>mine</T></span>
         )}
       </div>
-      <p>When {principle.trigger}</p>
+      <p><T>When</T> {principle.trigger}</p>
       <h3>{principle.rule}</h3>
       {principle.rationale ? (
         <details>
-          <summary>Why</summary>
+          <summary><T>Why</T></summary>
           <p>{principle.rationale}</p>
         </details>
       ) : null}
@@ -1057,7 +1036,7 @@ function PrincipleCard({
             onClick={() => onReview("accept")}
             type="button"
           >
-            Accept for testing
+            <T>Accept for testing</T>
           </button>
           <button
             className={styles.secondary}
@@ -1065,7 +1044,7 @@ function PrincipleCard({
             onClick={() => onReview("reject")}
             type="button"
           >
-            Reject
+            <T>Reject</T>
           </button>
         </div>
       ) : null}
@@ -1084,14 +1063,15 @@ function ReflectionCard({
   reflection: ReflectionRecord;
   working: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <article className={styles.reflection}>
-      <span className={styles.itemMeta}>Experience → Reflection</span>
+      <span className={styles.itemMeta}><T>Experience → Reflection</T></span>
       <h3>{reflection.learning || reflection.happened}</h3>
       {reflection.surprise ? <p>{reflection.surprise}</p> : null}
       {linkedPrinciple ? (
         <span className={styles.linked}>
-          Principle · {linkedPrinciple.lifecycleState}
+          <T>Principle</T> · {t(linkedPrinciple.lifecycleState)}
         </span>
       ) : (
         <button
@@ -1100,7 +1080,7 @@ function ReflectionCard({
           onClick={onDistill}
           type="button"
         >
-          {working ? "Distilling…" : "Distill principle"}
+          {working ? t("Distilling…") : t("Distill principle")}
         </button>
       )}
     </article>
