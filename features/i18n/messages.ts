@@ -389,4 +389,15 @@ export const viMessages: Record<string, string> = {
   "Tension:": "Căng thẳng:",
   "People:": "Con người:",
   Confidence: "Mức độ tin cậy",
+
+  // Account details
+  "Get your personal evolution history and your attributable organization participation. Credentials and session/reset tokens are never included.":
+    "Tải về lịch sử phát triển cá nhân và phần tham gia của bạn trong các tổ chức. Mật khẩu, thông tin đăng nhập và mã phiên/đặt lại mật khẩu không bao giờ được đưa vào tệp xuất.",
+  "This permanently deletes your Personal Workspace. Shared organization history keeps a disabled pseudonymous identity when other members still depend on that history.":
+    "Thao tác này sẽ xóa vĩnh viễn không gian cá nhân của bạn. Với lịch sử dùng chung trong tổ chức, hệ thống chỉ giữ một danh tính ẩn danh đã vô hiệu hóa nếu thành viên khác vẫn cần dữ liệu đó để bảo toàn lịch sử.",
+  "Type exactly": "Nhập chính xác",
+  "You own organizations that will otherwise block account deletion:":
+    "Bạn đang sở hữu các tổ chức sau; nếu không xử lý, chúng sẽ ngăn việc xóa tài khoản:",
+  "Also permanently delete these organizations and their data.":
+    "Đồng thời xóa vĩnh viễn các tổ chức này cùng toàn bộ dữ liệu của chúng.",
 };
