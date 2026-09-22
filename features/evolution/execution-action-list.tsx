@@ -1,5 +1,6 @@
 "use client";
 
+import { T, useI18n } from "@/features/i18n/locale";
 import type { ClientExecutionActionRecord } from "@/features/people/execution-contracts";
 import {
   toggledExecutionActionStatus,
@@ -16,6 +17,8 @@ export function ExecutionActionList({
   disabled: boolean;
   onStatusChange: (actionId: string, status: ExecutionActionStatus) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className={styles.actionList}>
       {actions.map((action) => {
@@ -26,10 +29,10 @@ export function ExecutionActionList({
             <button
               aria-label={
                 completed
-                  ? `Reopen ${action.commitment}`
+                  ? t("Reopen {action}", { action: action.commitment })
                   : cancelled
-                    ? `Restore ${action.commitment}`
-                    : `Complete ${action.commitment}`
+                    ? t("Restore {action}", { action: action.commitment })
+                    : t("Complete {action}", { action: action.commitment })
               }
               className={
                 completed
@@ -39,12 +42,25 @@ export function ExecutionActionList({
                     : styles.actionToggle
               }
               disabled={disabled}
-              onClick={() => onStatusChange(action.id, toggledExecutionActionStatus(action.status))}
+              onClick={() =>
+                onStatusChange(
+                  action.id,
+                  toggledExecutionActionStatus(action.status),
+                )
+              }
               type="button"
             >
               {completed ? "✓" : cancelled ? "↺" : action.position + 1}
             </button>
-            <span className={completed ? styles.completedText : cancelled ? styles.cancelledText : undefined}>
+            <span
+              className={
+                completed
+                  ? styles.completedText
+                  : cancelled
+                    ? styles.cancelledText
+                    : undefined
+              }
+            >
               {action.commitment}
             </span>
             {action.status === "pending" ? (
@@ -54,7 +70,7 @@ export function ExecutionActionList({
                 onClick={() => onStatusChange(action.id, "cancelled")}
                 type="button"
               >
-                Cancel
+                <T>Cancel</T>
               </button>
             ) : cancelled ? (
               <button
@@ -63,7 +79,7 @@ export function ExecutionActionList({
                 onClick={() => onStatusChange(action.id, "pending")}
                 type="button"
               >
-                Restore
+                <T>Restore</T>
               </button>
             ) : null}
           </div>
