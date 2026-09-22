@@ -250,6 +250,9 @@ export const viMessages: Record<string, string> = {
   "Knowledge working scene": "Không gian làm việc với tri thức",
   "Preparing…": "Đang chuẩn bị…",
   "Searching…": "Đang tìm…",
+  "Thinking from principles…": "Đang suy luận từ các nguyên tắc và bằng chứng…",
+  "The AI returned an invalid answer.": "AI trả về câu trả lời không hợp lệ.",
+  "The Q&A request could not be completed.": "Không thể hoàn tất yêu cầu hỏi đáp.",
   Stop: "Dừng",
   "Answer paused.": "Đã tạm dừng câu trả lời.",
   "Stopped before the answer was complete.":
@@ -357,7 +360,6 @@ export const viMessages: Record<string, string> = {
   "Revision applied · testing": "Đã áp dụng bản chỉnh sửa · đang kiểm chứng",
   "Could not refresh Learning.": "Không thể tải lại dữ liệu Học hỏi.",
   "Could not refresh Learning patterns.": "Không thể tải lại các mẫu lặp.",
-  Now: "Hiện tại",
   "Capture reflection": "Ghi lại một chiêm nghiệm",
   "Learning chapters": "Các phần trong Học hỏi",
   "Add {item}": "Thêm {item}",
@@ -426,9 +428,6 @@ export const viMessages: Record<string, string> = {
   "Outcome review": "Đánh giá kết quả",
   "Case {count} · {phase}": "Trường hợp {count} · {phase}",
   "Outcome · {comparison}": "Kết quả · {comparison}",
-  "No counter-evidence recorded.": "Chưa ghi nhận bằng chứng phản bác.",
-  "No supporting summary recorded.": "Chưa có tóm tắt bằng chứng ủng hộ.",
-  "Uncertainty not recorded.": "Chưa ghi nhận điểm chưa chắc chắn.",
 
   // Organization
   "Create an organization": "Tạo tổ chức",
