@@ -355,6 +355,66 @@ export const viMessages: Record<string, string> = {
   "No supporting summary recorded.": "Chưa có tóm tắt bằng chứng ủng hộ.",
   "Uncertainty not recorded.": "Chưa ghi nhận điểm chưa chắc chắn.",
   "Revision applied · testing": "Đã áp dụng bản chỉnh sửa · đang kiểm chứng",
+  "Could not refresh Learning.": "Không thể tải lại dữ liệu Học hỏi.",
+  "Could not refresh Learning patterns.": "Không thể tải lại các mẫu lặp.",
+  Now: "Hiện tại",
+  "Capture reflection": "Ghi lại một chiêm nghiệm",
+  "Learning chapters": "Các phần trong Học hỏi",
+  "Add {item}": "Thêm {item}",
+  Close: "Đóng",
+  "Reflection needs a Dream and a Problem context.":
+    "Muốn chiêm nghiệm, trước hết cần có một đích đến và một vấn đề thực tế.",
+  "Start the cycle in Me first. Once a real gap exists, Learning can attach the reflection to that evidence instead of creating an orphan note.":
+    "Hãy bắt đầu vòng phát triển trong mục Tôi. Khi đã có một khoảng cách thực sự giữa đích đến và thực tế, phần Học hỏi sẽ gắn chiêm nghiệm vào đúng bằng chứng thay vì tạo một ghi chú rời rạc.",
+  "Open Me →": "Mở mục Tôi →",
+  "Dream / Goal": "Đích đến / Mục tiêu",
+  "Reflection goal": "Mục tiêu của chiêm nghiệm",
+  "Choose a goal": "Chọn mục tiêu",
+  "Problem / Gap": "Vấn đề / Khoảng cách",
+  "Reflection problem": "Vấn đề của chiêm nghiệm",
+  "Choose a problem": "Chọn vấn đề",
+  "Reflection happened": "Điều thực tế đã xảy ra",
+  "Reflection expected": "Điều đã kỳ vọng",
+  "Reflection surprise": "Điều gây bất ngờ",
+  "Reflection learning": "Bài học rút ra",
+  "Reflection recurrence note": "Ghi chú về sự lặp lại",
+  "Pattern needs at least two completed Reflections.":
+    "Cần ít nhất hai chiêm nghiệm đã hoàn tất để nhận diện một mẫu lặp.",
+  "A pattern is not a free-floating note. Capture another real case first, then compare the evidence and decide what actually repeats.":
+    "Mẫu lặp không nên được suy ra từ một ghi chú đơn lẻ. Hãy ghi thêm một trường hợp thực tế, đối chiếu bằng chứng rồi mới kết luận điều gì thật sự đang lặp lại.",
+  "Capture another reflection": "Ghi thêm một chiêm nghiệm",
+  "Evidence base · {count} durable cases": "Cơ sở bằng chứng · {count} trường hợp đủ rõ",
+  "The system compared completed Reflections. Correct the proposal before keeping it if the evidence does not support the wording.":
+    "Hệ thống đã đối chiếu các chiêm nghiệm đã hoàn tất. Nếu câu chữ chưa phản ánh đúng bằng chứng, hãy chỉnh lại trước khi giữ giả thuyết này.",
+  "Pattern type": "Loại mẫu lặp",
+  "Pattern kind": "Loại mẫu lặp",
+  "Principle effectiveness": "Mức độ hiệu quả của nguyên tắc",
+  "Constraint hypothesis": "Giả thuyết về ràng buộc",
+  "Case {count}": "Trường hợp {count}",
+  "Try another": "Thử một giả thuyết khác",
+  "Learning has {count} completed Reflections. Ask the system to compare them, then edit the hypothesis before you keep it.":
+    "Bạn đã có {count} chiêm nghiệm hoàn tất. Hãy để hệ thống đối chiếu chúng, sau đó tự chỉnh lại giả thuyết trước khi quyết định giữ.",
+  "Learning working scene": "Không gian Học hỏi",
+  "Write the trigger and the rule clearly enough that reality can prove you wrong.":
+    "Hãy viết rõ tình huống áp dụng và nguyên tắc hành động, đủ cụ thể để thực tế có thể chứng minh rằng bạn đã sai.",
+  "+ Add principle": "+ Thêm nguyên tắc",
+  "{shown} of {total} principles": "Đang hiển thị {shown}/{total} nguyên tắc",
+  "Pain worth learning from": "Những va vấp đáng để học từ đó",
+  "+ Reflection": "+ Chiêm nghiệm",
+  "Record what happened, what surprised you, and the lesson you think is worth carrying forward.":
+    "Ghi lại điều đã xảy ra, điều khiến bạn bất ngờ và bài học bạn cho rằng đáng mang theo về sau.",
+  Pattern: "Mẫu lặp",
+  "Recurring reality": "Những điều đang lặp lại trong thực tế",
+  "+ Pattern": "+ Mẫu lặp",
+  "Compare multiple completed Reflections before you name what repeats. Keep evidence for, against, and uncertainty visible beside it.":
+    "Hãy đối chiếu nhiều chiêm nghiệm đã hoàn tất trước khi gọi tên điều đang lặp lại. Luôn đặt cạnh giả thuyết cả bằng chứng ủng hộ, bằng chứng phản bác và phần chưa chắc chắn.",
+  "{count} cases": "{count} trường hợp",
+  "Principle revised · testing": "Nguyên tắc đã chỉnh · đang kiểm chứng",
+  "Open revision tools →": "Mở công cụ chỉnh sửa →",
+  "Inspect the longer evidence trail, generate another hypothesis, or revise a principle when reality no longer supports the rule.":
+    "Xem lại chuỗi bằng chứng dài hơn, hình thành một giả thuyết khác hoặc chỉnh lại nguyên tắc khi thực tế không còn ủng hộ nó.",
+  "from reflection": "từ một chiêm nghiệm",
+  mine: "do tôi tạo",
 
   // Organization
   "Create an organization": "Tạo tổ chức",
