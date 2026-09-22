@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test("Vietnamese is the natural default and language choice persists", async ({
   page,
 }, testInfo) => {
@@ -11,10 +13,10 @@ test("Vietnamese is the natural default and language choice persists", async ({
 
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
   await expect(
-    page.getByRole("button", { name: "Đăng nhập", exact: true }),
+    page.getByRole("button", { name: "Đăng nhập", exact: true }).first(),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Tạo tài khoản", exact: true }),
+    page.getByRole("button", { name: "Tạo tài khoản", exact: true }).first(),
   ).toBeVisible();
   await expect(page.getByLabel("Ngôn ngữ")).toHaveValue("vi");
 
@@ -26,7 +28,7 @@ test("Vietnamese is the natural default and language choice persists", async ({
   await page.getByLabel("Ngôn ngữ").selectOption("en");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(
-    page.getByRole("button", { name: "Sign in", exact: true }),
+    page.getByRole("button", { name: "Sign in", exact: true }).first(),
   ).toBeVisible();
 
   await page.reload();
@@ -36,7 +38,7 @@ test("Vietnamese is the natural default and language choice persists", async ({
   await page.getByLabel("Language").selectOption("vi");
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
   await expect(
-    page.getByRole("button", { name: "Đăng nhập", exact: true }),
+    page.getByRole("button", { name: "Đăng nhập", exact: true }).first(),
   ).toBeVisible();
 });
 
