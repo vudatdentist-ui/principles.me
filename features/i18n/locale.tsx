@@ -4,7 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -47,14 +47,12 @@ export function LocaleProvider({
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stored = parseLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
-    if (stored && stored !== initialLocale) setLocaleState(stored);
+    const resolved = stored ?? initialLocale;
+    document.documentElement.lang = resolved;
+    if (resolved !== initialLocale) setLocaleState(resolved);
   }, [initialLocale]);
-
-  useEffect(() => {
-    document.documentElement.lang = locale;
-  }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
     window.localStorage.setItem(LOCALE_STORAGE_KEY, next);

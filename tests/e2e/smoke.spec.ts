@@ -63,7 +63,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await expect(
     page.getByRole("heading", { name: "What deserves attention now?" }),
   ).toBeVisible();
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.getByText(email, { exact: true }).first()).toBeVisible();
   return email;
 }
 

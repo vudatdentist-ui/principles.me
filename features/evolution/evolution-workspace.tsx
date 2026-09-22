@@ -432,6 +432,7 @@ export function EvolutionWorkspace({
           <button
             className={styles.primary}
             disabled={working === "dream" || goalDraft[field].trim().length < 1}
+            id="goal-discovery-continue"
             onClick={() => void continueGoalDiscovery()}
             type="button"
           >

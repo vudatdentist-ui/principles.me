@@ -27,23 +27,21 @@ test("goal input waits for hydration and preserves the first answer", async ({
 
   try {
     await page.goto("/", { waitUntil: "commit" });
-    const answer = page.getByLabel("Goal discovery answer");
+    const answer = page.locator("#goal-discovery-answer");
     await expect(answer).toBeVisible();
     await expect.poll(() => blockedScripts).toBeGreaterThan(0);
     await expect(answer).toBeDisabled();
-    await expect(
-      page.getByRole("button", { name: "Continue", exact: true }),
-    ).toBeDisabled();
+    await expect(page.locator("#goal-discovery-continue")).toBeDisabled();
   } finally {
     releaseScripts();
   }
 
-  const answer = page.getByLabel("Goal discovery answer");
+  const answer = page.locator("#goal-discovery-answer");
   const firstAnswer = "Make considered decisions without losing context.";
   await expect(answer).toBeEditable();
   await answer.fill(firstAnswer);
   await expect(answer).toHaveValue(firstAnswer);
-  const next = page.getByRole("button", { name: "Continue", exact: true });
+  const next = page.locator("#goal-discovery-continue");
   await expect(next).toBeEnabled();
 
   await page.route("**/api/people/goal-discovery", async (route) => {

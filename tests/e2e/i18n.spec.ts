@@ -5,10 +5,6 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("Vietnamese is the natural default and language choice persists", async ({
   page,
 }, testInfo) => {
-  await page.addInitScript(() => {
-    window.localStorage.removeItem("principles.locale");
-  });
-
   await page.goto("/");
 
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
