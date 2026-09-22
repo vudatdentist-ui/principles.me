@@ -30,7 +30,7 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 function interpolate(template: string, vars?: Vars) {
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
-    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match,
+    Object.hasOwn(vars, name) ? String(vars[name]) : match,
   );
 }
 
