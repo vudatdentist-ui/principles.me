@@ -30,6 +30,7 @@ export default defineConfig({
       cookies: [
         {
           domain: "127.0.0.1",
+          expires: -1,
           httpOnly: false,
           name: "principles.locale",
           path: "/",
