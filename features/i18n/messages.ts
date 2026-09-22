@@ -191,6 +191,32 @@ export const viMessages: Record<string, string> = {
   "Evolution step 5: execution": "Bước 5: thực thi",
   "{count} complete": "{count} đã hoàn tất",
   "{count} cancelled": "{count} đã hủy",
+  Cancel: "Hủy",
+  Restore: "Khôi phục",
+  "Complete {action}": "Đánh dấu hoàn tất: {action}",
+  "Reopen {action}": "Mở lại: {action}",
+  "Restore {action}": "Khôi phục: {action}",
+  candidate: "Ứng viên",
+  testing: "Đang kiểm chứng",
+  trusted: "Đã được tin cậy",
+  challenged: "Đang bị thách thức",
+  revised: "Đã chỉnh sửa",
+  retired: "Ngừng sử dụng",
+  active: "Đang áp dụng",
+  evaluated: "Đã đánh giá",
+  pending: "Đang chờ",
+  accepted: "Đã chấp nhận",
+  rejected: "Đã loại bỏ",
+  "What reality do you actually want to create?":
+    "Bạn thực sự muốn tạo ra thực tế nào?",
+  "Why does this matter enough to organize your attention around it?":
+    "Vì sao điều này đủ quan trọng để bạn dành sự chú ý cho nó?",
+  "What would make you say this desired reality is genuinely true?":
+    "Điều gì sẽ khiến bạn tin rằng thực tế mong muốn này đã thực sự thành hiện thực?",
+  "What are you willing to give up or deprioritize for this goal?":
+    "Bạn sẵn sàng từ bỏ hoặc hạ ưu tiên điều gì để theo đuổi mục tiêu này?",
+  "What boundary must remain true while you pursue this goal?":
+    "Giới hạn nào bạn nhất định phải giữ khi theo đuổi mục tiêu này?",
 
   // Knowledge
   Question: "Câu hỏi",
