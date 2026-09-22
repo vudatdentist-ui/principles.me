@@ -27,7 +27,17 @@ export default defineConfig({
   use: {
     baseURL,
     storageState: {
-      cookies: [],
+      cookies: [
+        {
+          domain: "127.0.0.1",
+          httpOnly: false,
+          name: "principles.locale",
+          path: "/",
+          sameSite: "Lax",
+          secure: false,
+          value: "en",
+        },
+      ],
       origins: [
         {
           localStorage: [{ name: "principles.locale", value: "en" }],
