@@ -140,6 +140,10 @@ export const viMessages: Record<string, string> = {
   "Dream and reality": "Đích đến và thực tế",
   "Active gap": "Khoảng cách đang cần xử lý",
   "5 Steps": "5 bước",
+  "Could not refresh Me.": "Không thể tải lại dữ liệu cá nhân.",
+  "Action {count}": "Hành động {count}",
+  "The test is the resulting reality, including a decision not to execute.":
+    "Điều cần kiểm chứng là thực tế sau cùng, kể cả khi quyết định đúng là không thực hiện.",
 
   // Five-step explorer
   "Goal · Dream": "Mục tiêu · Đích đến",
