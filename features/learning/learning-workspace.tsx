@@ -450,9 +450,11 @@ function PatternCard({
     <article className={styles.patternCard}>
       <div className={styles.cardHeading}>
         <span>
-          {pattern.lifecycleState === "applied"
-            ? "Applied learning"
-            : "Self Model"}
+          {t(
+            pattern.lifecycleState === "applied"
+              ? "Applied learning"
+              : "Self Model",
+          )}
         </span>
         <strong>{pattern.statement}</strong>
       </div>
