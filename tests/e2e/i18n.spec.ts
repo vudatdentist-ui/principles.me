@@ -46,8 +46,12 @@ test("Vietnamese also covers authentication failures", async ({ page }) => {
   await page.getByLabel("Mật khẩu").fill("wrong-password");
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).last().click();
 
-  await expect(page.getByRole("alert")).toContainText("Email hoặc mật khẩu không đúng.");
-  await expect(page.getByRole("alert")).not.toContainText("Invalid email or password.");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Email hoặc mật khẩu không đúng." }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Invalid email or password.", { exact: true }),
+  ).toHaveCount(0);
 });
 
 
