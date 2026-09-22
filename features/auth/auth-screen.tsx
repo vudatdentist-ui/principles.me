@@ -131,7 +131,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
             onClick={() => switchMode("signin")}
             type="button"
           >
-            Sign in
+            <T>Sign in</T>
           </button>
           {signupAvailable ? (
             <button
@@ -141,7 +141,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               onClick={() => switchMode("signup")}
               type="button"
             >
-              Create account
+              <T>Create account</T>
             </button>
           ) : null}
         </div>
@@ -149,7 +149,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
         {mode === "forgot" ? (
           <form onSubmit={submit}>
             <p className={styles.intro}>
-              We will email a secure link to reset your password.
+              <T>We will email a secure link to reset your password.</T>
             </p>
             <label htmlFor="email"><T>Email</T></label>
             <input
@@ -170,7 +170,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
               onClick={() => switchMode("signin")}
               type="button"
             >
-              Back to sign in
+              <T>Back to sign in</T>
             </button>
           </form>
         ) : (
@@ -204,7 +204,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
                 onClick={resendVerification}
                 type="button"
               >
-                Resend verification email
+                <T>Resend verification email</T>
               </button>
             ) : null}
             <button className={styles.submit} disabled={working} type="submit">
@@ -220,7 +220,7 @@ export function AuthScreen({ signupAvailable }: { signupAvailable: boolean }) {
                 onClick={() => switchMode("forgot")}
                 type="button"
               >
-                Forgot password?
+                <T>Forgot password?</T>
               </button>
             ) : null}
           </form>
