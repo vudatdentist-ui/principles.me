@@ -39,6 +39,18 @@ test("Vietnamese is the natural default and language choice persists", async ({
 });
 
 
+test("Vietnamese also covers authentication failures", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByLabel("Email").fill("missing@example.com");
+  await page.getByLabel("Mật khẩu").fill("wrong-password");
+  await page.getByRole("button", { name: "Đăng nhập", exact: true }).last().click();
+
+  await expect(page.getByRole("alert")).toContainText("Email hoặc mật khẩu không đúng.");
+  await expect(page.getByRole("alert")).not.toContainText("Invalid email or password.");
+});
+
+
 test("authenticated core surfaces default to Vietnamese", async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.removeItem("principles.locale");
@@ -74,4 +86,9 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Điều gì cần vận hành khác đi?" }),
   ).toBeVisible();
+
+  await page.getByRole("link", { name: "Tài khoản", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Tài khoản và dữ liệu" })).toBeVisible();
+  await expect(page.getByText("XÓA TÀI KHOẢN CỦA TÔI", { exact: true })).toBeVisible();
+  await expect(page.getByText("DELETE MY ACCOUNT", { exact: true })).toHaveCount(0);
 });
