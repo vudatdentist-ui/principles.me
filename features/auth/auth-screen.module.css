@@ -10,3 +10,16 @@
 .error { composes: error from "../ui/surface.module.css"; }
 .submit { composes: primary from "../ui/surface.module.css"; width: 100%; margin-top: 10px; }
 .textButton { composes: textButton from "../ui/surface.module.css"; }
+
+
+.languageSelect {
+  display: block;
+  margin: 0 0 1rem auto;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.38rem 0.6rem;
+}
