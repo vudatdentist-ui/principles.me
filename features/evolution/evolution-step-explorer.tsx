@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/features/i18n/locale";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { EvolutionFiveStep, EvolutionState } from "./contracts";
@@ -51,42 +52,46 @@ function compact(...values: Array<string | null | undefined>) {
   return values.map((value) => value?.trim()).find(Boolean) || null;
 }
 
-export function snapshotForStep(state: EvolutionState, step: EvolutionFiveStep): StepSnapshot {
+export function snapshotForStep(
+  state: EvolutionState,
+  step: EvolutionFiveStep,
+  t: (source: string, vars?: Record<string, string | number>) => string = (source) => source,
+): StepSnapshot {
   if (step === "goal" && state.dream) {
     return {
-      kicker: "Goal · Dream",
+      kicker: t("Goal · Dream"),
       title: state.dream.desiredState,
       detail:
         compact(state.dream.whyItMatters, state.dream.successConditions) ||
-        "The desired reality this cycle is trying to create.",
+        t("The desired reality this cycle is trying to create."),
     };
   }
 
   if (step === "problem" && state.problem) {
     return {
-      kicker: "Problem · Gap",
+      kicker: t("Problem · Gap"),
       title: state.problem.statement,
-      detail: compact(state.problem.gap) || "The gap between Dream and observed Reality.",
+      detail: compact(state.problem.gap) || t("The gap between Dream and observed Reality."),
     };
   }
 
   if (step === "diagnosis" && state.diagnosis) {
     return {
-      kicker: "Diagnosis · Hypothesis",
+      kicker: t("Diagnosis · Hypothesis"),
       title: state.diagnosis.rootCauseHypothesis,
       detail:
         compact(state.diagnosis.uncertainty, state.diagnosis.supportingEvidence) ||
-        "A revisable explanation for why this problem exists.",
+        t("A revisable explanation for why this problem exists."),
     };
   }
 
   if (step === "design" && state.design) {
     return {
-      kicker: "Design · Machine change",
+      kicker: t("Design · Machine change"),
       title: state.design.machineChange,
       detail:
         compact(state.design.expectedResult, state.design.successSignal) ||
-        "The change expected to create a different reality.",
+        t("The change expected to create a different reality."),
     };
   }
 
@@ -96,32 +101,38 @@ export function snapshotForStep(state: EvolutionState, step: EvolutionFiveStep):
     const pending = state.actions.find((action) => action.status === "pending");
     const allCancelled = state.actions.length > 0 && cancelled === state.actions.length;
     const statusSummary = [
-      completed > 0 ? `${completed} complete` : null,
-      cancelled > 0 ? `${cancelled} cancelled` : null,
+      completed > 0 ? t("{count} complete", { count: completed }) : null,
+      cancelled > 0 ? t("{count} cancelled", { count: cancelled }) : null,
     ]
       .filter(Boolean)
       .join(" · ");
 
     return {
-      kicker: "Do · Execution",
+      kicker: t("Do · Execution"),
       title:
         pending?.commitment ||
         (state.actions.length > 0
           ? allCancelled
-            ? "Execution closed. Observe the outcome."
-            : "Execution complete. Observe the outcome."
-          : "Execute the design."),
+            ? t("Execution closed. Observe the outcome.")
+            : t("Execution complete. Observe the outcome.")
+          : t("Execute the design.")),
       detail:
         state.actions.length > 0
-          ? `${statusSummary || "No action completed yet"}. The test is the resulting reality, including a decision not to execute.`
-          : "Translate the design into accountable actions, then compare expected and actual reality.",
+          ? `${statusSummary || t("No action completed yet")}. ${t("The test is the resulting reality, including a decision not to execute.")}`
+          : t("Translate the design into accountable actions, then compare expected and actual reality."),
     };
   }
 
-  return futureCopy[step];
+  const future = futureCopy[step];
+  return {
+    detail: t(future.detail),
+    kicker: t(future.kicker),
+    title: t(future.title),
+  };
 }
 
 export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
+  const { t } = useI18n();
   const completeSteps = state.fiveSteps.steps.filter((step) => step.status === "complete");
   const defaultStep =
     state.fiveSteps.current ?? completeSteps[completeSteps.length - 1]?.key ?? "goal";
@@ -134,7 +145,7 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
     setSelectedStep(state.selectedGoalId ? defaultStep : "goal");
   }, [defaultStep, state.selectedGoalId]);
 
-  const snapshot = useMemo(() => snapshotForStep(state, selectedStep), [selectedStep, state]);
+  const snapshot = useMemo(() => snapshotForStep(state, selectedStep, t), [selectedStep, state, t]);
   const selected = state.fiveSteps.steps.find((step) => step.key === selectedStep);
 
   function selectFromKeyboard(event: KeyboardEvent<HTMLButtonElement>, key: EvolutionFiveStep) {
@@ -158,11 +169,11 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
 
   return (
     <div className={styles.explorer}>
-      <div aria-label="Inspect the 5 Steps" className={styles.rail} role="tablist">
+      <div aria-label={t("Inspect the 5 Steps")} className={styles.rail} role="tablist">
         {state.fiveSteps.steps.map((step, index) => (
           <button
             aria-controls="evolution-step-inspection"
-            aria-label={stepAriaNames[step.key]}
+            aria-label={t(stepAriaNames[step.key])}
             aria-selected={selectedStep === step.key}
             className={`${styles.step} ${styles[step.status]}`}
             id={`evolution-step-${step.key}`}
@@ -174,14 +185,14 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
             type="button"
           >
             <span aria-hidden="true" className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
-            <span aria-hidden="true" className={styles.label}>{step.label}</span>
+            <span aria-hidden="true" className={styles.label}>{t(step.label)}</span>
             <span aria-hidden="true" className={styles.marker} />
           </button>
         ))}
       </div>
 
       <div
-        aria-label="Evolution step details"
+        aria-label={t("Evolution step details")}
         aria-live="polite"
         className={styles.inspection}
         id="evolution-step-inspection"
@@ -191,10 +202,10 @@ export function EvolutionStepExplorer({ state }: { state: EvolutionState }) {
           <span>{snapshot.kicker}</span>
           <span>
             {selected?.status === "complete"
-              ? "Lived"
+              ? t("Lived")
               : selected?.status === "current"
-                ? "Now"
-                : "Ahead"}
+                ? t("Now")
+                : t("Ahead")}
           </span>
         </div>
         <h3>{snapshot.title}</h3>
