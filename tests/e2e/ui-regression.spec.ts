@@ -21,7 +21,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
   return email;
 }
@@ -57,10 +57,10 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
   await createAccount(page);
 
   const surfaces = [
-    ["/", "What deserves attention now?"],
-    ["/organization", "What should work differently?"],
-    ["/knowledge", "What is still unclear?"],
-    ["/learning", "What is reality teaching you?"],
+    ["/", "New goal"],
+    ["/organization", "Organization"],
+    ["/knowledge", "Knowledge"],
+    ["/learning", "Learning"],
     ["/account", "Account & data"],
   ] as const;
 
@@ -72,7 +72,7 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
 
     for (const [path, heading] of surfaces) {
       await page.goto(path);
-      const title = page.getByRole("heading", { name: heading });
+      const title = page.getByRole("heading", { name: heading, level: 1, exact: true });
       await expect(title).toBeVisible();
 
       const geometry = await page.evaluate(() => {
@@ -88,10 +88,8 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
       expect(geometry.scrollWidth).toBeLessThanOrEqual(
         geometry.viewportWidth + 1,
       );
-      expect(geometry.fontSize).toBeGreaterThanOrEqual(
-        viewport.width < 600 ? 34 : 40,
-      );
-      expect(geometry.fontSize).toBeLessThanOrEqual(72);
+      expect(geometry.fontSize).toBeGreaterThanOrEqual(28);
+      expect(geometry.fontSize).toBeLessThanOrEqual(52);
 
       if (path !== "/account") {
         for (const tab of [
@@ -123,30 +121,30 @@ test("primary narrative surfaces put a meaningful current scene in the tablet vi
   await createAccount(page);
 
   const scenes = [
-    ["/", 'section[aria-label="Current action"]'],
-    ["/organization", 'aside[aria-label="Current organization narrative"]'],
-    ["/knowledge", 'section[aria-label="Current knowledge narrative"]'],
-    ["/learning", 'aside[aria-label="Current learning narrative"]'],
+    ["/", 'section[aria-label="Current action"]', "Continue"],
+    ["/organization", 'aside[aria-label="Current organization narrative"]', "Open operations"],
+    ["/knowledge", 'section[aria-label="Current knowledge narrative"]', "Ask"],
+    ["/learning", 'aside[aria-label="Current learning narrative"]', "Capture reflection"],
   ] as const;
 
-  for (const [path, selector] of scenes) {
+  for (const [path, selector, actionName] of scenes) {
     await page.goto(path);
     await page.evaluate(() => window.scrollTo(0, 0));
     const scene = page.locator(selector);
     await expect(scene).toBeVisible();
+    const action = scene.getByRole("button", { name: actionName, exact: true });
+    await expect(action).toBeInViewport();
 
     const geometry = await scene.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return {
         scrollWidth: document.documentElement.scrollWidth,
-        textLength: element.textContent?.trim().length ?? 0,
         top: rect.top,
         viewportWidth: window.innerWidth,
       };
     });
 
     expect(geometry.top).toBeLessThan(720);
-    expect(geometry.textLength).toBeGreaterThan(40);
     expect(geometry.scrollWidth).toBeLessThanOrEqual(
       geometry.viewportWidth + 1,
     );

@@ -208,6 +208,14 @@ AGENTS.md
 
 Phase 1–5 architecture docs and retired V2/Council-era materials are historical context only. When historical text conflicts with the hierarchy above, current source of truth wins.
 
+## Narrative refinement
+
+The 2026-09-23 presentation refinement uses actual records instead of generic
+rhetorical headings. Learning reads Experience/Reflection, then Patterns, then
+Principles, with direct library and review access. See
+`docs/product/NARRATIVE_WORKSPACE.md` for reference evidence and verification
+boundaries. This does not change the Phase 6 domain or persistence model.
+
 ## 12. Delivery rule
 
 ```text

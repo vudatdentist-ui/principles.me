@@ -61,7 +61,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
   await expect(page.getByText(email, { exact: true }).first()).toBeVisible();
   return email;
@@ -164,11 +164,11 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
   }
 
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" }),
+    page.getByRole("heading", { name: "Learning", level: 1, exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Not enough history yet. Live the loop before asking the system to define a pattern.",
+      "Pattern needs at least two completed Reflections.",
       { exact: true },
     ),
   ).toBeVisible();
@@ -246,7 +246,7 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
 
   await createAccount(page);
   await createGoal(page, companyGoal);
-  await expect(page.getByText("Dream").first()).toBeVisible();
+  await expect(page.locator("#me-title")).toHaveText(companyGoal[0]);
   await expect(page.getByText("Reality").first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "5 Steps" })).toBeVisible();
 
@@ -300,7 +300,7 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
   await page.getByRole("button", { name: "improved" }).click();
   await page.getByRole("button", { name: "Record outcome" }).click();
 
-  await expect(page.getByText("Pain").first()).toBeVisible();
+  await expect(page.getByLabel("What hurt or surprised you?")).toBeVisible();
   await page
     .getByLabel("What hurt or surprised you?")
     .fill(
@@ -363,11 +363,11 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
 
   await page.goto("/learning");
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" }),
+    page.getByRole("heading", { name: "Learning", level: 1, exact: true }),
   ).toBeVisible();
   await expect(page.getByText(outcomeLearning).first()).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Rules I am testing" }),
+    page.getByRole("heading", { name: "Principles" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Distill principle" }),
@@ -454,7 +454,7 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
 
   await page.goto("/knowledge");
   await expect(
-    page.getByRole("heading", { name: "What is still unclear?" }),
+    page.getByRole("heading", { name: "Knowledge", level: 1, exact: true }),
   ).toBeVisible();
 
   await page.route("**/api/ask", async (route) => {
@@ -469,7 +469,8 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
 
   await page.getByLabel("Question").fill("What problem am I not confronting?");
   await page.getByRole("button", { name: "Ask" }).click();
-  await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Answer", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What problem am I not confronting?", exact: true })).toBeVisible();
   await expect(
     page
       .getByText("Shared Principles knowledge")
@@ -568,7 +569,8 @@ test("Knowledge keeps a partial answer when the provider times out", async ({
 
   await page.getByLabel("Question").fill("What needs another look?");
   await page.getByRole("button", { name: "Ask" }).click();
-  await expect(page.getByRole("heading", { name: "Answer" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Answer", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What needs another look?", exact: true })).toBeVisible();
   await expect(page.getByText("The first part is still useful.")).toBeVisible();
   await expect(page.getByText("Answer paused.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();

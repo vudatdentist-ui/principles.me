@@ -1,6 +1,6 @@
 .workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; }
 .hero { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 64px; align-items: start; padding: 40px 0 32px; }
-.hero h1 { max-width: 19ch; }
+.hero h1 { max-width: 24ch; font-size: clamp(30px, 3vw, 42px); }
 .heroCopy { min-width: 0; }
 .eyebrow { composes: eyebrow from "../ui/surface.module.css"; }
 .currentScene { display: grid; gap: 12px; border-left: 1px solid var(--line); padding-left: 24px; }
@@ -13,6 +13,7 @@
 .chapterRail { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; border-block: 1px solid var(--line); padding: 4px 0; }
 .chapterRail a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); font-size: 14px; text-decoration: none; }
 .chapterRail a:hover { text-decoration: underline; }
+.chapterRail b { font-family: var(--font-geist-mono); font-size: 12px; font-weight: 400; color: var(--rust); }
 .chapterRail span { font-family: var(--font-geist-mono); color: var(--muted-ink); font-size: 12px; }
 .error { composes: error from "../ui/surface.module.css"; margin-top: 24px; }
 .editorPanel { margin: 28px 0; padding: 28px; border: 1px solid var(--line); border-left: 3px solid var(--green); background: var(--surface); }
@@ -27,9 +28,8 @@
 .contextMissing strong { color: var(--ink); font-weight: 500; }
 .chapterDeck { display: grid; }
 .chapter { display: grid; grid-template-columns: 260px minmax(0, 1fr); column-gap: 80px; row-gap: 18px; padding: 36px 0; border-bottom: 1px solid var(--line); align-items: start; }
-.chapterHeader { grid-column: 1; grid-row: 1 / span 5; display: grid; justify-items: start; gap: 16px; }
+.chapterHeader { grid-column: 1; grid-row: 1; display: grid; justify-items: start; gap: 16px; }
 .chapterHeader h2 { font-size: 28px; }
-.chapterIntro { grid-column: 2; grid-row: 1; max-width: 65ch; color: var(--muted-ink); font-size: 14px; }
 .librarySearch { grid-column: 2; display: grid; gap: 8px; }
 .librarySearch > span { color: var(--muted-ink); font-size: 12px; }
 .noResults { grid-column: 2; color: var(--muted-ink); font-size: 15px; }
@@ -49,7 +49,6 @@
 .lab > summary { padding: 20px 0; }
 .lab > summary span { margin-right: 16px; color: var(--muted-ink); font-size: 12px; }
 .lab > summary strong { font-size: 17px; font-weight: 500; }
-.labIntro { max-width: 760px; color: var(--muted-ink); font-size: 14px; }
 .legacy { margin-top: 24px; }
 @media (max-width: 1000px) {
   .hero { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
@@ -67,3 +66,5 @@
   .editorPanel { padding: 20px 16px; }
   .editorGrid { grid-template-columns: 1fr; }
 }
+
+.recordLabel { display: block; margin-bottom: 4px; color: var(--muted-ink); font-size: 12px; }

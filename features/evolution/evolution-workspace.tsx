@@ -679,9 +679,6 @@ export function EvolutionWorkspace({
     if (state.stage === "do") {
       return (
         <div className={styles.actionBody}>
-          <strong className={styles.machineChange}>
-            {state.design?.machineChange}
-          </strong>
           {executionActions()}
           <p className={styles.outcomeNote}><T>Completing actions is not an outcome. Record what actually changed.</T></p>
         </div>
@@ -747,13 +744,6 @@ export function EvolutionWorkspace({
     if (state.stage === "reflection") {
       return (
         <div className={styles.actionBody}>
-          <div className={styles.painEquation}>
-            <span><T>Pain</T></span>
-            <b>+</b>
-            <span><T>Reflection</T></span>
-            <b>→</b>
-            <strong><T>Progress</T></strong>
-          </div>
           <Field
             label="What hurt or surprised you?"
             onChange={setSurprise}
@@ -884,7 +874,7 @@ export function EvolutionWorkspace({
       <section className={styles.hero} aria-labelledby="me-title">
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}><T>Me</T></p>
-          <h1 id="me-title"><T>What deserves attention now?</T></h1>
+          <h1 id="me-title">{state.dream?.desiredState || t("New goal")}</h1>
         </div>
         <aside className={styles.heroMeta} aria-label={t("Current chapter")}>
           <span><T>Current step</T></span>
@@ -906,7 +896,7 @@ export function EvolutionWorkspace({
         </div>
       ) : null}
 
-      {state.goals.length > 0 ? (
+      {(state.goals.length > 1 || (!state.dream && state.goals.length > 0)) ? (
         <section className={styles.goalPortfolio} aria-label={t("My goals")}>
           {state.goals.map((goal) => (
             <button
@@ -943,17 +933,19 @@ export function EvolutionWorkspace({
             <p className={styles.eyebrow}>
               {t(narrative.label)}
             </p>
-            <h2 id="next-action-title">{t(state.nextAction.prompt)}</h2>
+            <h2 id="next-action-title">{
+              state.stage === "do" && state.design
+                ? state.design.machineChange
+                : (state.stage === "diagnosis" || state.stage === "design") && state.problem
+                  ? state.problem.statement
+                  : t(state.nextAction.label)
+            }</h2>
             
 
             <section
               className={styles.sceneContext}
-              aria-label={t("Dream and reality")}
+              aria-label={t("Reality and gap")}
             >
-              <article className={styles.contextItem}>
-                <span><T>Dream</T></span>
-                <h3>{state.dream.desiredState}</h3>
-              </article>
               <article className={styles.contextItem}>
                 <span><T>Reality</T></span>
                 <strong>
@@ -983,7 +975,6 @@ export function EvolutionWorkspace({
             ) : null}
 
             <div className={styles.sceneWork}>
-              {state.stage === "do" ? <p className={styles.outcomeNote}><T>Completing actions is not an outcome. Record what actually changed.</T></p> : null}
               {renderStageAction()}
             </div>
           </section>

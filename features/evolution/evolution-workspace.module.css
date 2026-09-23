@@ -1,7 +1,7 @@
 .workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; }
 .hero { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 48px; align-items: center; padding: 38px 0 26px; }
 .heroCopy { min-width: 0; }
-.hero h1 { max-width: 22ch; font-size: clamp(36px, 3.8vw, 48px); }
+.hero h1 { max-width: 36ch; font-size: clamp(28px, 2.8vw, 38px); line-height: 1.3; }
 .eyebrow { composes: eyebrow from "../ui/surface.module.css"; }
 .heroMeta { display: grid; justify-items: start; gap: 4px; border-left: 1px solid var(--line); padding-left: 24px; }
 .heroMeta > span { color: var(--muted-ink); font-size: 12px; }
@@ -12,11 +12,11 @@
 .tertiary { composes: textButton from "../ui/surface.module.css"; margin-left: auto; }
 .error { composes: error from "../ui/surface.module.css"; margin: 12px 0; }
 .goalPortfolio { display: flex; gap: 12px; overflow-x: auto; padding: 6px 0 12px; border-bottom: 1px solid var(--line); }
-.goalCard { flex: 0 0 auto; display: grid; gap: 4px; position: relative; width: min(300px, 85%); padding: 8px 12px; text-align: left; }
+.goalCard { flex: 0 0 auto; display: grid; gap: 4px; position: relative; width: min(300px, 85%); padding: 8px 12px 8px 0; text-align: left; border: 0; border-bottom: 2px solid transparent; border-radius: 0; }
 .goalCard strong { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; font-weight: 500; }
 .goalCard > span { color: var(--muted-ink); font-size: 12px; }
 .goalCard > b { position: absolute; right: 8px; bottom: 6px; color: var(--rust); font-size: 12px; }
-.goalCard[aria-pressed="true"] { border-color: var(--green); background: var(--surface); }
+.goalCard[aria-pressed="true"] { border-bottom-color: var(--green); background: transparent; }
 .next { display: grid; grid-template-columns: 260px minmax(0, 1fr); column-gap: 80px; row-gap: 24px; align-items: start; padding: 32px 0 40px; border-bottom: 1px solid var(--line); }
 .next > .eyebrow { grid-column: 1; grid-row: 1; padding-top: 10px; }
 .next > h2 { grid-column: 2; grid-row: 1; font-size: clamp(30px, 3vw, 40px); }
@@ -53,8 +53,8 @@
 .sectionLead { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .sectionLead h2 { font-size: 26px; }
 .memory { border-top: 1px solid var(--line); }
-.memoryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; padding: 12px 0 24px; }
-.memoryGrid article { display: grid; gap: 8px; }
+.memoryGrid { display: grid; gap: 0; max-width: 760px; padding: 12px 0 24px; }
+.memoryGrid article { display: grid; gap: 8px; padding: 20px 0 20px 24px; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line-soft); }
 .memoryGrid span { font-size: 12px; color: var(--muted-ink); }
 .memoryGrid strong { font-size: 16px; font-weight: 450; }
 .actionList { display: grid; }
@@ -67,7 +67,7 @@
 @media (max-width: 1180px) {
   .next { display: block; }
   .next > h2 { max-width: 760px; margin-bottom: 24px; }
-  .sceneContext { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 24px 0; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+  .sceneContext { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 24px 0; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
   .contextGap { border: 0; padding-top: 0; }
   .sceneWork { max-width: 760px; }
   .attention { margin-top: 24px; }

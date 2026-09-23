@@ -1,7 +1,12 @@
-.workspace { composes: frame from "../ui/surface.module.css"; }
-.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(560px, 1fr); gap: 64px; align-items: start; padding: 48px 0 36px; }
+.workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 64px; align-items: start; padding: 48px 0 36px; }
 .heroCopy { min-width: 0; }
-.hero h1 { max-width: 15ch; }
+.hero h1 { max-width: 28ch; font-size: clamp(30px, 3vw, 42px); line-height: 1.3; }
+.purposeText { max-width: 55ch; padding-top: 16px; font-size: 18px; line-height: 1.65; }
+.recordLabel { display: block; font-size: 12px; margin-bottom: 4px; color: var(--muted-ink); }
+.chapterRail { display: flex; flex-wrap: wrap; gap: 8px 28px; border-block: 1px solid var(--line); }
+.chapterRail a { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; text-decoration: none; }
+.chapterRail a:hover { text-decoration: underline; }
 .eyebrow { composes: eyebrow from "../ui/surface.module.css"; }
 .currentScene { display: grid; gap: 12px; padding-left: 28px; border-left: 1px solid var(--line); }
 .currentScene > span { font-size: 12px; color: var(--muted-ink); }
@@ -10,10 +15,6 @@
 .currentScene a { display: inline-block; width: fit-content; padding-top: 12px; font-size: 14px; }
 .organizationSwitcher { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 28px; padding: 0; border: 0; }
 .organizationSwitcher button[aria-pressed="true"] { border-color: var(--green); background: var(--surface); }
-.orientation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; padding: 32px 0; border-block: 1px solid var(--line); }
-.purpose, .reality { display: grid; gap: 10px; }
-.orientation h2 { font-size: 26px; }
-.orientation span { color: var(--muted-ink); font-size: 13px; }
 .issueSection, .diagnosisSection, .machineSection, .evidenceSection { padding: 32px 0; border-bottom: 1px solid var(--line); }
 .sectionLead { display: flex; align-items: baseline; justify-content: space-between; gap: 28px; margin-bottom: 28px; }
 .sectionLead h2 { font-size: 30px; }
@@ -38,7 +39,6 @@
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; padding-top: 28px; gap: 28px; }
   .currentScene { border-left: 0; border-top: 1px solid var(--line); padding: 24px 0 0; }
-  .orientation { grid-template-columns: 1fr; gap: 28px; }
   .sectionLead { display: grid; gap: 12px; }
   .issues article, .disagreements article, .machineGrid article, .evidenceGrid article { display: flex; flex-direction: column; gap: 12px; }
   .issueMeta { display: flex; flex-wrap: wrap; }

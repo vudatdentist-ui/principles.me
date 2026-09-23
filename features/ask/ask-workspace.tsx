@@ -140,9 +140,8 @@ export function AskWorkspace() {
         className={styles.hero}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}><T>Knowledge</T></p>
-          <h1 id="knowledge-title"><T>What is still unclear?</T></h1>
-          <p><T>Ask a question. Inspect the sources before using the answer.</T></p>
+          <p className={styles.eyebrow} aria-hidden="true">01</p>
+          <h1 id="knowledge-title"><T>Knowledge</T></h1>
         </div>
 
         <form
@@ -219,27 +218,19 @@ export function AskWorkspace() {
       ) : null}
 
       {answer || phase === "submitting" ? (
-        <section className={styles.answerSection} aria-live="polite">
+        <section className={styles.answerSection} aria-live="polite" aria-label={t("Answer")}>
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}><T>Answer</T></p>
-              <h2 aria-label={t("Answer")}><T>What the evidence suggests</T></h2>
+              <p className={styles.eyebrow}><span aria-hidden="true">02 / </span><T>Answer</T></p>
+              <h2>{lastQuestion.current || question}</h2>
             </div>
             <span>{sourceLabel}</span>
-          </div>
-          <div className={styles.answerContext}>
-            <span><T>Question</T></span>
-            <strong>{lastQuestion.current || question}</strong>
           </div>
           <article aria-busy={phase === "submitting"} className={styles.answer}>
             {answer ? <AnswerContent text={answer} /> : t("Preparing…")}
           </article>
           {phase === "done" ? (
             <div className={styles.bridge}>
-              <div>
-                <span><T>Next decision</T></span>
-                <strong><T>What should this change in your next decision?</T></strong>
-              </div>
               <a href="/"><T>Continue in Me →</T></a>
             </div>
           ) : null}
@@ -250,8 +241,8 @@ export function AskWorkspace() {
         <section className={styles.sourcesSection}>
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}><T>Sources</T></p>
-              <h2><T>What the evidence stands on</T></h2>
+              <p className={styles.eyebrow} aria-hidden="true">03</p>
+              <h2><T>Sources</T></h2>
             </div>
             <span>{sourceLabel}</span>
           </div>
@@ -286,7 +277,7 @@ export function AskWorkspace() {
                   <p>{source.snippet}</p>
                   <div className={styles.sourceMeta}>
                     <span>
-                      {source.sourceType === "live_web" ? "LIVE" : "RAG"}
+                      {t(source.sourceType === "live_web" ? "Live public search" : "Shared Principles knowledge")}
                     </span>
                     {source.url ? (
                       <a href={source.url} rel="noreferrer" target="_blank">

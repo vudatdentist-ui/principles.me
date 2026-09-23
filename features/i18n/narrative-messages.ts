@@ -1,0 +1,18 @@
+export const narrativeMessages: Record<string, string> = {
+  "Competing models": "Các cách lý giải khác nhau",
+  "Review the record": "Xem lại diễn biến",
+  "Reality and gap": "Thực tế và khoảng cách",
+  Review: "Xem lại",
+  Diagnose: "Phân tích nguyên nhân",
+  Issues: "Vấn đề",
+  "Organization chapters": "Các phần của tổ chức",
+  "Roles and responsibilities": "Vai trò và trách nhiệm",
+  "Context evidence": "Bằng chứng theo bối cảnh",
+  "Principle under test": "Nguyên tắc đang kiểm chứng",
+  "Goal not defined": "Chưa xác định mục tiêu",
+  "Problem not identified": "Chưa xác định vấn đề",
+  "Diagnosis not accepted": "Chưa xác nhận nguyên nhân",
+  "Design not adopted": "Chưa chọn cách vận hành",
+  "Execution not started": "Chưa bắt đầu thực hiện",
+  candidate: "Đề xuất",
+};
