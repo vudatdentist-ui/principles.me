@@ -63,6 +63,11 @@ keyboard five-step inspection, capture, revision, streaming and governed organiz
 mutations. Layout assertions retain bounded reading widths rather than viewport
 expansion. The narrower Organization stage has an explicit 1120px bound.
 
+A meaningful scene is verified by its visible action, not a minimum character
+count or oversized heading. Empty-state checks require the appropriate control
+inside the tablet viewport. Fixture setup follows the real proposal/review path;
+it must not bypass the origin-suggestion requirement for execution records.
+
 `scripts/check-ui-contracts.mjs` rejects a small, explicit set of retired authored
 UI literals. Its unit regression deliberately allows user records and the
 completion-versus-outcome warning. This guard is not a claim to detect every form
