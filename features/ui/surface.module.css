@@ -17,16 +17,18 @@
   font-family: var(--font-display);
   font-size: clamp(36px, 3.8vw, 52px);
   font-weight: 400;
+  font-kerning: normal;
   line-height: 1.12;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.02em;
 }
 .frame :where(h2) {
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(26px, 2.7vw, 36px);
   font-weight: 400;
+  font-kerning: normal;
   line-height: 1.2;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.012em;
 }
 .frame :where(h3) {
   margin: 0;
