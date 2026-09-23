@@ -168,7 +168,7 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Not enough history yet. Live the loop before asking the system to define a pattern.",
+      "Pattern needs at least two completed Reflections.",
       { exact: true },
     ),
   ).toBeVisible();
@@ -300,7 +300,8 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
   await page.getByRole("button", { name: "improved" }).click();
   await page.getByRole("button", { name: "Record outcome" }).click();
 
-  await expect(page.getByText("Pain").first()).toBeVisible();
+  await expect(page.getByLabel("What did this teach you?")).toBeVisible();
+  await expect(page.locator("#current-action")).toContainText(actualOutcome);
   await page
     .getByLabel("What hurt or surprised you?")
     .fill(

@@ -44,12 +44,18 @@ async function seed(page: Page) {
     goalId: goal.id, observationId: reality.observationId,
     statement: record.problem, gap: record.problem,
   });
+  await post(page, "/api/people/diagnoses/propose", { problemId: problem.id });
+  const beforeDiagnosis = await (await page.request.get("/api/evolution/state")).json();
+  expect(beforeDiagnosis.diagnosis).toBeNull();
   const { diagnosis } = await post<{ diagnosis: { id: string } }>(page, "/api/people/diagnoses", {
     problemId: problem.id, symptom: record.problem,
     rootCauseHypothesis: record.hypothesis, uncertainty: record.uncertainty,
     supportingEvidence: record.reality, contradictingEvidence: "One call was urgent.",
     alternativeHypotheses: "I may also be checking out of habit.", confidence: null,
   });
+  await post(page, "/api/people/designs/propose", { diagnosisId: diagnosis.id });
+  const beforeDesign = await (await page.request.get("/api/evolution/state")).json();
+  expect(beforeDesign.design).toBeNull();
   await post(page, "/api/people/designs", {
     diagnosisId: diagnosis.id, machineChange: record.design,
     expectedResult: "Four uninterrupted dinners in a week.",
