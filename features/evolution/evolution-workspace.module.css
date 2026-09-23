@@ -1,5 +1,5 @@
 .workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; }
-.hero { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 48px; align-items: center; padding: 38px 0 28px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 48px; align-items: center; padding: 38px 0 26px; }
 .heroCopy { min-width: 0; }
 .hero h1 { max-width: 22ch; font-size: clamp(36px, 3.8vw, 48px); }
 .eyebrow { composes: eyebrow from "../ui/surface.module.css"; }
