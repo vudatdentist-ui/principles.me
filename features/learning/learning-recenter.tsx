@@ -154,20 +154,18 @@ export function LearningRecenter({
   const latestReflection = eligibleReflections[0] ?? null;
   const latestPattern = activePatterns[0] ?? null;
   const currentLearning =
-    evolution.reflection?.learning ||
     pendingPrinciple?.rule ||
-    latestPattern?.statement ||
     latestReflection?.learning ||
-    "Record an experience, then decide what it teaches you.";
-  const currentLearningLabel = evolution.reflection?.learning
-    ? "Latest reflection"
-    : pendingPrinciple
-      ? "Principle under review"
+    latestPattern?.statement ||
+    evolution.reflection?.learning ||
+    null;
+  const currentLearningLabel = pendingPrinciple
+    ? "Principle under review"
+    : latestReflection?.learning
+      ? "Latest reflection"
       : latestPattern
         ? "Recurring pattern"
-        : latestReflection
-          ? "Reflection"
-          : "Next evidence";
+        : "Reflection";
   const learningKey =
     learning.patterns
       .map(
@@ -368,17 +366,17 @@ export function LearningRecenter({
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="learning-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}><T>Learning</T></p>
-          <h1 id="learning-title"><T>What is reality teaching you?</T></h1>
+          <h1 id="learning-title"><T>Learning</T></h1>
         </div>
 
         <aside
           className={styles.currentScene}
           aria-label={t("Current learning narrative")}
         >
-          <span>{t("Now")} · {t(currentLearningLabel)}</span>
-          <strong>{currentLearning === "Record an experience, then decide what it teaches you." ? t(currentLearning) : currentLearning}</strong>
+          <span>{t(currentLearningLabel)}</span>
+          <strong>{currentLearning || t("No reflection yet.")}</strong>
           <div className={styles.sceneActions}>
+            {pendingPrinciple ? <a href="#learning-principle"><T>Review</T></a> : null}
             <button
               className={styles.primaryLight}
               onClick={() => revealEditor("reflection")}
@@ -391,9 +389,9 @@ export function LearningRecenter({
       </section>
 
       <nav className={styles.chapterRail} aria-label={t("Learning chapters")}>
-        <a href="#learning-principle"><T>Principles</T> <span>{principles.length}</span></a>
-        <a href="#learning-reflection"><T>Reflections</T> <span>{eligibleReflections.length}</span></a>
-        <a href="#learning-pattern"><T>Patterns</T> <span>{activePatterns.length}</span></a>
+        <a href="#learning-reflection"><b aria-hidden="true">01</b><T>Reflections</T><span>{eligibleReflections.length}</span></a>
+        <a href="#learning-pattern"><b aria-hidden="true">02</b><T>Patterns</T><span>{activePatterns.length}</span></a>
+        <a href="#learning-principle"><b aria-hidden="true">03</b><T>Principles</T><span>{principles.length}</span></a>
         <a href="#pattern-tools"><T>Revision tools</T></a>
       </nav>
 
@@ -416,7 +414,7 @@ export function LearningRecenter({
                 {t(editor === "reflection" ? "Reflection" : editor === "pattern" ? "Pattern" : "Principle")}
               </p>
               <h2>
-                {t(editor === "reflection" ? "What happened, and what did it teach you?" : editor === "pattern" ? "What seems to repeat across reality?" : "What rule deserves a real-world test?")}
+                {t(editor === "reflection" ? "What happened, and what did it teach you?" : editor === "pattern" ? "Pattern hypothesis" : "Principle")}
               </h2>
             </div>
             <button
@@ -802,62 +800,13 @@ export function LearningRecenter({
       <section className={styles.chapterDeck} aria-label={t("Learning working scene")}>
         <section
           className={styles.chapter}
-          id="learning-principle"
-          aria-labelledby="principles-title"
-        >
-          <div className={styles.chapterHeader}>
-            <div>
-              <p className={styles.eyebrow}><T>Principle</T></p>
-              <h2 id="principles-title"><T>Rules I am testing</T></h2>
-            </div>
-            <button
-              className={styles.chapterAction}
-              onClick={() => revealEditor("principle")}
-              type="button"
-            >
-              <T>+ Add principle</T>
-            </button>
-          </div>
-          <p className={styles.chapterIntro}>
-            <T>Write the trigger and the rule clearly enough that reality can prove you wrong.</T>
-          </p>
-          {principles.length > 0 ? (
-            <div className={styles.librarySearch}>
-              <label htmlFor="principle-search"><T>Find a principle</T></label>
-              <input id="principle-search" type="search" value={principleQuery} onChange={(event) => setPrincipleQuery(event.target.value)} placeholder={t("Search rule, trigger, or rationale")} />
-              <span role="status">{t("{shown} of {total} principles", { shown: matchingPrinciples.length, total: principles.length })}</span>
-            </div>
-          ) : null}
-          {principles.length > 0 && matchingPrinciples.length === 0 ? <p className={styles.noResults}><T>No matching principles. Try another word.</T></p> : null}
-          {principles.length > 0 ? (
-            <div className={styles.chapterList}>
-              {matchingPrinciples.map((principle) => (
-                <PrincipleCard
-                  key={principle.id}
-                  onReview={(action) =>
-                    void reviewPrinciple(principle.id, action)
-                  }
-                  principle={principle}
-                  working={working === `review:${principle.id}`}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>
-              <strong><T>No principle yet.</T></strong>
-              <span><T>Add a trigger and a rule to test in your next decision.</T></span>
-            </div>
-          )}
-        </section>
-        <section
-          className={styles.chapter}
           id="learning-reflection"
           aria-labelledby="reflections-title"
         >
           <div className={styles.chapterHeader}>
             <div>
-              <p className={styles.eyebrow}><T>Reflection</T></p>
-              <h2 id="reflections-title"><T>Pain worth learning from</T></h2>
+              <p className={styles.eyebrow} aria-hidden="true">01</p>
+              <h2 id="reflections-title"><T>Reflections</T></h2>
             </div>
             <button
               className={styles.chapterAction}
@@ -867,9 +816,6 @@ export function LearningRecenter({
               <T>+ Reflection</T>
             </button>
           </div>
-          <p className={styles.chapterIntro}>
-            <T>Record what happened, what surprised you, and the lesson you think is worth carrying forward.</T>
-          </p>
           {eligibleReflections.length > 0 ? (
             <div className={styles.chapterList}>
               {eligibleReflections.map((reflection) => {
@@ -892,10 +838,10 @@ export function LearningRecenter({
           ) : (
             <div className={styles.empty}>
               <strong><T>No reflection yet.</T></strong>
-              <span><T>Capture an event to begin your evidence trail.</T></span>
             </div>
           )}
         </section>
+
 
         <section
           className={styles.chapter}
@@ -904,8 +850,8 @@ export function LearningRecenter({
         >
           <div className={styles.chapterHeader}>
             <div>
-              <p className={styles.eyebrow}><T>Pattern</T></p>
-              <h2 id="patterns-title"><T>Recurring reality</T></h2>
+              <p className={styles.eyebrow} aria-hidden="true">02</p>
+              <h2 id="patterns-title"><T>Patterns</T></h2>
             </div>
             <button
               className={styles.chapterAction}
@@ -915,9 +861,6 @@ export function LearningRecenter({
               <T>+ Pattern</T>
             </button>
           </div>
-          <p className={styles.chapterIntro}>
-            <T>Compare multiple completed Reflections before you name what repeats. Keep evidence for, against, and uncertainty visible beside it.</T>
-          </p>
           {activePatterns.length > 0 ? (
             <div className={styles.chapterList}>
               {activePatterns.map((pattern) => (
@@ -956,19 +899,59 @@ export function LearningRecenter({
           ) : (
             <div className={styles.empty}>
               <strong><T>No pattern kept yet.</T></strong>
-              <span>
-                {t(
-                  learning.historyCount < 2
-                    ? "Not enough history yet. Live the loop before asking the system to define a pattern."
-                    : "You have enough history. Synthesize a hypothesis, inspect the cases, then keep only what the evidence supports.",
-                )}
-              </span>
+              {learning.historyCount < 2 ? <span><T>Pattern needs at least two completed Reflections.</T></span> : null}
             </div>
           )}
           <a className={styles.chapterLink} href="#pattern-tools">
             <T>Open revision tools →</T>
           </a>
         </section>
+        <section
+          className={styles.chapter}
+          id="learning-principle"
+          aria-labelledby="principles-title"
+        >
+          <div className={styles.chapterHeader}>
+            <div>
+              <p className={styles.eyebrow} aria-hidden="true">03</p>
+              <h2 id="principles-title"><T>Principles</T></h2>
+            </div>
+            <button
+              className={styles.chapterAction}
+              onClick={() => revealEditor("principle")}
+              type="button"
+            >
+              <T>+ Add principle</T>
+            </button>
+          </div>
+          {principles.length > 0 ? (
+            <div className={styles.librarySearch}>
+              <label htmlFor="principle-search"><T>Find a principle</T></label>
+              <input id="principle-search" type="search" value={principleQuery} onChange={(event) => setPrincipleQuery(event.target.value)} placeholder={t("Search rule, trigger, or rationale")} />
+              <span role="status">{t("{shown} of {total} principles", { shown: matchingPrinciples.length, total: principles.length })}</span>
+            </div>
+          ) : null}
+          {principles.length > 0 && matchingPrinciples.length === 0 ? <p className={styles.noResults}><T>No matching principles. Try another word.</T></p> : null}
+          {principles.length > 0 ? (
+            <div className={styles.chapterList}>
+              {matchingPrinciples.map((principle) => (
+                <PrincipleCard
+                  key={principle.id}
+                  onReview={(action) =>
+                    void reviewPrinciple(principle.id, action)
+                  }
+                  principle={principle}
+                  working={working === `review:${principle.id}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <strong><T>No principle yet.</T></strong>
+            </div>
+          )}
+        </section>
+
 
 
       </section>
@@ -985,9 +968,6 @@ export function LearningRecenter({
           <span><T>Revision</T></span>
           <strong><T>Pattern synthesis & principle revision</T></strong>
         </summary>
-        <p className={styles.labIntro}>
-          <T>Inspect the longer evidence trail, generate another hypothesis, or revise a principle when reality no longer supports the rule.</T>
-        </p>
         <div className={styles.legacy}>
           <LearningWorkspace
             initialState={learning}
@@ -1013,7 +993,7 @@ function PrincipleCard({
 }) {
   const { t } = useI18n();
   return (
-    <article className={styles.principle}>
+    <article className={styles.principle} id={`principle-${principle.id}`}>
       <div className={styles.principleTop}>
         <span>{t(principle.lifecycleState)}</span>
         {principle.originReflectionId ? (
@@ -1069,12 +1049,21 @@ function ReflectionCard({
   return (
     <article className={styles.reflection}>
       <span className={styles.itemMeta}><T>Experience → Reflection</T></span>
-      <h3>{reflection.learning || reflection.happened}</h3>
-      {reflection.surprise ? <p>{reflection.surprise}</p> : null}
+      <h3>{reflection.happened}</h3>
+      {reflection.learning ? <p><span className={styles.recordLabel}><T>Reflection learning</T></span>{reflection.learning}</p> : null}
+      {reflection.expected || reflection.surprise ? (
+        <details>
+          <summary><T>Details</T></summary>
+          <dl>
+            {reflection.expected ? <div><dt><T>Expected</T></dt><dd>{reflection.expected}</dd></div> : null}
+            {reflection.surprise ? <div><dt><T>What surprised you?</T></dt><dd>{reflection.surprise}</dd></div> : null}
+          </dl>
+        </details>
+      ) : null}
       {linkedPrinciple ? (
-        <span className={styles.linked}>
+        <a className={styles.linked} href="#learning-principle">
           <T>Principle</T> · {t(linkedPrinciple.lifecycleState)}
-        </span>
+        </a>
       ) : (
         <button
           className={styles.secondary}

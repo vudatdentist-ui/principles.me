@@ -12,7 +12,7 @@ async function account(page: Page) {
   expect(response.status()).toBe(201);
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 }
 
@@ -40,7 +40,7 @@ test("optional-verification signup enters Me without a manual reload", async ({
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).last().click();
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 });
 
@@ -60,7 +60,7 @@ test("sign-out failure stays on the page and offers an accessible error", async 
     page.getByRole("alert").filter({ hasText: "Could not sign out" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Sign out", exact: true }),

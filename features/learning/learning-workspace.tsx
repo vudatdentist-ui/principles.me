@@ -233,7 +233,7 @@ function PatternProposalCard({
       <section className={styles.card}>
         <div className={styles.cardHeading}>
           <span><T>Pattern hypothesis</T></span>
-          <strong><T>Correct the model.</T></strong>
+
         </div>
         <div className={styles.stack}>
           <label>
@@ -492,7 +492,7 @@ function PatternCard({
         <div className={styles.revisionEditor}>
           <div className={styles.cardHeading}>
             <span><T>Principle revision</T></span>
-            <strong><T>Test a better rule.</T></strong>
+
           </div>
           <div className={styles.stack}>
             <label>

@@ -16,7 +16,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 }
 
@@ -34,7 +34,7 @@ test("nested feature stages keep usable width on wide desktops", async ({
 
     await page.goto("/knowledge");
     await expect(
-      page.getByRole("heading", { name: "What is still unclear?" }),
+      page.getByRole("heading", { name: "Knowledge", level: 1, exact: true }),
     ).toBeVisible();
     await expect(page.getByLabel("Knowledge working scene")).toBeVisible();
 
@@ -81,7 +81,7 @@ test("nested feature stages keep usable width on wide desktops", async ({
 
     await page.goto("/organization");
     await expect(
-      page.getByRole("heading", { name: "What should work differently?" }),
+      page.getByRole("heading", { name: "Organization", level: 1, exact: true }),
     ).toBeVisible();
     await expect(page.getByLabel("Current organization narrative")).toBeVisible();
 
@@ -108,11 +108,12 @@ test("nested feature stages keep usable width on wide desktops", async ({
     expect(organization.pageWidth).toBeLessThanOrEqual(
       organization.viewportWidth + 1,
     );
-    expect(organization.sceneWidth).toBeGreaterThanOrEqual(1180);
-    expect(organization.sceneWidth).toBeLessThanOrEqual(1242);
+    expect(organization.sceneWidth).toBeGreaterThanOrEqual(1100);
+    expect(organization.sceneWidth).toBeLessThanOrEqual(1122);
     expect(organization.paddingLeft).toBeLessThanOrEqual(1);
     expect(organization.paddingRight).toBeLessThanOrEqual(1);
-    expect(organization.currentWidth).toBeGreaterThanOrEqual(560);
+    expect(organization.currentWidth).toBeGreaterThanOrEqual(320);
+    expect(organization.currentWidth).toBeLessThanOrEqual(380);
 
     await testInfo.attach(`organization-${viewport.width}x${viewport.height}`, {
       body: await page.screenshot({ fullPage: true }),

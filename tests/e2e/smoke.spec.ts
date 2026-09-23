@@ -61,7 +61,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
   await expect(page.getByText(email, { exact: true }).first()).toBeVisible();
   return email;
@@ -164,7 +164,7 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
   }
 
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" }),
+    page.getByRole("heading", { name: "Learning", level: 1, exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText(
@@ -246,7 +246,7 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
 
   await createAccount(page);
   await createGoal(page, companyGoal);
-  await expect(page.getByText("Dream").first()).toBeVisible();
+  await expect(page.locator("#me-title")).toHaveText(companyGoal[0]);
   await expect(page.getByText("Reality").first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "5 Steps" })).toBeVisible();
 
@@ -363,11 +363,11 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
 
   await page.goto("/learning");
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" }),
+    page.getByRole("heading", { name: "Learning", level: 1, exact: true }),
   ).toBeVisible();
   await expect(page.getByText(outcomeLearning).first()).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Rules I am testing" }),
+    page.getByRole("heading", { name: "Principles" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Distill principle" }),
@@ -454,7 +454,7 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
 
   await page.goto("/knowledge");
   await expect(
-    page.getByRole("heading", { name: "What is still unclear?" }),
+    page.getByRole("heading", { name: "Knowledge", level: 1, exact: true }),
   ).toBeVisible();
 
   await page.route("**/api/ask", async (route) => {

@@ -18,7 +18,7 @@ async function createAccount(
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await response).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 }
 
@@ -39,7 +39,7 @@ async function signIn(page: import("@playwright/test").Page, email: string) {
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).last().click();
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 }
 
@@ -73,7 +73,7 @@ test("Organization reuses the evolution language while preserving governed colla
 
   await page.goto("/organization");
   await expect(
-    page.getByRole("heading", { name: "What should work differently?" }),
+    page.getByRole("heading", { name: "Organization", level: 1, exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("Current organization narrative")).toContainText("Create an organization");
   await expect(page.getByRole("button", { name: "Open operations", exact: true })).toBeVisible();
@@ -156,7 +156,7 @@ test("Organization reuses the evolution language while preserving governed colla
       )
       .first(),
   ).toBeVisible();
-  await expect(page.getByText("Where is the machine failing?")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Issues", exact: true })).toBeVisible();
 
   operations = await openOperations(page);
   await expect(

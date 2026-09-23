@@ -20,17 +20,17 @@ test("all four authenticated surfaces share one stable mobile shell", async ({
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 
   let referenceBrandTop: number | null = null;
   let referenceNavTop: number | null = null;
 
   for (const [path, active, heading] of [
-    ["/", "Me", "What deserves attention now?"],
-    ["/organization", "Organization", "What should work differently?"],
-    ["/knowledge", "Knowledge", "What is still unclear?"],
-    ["/learning", "Learning", "What is reality teaching you?"],
+    ["/", "Me", "New goal"],
+    ["/organization", "Organization", "Organization"],
+    ["/knowledge", "Knowledge", "Knowledge"],
+    ["/learning", "Learning", "Learning"],
   ] as const) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();

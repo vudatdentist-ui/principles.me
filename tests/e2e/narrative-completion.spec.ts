@@ -16,7 +16,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signup).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 }
 

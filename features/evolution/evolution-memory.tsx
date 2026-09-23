@@ -18,7 +18,7 @@ export function EvolutionMemory({ state }: { state: EvolutionState }) {
 
   return (
     <details className={styles.memory}>
-      <summary><T>Details</T></summary>
+      <summary><T>Review the record</T></summary>
       <div className={styles.memoryGrid}>
         {state.diagnosis ? (
           <article>

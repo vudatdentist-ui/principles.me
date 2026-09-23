@@ -1,3 +1,15 @@
+const RETIRED_CHROME = [
+  "What deserves attention now?",
+  "What is reality teaching you?",
+  "What should work differently?",
+  "What the evidence suggests",
+  "What the evidence stands on",
+  "Pain worth learning from",
+  "Correct the model.",
+  "Test a better rule.",
+  "Write the trigger and the rule clearly enough that reality can prove you wrong.",
+];
+
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
@@ -6,6 +18,13 @@ function files(directory) {
     const path = join(directory, entry.name);
     return entry.isDirectory() ? files(path) : [path];
   });
+}
+
+export function retiredUiCopy(source) {
+  return RETIRED_CHROME.filter(
+    (phrase) =>
+      source.includes(`<T>${phrase}</T>`) || source.includes(`t("${phrase}")`),
+  );
 }
 
 export function checkUiContracts() {
@@ -27,6 +46,13 @@ export function checkUiContracts() {
       );
     }
     if (!path.endsWith(".tsx")) continue;
+    // Match authored UI literals only. User records are never rewritten or censored.
+    for (const phrase of retiredUiCopy(source)) {
+      errors.push(
+        `${path}: replace retired slogan with actual state, content or an action: ${phrase}`,
+      );
+    }
+
     if (/\.observe\(document\.(body|documentElement)/.test(source)) {
       errors.push(
         `${path}: document-wide mutation observers must not rewrite React-owned UI.`,

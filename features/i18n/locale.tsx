@@ -16,6 +16,7 @@ import {
   type Locale,
 } from "./config";
 import { viMessages } from "./messages";
+import { narrativeMessages } from "./narrative-messages";
 type Vars = Record<string, string | number>;
 
 type LocaleContextValue = {
@@ -34,7 +35,7 @@ function interpolate(template: string, vars?: Vars) {
 }
 
 export function translate(locale: Locale, source: string, vars?: Vars) {
-  const template = locale === "vi" ? (viMessages[source] ?? source) : source;
+  const template = locale === "vi" ? (narrativeMessages[source] ?? viMessages[source] ?? source) : source;
   return interpolate(template, vars);
 }
 

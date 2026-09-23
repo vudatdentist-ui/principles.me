@@ -15,7 +15,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 }
 
@@ -56,7 +56,7 @@ test("5 Steps lets the user inspect lived, current, and future meaning", async (
   const diagnosisTab = page.getByRole("tab", { name: "Evolution step 3: root cause" });
 
   await expect(problemTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel")).toContainText("Find the gap that matters.");
+  await expect(page.getByRole("tabpanel")).toContainText("Problem not identified");
   await expect(page.getByRole("tabpanel")).toContainText("Now");
 
   await goalTab.click();
@@ -65,7 +65,7 @@ test("5 Steps lets the user inspect lived, current, and future meaning", async (
   await expect(page.getByRole("tabpanel")).toContainText("Lived");
 
   await diagnosisTab.click();
-  await expect(page.getByRole("tabpanel")).toContainText("Understand why the gap exists.");
+  await expect(page.getByRole("tabpanel")).toContainText("Diagnosis not accepted");
   await expect(page.getByRole("tabpanel")).toContainText("Ahead");
 
   await page.getByLabel("What is actually true?").fill(
@@ -86,5 +86,5 @@ test("5 Steps lets the user inspect lived, current, and future meaning", async (
 
   await diagnosisTab.click();
   await expect(page.getByRole("tabpanel")).toContainText("Now");
-  await expect(page.getByRole("tabpanel")).toContainText("Understand why the gap exists.");
+  await expect(page.getByRole("tabpanel")).toContainText("Diagnosis not accepted");
 });

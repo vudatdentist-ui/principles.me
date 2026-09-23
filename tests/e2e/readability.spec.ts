@@ -15,7 +15,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "New goal", level: 1, exact: true }),
   ).toBeVisible();
 }
 
@@ -82,7 +82,7 @@ test("current action stays readable and complete on tablet landscape", async ({ 
   await page.getByRole("button", { name: "Design the machine" }).click();
 
   const currentAction = page.locator('section[aria-label="Current action"]');
-  await expect(currentAction.getByText("Dream", { exact: true })).toBeVisible();
+  await expect(page.locator("#me-title")).toHaveText("Build a company that can make routine decisions without depending on me.");
   await expect(currentAction.getByText("Reality", { exact: true })).toBeVisible();
   await expect(currentAction.getByText("Gap", { exact: true })).toBeVisible();
 
@@ -153,7 +153,7 @@ test("Me stays a bounded narrative stage on wide desktop", async ({ page }) => {
     const currentAction = document.querySelector<HTMLElement>('section[aria-label="Current action"]');
     const actionTitle = currentAction?.querySelector<HTMLElement>(":scope > h2");
     const context = currentAction?.querySelector<HTMLElement>(
-      ':scope > section[aria-label="Dream and reality"]'
+      ':scope > section[aria-label="Reality and gap"]'
     );
     const work = currentAction?.querySelector<HTMLElement>(":scope > div");
 
