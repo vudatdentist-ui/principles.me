@@ -5,8 +5,8 @@ import {
   useCallback,
   useContext,
   useLayoutEffect,
-  useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -25,7 +25,50 @@ type LocaleContextValue = {
   t: (source: string, vars?: Vars) => string;
 };
 
-const LocaleContext = createContext<LocaleContextValue | null>(null);
+type LocaleStore = {
+  getSnapshot: () => Locale;
+  getServerSnapshot: () => Locale;
+  subscribe: (listener: () => void) => () => void;
+  setLocale: (locale: Locale) => void;
+};
+
+const LocaleContext = createContext<LocaleStore | null>(null);
+
+function createLocaleStore(initialLocale: Locale): LocaleStore {
+  let fallbackLocale = initialLocale;
+  const listeners = new Set<() => void>();
+  const notify = () => { for (const listener of listeners) listener(); };
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === LOCALE_STORAGE_KEY || event.key === null) notify();
+  };
+  return {
+    getServerSnapshot: () => initialLocale,
+    getSnapshot: () => {
+      try {
+        return parseLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY)) ?? initialLocale;
+      } catch {
+        return fallbackLocale;
+      }
+    },
+    subscribe: (listener) => {
+      if (listeners.size === 0) window.addEventListener("storage", onStorage);
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) window.removeEventListener("storage", onStorage);
+      };
+    },
+    setLocale: (next) => {
+      fallbackLocale = next;
+      try {
+        window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
+      } catch {
+        // A blocked storage area must not prevent changing the current language.
+      }
+      notify();
+    },
+  };
+}
 
 function interpolate(template: string, vars?: Vars) {
   if (!vars) return template;
@@ -46,34 +89,38 @@ export function LocaleProvider({
   children: ReactNode;
   initialLocale?: Locale;
 }) {
-  const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const [store] = useState(() => createLocaleStore(initialLocale));
+  return (
+    <LocaleContext.Provider value={store}>
+      <DocumentLanguage />
+      {children}
+    </LocaleContext.Provider>
+  );
+}
 
+function DocumentLanguage() {
+  const { locale } = useI18n();
   useLayoutEffect(() => {
-    const stored = parseLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
-    const resolved = stored ?? initialLocale;
-    document.documentElement.lang = resolved;
-    if (resolved !== initialLocale) setLocaleState(resolved);
-  }, [initialLocale]);
+    document.documentElement.lang = locale;
+  }, [locale]);
+  return null;
+}
 
-  const setLocale = useCallback((next: Locale) => {
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
-    document.documentElement.lang = next;
-    setLocaleState(next);
-  }, []);
-
+export function useI18n(): LocaleContextValue {
+  const store = useContext(LocaleContext);
+  if (!store) throw new Error("useI18n must be used within LocaleProvider");
+  // Each streamed boundary hydrates with the server locale before reading storage.
+  // Updating only a parent context can replace late boundaries and duplicate IDs.
+  const locale = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot,
+  );
   const t = useCallback(
     (source: string, vars?: Vars) => translate(locale, source, vars),
     [locale],
   );
-
-  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
-  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
-}
-
-export function useI18n() {
-  const value = useContext(LocaleContext);
-  if (!value) throw new Error("useI18n must be used within LocaleProvider");
-  return value;
+  return { locale, setLocale: store.setLocale, t };
 }
 
 export function T({ children, vars }: { children: string; vars?: Vars }) {
