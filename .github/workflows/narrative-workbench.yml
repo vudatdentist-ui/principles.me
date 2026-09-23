@@ -28,9 +28,24 @@ jobs:
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = be9d3a2634acf1b36fe63bd21e9db5f486f43a0d
           python3 <<'PY'
           import base64, gzip, hashlib, pathlib, subprocess
-          chunks = sorted(pathlib.Path('../packet/.narrative').glob('patch-*.b64'))
+          directory = pathlib.Path('../packet/.narrative')
+          chunks = [p.read_text().strip() for p in sorted(directory.glob('patch-*.b64'))]
           assert len(chunks) == 4
-          patch = gzip.decompress(base64.b64decode(''.join(p.read_text().strip() for p in chunks), validate=True))
+          def blob_hash(text):
+              raw = text.encode()
+              return hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+          assert blob_hash(chunks[0]) == '9775b8b0711964e1f4174ac378a2bb385f4ae735'
+          assert blob_hash(chunks[1]) == '4a12c774c3e36172cfcae4462b1dca63130e1783'
+          assert blob_hash(chunks[2]) == '435fd05ae559b0336f3e3c327088fd64fb6ab892'
+          assert blob_hash(chunks[3]) == 'e9a15d1961cb9aeaa93363f333bfda82d87a834c'
+          # Restore two transport omissions; original patch and tree checks remain mandatory.
+          segment3 = '4ruc6o6m7v1GgIhv/ltb/v0/FPxpSaYtRTUZo5V34WB4aZyPl17qP1ZG2QAFMVctPrNt4bJQR+yCMwjT05lwr/qbRlXGOOj6gX81ut/ijrwNg3TnAzKC5rtpA/DtrgZotDPFh7qPcChoN6N'
+          segment4 = ''.join((directory / 'segment-4.txt').read_text().split())
+          chunks[2] = chunks[2].replace('Oh5OeB6Nwsd34', 'Oh5OeB6N' + segment3 + 'wsd34', 1)
+          chunks[3] = chunks[3].replace('Hs1cu7z+gxCY/QWR', 'Hs1' + segment4 + 'z+gxCY/QWR', 1)
+          assert blob_hash(chunks[2]) == '093e3ceb3d8b0bd2046da68a7ceec872087b6819'
+          assert blob_hash(chunks[3]) == '77e3048c531ca90bd0a30a60bb30dfd16d578cfc'
+          patch = gzip.decompress(base64.b64decode(''.join(chunks), validate=True))
           assert hashlib.sha256(patch).hexdigest() == '0967143b347a68e5cfc54d5fc1f2afcf07921a71a3e3f95a8594e45734f57a6f'
           subprocess.run(['git', 'apply', '--check', '-'], input=patch, check=True)
           subprocess.run(['git', 'apply', '-'], input=patch, check=True)
