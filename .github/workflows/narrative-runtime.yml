@@ -1,0 +1,31 @@
+name: Isolated narrative runtime libraries
+on:
+  push:
+    branches: [ops/narrative-reference-20260923]
+    paths: [.github/workflows/narrative-runtime.yml]
+permissions:
+  contents: read
+jobs:
+  libraries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Copy ICU dependencies from the same PostgreSQL image
+        run: |
+          set -eu
+          docker pull postgres:16-bookworm
+          container=$(docker create postgres:16-bookworm)
+          mkdir -p runtime
+          for lib in libicui18n.so.72 libicuuc.so.72 libicudata.so.72; do
+            docker cp -L "$container:/usr/lib/x86_64-linux-gnu/$lib" "runtime/$lib"
+          done
+          docker rm "$container"
+          tar -czf runtime-libraries.tgz runtime
+          sha256sum runtime-libraries.tgz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: narrative-runtime-libraries
+          path: |
+            runtime-libraries.tgz
+            SHA256SUMS
+          retention-days: 3
