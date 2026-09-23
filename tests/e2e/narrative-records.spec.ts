@@ -219,6 +219,12 @@ for (const view of [
     expect(
       (await event.boundingBox())?.y ?? Number.POSITIVE_INFINITY,
     ).toBeLessThan((await lesson.boundingBox())?.y ?? Number.NEGATIVE_INFINITY);
+    const reflectionGap = await learningScene.locator("#learning-reflection").evaluate((chapter) => {
+      const content = chapter.lastElementChild;
+      if (!content) throw new Error("Missing reflection content");
+      return chapter.getBoundingClientRect().bottom - content.getBoundingClientRect().bottom;
+    });
+    expect(reflectionGap).toBeLessThanOrEqual(60);
     const library = page.getByRole("navigation", {
       name: view.locale === "vi" ? "Các phần trong Học hỏi" : "Learning chapters", exact: true,
     }).locator('a[href="#learning-principle"]');
