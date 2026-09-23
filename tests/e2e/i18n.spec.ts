@@ -81,6 +81,11 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }, testI
     page.getByRole("heading", { name: "Lúc này, điều gì đáng để bạn tập trung nhất?" }),
   ).toBeVisible();
 
+  await testInfo.attach("vietnamese-me-display", {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: "image/png",
+  });
+
   await page.getByRole("link", { name: "Tri thức", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Điều gì vẫn chưa rõ?" }),
