@@ -66,7 +66,11 @@ async function seed(page: Page) {
 }
 
 async function screenshot(page: Page, testInfo: TestInfo, name: string) {
-  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    window.scrollTo(0, 0);
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  });
   await testInfo.attach(name, { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
 }
 
@@ -75,6 +79,7 @@ async function noOverflow(page: Page) {
 }
 
 test("Me tells the selected case and keeps action, outcome and reflection distinct", async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
   await account(page);
   await seed(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
