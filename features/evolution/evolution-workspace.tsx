@@ -2,6 +2,7 @@
 
 import { T, useI18n } from "@/features/i18n/locale";
 import { AutoTextarea } from "@/features/ui/auto-textarea";
+import { ChapterNav } from "@/features/ui/chapter-nav";
 
 import { jsonRequest } from "@/features/ui/json-request";
 
@@ -747,13 +748,12 @@ export function EvolutionWorkspace({
     if (state.stage === "reflection") {
       return (
         <div className={styles.actionBody}>
-          <div className={styles.painEquation}>
-            <span><T>Pain</T></span>
-            <b>+</b>
-            <span><T>Reflection</T></span>
-            <b>→</b>
-            <strong><T>Progress</T></strong>
-          </div>
+          {state.outcome ? (
+            <div className={styles.reflectionContext}>
+              <span><T>Actual outcome</T></span>
+              <p>{state.outcome.actualResult}</p>
+            </div>
+          ) : null}
           <Field
             label="What hurt or surprised you?"
             onChange={setSurprise}
@@ -883,8 +883,8 @@ export function EvolutionWorkspace({
     <div aria-busy={working !== null} className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="me-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}><T>Me</T></p>
-          <h1 id="me-title"><T>What deserves attention now?</T></h1>
+          {state.dream ? <p className={styles.eyebrow}><T>Me</T> / <T>Goal</T></p> : null}
+          <h1 id="me-title">{state.dream?.desiredState || t("Me")}</h1>
         </div>
         <aside className={styles.heroMeta} aria-label={t("Current chapter")}>
           <span><T>Current step</T></span>
@@ -925,6 +925,16 @@ export function EvolutionWorkspace({
         </section>
       ) : null}
 
+      {state.dream ? (
+        <ChapterNav label={t("Goal chapters")} chapters={[
+          { number: "01", href: "#current-action", label: t("Current action") },
+          { number: "02", href: "#five-steps", label: t("5 Steps") },
+          ...(state.diagnosis || state.design || state.outcome || state.reflection || state.principle
+            ? [{ number: "03", href: "#cycle-history" as const, label: t("Story so far") }]
+            : []),
+        ]} />
+      ) : null}
+
       {!state.dream ? (
         <section className={styles.next} aria-label={t("Current action")} aria-labelledby="new-goal-title" data-empty="true">
           <p className={styles.eyebrow}>
@@ -939,11 +949,9 @@ export function EvolutionWorkspace({
         </section>
       ) : (
         <>
-          <section className={styles.next} aria-label={t("Current action")}>
-            <p className={styles.eyebrow}>
-              {t(narrative.label)}
-            </p>
-            <h2 id="next-action-title">{t(state.nextAction.prompt)}</h2>
+          <section className={styles.next} id="current-action" aria-label={t("Current action")}>
+            <p className={styles.eyebrow} aria-hidden="true">01</p>
+            <h2 id="next-action-title">{t(state.nextAction.label)}</h2>
             
 
             <section
@@ -983,13 +991,13 @@ export function EvolutionWorkspace({
             ) : null}
 
             <div className={styles.sceneWork}>
-              {state.stage === "do" ? <p className={styles.outcomeNote}><T>Completing actions is not an outcome. Record what actually changed.</T></p> : null}
               {renderStageAction()}
             </div>
           </section>
 
           <section
             className={styles.fiveSteps}
+            id="five-steps"
             aria-labelledby="five-steps-title"
           >
             <div className={styles.sectionLead}>

@@ -10,7 +10,7 @@ Every primary scene should answer four questions without requiring the user to s
 
 1. **Where am I?** — chapter / stage / position in the cycle.
 2. **What is the tension?** — the relevant Dream, Reality, Gap, disagreement, or evidence.
-3. **What does it mean?** — one concise thesis that explains why this scene matters.
+3. **What does it mean?** — the actual record, its relationship to the current decision, and any uncertainty; not a separate stock thesis.
 4. **What can I do now?** — the working surface or decision that advances the story.
 
 Large type is allowed only when it carries meaning. Empty vertical space is not a substitute for hierarchy.
@@ -22,7 +22,7 @@ The primary route should surface the current scene before historical explanation
 For `Me`, the current scene contains:
 
 - current chapter and prompt;
-- chapter thesis;
+- selected Goal as the main title, not a generic introductory question;
 - Dream;
 - observed Reality;
 - active Gap, when named;
@@ -33,7 +33,7 @@ The 5 Steps follow as a compact story arc for inspection, not as a progress dash
 
 ## 3. Narrative density
 
-A viewport should feel intentionally filled, not crowded and not empty.
+A viewport should expose enough context to act. Empty space is preferable to filler copy.
 
 - Prefer one strong headline plus 2–4 supporting information groups.
 - Keep long-form working text in readable sans-serif type at roughly 16–18px with generous leading.
@@ -78,3 +78,5 @@ Before shipping a narrative UI change, review desktop, tablet landscape, and mob
 - Is the action understandable without scrolling backward?
 - Is all long text readable without inner scrolling or clipping?
 - Does the scene feel like a chapter in a lived story rather than a dashboard, SaaS hero, or presentation slide?
+
+See `NARRATIVE_WORKSPACE.md` for the record-led reading order and retired-copy gate.

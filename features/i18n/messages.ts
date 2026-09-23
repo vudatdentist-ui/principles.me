@@ -71,7 +71,6 @@ export const viMessages: Record<string, string> = {
   "Needs attention": "Cần chú ý",
   Attention: "Cần chú ý",
   "Clarify a goal": "Làm rõ mục tiêu",
-  "What deserves attention now?": "Lúc này, điều gì đáng để bạn tập trung nhất?",
   "What do you really want?": "Bạn thực sự muốn tạo ra điều gì?",
   "What is actually true?": "Thực tế hiện tại đang như thế nào?",
   "What is actually true right now?": "Ngay lúc này, thực tế đang như thế nào?",
@@ -151,22 +150,6 @@ export const viMessages: Record<string, string> = {
   "Diagnosis · Hypothesis": "Nguyên nhân gốc · Giả thuyết",
   "Design · Machine change": "Thiết kế · Thay đổi cách vận hành",
   "Do · Execution": "Hành động · Thực thi",
-  "Name the reality you want to create.": "Xác định rõ thực tế bạn muốn tạo ra.",
-  "A useful goal is specific enough to guide choices and honest enough to expose trade-offs.":
-    "Một mục tiêu tốt phải đủ cụ thể để dẫn đường cho lựa chọn, đồng thời đủ thực tế để làm rõ những đánh đổi đi kèm.",
-  "Find the gap that matters.": "Xác định khoảng cách thực sự đáng giải quyết.",
-  "The problem is the meaningful difference between the desired reality and what is actually true now.":
-    "Vấn đề nằm ở khoảng cách có ý nghĩa giữa thực tế bạn muốn tạo ra và thực tế đang diễn ra.",
-  "Understand why the gap exists.": "Hiểu vì sao khoảng cách đó tồn tại.",
-  "Separate symptoms from causes, preserve uncertainty, and look for evidence that could prove the hypothesis wrong.":
-    "Tách biểu hiện khỏi nguyên nhân, giữ lại những điều chưa chắc chắn và chủ động tìm bằng chứng có thể bác bỏ giả thuyết của mình.",
-  "Change the machine, not just the intention.":
-    "Thay đổi cách vận hành, không chỉ thay đổi ý định.",
-  "Choose a concrete change that should alter reality, then define the result and signal you expect to observe.":
-    "Chọn một thay đổi đủ cụ thể để tác động lên thực tế, rồi xác định kết quả và tín hiệu bạn kỳ vọng sẽ quan sát được.",
-  "Execute the design and observe reality.": "Thực thi thiết kế và quan sát thực tế.",
-  "Actions only matter if the resulting reality changes. Completion is not evidence that the design worked.":
-    "Hành động chỉ có ý nghĩa khi thực tế sau đó thay đổi. Hoàn thành việc không phải bằng chứng rằng thiết kế đã hiệu quả.",
   "The desired reality this cycle is trying to create.":
     "Thực tế mà chu kỳ này đang hướng tới.",
   "The gap between Dream and observed Reality.":
@@ -226,8 +209,6 @@ export const viMessages: Record<string, string> = {
   Question: "Câu hỏi",
   Answer: "Câu trả lời",
   Sources: "Nguồn",
-  "Ask a question. Inspect the sources before using the answer.":
-    "Đặt câu hỏi, rồi kiểm tra nguồn trước khi sử dụng câu trả lời.",
   "Name the decision, tension, or reality you need to understand.":
     "Hãy nói rõ quyết định, mâu thuẫn hoặc thực tế mà bạn cần hiểu.",
   "Need a starting question?": "Chưa biết bắt đầu từ đâu?",
@@ -237,12 +218,7 @@ export const viMessages: Record<string, string> = {
   "What would a better machine look like?": "Một cách vận hành tốt hơn sẽ trông như thế nào?",
   "Which principle applies here?": "Nguyên tắc nào phù hợp với tình huống này?",
   "What should I reflect on?": "Tôi nên chiêm nghiệm điều gì?",
-  "What is still unclear?": "Điều gì vẫn chưa rõ?",
-  "What the evidence suggests": "Điều bằng chứng đang cho thấy",
-  "What the evidence stands on": "Cơ sở của bằng chứng",
   "Next decision": "Quyết định tiếp theo",
-  "What should this change in your next decision?":
-    "Điều này nên thay đổi quyết định tiếp theo của bạn như thế nào?",
   "Shared Principles knowledge": "Tri thức dùng chung của Principles",
   "Personal evolution context": "Bối cảnh phát triển cá nhân",
   "Live public search": "Tìm kiếm công khai theo thời gian thực",
@@ -268,7 +244,7 @@ export const viMessages: Record<string, string> = {
   "No sources": "Không có nguồn",
   "Not checked": "Chưa kiểm tra",
   "Not requested": "Chưa yêu cầu",
-  "Continue in Me →": "Tiếp tục trong Tôi →",
+  "Continue in Me →": "Về mục Tôi →",
 
   // Account
   "Account & data": "Tài khoản và dữ liệu",
@@ -285,9 +261,6 @@ export const viMessages: Record<string, string> = {
     "Bạn đang sở hữu tổ chức. Hệ thống sẽ yêu cầu xác nhận rõ ràng trước khi xóa tài khoản.",
 
   // Learning
-  "What is reality teaching you?": "Thực tế đang dạy bạn điều gì?",
-  "Record an experience, then decide what it teaches you.":
-    "Ghi lại một trải nghiệm, rồi quyết định xem nó thực sự dạy bạn điều gì.",
   "Experience → Reflection": "Trải nghiệm → Chiêm nghiệm",
   "What happened, and what did it teach you?":
     "Điều gì đã xảy ra, và bạn học được gì từ đó?",
@@ -298,19 +271,14 @@ export const viMessages: Record<string, string> = {
   "Recurrence note": "Ghi chú về sự lặp lại",
   "Latest reflection": "Chiêm nghiệm gần nhất",
   "No reflection yet.": "Chưa có chiêm nghiệm nào.",
-  "Capture an event to begin your evidence trail.":
-    "Hãy ghi lại một sự kiện để bắt đầu tạo chuỗi bằng chứng của riêng bạn.",
-  Reflections: "Các chiêm nghiệm",
+  "Reflections": "Chiêm nghiệm",
   Patterns: "Mẫu lặp",
   Principles: "Nguyên tắc",
-  "Rules I am testing": "Những nguyên tắc tôi đang kiểm chứng",
   "Search rule, trigger, or rationale":
     "Tìm theo nguyên tắc, tình huống áp dụng hoặc lý do",
   "No matching principles. Try another word.":
     "Không có nguyên tắc phù hợp. Hãy thử từ khóa khác.",
   "No principle yet.": "Chưa có nguyên tắc nào.",
-  "Add a trigger and a rule to test in your next decision.":
-    "Hãy thêm tình huống áp dụng và một nguyên tắc để kiểm chứng trong quyết định tiếp theo.",
   "Find a principle": "Tìm nguyên tắc",
   "Distill principle": "Chắt lọc nguyên tắc",
   "Principle under review": "Nguyên tắc đang được xem xét",
@@ -322,10 +290,6 @@ export const viMessages: Record<string, string> = {
   "What seems to repeat across reality?":
     "Điều gì đang lặp lại trong nhiều tình huống thực tế?",
   "Not enough history yet.": "Chưa có đủ lịch sử để kết luận.",
-  "Not enough history yet. Live the loop before asking the system to define a pattern.":
-    "Chưa có đủ trải nghiệm để gọi tên một mẫu lặp. Hãy sống qua thêm vài vòng trước khi để hệ thống kết luận.",
-  "You have enough history. Synthesize a hypothesis, inspect the cases, then keep only what the evidence supports.":
-    "Bạn đã có đủ lịch sử để hình thành giả thuyết. Hãy đối chiếu các trường hợp rồi chỉ giữ lại điều được bằng chứng hỗ trợ.",
   "Synthesize pattern": "Tổng hợp mẫu lặp",
   "Comparing reflections…": "Đang đối chiếu các chiêm nghiệm…",
   "Pattern hypothesis": "Giả thuyết về mẫu lặp",
@@ -351,8 +315,6 @@ export const viMessages: Record<string, string> = {
   "Applied learning": "Bài học đã được áp dụng",
   "Self Model": "Mô hình về bản thân",
   "Self Model patterns": "Các mẫu lặp trong mô hình về bản thân",
-  "Correct the model.": "Sửa lại mô hình khi thực tế không khớp.",
-  "Test a better rule.": "Kiểm chứng một nguyên tắc tốt hơn.",
   "Inspect the evidence": "Xem lại bằng chứng",
   "No counter-evidence recorded.": "Chưa ghi nhận bằng chứng phản bác.",
   "No supporting summary recorded.": "Chưa có tóm tắt bằng chứng ủng hộ.",
@@ -373,8 +335,6 @@ export const viMessages: Record<string, string> = {
   Close: "Đóng",
   "Reflection needs a Dream and a Problem context.":
     "Muốn chiêm nghiệm, trước hết cần có một đích đến và một vấn đề thực tế.",
-  "Start the cycle in Me first. Once a real gap exists, Learning can attach the reflection to that evidence instead of creating an orphan note.":
-    "Hãy bắt đầu vòng phát triển trong mục Tôi. Khi đã có một khoảng cách thực sự giữa đích đến và thực tế, phần Học hỏi sẽ gắn chiêm nghiệm vào đúng bằng chứng thay vì tạo một ghi chú rời rạc.",
   "Open Me →": "Mở mục Tôi →",
   "Dream / Goal": "Đích đến / Mục tiêu",
   "Reflection goal": "Mục tiêu của chiêm nghiệm",
@@ -389,8 +349,6 @@ export const viMessages: Record<string, string> = {
   "Reflection recurrence note": "Ghi chú về sự lặp lại",
   "Pattern needs at least two completed Reflections.":
     "Cần ít nhất hai chiêm nghiệm đã hoàn tất để nhận diện một mẫu lặp.",
-  "A pattern is not a free-floating note. Capture another real case first, then compare the evidence and decide what actually repeats.":
-    "Mẫu lặp không nên được suy ra từ một ghi chú đơn lẻ. Hãy ghi thêm một trường hợp thực tế, đối chiếu bằng chứng rồi mới kết luận điều gì thật sự đang lặp lại.",
   "Capture another reflection": "Ghi thêm một chiêm nghiệm",
   "Evidence base · {count} durable cases": "Cơ sở bằng chứng · {count} trường hợp đủ rõ",
   "The system compared completed Reflections. Correct the proposal before keeping it if the evidence does not support the wording.":
@@ -404,24 +362,14 @@ export const viMessages: Record<string, string> = {
   "Learning has {count} completed Reflections. Ask the system to compare them, then edit the hypothesis before you keep it.":
     "Bạn đã có {count} chiêm nghiệm hoàn tất. Hãy để hệ thống đối chiếu chúng, sau đó tự chỉnh lại giả thuyết trước khi quyết định giữ.",
   "Learning working scene": "Không gian Học hỏi",
-  "Write the trigger and the rule clearly enough that reality can prove you wrong.":
-    "Hãy viết rõ tình huống áp dụng và nguyên tắc hành động, đủ cụ thể để thực tế có thể chứng minh rằng bạn đã sai.",
   "+ Add principle": "+ Thêm nguyên tắc",
   "{shown} of {total} principles": "Đang hiển thị {shown}/{total} nguyên tắc",
-  "Pain worth learning from": "Những va vấp đáng để học từ đó",
   "+ Reflection": "+ Chiêm nghiệm",
-  "Record what happened, what surprised you, and the lesson you think is worth carrying forward.":
-    "Ghi lại điều đã xảy ra, điều khiến bạn bất ngờ và bài học bạn cho rằng đáng mang theo về sau.",
   Pattern: "Mẫu lặp",
-  "Recurring reality": "Những điều đang lặp lại trong thực tế",
   "+ Pattern": "+ Mẫu lặp",
-  "Compare multiple completed Reflections before you name what repeats. Keep evidence for, against, and uncertainty visible beside it.":
-    "Hãy đối chiếu nhiều chiêm nghiệm đã hoàn tất trước khi gọi tên điều đang lặp lại. Luôn đặt cạnh giả thuyết cả bằng chứng ủng hộ, bằng chứng phản bác và phần chưa chắc chắn.",
   "{count} cases": "{count} trường hợp",
   "Principle revised · testing": "Nguyên tắc đã chỉnh · đang kiểm chứng",
   "Open revision tools →": "Mở công cụ chỉnh sửa →",
-  "Inspect the longer evidence trail, generate another hypothesis, or revise a principle when reality no longer supports the rule.":
-    "Xem lại chuỗi bằng chứng dài hơn, hình thành một giả thuyết khác hoặc chỉnh lại nguyên tắc khi thực tế không còn ủng hộ nó.",
   "from reflection": "từ một chiêm nghiệm",
   mine: "do tôi tạo",
   "Find a pattern": "Tìm một mẫu lặp",
@@ -452,10 +400,6 @@ export const viMessages: Record<string, string> = {
   "No unresolved disagreements.": "Không có bất đồng nào chưa được giải quyết.",
   "Start here": "Bắt đầu từ đây",
   "Reality and models": "Thực tế và các cách lý giải",
-  "What does the track record say?": "Lịch sử thực tế đang nói lên điều gì?",
-  "Where is the machine failing?": "Cách vận hành đang hỏng ở đâu?",
-  "Who owns what must change?": "Ai chịu trách nhiệm cho điều cần thay đổi?",
-  "What should work differently?": "Điều gì cần vận hành khác đi?",
   Intent: "Mục đích",
   Models: "Các cách lý giải",
   "Competing models": "Các cách lý giải đang cạnh tranh",
@@ -499,7 +443,6 @@ export const viMessages: Record<string, string> = {
   "Tension:": "Căng thẳng:",
   "People:": "Con người:",
   Organizations: "Các tổ chức",
-  "What are we seeing differently?": "Chúng ta đang nhìn khác nhau ở điểm nào?",
   "{count} roles · {responsibilities} responsibilities": "{count} vai trò · {responsibilities} trách nhiệm",
   "{roles} roles · {responsibilities} responsibilities · {teams} teams":
     "{roles} vai trò · {responsibilities} trách nhiệm · {teams} nhóm",
@@ -679,5 +622,65 @@ export const viMessages: Record<string, string> = {
   "Received an invalid response. Try again.": "Nhận được phản hồi không hợp lệ. Vui lòng thử lại.",
   "Response was too large.": "Phản hồi quá lớn để xử lý.",
   "Stream ended unexpectedly.": "Phản hồi bị ngắt trước khi hoàn tất.",
+
+  "Story so far": "Diễn biến đã ghi nhận",
+
+  "Goal chapters": "Các phần của mục tiêu",
+
+  "Knowledge chapters": "Các phần trong Tri thức",
+
+  "Organization chapters": "Các phần của tổ chức",
+
+  "Hypothesis": "Giả thuyết",
+
+  "Diagnose": "Phân tích nguyên nhân",
+
+  "Review": "Xem lại",
+
+  "Principle under test": "Nguyên tắc đang kiểm chứng",
+
+  "No goal recorded.": "Chưa ghi nhận mục tiêu.",
+
+  "No problem recorded.": "Chưa xác định vấn đề.",
+
+  "No diagnosis recorded.": "Chưa có phân tích nguyên nhân.",
+
+  "No design recorded.": "Chưa có thiết kế.",
+
+  "No actions recorded.": "Chưa có hành động.",
+
+  "Record reality before identifying the gap.": "Ghi nhận thực tế trước khi xác định khoảng cách với mục tiêu.",
+
+  "A cause is still a hypothesis until it is supported by evidence.": "Nguyên nhân vẫn là giả thuyết khi chưa có bằng chứng ủng hộ.",
+
+  "A design follows the accepted diagnosis.": "Thiết kế dựa trên phân tích nguyên nhân đã xác nhận.",
+
+  "Actions follow the adopted design.": "Hành động để thực hiện thiết kế đã chọn.",
+
+  "Add principle": "Thêm nguyên tắc",
+
+  "Edit pattern": "Chỉnh sửa mẫu lặp",
+
+  "Edit principle": "Chỉnh sửa nguyên tắc",
+
+  "Case context": "Xem lại trường hợp",
+
+  "Compare completed reflections.": "Đối chiếu các chiêm nghiệm đã hoàn tất.",
+
+  "Choose a goal and record a problem in Me first.": "Chọn mục tiêu và ghi nhận vấn đề trong mục Tôi trước.",
+
+  "Capture another reflection before comparing cases.": "Ghi thêm một chiêm nghiệm trước khi đối chiếu các trường hợp.",
+
+  "Open issues": "Vấn đề đang mở",
+
+  "Roles and responsibilities": "Vai trò và trách nhiệm",
+
+  "Context evidence": "Bằng chứng theo bối cảnh",
+
+  "No roles assigned yet.": "Chưa phân công vai trò.",
+
+  "Public source": "Nguồn công khai",
+
+  "Shared knowledge source": "Nguồn tri thức dùng chung",
 
 };

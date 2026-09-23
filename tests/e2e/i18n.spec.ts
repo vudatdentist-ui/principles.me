@@ -78,7 +78,7 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }, testI
   await expect(page.getByRole("link", { name: "Tri thức", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Học hỏi", exact: true })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Lúc này, điều gì đáng để bạn tập trung nhất?" }),
+    page.getByRole("heading", { name: "Tôi" }),
   ).toBeVisible();
 
   await testInfo.attach("vietnamese-me-display", {
@@ -88,17 +88,17 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }, testI
 
   await page.getByRole("link", { name: "Tri thức", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Điều gì vẫn chưa rõ?" }),
+    page.getByRole("heading", { name: "Tri thức" }),
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Học hỏi", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Thực tế đang dạy bạn điều gì?" }),
+    page.getByRole("heading", { name: "Học hỏi" }),
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Tổ chức", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Điều gì cần vận hành khác đi?" }),
+    page.getByRole("heading", { name: "Tổ chức" }),
   ).toBeVisible();
 
   await page.getByRole("link", { name: `Tài khoản của ${email}`, exact: true }).click();

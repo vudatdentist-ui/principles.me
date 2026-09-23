@@ -16,7 +16,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
 }
 
@@ -34,7 +34,7 @@ test("nested feature stages keep usable width on wide desktops", async ({
 
     await page.goto("/knowledge");
     await expect(
-      page.getByRole("heading", { name: "What is still unclear?" }),
+      page.getByRole("heading", { name: "Knowledge" }),
     ).toBeVisible();
     await expect(page.getByLabel("Knowledge working scene")).toBeVisible();
 
@@ -81,7 +81,7 @@ test("nested feature stages keep usable width on wide desktops", async ({
 
     await page.goto("/organization");
     await expect(
-      page.getByRole("heading", { name: "What should work differently?" }),
+      page.getByRole("heading", { name: "Organization" }),
     ).toBeVisible();
     await expect(page.getByLabel("Current organization narrative")).toBeVisible();
 

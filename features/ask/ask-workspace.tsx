@@ -2,6 +2,7 @@
 
 import { T, useI18n } from "@/features/i18n/locale";
 import { AutoTextarea } from "@/features/ui/auto-textarea";
+import { ChapterNav } from "@/features/ui/chapter-nav";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
@@ -135,14 +136,14 @@ export function AskWorkspace() {
   return (
     <div className={styles.workspace}>
       <section
+        id="knowledge-question"
         aria-label={t("Current knowledge narrative")}
         aria-labelledby="knowledge-title"
         className={styles.hero}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}><T>Knowledge</T></p>
-          <h1 id="knowledge-title"><T>What is still unclear?</T></h1>
-          <p><T>Ask a question. Inspect the sources before using the answer.</T></p>
+          <p className={styles.eyebrow} aria-hidden="true">01</p>
+          <h1 id="knowledge-title"><T>Knowledge</T></h1>
         </div>
 
         <form
@@ -195,6 +196,14 @@ export function AskWorkspace() {
         </div>
       </details>
 
+      {phase !== "idle" ? (
+        <ChapterNav label={t("Knowledge chapters")} chapters={[
+          { number: "01", href: "#knowledge-question", label: t("Question") },
+          ...(answer || phase === "submitting" ? [{ number: "02", href: "#knowledge-answer" as const, label: t("Answer") }] : []),
+          { number: "03", href: "#knowledge-sources", label: t("Sources") },
+        ]} />
+      ) : null}
+
       {error ? (
         <section className={styles.error} role="alert">
           <strong>
@@ -219,11 +228,11 @@ export function AskWorkspace() {
       ) : null}
 
       {answer || phase === "submitting" ? (
-        <section className={styles.answerSection} aria-live="polite">
+        <section className={styles.answerSection} id="knowledge-answer" aria-live="polite">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}><T>Answer</T></p>
-              <h2 aria-label={t("Answer")}><T>What the evidence suggests</T></h2>
+              <p className={styles.eyebrow} aria-hidden="true">02</p>
+              <h2><T>Answer</T></h2>
             </div>
             <span>{sourceLabel}</span>
           </div>
@@ -236,10 +245,6 @@ export function AskWorkspace() {
           </article>
           {phase === "done" ? (
             <div className={styles.bridge}>
-              <div>
-                <span><T>Next decision</T></span>
-                <strong><T>What should this change in your next decision?</T></strong>
-              </div>
               <a href="/"><T>Continue in Me →</T></a>
             </div>
           ) : null}
@@ -247,11 +252,11 @@ export function AskWorkspace() {
       ) : null}
 
       {phase !== "idle" ? (
-        <section className={styles.sourcesSection}>
+        <section className={styles.sourcesSection} id="knowledge-sources">
           <div className={styles.sectionHeading}>
             <div>
-              <p className={styles.eyebrow}><T>Sources</T></p>
-              <h2><T>What the evidence stands on</T></h2>
+              <p className={styles.eyebrow} aria-hidden="true">03</p>
+              <h2><T>Sources</T></h2>
             </div>
             <span>{sourceLabel}</span>
           </div>
@@ -286,7 +291,7 @@ export function AskWorkspace() {
                   <p>{source.snippet}</p>
                   <div className={styles.sourceMeta}>
                     <span>
-                      {source.sourceType === "live_web" ? "LIVE" : "RAG"}
+                      {t(source.sourceType === "live_web" ? "Public source" : "Shared knowledge source")}
                     </span>
                     {source.url ? (
                       <a href={source.url} rel="noreferrer" target="_blank">

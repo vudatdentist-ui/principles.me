@@ -61,7 +61,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
   await expect(page.getByText(email, { exact: true }).first()).toBeVisible();
   return email;
@@ -164,11 +164,11 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
   }
 
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" }),
+    page.getByRole("heading", { name: "Learning" }),
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Not enough history yet. Live the loop before asking the system to define a pattern.",
+      "Pattern needs at least two completed Reflections.",
       { exact: true },
     ),
   ).toBeVisible();
@@ -300,7 +300,8 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
   await page.getByRole("button", { name: "improved" }).click();
   await page.getByRole("button", { name: "Record outcome" }).click();
 
-  await expect(page.getByText("Pain").first()).toBeVisible();
+  await expect(page.getByLabel("What did this teach you?")).toBeVisible();
+  await expect(page.locator("#current-action")).toContainText(actualOutcome);
   await page
     .getByLabel("What hurt or surprised you?")
     .fill(
@@ -363,11 +364,11 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
 
   await page.goto("/learning");
   await expect(
-    page.getByRole("heading", { name: "What is reality teaching you?" }),
+    page.getByRole("heading", { name: "Learning" }),
   ).toBeVisible();
   await expect(page.getByText(outcomeLearning).first()).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Rules I am testing" }),
+    page.getByRole("heading", { name: "Principles" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Distill principle" }),
@@ -454,7 +455,7 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
 
   await page.goto("/knowledge");
   await expect(
-    page.getByRole("heading", { name: "What is still unclear?" }),
+    page.getByRole("heading", { name: "Knowledge" }),
   ).toBeVisible();
 
   await page.route("**/api/ask", async (route) => {

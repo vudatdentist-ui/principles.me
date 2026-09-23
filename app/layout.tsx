@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   description:
-    "Principles — nhìn thẳng vào thực tế, cải thiện cách vận hành và chắt lọc nguyên tắc từ trải nghiệm.",
+    "Mục tiêu, thực tế, hành động và bài học của bạn.",
   metadataBase: new URL("https://principles.me"),
   title: "Principles",
 };

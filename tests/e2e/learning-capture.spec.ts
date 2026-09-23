@@ -16,7 +16,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signup).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
 }
 
@@ -92,13 +92,13 @@ test("Learning keeps the working loop in one scene and lets every chapter captur
   expect(sceneBox?.y ?? 9999).toBeLessThan(620);
 
   await expect(
-    page.getByRole("heading", { name: "Pain worth learning from" }),
+    page.getByRole("heading", { name: "Reflections" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Recurring reality" }),
+    page.getByRole("heading", { name: "Patterns" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Rules I am testing" }),
+    page.getByRole("heading", { name: "Principles" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "+ Reflection" }).click();

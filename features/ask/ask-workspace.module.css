@@ -1,9 +1,9 @@
-.workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; padding-top: 48px; }
+.workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; padding-top: 28px; }
 .hero { display: grid; grid-template-columns: minmax(350px, 0.65fr) minmax(560px, 1fr); gap: 56px; align-items: start; }
 .heroCopy { display: grid; gap: 18px; }
-.hero h1 { max-width: 12ch; }
+.hero h1 { max-width: 24ch; font-family: var(--font-geist); font-size: clamp(28px, 3vw, 38px); font-weight: 500; }
 .eyebrow { composes: eyebrow from "../ui/surface.module.css"; }
-.heroCopy > p:last-child { max-width: 34ch; color: var(--muted-ink); font-size: 15px; }
+.heroCopy > .eyebrow { color: var(--rust); font-family: var(--font-geist-mono); letter-spacing: 0; }
 .askForm { display: grid; gap: 14px; }
 .formHeading { display: none; }
 .label { color: var(--ink); }
@@ -20,7 +20,8 @@
 .error { composes: error from "../ui/surface.module.css"; display: grid; gap: 8px; margin: 24px 0; }
 .answerSection, .sourcesSection { padding: 36px 0; border-bottom: 1px solid var(--line); }
 .sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
-.sectionHeading h2 { font-size: 30px; }
+.sectionHeading h2 { font-family: var(--font-geist); font-size: 26px; font-weight: 500; letter-spacing: -0.02em; }
+.sectionHeading .eyebrow { color: var(--rust); font-family: var(--font-geist-mono); letter-spacing: 0; margin-bottom: 8px; }
 .sectionHeading > span { color: var(--muted-ink); font-size: 13px; }
 .answerContext { display: grid; gap: 4px; padding-bottom: 20px; max-width: 760px; }
 .answerContext > span { font-size: 12px; color: var(--muted-ink); }
@@ -31,9 +32,6 @@
 .answer blockquote { border-left: 2px solid var(--green); padding-left: 20px; color: var(--muted-ink); }
 .citation { font-family: var(--font-geist-mono); font-size: 12px; color: var(--green); }
 .bridge { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 24px; padding-top: 24px; }
-.bridge > div { display: grid; gap: 4px; }
-.bridge span { font-size: 12px; color: var(--muted-ink); }
-.bridge strong { font-size: 15px; font-weight: 450; }
 .retrievalGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-bottom: 24px; }
 .retrievalCard { display: grid; gap: 6px; }
 .retrievalCard > span { color: var(--muted-ink); font-size: 13px; }
