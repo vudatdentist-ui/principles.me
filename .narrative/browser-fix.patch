@@ -1,0 +1,57 @@
+diff --git a/features/evolution/evolution-workspace.module.css b/features/evolution/evolution-workspace.module.css
+index f9474d2..e5d6ed2 100644
+--- a/features/evolution/evolution-workspace.module.css
++++ b/features/evolution/evolution-workspace.module.css
+@@ -1,5 +1,5 @@
+ .workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; }
+-.hero { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 48px; align-items: center; padding: 24px 0 18px; }
++.hero { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 48px; align-items: center; padding: 16px 0 10px; }
+ .heroCopy { min-width: 0; }
+ .hero h1 { max-width: 40ch; font-size: clamp(28px, 3vw, 38px); line-height: 1.25; }
+ .eyebrow { composes: eyebrow from "../ui/surface.module.css"; }
+diff --git a/tests/e2e/narrative-records.spec.ts b/tests/e2e/narrative-records.spec.ts
+index 666f402..0c08597 100644
+--- a/tests/e2e/narrative-records.spec.ts
++++ b/tests/e2e/narrative-records.spec.ts
+@@ -44,12 +44,18 @@ async function seed(page: Page) {
+     goalId: goal.id, observationId: reality.observationId,
+     statement: record.problem, gap: record.problem,
+   });
++  await post(page, "/api/people/diagnoses/propose", { problemId: problem.id });
++  const beforeDiagnosis = await (await page.request.get("/api/evolution/state")).json();
++  expect(beforeDiagnosis.diagnosis).toBeNull();
+   const { diagnosis } = await post<{ diagnosis: { id: string } }>(page, "/api/people/diagnoses", {
+     problemId: problem.id, symptom: record.problem,
+     rootCauseHypothesis: record.hypothesis, uncertainty: record.uncertainty,
+     supportingEvidence: record.reality, contradictingEvidence: "One call was urgent.",
+     alternativeHypotheses: "I may also be checking out of habit.", confidence: null,
+   });
++  await post(page, "/api/people/designs/propose", { diagnosisId: diagnosis.id });
++  const beforeDesign = await (await page.request.get("/api/evolution/state")).json();
++  expect(beforeDesign.design).toBeNull();
+   await post(page, "/api/people/designs", {
+     diagnosisId: diagnosis.id, machineChange: record.design,
+     expectedResult: "Four uninterrupted dinners in a week.",
+diff --git a/tests/e2e/smoke.spec.ts b/tests/e2e/smoke.spec.ts
+index fe00247..0843b56 100644
+--- a/tests/e2e/smoke.spec.ts
++++ b/tests/e2e/smoke.spec.ts
+@@ -168,7 +168,7 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
+   ).toBeVisible();
+   await expect(
+     page.getByText(
+-      "Not enough history yet. Live the loop before asking the system to define a pattern.",
++      "Pattern needs at least two completed Reflections.",
+       { exact: true },
+     ),
+   ).toBeVisible();
+@@ -300,7 +300,8 @@ test("one goal completes 5 Steps, Outcome, Reflection, Principle, and Learning",
+   await page.getByRole("button", { name: "improved" }).click();
+   await page.getByRole("button", { name: "Record outcome" }).click();
+ 
+-  await expect(page.getByText("Pain").first()).toBeVisible();
++  await expect(page.getByLabel("What did this teach you?")).toBeVisible();
++  await expect(page.locator("#current-action")).toContainText(actualOutcome);
+   await page
+     .getByLabel("What hurt or surprised you?")
+     .fill(
