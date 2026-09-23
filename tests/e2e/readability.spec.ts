@@ -141,9 +141,11 @@ test("Me stays a bounded narrative stage on wide desktop", async ({ page }) => {
 
   const goals = page.locator('section[aria-label="My goals"]');
   const currentAction = page.locator('section[aria-label="Current action"]');
-  await expect(goals).toBeVisible();
+  await expect(page.locator("#me-title")).toHaveText(
+    "Build a company that can make routine decisions without depending on me.",
+  );
+  await expect(goals).toHaveCount(0);
   await expect(currentAction).toBeVisible();
-  await expect(goals.locator('button[aria-pressed="true"]')).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
 
   const metrics = await page.evaluate(() => {
@@ -170,7 +172,7 @@ test("Me stays a bounded narrative stage on wide desktop", async ({ page }) => {
       actionTop: actionBox?.top ?? Number.POSITIVE_INFINITY,
       contextLeft: contextBox?.left ?? -1,
       contextWidth: contextBox?.width ?? Number.POSITIVE_INFINITY,
-      goalHeight: goalsBox?.height ?? Number.POSITIVE_INFINITY,
+      goalHeight: goalsBox?.height ?? 0,
       heroHeight: heroBox?.height ?? Number.POSITIVE_INFINITY,
       heroTitleFontSize: heroTitleStyle
         ? Number.parseFloat(heroTitleStyle.fontSize)

@@ -61,7 +61,6 @@ export function OrganizationRecenter({
         >
           <span>{t(active ? "Current tension" : "Start here")}</span>
           <strong>{active ? currentIssue?.title || t("No open issue.") : t("Create an organization")}</strong>
-          {currentIssue?.tension ? <p>{currentIssue.tension}</p> : null}
 
           <button className={styles.openOperations} type="button" onClick={() => { const operations = operationsRef.current; if (!operations) return; operations.open = true; operations.querySelector("summary")?.focus(); operations.scrollIntoView({ block: "start" }); }}><T>Open operations</T></button>
         </aside>
@@ -118,13 +117,9 @@ export function OrganizationRecenter({
                     <h3>{issue.title}</h3>
                     <p><span className={styles.recordLabel}><T>Observed reality</T></span>{issue.observedReality}</p>
                     <p><span className={styles.recordLabel}><T>Tension</T></span>{issue.tension}</p>
-                    <details>
-                      <summary><T>Reality and models</T></summary>
+                    {issue.disagreements.length > 0 ? <details>
+                      <summary><T>Competing models</T></summary>
                       <dl>
-                        <div>
-                          <dt><T>Reality</T></dt>
-                          <dd>{issue.observedReality}</dd>
-                        </div>
                         {issue.disagreements.map((disagreement) => (
                           <div key={disagreement.id}>
                             <dt>{disagreement.raisedByEmail}</dt>
@@ -137,7 +132,7 @@ export function OrganizationRecenter({
                           </div>
                         ))}
                       </dl>
-                    </details>
+                    </details> : null}
                   </article>
                 ))}
               </div>

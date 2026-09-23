@@ -70,8 +70,10 @@ test("nested feature stages keep usable width on wide desktops", async ({
     expect(knowledge.sceneWidth).toBeLessThanOrEqual(1122);
     expect(knowledge.paddingLeft).toBeLessThanOrEqual(1);
     expect(knowledge.paddingRight).toBeLessThanOrEqual(1);
-    expect(knowledge.copyWidth).toBeGreaterThanOrEqual(350);
-    expect(knowledge.formWidth).toBeGreaterThanOrEqual(560);
+    expect(knowledge.copyWidth).toBeGreaterThanOrEqual(240);
+    expect(knowledge.copyWidth).toBeLessThanOrEqual(280);
+    expect(knowledge.formWidth).toBeGreaterThanOrEqual(700);
+    expect(knowledge.formWidth).toBeLessThanOrEqual(800);
     expect(Math.abs(knowledge.copyTop - knowledge.formTop)).toBeLessThanOrEqual(2);
 
     await testInfo.attach(`knowledge-${viewport.width}x${viewport.height}`, {

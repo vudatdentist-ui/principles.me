@@ -64,6 +64,8 @@ async function seed(page: Page, goalText = record.goal) {
       statement: record.problem,
     },
   );
+  // Execution records must retain a reviewed proposal, even in synthetic fixtures.
+  await post(page, "/api/people/diagnoses/propose", { problemId: problem.id });
   const { diagnosis } = await post<{ diagnosis: { id: string } }>(
     page,
     "/api/people/diagnoses",
@@ -77,6 +79,7 @@ async function seed(page: Page, goalText = record.goal) {
         "This is a hypothesis from one week, not an established cause.",
     },
   );
+  await post(page, "/api/people/designs/propose", { diagnosisId: diagnosis.id });
   await post(page, "/api/people/designs", {
     diagnosisId: diagnosis.id,
     machineChange: record.design,
@@ -116,6 +119,7 @@ for (const view of [
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("lang", view.locale);
     await expect(page.locator("#me-title")).toHaveText(record.goal);
+    await expect(page.locator('section[aria-label="My goals"], section[aria-label="Mục tiêu của tôi"]')).toHaveCount(0);
     await expect(page.locator("#next-action-title")).toHaveText(record.design);
     const complete = page.getByRole("button", {
       name:

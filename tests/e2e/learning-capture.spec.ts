@@ -110,7 +110,9 @@ test("Learning keeps the working loop in one scene and lets every chapter captur
     .fill("Capture must live beside the narrative chapter it belongs to.");
   await page.getByRole("button", { name: "Save reflection" }).click();
   await expect(
-    page.locator("#learning-reflection").getByText("Capture must live beside the narrative chapter it belongs to.", { exact: true }),
+    page.locator("#learning-reflection article > p").filter({
+      hasText: "Capture must live beside the narrative chapter it belongs to.",
+    }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "+ Pattern" }).click();

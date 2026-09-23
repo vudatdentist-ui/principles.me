@@ -373,8 +373,7 @@ export function LearningRecenter({
           className={styles.currentScene}
           aria-label={t("Current learning narrative")}
         >
-          <span>{t(currentLearningLabel)}</span>
-          <strong>{currentLearning || t("No reflection yet.")}</strong>
+          {currentLearning ? <><span>{t(currentLearningLabel)}</span><strong>{currentLearning}</strong></> : null}
           <div className={styles.sceneActions}>
             {pendingPrinciple ? <a href="#learning-principle"><T>Review</T></a> : null}
             <button
