@@ -24,7 +24,8 @@ must reach their actual work without replaying a story or scrolling past slogans
 - **Me:** selected Goal, observed Reality and Gap, the current accepted context and
   an executable next action. The accepted Design names the Do scene. Earlier
   decisions and results remain inspectable in the record below the five-step rail.
-  A selector is shown only when there are multiple Goals to choose from.
+  A selector is shown for multiple Goals, or to return to a saved Goal while
+  starting a new one.
 - **Learning:** an experience before its interpretation; then Patterns supported
   by cases; then Principles under test. Chapter navigation opens the library
   directly, and pending review remains visible at the top.

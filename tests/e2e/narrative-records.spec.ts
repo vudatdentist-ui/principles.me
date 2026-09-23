@@ -121,6 +121,17 @@ for (const view of [
     await expect(page.locator("#me-title")).toHaveText(record.goal);
     await expect(page.locator('section[aria-label="My goals"], section[aria-label="Mục tiêu của tôi"]')).toHaveCount(0);
     await expect(page.locator("#next-action-title")).toHaveText(record.design);
+    // A single saved goal must remain reachable while starting another one.
+    await page.getByRole("button", {
+      name: view.locale === "vi" ? "+ Mục tiêu" : "+ Goal", exact: true,
+    }).click();
+    const portfolio = page.getByRole("region", {
+      name: view.locale === "vi" ? "Mục tiêu của tôi" : "My goals", exact: true,
+    });
+    await expect(portfolio).toBeVisible();
+    await portfolio.getByRole("button").filter({ hasText: record.goal }).click();
+    await expect(page.locator("#me-title")).toHaveText(record.goal);
+    await expect(page.locator("#next-action-title")).toHaveText(record.design);
     const complete = page.getByRole("button", {
       name:
         view.locale === "vi"
@@ -134,6 +145,24 @@ for (const view of [
         ? "Hoàn thành việc chưa có nghĩa là đã tạo ra kết quả. Hãy ghi nhận điều thực sự đã thay đổi."
         : "Completing actions is not an outcome. Record what actually changed.";
     await expect(page.getByText(rule, { exact: true })).toHaveCount(1);
+    const steps = page.getByRole("tablist").getByRole("tab");
+    await expect(steps).toHaveCount(5);
+    const stepGeometry = await steps.evaluateAll((tabs) => tabs.map((tab) => {
+      const number = tab.querySelector("span");
+      if (!number) throw new Error("Missing step ordinal");
+      const style = getComputedStyle(number);
+      return {
+        text: number.textContent,
+        height: number.getBoundingClientRect().height,
+        fontSize: Number.parseFloat(style.fontSize),
+        borderLeft: Number.parseFloat(getComputedStyle(tab).borderLeftWidth),
+      };
+    }));
+    expect(stepGeometry.map((step) => step.text)).toEqual(["01", "02", "03", "04", "05"]);
+    for (const step of stepGeometry) {
+      expect(step.height).toBeLessThan(step.fontSize * 2);
+      expect(step.borderLeft).toBe(0);
+    }
     await page.evaluate(() => scrollTo(0, 0));
     if (view.width >= 1024)
       expect(
@@ -167,9 +196,13 @@ for (const view of [
       rationale: "An initial rule to test, not established truth.",
     });
     await page.goto("/learning");
-    const chapters = page.locator(
-      "#learning-reflection, #learning-pattern, #learning-principle",
-    );
+    await expect(page.getByRole("heading", {
+      name: view.locale === "vi" ? "Học hỏi" : "Learning", level: 1, exact: true,
+    })).toBeVisible();
+    const learningScene = page.getByRole("region", {
+      name: view.locale === "vi" ? "Không gian Học hỏi" : "Learning working scene", exact: true,
+    });
+    const chapters = learningScene.locator(":scope > section");
     expect(
       await chapters.evaluateAll((nodes) => nodes.map((node) => node.id)),
     ).toEqual([
@@ -177,19 +210,21 @@ for (const view of [
       "learning-pattern",
       "learning-principle",
     ]);
-    const event = page
+    const event = learningScene
       .locator("#learning-reflection")
       .getByRole("heading", { name: record.happened, exact: true });
     await expect(event).toBeVisible();
-    const lesson = page.locator("#learning-reflection article > p");
+    const lesson = learningScene.locator("#learning-reflection article > p");
     await expect(lesson).toContainText(record.learning);
     expect(
       (await event.boundingBox())?.y ?? Number.POSITIVE_INFINITY,
     ).toBeLessThan((await lesson.boundingBox())?.y ?? Number.NEGATIVE_INFINITY);
-    const library = page.locator('nav a[href="#learning-principle"]');
+    const library = page.getByRole("navigation", {
+      name: view.locale === "vi" ? "Các phần trong Học hỏi" : "Learning chapters", exact: true,
+    }).locator('a[href="#learning-principle"]');
     await library.click();
     await expect(
-      page
+      learningScene
         .locator("#learning-principle")
         .getByRole("heading", { name: record.rule }),
     ).toBeInViewport();

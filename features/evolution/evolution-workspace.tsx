@@ -896,7 +896,7 @@ export function EvolutionWorkspace({
         </div>
       ) : null}
 
-      {state.goals.length > 1 ? (
+      {(state.goals.length > 1 || (!state.dream && state.goals.length > 0)) ? (
         <section className={styles.goalPortfolio} aria-label={t("My goals")}>
           {state.goals.map((goal) => (
             <button

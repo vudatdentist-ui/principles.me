@@ -28,7 +28,7 @@
 .contextMissing strong { color: var(--ink); font-weight: 500; }
 .chapterDeck { display: grid; }
 .chapter { display: grid; grid-template-columns: 260px minmax(0, 1fr); column-gap: 80px; row-gap: 18px; padding: 36px 0; border-bottom: 1px solid var(--line); align-items: start; }
-.chapterHeader { grid-column: 1; grid-row: 1 / span 5; display: grid; justify-items: start; gap: 16px; }
+.chapterHeader { grid-column: 1; grid-row: 1; display: grid; justify-items: start; gap: 16px; }
 .chapterHeader h2 { font-size: 28px; }
 .librarySearch { grid-column: 2; display: grid; gap: 8px; }
 .librarySearch > span { color: var(--muted-ink); font-size: 12px; }

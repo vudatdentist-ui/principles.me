@@ -1,4 +1,5 @@
 export const narrativeMessages: Record<string, string> = {
+  "Competing models": "Các cách lý giải khác nhau",
   "Review the record": "Xem lại diễn biến",
   "Reality and gap": "Thực tế và khoảng cách",
   Review: "Xem lại",
