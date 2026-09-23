@@ -7,10 +7,11 @@ permissions:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: be9d3a2634acf1b36fe63bd21e9db5f486f43a0d
           persist-credentials: false
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -18,7 +19,7 @@ jobs:
           node-version: 22
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      - name: Capture reference without authentication
+      - name: Inspect chapter controls and public home
         run: |
           mkdir -p inspection
           cat > reference.cjs <<'JS'
@@ -26,48 +27,48 @@ jobs:
           const fs = require('node:fs/promises');
           (async () => {
             const browser = await chromium.launch();
-            const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+            const capture = async (name) => {
+              await page.evaluate(() => document.fonts.ready);
+              await page.waitForTimeout(700);
+              await page.screenshot({ path: `inspection/${name}.png`, fullPage: true });
+              await fs.writeFile(`inspection/${name}.txt`, await page.locator('body').innerText());
+              await fs.writeFile(`inspection/${name}.html`, await page.content());
+            };
             try {
               await page.goto('https://learn.w4gz.com/', { waitUntil: 'networkidle', timeout: 60000 });
-              await fs.writeFile('inspection/reference.html', await page.content());
-              await fs.writeFile('inspection/reference-text.txt', await page.locator('body').innerText());
-              await fs.writeFile('inspection/reference-links.json', JSON.stringify(await page.locator('a').evaluateAll(links => links.map(a => ({ text: a.textContent, href: a.href }))), null, 2));
-              await page.screenshot({ path: 'inspection/reference-top.png' });
-              await page.screenshot({ path: 'inspection/reference-full.png', fullPage: true });
-              for (const offset of [850, 1700, 2550]) {
-                await page.evaluate(y => window.scrollTo(0, y), offset);
-                await page.waitForTimeout(400);
-                await page.screenshot({ path: `inspection/reference-${offset}.png` });
+              const intro = page.locator('.line-intro__header button');
+              if (await intro.isVisible()) await intro.click();
+              await page.waitForTimeout(800);
+              for (let i=0; i<3; i++) {
+                const button = page.locator('.welcome-journey__chapters button').nth(i);
+                if (await button.isVisible()) { await button.click(); await capture(`chapter-${i+1}`); }
               }
-              await fs.writeFile('inspection/reference-type.json', JSON.stringify(await page.locator('h1,h2,h3,main p').evaluateAll(nodes => nodes.slice(0,24).map(n => { const s = getComputedStyle(n); return {tag:n.tagName,text:n.textContent,font:s.fontFamily,size:s.fontSize,weight:s.fontWeight,lineHeight:s.lineHeight,width:n.getBoundingClientRect().width};})), null, 2));
-            } catch (error) { await fs.writeFile('inspection/reference-error.txt', String(error)); }
+              const skip = page.locator('.welcome-journey__skip');
+              if (await skip.isVisible()) await skip.click();
+              await page.waitForTimeout(1000);
+              const cookies = page.getByRole('button', { name: /Chỉ thiết yếu/i });
+              if (await cookies.isVisible()) await cookies.click();
+              await capture('reference-home');
+              await fs.writeFile('inspection/reference-links.json', JSON.stringify(await page.locator('a').evaluateAll(links=>links.map(a=>({text:a.textContent,href:a.href}))), null, 2));
+            } catch (error) { await fs.writeFile('inspection/reference-error.txt', String(error)); await capture('reference-error'); }
             await browser.close();
           })();
           JS
           node reference.cjs
-      - name: Archive only source and dependencies
+      - name: Archive exact inspected baseline
+        shell: bash
         run: |
-          git archive be9d3a2634acf1b36fe63bd21e9db5f486f43a0d | gzip > inspection/source.tgz
-          tar -czf inspection/dependencies.tgz node_modules
-          npm pack pnpm@10.32.1 --pack-destination inspection
-      - name: Isolated PostgreSQL runtime without data
-        run: |
-          docker pull postgres:16-bookworm
-          container=$(docker create postgres:16-bookworm)
-          mkdir -p inspection/pg/lib inspection/pg/share
-          docker cp "$container:/usr/lib/postgresql/16/bin" inspection/pg/
-          docker cp "$container:/usr/lib/postgresql/16/lib" inspection/pg/postgres-lib
-          docker cp "$container:/usr/share/postgresql/16" inspection/pg/share/postgresql
-          for lib in libpq.so.5 libldap-2.5.so.0 liblber-2.5.so.0; do
-            docker cp -L "$container:/usr/lib/x86_64-linux-gnu/$lib" "inspection/pg/lib/$lib"
-          done
-          docker rm "$container"
-          tar -czf inspection/postgres-runtime.tgz -C inspection pg
-          rm -rf inspection/pg
+          set -euo pipefail
+          git archive --format=tar.gz HEAD --output=inspection/source.tgz
+          tar -tzf inspection/source.tgz > inspection/source-manifest.txt
+          grep -qx AGENTS.md inspection/source-manifest.txt
+          grep -qx app/layout.tsx inspection/source-manifest.txt
+          git rev-parse HEAD > inspection/source-sha.txt
           cd inspection
-          sha256sum *.tgz > SHA256SUMS
+          sha256sum source.tgz > SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: narrative-inspection
+          name: narrative-source-reference
           path: inspection/
           retention-days: 3
