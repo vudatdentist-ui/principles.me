@@ -16,7 +16,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
   await expect(
-    page.getByRole("heading", { name: "What deserves attention now?" }),
+    page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
 }
 
@@ -33,7 +33,7 @@ test("Learning stays a bounded editorial sequence on wide desktops", async ({
     await page.setViewportSize(viewport);
     await page.goto("/learning");
     await expect(
-      page.getByRole("heading", { name: "What is reality teaching you?" }),
+      page.getByRole("heading", { name: "Learning" }),
     ).toBeVisible();
 
     const currentScene = page.getByLabel("Current learning narrative");

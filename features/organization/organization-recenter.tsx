@@ -1,6 +1,7 @@
 "use client";
 
 import { T, useI18n } from "@/features/i18n/locale";
+import { ChapterNav } from "@/features/ui/chapter-nav";
 import { useMemo, useRef, useState } from "react";
 import type { ClientOrganizationState } from "./contracts";
 import { OrganizationWorkspace } from "./organization-workspace";
@@ -11,7 +12,7 @@ export function OrganizationRecenter({
 }: {
   initialState: ClientOrganizationState;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [state, setState] = useState(initialState);
   const operationsRef = useRef<HTMLDetailsElement>(null);
   const [activeHandle, setActiveHandle] = useState(
@@ -50,43 +51,17 @@ export function OrganizationRecenter({
     <div className={styles.workspace}>
       <section className={styles.hero} aria-labelledby="organization-title">
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}><T>Organization</T></p>
-          <h1 id="organization-title"><T>What should work differently?</T></h1>
+          {active ? <p className={styles.eyebrow}><T>Organization</T></p> : null}
+          <h1 id="organization-title">{active?.name || t("Organization")}</h1>
         </div>
 
         <aside
           className={styles.currentScene}
           aria-label={t("Current organization narrative")}
         >
-          <span>{t(active ? "Current tension" : "Start here")}</span>
+          <span>{t(active ? "Open issues" : "Start here")}</span>
           <strong>{active ? currentIssue?.title || t("No open issue.") : t("Create an organization")}</strong>
-          {!active ? <p><T>Name your team and the purpose it serves.</T></p> : null}
           {currentIssue?.tension ? <p>{currentIssue.tension}</p> : null}
-          {active ? <dl>
-            <div>
-              <dt><T>Intent</T></dt>
-              <dd>
-                {active?.purpose ||
-                  active?.name ||
-                  t("Create an organization to name its purpose.")}
-              </dd>
-            </div>
-            <div>
-              <dt><T>Reality</T></dt>
-              <dd>
-                {currentIssue?.observedReality ||
-                  t("No open issue is defining current reality.")}
-              </dd>
-            </div>
-            <div>
-              <dt><T>Ownership</T></dt>
-              <dd>
-                {active
-                  ? t("{count} roles · {responsibilities} responsibilities", { count: active.roles.length, responsibilities: responsibilityCount })
-                  : t("Not designed yet")}
-              </dd>
-            </div>
-          </dl> : null}
           <button className={styles.openOperations} type="button" onClick={() => { const operations = operationsRef.current; if (!operations) return; operations.open = true; operations.querySelector("summary")?.focus(); operations.scrollIntoView({ block: "start" }); }}><T>Open operations</T></button>
         </aside>
       </section>
@@ -111,8 +86,16 @@ export function OrganizationRecenter({
 
       {active ? (
         <>
+          <ChapterNav label={t("Organization chapters")} chapters={[
+            { number: "01", href: "#organization-context", label: t("Intent") },
+            ...(openIssues.length ? [{ number: "02", href: "#organization-issues" as const, label: t("Open issues") }] : []),
+            { number: "03", href: "#organization-models", label: t("Competing models") },
+            { number: "04", href: "#organization-responsibility", label: t("Responsibility") },
+            ...(active.contextEvidence.length ? [{ number: "05", href: "#organization-evidence" as const, label: t("Context evidence") }] : []),
+          ]} />
           <section
             className={styles.orientation}
+            id="organization-context"
             aria-label={t("Organization purpose and reality")}
           >
             <article className={styles.purpose}>
@@ -138,12 +121,13 @@ export function OrganizationRecenter({
           {openIssues.length > 0 ? (
             <section
               className={styles.issueSection}
+              id="organization-issues"
               aria-labelledby="issues-title"
             >
               <div className={styles.sectionLead}>
                 <div>
-                  <p className={styles.eyebrow}><T>Tension</T></p>
-                  <h2 id="issues-title"><T>Where is the machine failing?</T></h2>
+                  <p className={styles.eyebrow} aria-hidden="true">02</p>
+                  <h2 id="issues-title"><T>Open issues</T></h2>
                 </div>
                 <span>{t("{count} open", { count: openIssues.length })}</span>
               </div>
@@ -153,7 +137,7 @@ export function OrganizationRecenter({
                     <div className={styles.issueMeta}>
                       <span>{issue.createdByEmail}</span>
                       <span>
-                        {new Date(issue.createdAt).toLocaleDateString()}
+                        {new Date(issue.createdAt).toLocaleDateString(locale === "vi" ? "vi-VN" : "en-US")}
                       </span>
                     </div>
                     <h3>{issue.title}</h3>
@@ -186,13 +170,14 @@ export function OrganizationRecenter({
 
           <section
             className={styles.diagnosisSection}
+              id="organization-models"
             aria-labelledby="diagnosis-title"
           >
             <div className={styles.sectionLead}>
               <div>
-                <p className={styles.eyebrow}><T>Models</T></p>
+                <p className={styles.eyebrow} aria-hidden="true">03</p>
                 <h2 aria-label={t("Competing models")} id="diagnosis-title">
-                  <T>What are we seeing differently?</T>
+                  <T>Competing models</T>
                 </h2>
               </div>
               <span>{t("{count} unresolved", { count: unresolvedDisagreements.length })}</span>
@@ -219,18 +204,21 @@ export function OrganizationRecenter({
 
           <section
             className={styles.machineSection}
+              id="organization-responsibility"
             aria-labelledby="machine-title"
           >
             <div className={styles.sectionLead}>
               <div>
-                <p className={styles.eyebrow}><T>Responsibility</T></p>
-                <h2 id="machine-title"><T>Who owns what must change?</T></h2>
+                <p className={styles.eyebrow} aria-hidden="true">04</p>
+                <h2 id="machine-title"><T>Roles and responsibilities</T></h2>
               </div>
               <span>
-                {active.roles.length} roles · {responsibilityCount}{" "}
-                responsibilities · {active.teams.length} teams
+                {t("{roles} roles · {responsibilities} responsibilities · {teams} teams", {
+                  roles: active.roles.length, responsibilities: responsibilityCount, teams: active.teams.length,
+                })}
               </span>
             </div>
+            {active.roles.length === 0 ? <p className={styles.empty}><T>No roles assigned yet.</T></p> : null}
             <div className={styles.machineGrid}>
               {active.roles.slice(0, 4).map((role) => (
                 <article key={role.id}>
@@ -267,12 +255,13 @@ export function OrganizationRecenter({
           {active.contextEvidence.length > 0 ? (
             <section
               className={styles.evidenceSection}
+              id="organization-evidence"
               aria-labelledby="context-title"
             >
               <div className={styles.sectionLead}>
                 <div>
-                  <p className={styles.eyebrow}><T>Consequence</T></p>
-                  <h2 id="context-title"><T>What does the track record say?</T></h2>
+                  <p className={styles.eyebrow} aria-hidden="true">05</p>
+                  <h2 id="context-title"><T>Context evidence</T></h2>
                 </div>
               </div>
               <div className={styles.evidenceGrid}>
@@ -282,6 +271,8 @@ export function OrganizationRecenter({
                     <h3>{evidence.observation}</h3>
                     <details>
                       <summary><T>For / against</T></summary>
+                      <p><T>Person</T>: {evidence.subjectEmail}</p>
+                      <p>{t("Recorded by {email}", { email: evidence.createdByEmail })}</p>
                       <p>
                         <strong><T>For:</T></strong>{" "}
                         {evidence.evidenceFor || t("Not recorded")}

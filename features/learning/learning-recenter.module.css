@@ -1,6 +1,6 @@
 .workspace { composes: frame from "../ui/surface.module.css"; max-width: var(--content-reading); margin: 0 auto; }
-.hero { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 64px; align-items: start; padding: 40px 0 32px; }
-.hero h1 { max-width: 19ch; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 64px; align-items: start; padding: 28px 0 24px; }
+.hero h1 { max-width: 24ch; font-family: var(--font-geist); font-size: clamp(28px, 3vw, 38px); font-weight: 500; }
 .heroCopy { min-width: 0; }
 .eyebrow { composes: eyebrow from "../ui/surface.module.css"; }
 .currentScene { display: grid; gap: 12px; border-left: 1px solid var(--line); padding-left: 24px; }
@@ -10,10 +10,6 @@
 .primary, .primaryLight { composes: primary from "../ui/surface.module.css"; }
 .secondary { composes: secondary from "../ui/surface.module.css"; }
 .textButton, .chapterAction { composes: textButton from "../ui/surface.module.css"; }
-.chapterRail { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; border-block: 1px solid var(--line); padding: 4px 0; }
-.chapterRail a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); font-size: 14px; text-decoration: none; }
-.chapterRail a:hover { text-decoration: underline; }
-.chapterRail span { font-family: var(--font-geist-mono); color: var(--muted-ink); font-size: 12px; }
 .error { composes: error from "../ui/surface.module.css"; margin-top: 24px; }
 .editorPanel { margin: 28px 0; padding: 28px; border: 1px solid var(--line); border-left: 3px solid var(--green); background: var(--surface); }
 .editorHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 24px; }
@@ -28,8 +24,8 @@
 .chapterDeck { display: grid; }
 .chapter { display: grid; grid-template-columns: 260px minmax(0, 1fr); column-gap: 80px; row-gap: 18px; padding: 36px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .chapterHeader { grid-column: 1; grid-row: 1 / span 5; display: grid; justify-items: start; gap: 16px; }
-.chapterHeader h2 { font-size: 28px; }
-.chapterIntro { grid-column: 2; grid-row: 1; max-width: 65ch; color: var(--muted-ink); font-size: 14px; }
+.chapterHeader h2 { font-family: var(--font-geist); font-size: 26px; font-weight: 500; letter-spacing: -0.02em; }
+.chapterHeader .eyebrow { margin-bottom: 8px; color: var(--rust); font-family: var(--font-geist-mono); letter-spacing: 0; }
 .librarySearch { grid-column: 2; display: grid; gap: 8px; }
 .librarySearch > span { color: var(--muted-ink); font-size: 12px; }
 .noResults { grid-column: 2; color: var(--muted-ink); font-size: 15px; }
@@ -49,7 +45,6 @@
 .lab > summary { padding: 20px 0; }
 .lab > summary span { margin-right: 16px; color: var(--muted-ink); font-size: 12px; }
 .lab > summary strong { font-size: 17px; font-weight: 500; }
-.labIntro { max-width: 760px; color: var(--muted-ink); font-size: 14px; }
 .legacy { margin-top: 24px; }
 @media (max-width: 1000px) {
   .hero { grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
@@ -58,7 +53,6 @@
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; gap: 24px; padding-top: 28px; }
   .currentScene { border-left: 0; padding: 0; }
-  .chapterRail { gap: 4px 22px; }
   .chapter { display: flex; flex-direction: column; gap: 18px; padding: 28px 0; }
   .chapter > * { width: 100%; }
   .chapterHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
@@ -67,3 +61,7 @@
   .editorPanel { padding: 20px 16px; }
   .editorGrid { grid-template-columns: 1fr; }
 }
+
+.caseTrail { display: grid; gap: 18px; padding-left: 22px; }
+.caseTrail li { padding-left: 8px; }
+.caseTrail p { margin-top: 6px; color: var(--muted-ink); font-size: 15px; }

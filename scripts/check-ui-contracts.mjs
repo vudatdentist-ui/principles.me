@@ -10,6 +10,23 @@ function files(directory) {
 
 export function checkUiContracts() {
   const errors = [];
+  const retiredHeadings = [
+    "What deserves attention now?",
+    "What is reality teaching you?",
+    "What is still unclear?",
+    "What should work differently?",
+    "What the evidence suggests",
+    "What the evidence stands on",
+    "What should this change in your next decision?",
+    "Correct the model.",
+    "Test a better rule.",
+    "Rules I am testing",
+    "Pain worth learning from",
+    "Recurring reality",
+    "Where is the machine failing?",
+    "Who owns what must change?",
+    "What does the track record say?"
+];
   for (const path of [...files("app"), ...files("features")]) {
     const source = readFileSync(path, "utf8");
     if (path.endsWith(".css") && /\[aria-label\s*[*^$|~]?=/.test(source)) {
@@ -25,6 +42,11 @@ export function checkUiContracts() {
       errors.push(
         `${path}: nested features must size to their container, not the viewport.`,
       );
+    }
+    if (path.endsWith(".tsx") || path === "features/i18n/messages.ts") {
+      for (const heading of retiredHeadings) {
+        if (source.includes(heading)) errors.push(`${path}: retired stock heading "${heading}"; use a task, state, or actual record.`);
+      }
     }
     if (!path.endsWith(".tsx")) continue;
     if (/\.observe\(document\.(body|documentElement)/.test(source)) {

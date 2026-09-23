@@ -13,31 +13,11 @@ type StepSnapshot = {
 };
 
 const futureCopy: Record<EvolutionFiveStep, StepSnapshot> = {
-  goal: {
-    kicker: "Goal",
-    title: "Name the reality you want to create.",
-    detail: "A useful goal is specific enough to guide choices and honest enough to expose trade-offs.",
-  },
-  problem: {
-    kicker: "Problem",
-    title: "Find the gap that matters.",
-    detail: "The problem is the meaningful difference between the desired reality and what is actually true now.",
-  },
-  diagnosis: {
-    kicker: "Diagnosis",
-    title: "Understand why the gap exists.",
-    detail: "Separate symptoms from causes, preserve uncertainty, and look for evidence that could prove the hypothesis wrong.",
-  },
-  design: {
-    kicker: "Design",
-    title: "Change the machine, not just the intention.",
-    detail: "Choose a concrete change that should alter reality, then define the result and signal you expect to observe.",
-  },
-  do: {
-    kicker: "Do",
-    title: "Execute the design and observe reality.",
-    detail: "Actions only matter if the resulting reality changes. Completion is not evidence that the design worked.",
-  },
+  goal: { kicker: "Goal", title: "No goal recorded.", detail: "Clarify a goal" },
+  problem: { kicker: "Problem", title: "No problem recorded.", detail: "Record reality before identifying the gap." },
+  diagnosis: { kicker: "Diagnosis", title: "No diagnosis recorded.", detail: "A cause is still a hypothesis until it is supported by evidence." },
+  design: { kicker: "Design", title: "No design recorded.", detail: "A design follows the accepted diagnosis." },
+  do: { kicker: "Do", title: "No actions recorded.", detail: "Actions follow the adopted design." },
 };
 
 const stepAriaNames: Record<EvolutionFiveStep, string> = {

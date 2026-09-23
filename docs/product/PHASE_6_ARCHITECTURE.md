@@ -205,7 +205,8 @@ Patterns
 
 Default hierarchy:
 
-- Principles under test are visible as a library, not only through one active Goal;
+- The reading order is Reflection case -> Pattern and evidence -> Principle -> Revision;
+- Principles under test remain a directly accessible library, not only the selected Goal;
 - completed Reflections remain available for Principle distillation;
 - recurring Patterns remain evidence-backed, correctable hypotheses;
 - supporting evidence, counter-evidence and uncertainty stay progressively disclosed.
