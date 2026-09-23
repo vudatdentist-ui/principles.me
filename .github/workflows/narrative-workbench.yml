@@ -1,75 +1,52 @@
-name: Narrative workbench
+name: Narrative source import
 on:
   push:
     branches: [workbench/narrative-evidence-20260923]
+    paths: [.narrative/ready]
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: narrative-source-import
+  cancel-in-progress: false
 jobs:
-  snapshot:
+  import:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: be9d3a2634acf1b36fe63bd21e9db5f486f43a0d
+          path: packet
           persist-credentials: false
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
         with:
-          version: 10.32.1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: pnpm install --frozen-lockfile
-      - name: Source and dependencies without credentials or user data
+          path: source
+          ref: be9d3a2634acf1b36fe63bd21e9db5f486f43a0d
+      - name: Verify the reviewed patch and exact resulting source tree
+        working-directory: source
         run: |
-          mkdir -p workbench
-          git archive --format=tar HEAD | gzip > workbench/source.tar.gz
-          git rev-parse HEAD > workbench/source-sha.txt
-          git ls-tree -r HEAD > workbench/source-tree.txt
-          tar -czf workbench/dependencies.tar.gz node_modules
-      - name: Isolated PostgreSQL runtime
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y postgresql-16
-          mkdir -p workbench/pg/lib
-          cp -a /usr/lib/postgresql/16/bin workbench/pg/bin
-          cp -a /usr/lib/postgresql/16/lib workbench/pg/pg-lib
-          cp -a /usr/share/postgresql/16 workbench/pg/share
-          ldd /usr/lib/postgresql/16/bin/* /usr/lib/postgresql/16/lib/*.so 2>/dev/null | awk '/=> \// {print $3}' | sort -u | while read -r lib; do
-            case "$(basename "$lib")" in libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*) continue;; esac
-            cp -L "$lib" workbench/pg/lib/
-          done
-          tar -czf workbench/postgres.tar.gz -C workbench pg
-          rm -rf workbench/pg
-      - run: pnpm exec playwright install --with-deps chromium
-      - name: Inspect the requested public narrative reference
-        continue-on-error: true
-        run: |
-          mkdir -p workbench/reference
-          node <<'NODE'
-          const { chromium } = require('@playwright/test');
-          const fs = require('node:fs/promises');
-          (async () => {
-            const browser = await chromium.launch();
-            const page = await browser.newPage({viewport:{width:1440,height:1000}});
-            await page.goto('https://learn.w4gz.com/', {waitUntil:'domcontentloaded',timeout:60000});
-            await page.waitForTimeout(3000);
-            await page.screenshot({path:'workbench/reference/00-top.png'});
-            await fs.writeFile('workbench/reference/page.txt', await page.locator('body').innerText());
-            await fs.writeFile('workbench/reference/links.json', JSON.stringify(await page.locator('a,button').evaluateAll(nodes=>nodes.map(n=>({text:n.textContent,href:n.getAttribute('href')}))), null, 2));
-            for (let i=1;i<=4;i++) {
-              await page.mouse.wheel(0,900);
-              await page.waitForTimeout(1800);
-              await page.screenshot({path:`workbench/reference/0${i}-chapter.png`});
-            }
-            await browser.close();
-          })().catch(error=>{console.error(error.message);process.exit(1)});
-          NODE
-      - name: Checksums
-        run: cd workbench && sha256sum *.tar.gz > SHA256SUMS
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = be9d3a2634acf1b36fe63bd21e9db5f486f43a0d
+          python3 <<'PY'
+          import base64, gzip, hashlib, pathlib, subprocess
+          chunks = sorted(pathlib.Path('../packet/.narrative').glob('patch-*.b64'))
+          assert len(chunks) == 4
+          patch = gzip.decompress(base64.b64decode(''.join(p.read_text().strip() for p in chunks), validate=True))
+          assert hashlib.sha256(patch).hexdigest() == '0967143b347a68e5cfc54d5fc1f2afcf07921a71a3e3f95a8594e45734f57a6f'
+          subprocess.run(['git', 'apply', '--check', '-'], input=patch, check=True)
+          subprocess.run(['git', 'apply', '-'], input=patch, check=True)
+          subprocess.run(['git', 'add', 'app', 'docs', 'features', 'scripts', 'tests'], check=True)
+          assert subprocess.check_output(['git', 'write-tree']).decode().strip() == '4b9a2be16a7a251ce92810c270fdd129b4918755'
+          PY
+          git diff --cached --check
+          git config user.name 'OpenAI'
+          git config user.email 'noreply@openai.com'
+          git switch -c refactor/narrative-working-chapters
+          git commit -m 'refactor(ui): replace stock slogans with record-led narrative chapters'
+          git push origin HEAD:refs/heads/refactor/narrative-working-chapters
+          git rev-parse HEAD > ../receipt.txt
+          git rev-parse HEAD^{tree} >> ../receipt.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: narrative-workbench
-          path: workbench
-          compression-level: 0
+          name: narrative-import-receipt
+          path: receipt.txt
           retention-days: 2
