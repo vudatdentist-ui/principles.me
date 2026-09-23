@@ -14,7 +14,7 @@
   --danger: #9a3932;
   --font-geist: "Inter", "Segoe UI", Arial, sans-serif;
   --font-geist-mono: "SFMono-Regular", Consolas, monospace;
-  --font-display: Georgia, "Times New Roman", serif;
+  --font-display: "Times New Roman", "Noto Serif", "Liberation Serif", Times, serif;
   --content-wide: 1240px;
   --content-reading: 1120px;
   --gutter: 32px;
