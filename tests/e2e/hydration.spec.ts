@@ -26,7 +26,7 @@ test("goal input waits for hydration and preserves the first answer", async ({
   });
 
   try {
-    await page.goto("/", { waitUntil: "commit" });
+    await page.goto("/me", { waitUntil: "commit" });
     const answer = page.locator("#goal-discovery-answer");
     await expect(answer).toBeVisible();
     await expect.poll(() => blockedScripts).toBeGreaterThan(0);

@@ -4,13 +4,18 @@ import { LanguageSwitcher, T, useI18n } from "@/features/i18n/locale";
 import { useRef, useState, type ReactNode } from "react";
 import styles from "./app-shell.module.css";
 
-export type AppTab = "people" | "organization" | "knowledge" | "learning";
+export type AppTab = "people" | "organization" | "knowledge" | "learning" | "practice" | "team-practice";
 
 const tabs: Array<{ href: string; key: AppTab; label: string }> = [
-  { href: "/", key: "people", label: "Me" },
-  { href: "/organization", key: "organization", label: "Organization" },
-  { href: "/knowledge", key: "knowledge", label: "Knowledge" },
+  { href: "/", key: "practice", label: "Practice" },
+  { href: "/knowledge", key: "knowledge", label: "Library" },
+  { href: "/team-practice", key: "team-practice", label: "Team practice" },
+];
+
+const records: typeof tabs = [
+  { href: "/me", key: "people", label: "Me" },
   { href: "/learning", key: "learning", label: "Learning" },
+  { href: "/organization", key: "organization", label: "Organization" },
 ];
 
 export function AppShell({
@@ -100,6 +105,16 @@ export function AppShell({
       </header>
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
       <main className={styles.main} id="main-content" tabIndex={-1}>{children}</main>
+      <footer className={styles.records}>
+        <nav aria-label={t("Workspace records")}>
+          <strong><T>Workspace records</T></strong>
+          {records.map((tab) => (
+            <a key={tab.key} href={tab.href} aria-current={activeTab === tab.key ? "page" : undefined}>
+              <T>{tab.label}</T>
+            </a>
+          ))}
+        </nav>
+      </footer>
     </div>
   );
 }

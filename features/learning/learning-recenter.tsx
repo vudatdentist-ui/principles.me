@@ -432,7 +432,7 @@ export function LearningRecenter({
                 <p>
                   <T>Choose a goal and record a problem in Me first.</T>
                 </p>
-                <a href="/"><T>Open Me →</T></a>
+                <a href="/me"><T>Open Me →</T></a>
               </div>
             ) : (
               <div className={styles.editorGrid}>

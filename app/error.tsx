@@ -18,7 +18,7 @@ export default function WorkspaceError({
       <button className={styles.action} onClick={reset} type="button">
         <T>Try again</T>
       </button>
-      <a href="/"><T>Return to Me</T></a>
+      <a href="/me"><T>Return to Me</T></a>
     </main>
   );
 }

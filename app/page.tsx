@@ -3,8 +3,7 @@ import { Suspense } from "react";
 import { AuthScreen } from "@/features/auth/auth-screen";
 import { sessionContext, signupAvailable } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
-import { EvolutionWorkspace } from "@/features/evolution/evolution-workspace";
-import { loadEvolutionState } from "@/features/evolution/service";
+import PracticeStudio from "@/features/practice/practice-studio";
 import { AppShell } from "@/features/shell/app-shell";
 import { RouteLoading } from "@/features/ui/route-loading";
 
@@ -19,13 +18,11 @@ async function WorkspaceEntry() {
 
   return (
     <AppShell
-      activeTab="people"
+      activeTab="practice"
       email={session.user.email}
       workspaceName={session.workspace.name}
     >
-      <EvolutionWorkspace
-        initialState={await loadEvolutionState(session.workspace.id)}
-      />
+      <PracticeStudio />
     </AppShell>
   );
 }

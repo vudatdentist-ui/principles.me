@@ -20,6 +20,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
+  await page.getByRole("link", { name: "Me", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
@@ -57,9 +58,9 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
   await createAccount(page);
 
   const surfaces = [
-    ["/", "Me"],
+    ["/me", "Me"],
     ["/organization", "Organization"],
-    ["/knowledge", "Knowledge"],
+    ["/ask", "Knowledge"],
     ["/learning", "Learning"],
     ["/account", "Account & data"],
   ] as const;
@@ -97,7 +98,7 @@ test("primary surfaces keep the shared hierarchy without viewport overflow", asy
         for (const tab of [
           "Me",
           "Organization",
-          "Knowledge",
+          "Library",
           "Learning",
         ] as const) {
           await expect(
@@ -123,9 +124,9 @@ test("primary narrative surfaces put a meaningful current scene in the tablet vi
   await createAccount(page);
 
   const scenes = [
-    ["/", 'section[aria-label="Current action"]', "Continue"],
+    ["/me", 'section[aria-label="Current action"]', "Continue"],
     ["/organization", 'aside[aria-label="Current organization narrative"]', "Open operations"],
-    ["/knowledge", 'section[aria-label="Current knowledge narrative"]', "Ask"],
+    ["/ask", 'section[aria-label="Current knowledge narrative"]', "Ask"],
     ["/learning", 'aside[aria-label="Current learning narrative"]', "Capture reflection"],
   ] as const;
 

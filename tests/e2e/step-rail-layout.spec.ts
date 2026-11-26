@@ -21,7 +21,7 @@ test("five-step labels retain whole numbers and words across languages and width
     },
   });
   expect(goal.status()).toBe(201);
-  await page.goto("/");
+  await page.goto("/me");
   await expect(page.getByRole("tab")).toHaveCount(5);
 
   for (const locale of ["vi", "en"] as const) {

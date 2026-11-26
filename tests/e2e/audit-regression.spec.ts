@@ -10,7 +10,7 @@ async function account(page: Page) {
     headers: { origin },
   });
   expect(response.status()).toBe(201);
-  await page.goto("/");
+  await page.goto("/me");
   await expect(
     page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
@@ -31,7 +31,7 @@ async function goal(page: Page, desiredState: string) {
   expect(response.status()).toBe(201);
 }
 
-test("optional-verification signup enters Me without a manual reload", async ({
+test("optional-verification signup enters practice without a manual reload", async ({
   page,
 }) => {
   await page.goto("/");
@@ -40,7 +40,7 @@ test("optional-verification signup enters Me without a manual reload", async ({
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).last().click();
   await expect(
-    page.getByRole("heading", { name: "Me" }),
+    page.getByRole("link", { name: "Practice", exact: true }),
   ).toBeVisible();
 });
 
@@ -98,7 +98,7 @@ test("Knowledge preserves the first terminal error instead of accepting a later 
   page,
 }) => {
   await account(page);
-  await page.goto("/knowledge");
+  await page.goto("/ask");
   await page.route("**/api/ask", (route) =>
     route.fulfill({
       status: 200,
@@ -177,6 +177,8 @@ test("all product surfaces retain readable bounds at mobile and desktop widths",
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     for (const path of [
       "/",
+      "/me",
+      "/team-practice",
       "/knowledge",
       "/organization",
       "/learning",
@@ -265,7 +267,7 @@ test("owned textareas resize for input, controlled changes, and clearing", async
   page,
 }) => {
   await account(page);
-  await page.goto("/knowledge");
+  await page.goto("/ask");
   const question = page.getByLabel("Question", { exact: true });
   await question.fill("A long evidence statement. ".repeat(70));
   const large = await question.boundingBox();
@@ -314,5 +316,5 @@ test("unknown pages offer a route back to Me", async ({ page }) => {
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Return to Me" }),
-  ).toHaveAttribute("href", "/");
+  ).toHaveAttribute("href", "/me");
 });
