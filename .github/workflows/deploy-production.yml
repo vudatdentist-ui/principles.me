@@ -16,7 +16,7 @@ permissions:
 jobs:
   verify:
     name: Verify release
-    runs-on: [self-hosted, linux, x64, principles-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       APP_ORIGIN: http://127.0.0.1:3000
@@ -59,7 +59,7 @@ jobs:
     name: Deploy to Hostinger VPS
     needs: verify
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, linux, x64, principles-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: production
     steps:
@@ -107,13 +107,6 @@ jobs:
           trap 'rm -f "$LOCAL_BOOTSTRAP"' EXIT
           chmod 600 "$LOCAL_BOOTSTRAP"
           printf 'DEEPSEEK_API_KEY=%s\n' "$BOOTSTRAP_DEEPSEEK_API_KEY" > "$LOCAL_BOOTSTRAP"
-          if [ -f /home/homeserver01/litellm/.env ]; then
-            LITELLM_MASTER_KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' /home/homeserver01/litellm/.env | tail -n 1)"
-            if [ -n "$LITELLM_MASTER_KEY" ]; then
-              printf 'LITELLM_API_KEY=%s\n' "$LITELLM_MASTER_KEY" >> "$LOCAL_BOOTSTRAP"
-            fi
-            unset LITELLM_MASTER_KEY
-          fi
           printf '%s\n' \
             'LITELLM_BASE_URL=https://llm.principles.me/v1' \
             'LITELLM_MODEL=codex' \

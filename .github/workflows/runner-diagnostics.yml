@@ -1,4 +1,4 @@
-name: Self-hosted runner diagnostics
+name: CI runner diagnostics
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   diagnostics:
-    runs-on: [self-hosted, linux, x64, principles-ci]
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Runner host information
