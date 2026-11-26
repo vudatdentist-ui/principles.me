@@ -2,6 +2,7 @@
 
 import { LanguageSwitcher, T, useI18n } from "@/features/i18n/locale";
 import { useRef, useState, type ReactNode } from "react";
+import { SectionLink } from "@/features/ui/section-link";
 import styles from "./app-shell.module.css";
 
 export type AppTab = "people" | "organization" | "knowledge" | "learning" | "practice" | "team-practice";
@@ -54,10 +55,10 @@ export function AppShell({
     workspaceName === "Personal" ? t("Personal") : workspaceName;
 
   return (
-    <div className={styles.shell}>
-      <a className={styles.skip} href="#main-content">
+    <div className={styles.shell} data-workspace-shell>
+      <SectionLink className={styles.skip} href="#main-content">
         <T>Skip to content</T>
-      </a>
+      </SectionLink>
       <header className={styles.header}>
         <div className={styles.headerRow}>
           <a className={styles.brand} href="/" aria-label={t("Principles home")}>

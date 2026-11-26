@@ -162,6 +162,8 @@ export async function exportAccountData(input: {
     generatedAt: new Date().toISOString(),
     user: userRows[0] ?? null,
     personalWorkspace: {
+      practiceCases: await sql`SELECT * FROM practice_cases WHERE workspace_id = ${input.workspaceId} ORDER BY updated_at`,
+      practiceTurns: await sql`SELECT * FROM practice_turns WHERE workspace_id = ${input.workspaceId} ORDER BY created_at`,
       actions: actionRows,
       activity: activityRows,
       aiSuggestions: suggestionRows,

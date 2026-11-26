@@ -11,14 +11,12 @@ function booleanEnv(name: string, fallback: boolean): boolean {
   return !["0", "false", "no", "off"].includes(value);
 }
 
-async function checkLibrary() {
+function checkLibrary() {
   try {
     const library = sharedLibrary();
-    if (!library) return {libraryConfigured: false, libraryReady: true};
-    await library.search("Principles health check");
-    return {libraryConfigured: true, libraryReady: true};
+    return {libraryConfigured: Boolean(library), libraryConfigurationValid: true};
   } catch {
-    return {libraryConfigured: false, libraryReady: false};
+    return {libraryConfigured: false, libraryConfigurationValid: false};
   }
 }
 
@@ -32,7 +30,7 @@ export async function GET(): Promise<Response> {
     process.env.LITELLM_API_KEY?.trim() &&
       process.env.LITELLM_BASE_URL?.trim(),
   );
-  const library = await checkLibrary();
+  const library = checkLibrary();
   const liveSearchConfigured = Boolean(
     process.env.BRAVE_SEARCH_API_KEY?.trim(),
   );
@@ -43,7 +41,7 @@ export async function GET(): Promise<Response> {
     dbHealth.reachable &&
     dbHealth.schemaReady &&
     (deepseekConfigured || litellmConfigured) &&
-    library.libraryReady &&
+    library.libraryConfigurationValid &&
     liveSearchReady;
   const version = process.env.APP_VERSION?.trim() || "development";
   const checks = {
@@ -54,7 +52,7 @@ export async function GET(): Promise<Response> {
     litellmConfigured,
     liveSearchConfigured,
     liveSearchReady,
-    ...library,,
+    ...library,
   };
 
   if (!ready) {
@@ -62,7 +60,7 @@ export async function GET(): Promise<Response> {
       databaseReady: checks.databaseReady,
       databaseSchemaReady: checks.databaseSchemaReady,
       liveSearchReady: checks.liveSearchReady,
-      libraryReady: checks.libraryReady,
+      libraryConfigurationValid: checks.libraryConfigurationValid,
       version,
     });
   }

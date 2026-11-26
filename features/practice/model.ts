@@ -12,7 +12,7 @@ export interface Turn {
 }
 
 export function conversation(turns: Turn[], end: string | null) {
-  const byId = new Map(turns.map(turn => [turn.id, turn]));
+  const byId = new Map(turns.map((turn) => [turn.id, turn]));
   const path: Turn[] = [];
   let turn = end ? byId.get(end) : undefined;
   while (turn) {

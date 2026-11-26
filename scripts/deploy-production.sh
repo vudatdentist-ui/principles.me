@@ -79,7 +79,7 @@ test -f "$ENV_FILE" || fail "$ENV_FILE is required."
 test -f "$COMPOSE_FILE" || fail "$COMPOSE_FILE is required."
 test -f scripts/smoke-production.mjs || fail "Production smoke script is missing."
 test -f db/migrations/0001_secure_platform_kernel.sql || fail "Phase 1 migration is missing."
-for required_var in DEEPSEEK_API_KEY SMOKE_EMAIL SMOKE_PASSWORD BREVO_API_KEY BREVO_SENDER_EMAIL; do
+for required_var in ANYTHINGLLM_BASE_URL ANYTHINGLLM_API_KEY ANYTHINGLLM_LIBRARY_WORKSPACE DEEPSEEK_API_KEY SMOKE_EMAIL SMOKE_PASSWORD BREVO_API_KEY BREVO_SENDER_EMAIL; do
   grep -Eq "^${required_var}=.+$" "$ENV_FILE" || fail "${required_var} is required in $ENV_FILE."
 done
 

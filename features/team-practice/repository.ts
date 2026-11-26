@@ -1,5 +1,10 @@
 import { db } from "@/lib/db/client";
-import { isMyTurn, type Command, type Organization, type Room } from "./contracts";
+import {
+  isMyTurn,
+  type Command,
+  type Organization,
+  type Room,
+} from "./contracts";
 
 export class Unavailable extends Error {}
 export class TurnConflict extends Error {}
@@ -26,7 +31,10 @@ export async function practiceState(actor: string) {
   return { organizations, rooms };
 }
 
-export async function applyCommand(actor: string, input: Command): Promise<string> {
+export async function applyCommand(
+  actor: string,
+  input: Command,
+): Promise<string> {
   const sql = db();
   if (input.kind === "create") {
     const [room] = await sql`
@@ -41,7 +49,7 @@ export async function applyCommand(actor: string, input: Command): Promise<strin
     return String(room.id);
   }
 
-  return sql.begin(async tx => {
+  return sql.begin(async (tx) => {
     const [room] = await tx`
       SELECT revision, initiator = ${actor} AS first FROM team_practice_sessions
       WHERE id = ${input.id} AND ${actor} IN (initiator, partner) FOR UPDATE`;

@@ -88,7 +88,7 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }, testI
 
   await page.getByRole("link", { name: "Thư viện", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Thư viện" }),
+    page.getByRole("heading", { name: "Thư viện", exact: true }),
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Học hỏi", exact: true }).click();
