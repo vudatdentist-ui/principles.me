@@ -1,5 +1,49 @@
 import { expect, test } from "@playwright/test";
 
+test("a reader can inspect a source and bring it into an unsaved rehearsal", async ({
+  page,
+}) => {
+  const signup = await page.request.post("/api/auth/signup", {
+    headers: { origin: "http://127.0.0.1:3000" },
+    data: {
+      email: "reader-" + Date.now() + "@example.test",
+      password: "a private library fixture password",
+    },
+  });
+  expect(signup.status()).toBe(201);
+  const title = "Decision Journal",
+    snippet = "Write the expected outcome first.";
+  await page.route("**/api/library", (route) =>
+    route.fulfill({
+      json:
+        route.request().method() === "GET"
+          ? { books: [title] }
+          : {
+              references: [
+                {
+                  key: "R1",
+                  title,
+                  snippet,
+                  sourceType: "shared_library",
+                  provider: "anythingllm",
+                },
+              ],
+            },
+    }),
+  );
+  await page.goto("/knowledge");
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await page.getByRole("textbox").fill("How can I review a decision?");
+  await page.getByRole("button", { name: "Search books" }).click();
+  await expect(page.getByRole("blockquote")).toHaveText(snippet);
+  await page.getByRole("button", { name: "Practise this idea" }).click();
+  await expect(
+    page.getByLabel("What would you like to practise saying?"),
+  ).toHaveValue(new RegExp(title));
+  const saved = await page.request.get("/api/practice");
+  expect(await saved.json()).toEqual({ cases: [] });
+});
+
 test("save, reopen, rehearse and compare replies", async ({ page }, info) => {
   const signup = await page.request.post("/api/auth/signup", {
     headers: { origin: "http://127.0.0.1:3000" },
