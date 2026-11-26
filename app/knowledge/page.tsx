@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { AskWorkspace } from "@/features/ask/ask-workspace";
+import { BookLibrary } from "./book-library";
 import { sessionContext } from "@/features/auth/repository";
 import { SESSION_COOKIE } from "@/features/auth/session";
 import { AppShell } from "@/features/shell/app-shell";
@@ -19,7 +19,7 @@ async function KnowledgeEntry() {
       email={session.user.email}
       workspaceName={session.workspace.name}
     >
-      <AskWorkspace />
+      <BookLibrary />
     </AppShell>
   );
 }

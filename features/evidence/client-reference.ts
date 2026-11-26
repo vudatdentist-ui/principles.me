@@ -2,11 +2,11 @@ import type { EvidenceReference } from "./contracts";
 
 export interface ClientEvidenceReference {
   readonly key: string;
-  readonly provider: "brave" | "ragflow";
+  readonly provider: EvidenceReference["provider"];
   readonly publishedAt: string | null;
   readonly retrievedAt: string;
   readonly snippet: string;
-  readonly sourceType: "live_web" | "ragflow";
+  readonly sourceType: EvidenceReference["sourceType"];
   readonly title: string;
   readonly url: string | null;
 }

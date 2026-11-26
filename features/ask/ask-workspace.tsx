@@ -33,7 +33,7 @@ function retrievalLabel(
 }
 
 export function AskWorkspace() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState<ClientEvidenceReference[]>([]);
@@ -142,7 +142,7 @@ export function AskWorkspace() {
         className={styles.hero}
       >
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow} aria-hidden="true">01</p>
+          <a href="/knowledge">{locale === "vi" ? "← Thư viện" : "← Library"}</a>
           <h1 id="knowledge-title"><T>Knowledge</T></h1>
         </div>
 
@@ -245,7 +245,7 @@ export function AskWorkspace() {
           </article>
           {phase === "done" ? (
             <div className={styles.bridge}>
-              <a href="/"><T>Continue in Me →</T></a>
+              <a href="/me"><T>Continue in Me →</T></a>
             </div>
           ) : null}
         </section>
