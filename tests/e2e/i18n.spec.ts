@@ -73,9 +73,9 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }, testI
 
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "vi");
-  await expect(page.getByRole("link", { name: "Tôi", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Tôi", exact: true }).click();
   await expect(page.getByRole("link", { name: "Tổ chức", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Tri thức", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Thư viện", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Học hỏi", exact: true })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Tôi" }),
@@ -86,9 +86,9 @@ test("authenticated core surfaces default to Vietnamese", async ({ page }, testI
     contentType: "image/png",
   });
 
-  await page.getByRole("link", { name: "Tri thức", exact: true }).click();
+  await page.getByRole("link", { name: "Thư viện", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Tri thức" }),
+    page.getByRole("heading", { name: "Thư viện", exact: true }),
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Học hỏi", exact: true }).click();

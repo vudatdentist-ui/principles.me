@@ -83,7 +83,7 @@ test("Me tells the selected case and keeps action, outcome and reflection distin
   await account(page);
   await seed(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/");
+  await page.goto("/me");
   await expect(page.locator("h1")).toHaveText(record.goal);
   await expect(page.locator("#current-action")).toContainText(record.reality);
   await expect(page.locator("#current-action")).toContainText(record.design);
@@ -170,13 +170,13 @@ test("retired interface slogans are not filters on user-authored records", async
     acceptedTradeoffs: "Less time browsing unrelated projects.",
     nonNegotiables: "Keep my original wording.", measures: "Reviewed cases",
   });
-  await page.goto("/");
+  await page.goto("/me");
   await expect(page.locator("h1")).toHaveText("What deserves attention now?");
 });
 
 test("Knowledge keeps question, answer and attributable sources without a motivational footer", async ({ page }, testInfo) => {
   await account(page);
-  await page.goto("/knowledge");
+  await page.goto("/ask");
   await page.route("**/api/ask", route => route.fulfill({
     status: 200, contentType: "application/x-ndjson; charset=utf-8",
     body: [

@@ -3,11 +3,11 @@ import { z } from "zod";
 const retrieval = z.enum(["disabled", "empty", "ok", "unavailable"]);
 const reference = z.object({
   key: z.string(),
-  provider: z.enum(["brave", "ragflow"]),
+  provider: z.enum(["brave", "ragflow", "anythingllm"]),
   publishedAt: z.string().nullable(),
   retrievedAt: z.string(),
   snippet: z.string(),
-  sourceType: z.enum(["live_web", "ragflow"]),
+  sourceType: z.enum(["live_web", "ragflow", "shared_library"]),
   title: z.string(),
   url: z
     .string()

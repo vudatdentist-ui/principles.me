@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: [self-hosted, linux, x64, principles-ci]
+    runs-on: ubuntu-24.04
     env:
       APP_ORIGIN: http://127.0.0.1:3000
       AUTH_ATTEMPTS_PER_15_MINUTES: 100
@@ -56,7 +56,7 @@ jobs:
           sleep 1
           grep -q 'MOCK_DEEPSEEK_READY=1' /tmp/principles-mock-deepseek.log
       - name: Install Chromium browser
-        run: pnpm exec playwright install chromium
+        run: pnpm exec playwright install --with-deps chromium
       - name: Run browser smoke tests
         run: pnpm test:e2e
       - name: Upload Playwright report

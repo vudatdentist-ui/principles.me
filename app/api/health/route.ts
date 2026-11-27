@@ -1,16 +1,7 @@
-import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
+import { sharedLibrary } from "@/features/evidence/providers/anythingllm-library";
 import { databaseConfigured } from "@/lib/db/config";
 import { databaseHealth } from "@/lib/db/health";
 import { logEvent } from "@/lib/observability/logger";
-
-function isLocalhostUrl(value: string): boolean {
-  try {
-    const hostname = new URL(value).hostname.toLowerCase();
-    return ["localhost", "127.0.0.1", "::1"].includes(hostname);
-  } catch {
-    return true;
-  }
-}
 
 function booleanEnv(name: string, fallback: boolean): boolean {
   const value = process.env[name]?.trim().toLowerCase();
@@ -20,46 +11,12 @@ function booleanEnv(name: string, fallback: boolean): boolean {
   return !["0", "false", "no", "off"].includes(value);
 }
 
-function configuredDatasetIds(): string[] {
-  if (
-    process.env.RAGFLOW_ASSIGN_BOOTSTRAP_DATASETS?.trim().toLowerCase() ===
-    "false"
-  ) {
-    return [];
-  }
-  return (process.env.RAGFLOW_DATASET_IDS || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-}
-
-async function probeRagflow(
-  datasetIds: readonly string[],
-  configured: boolean,
-  endpointReady: boolean,
-): Promise<boolean> {
-  if (!configured || !endpointReady || datasetIds.length === 0) {
-    return false;
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    Number(process.env.RAGFLOW_HEALTH_TIMEOUT_MS || 15_000),
-  );
+function checkLibrary() {
   try {
-    await new RagflowEvidenceProvider().retrieve(
-      {
-        datasetIds,
-        question: "Principles health check",
-      },
-      controller.signal,
-    );
-    return true;
+    const library = sharedLibrary();
+    return {libraryConfigured: Boolean(library), libraryConfigurationValid: true};
   } catch {
-    return false;
-  } finally {
-    clearTimeout(timeout);
+    return {libraryConfigured: false, libraryConfigurationValid: false};
   }
 }
 
@@ -73,24 +30,7 @@ export async function GET(): Promise<Response> {
     process.env.LITELLM_API_KEY?.trim() &&
       process.env.LITELLM_BASE_URL?.trim(),
   );
-  const ragflowConfigured = Boolean(process.env.RAGFLOW_API_KEY?.trim());
-  const ragflowBaseUrl = (
-    process.env.RAGFLOW_BASE_URL ?? "http://localhost:9380"
-  ).trim();
-  const ragflowEndpointReady =
-    process.env.NODE_ENV !== "production" || !isLocalhostUrl(ragflowBaseUrl);
-  const ragflowDatasetIds = configuredDatasetIds();
-  const ragflowBootstrapDatasetsConfigured = ragflowDatasetIds.length > 0;
-  const ragflowEnabled = ragflowConfigured && ragflowDatasetIds.length > 0;
-  const ragflowReachable = ragflowEnabled
-    ? await probeRagflow(
-        ragflowDatasetIds,
-        ragflowConfigured,
-        ragflowEndpointReady,
-      )
-    : false;
-  const ragflowReady =
-    !ragflowEnabled || (ragflowEndpointReady && ragflowReachable);
+  const library = checkLibrary();
   const liveSearchConfigured = Boolean(
     process.env.BRAVE_SEARCH_API_KEY?.trim(),
   );
@@ -101,7 +41,7 @@ export async function GET(): Promise<Response> {
     dbHealth.reachable &&
     dbHealth.schemaReady &&
     (deepseekConfigured || litellmConfigured) &&
-    ragflowReady &&
+    library.libraryConfigurationValid &&
     liveSearchReady;
   const version = process.env.APP_VERSION?.trim() || "development";
   const checks = {
@@ -112,11 +52,7 @@ export async function GET(): Promise<Response> {
     litellmConfigured,
     liveSearchConfigured,
     liveSearchReady,
-    ragflowBootstrapDatasetsConfigured,
-    ragflowConfigured,
-    ragflowEndpointReady,
-    ragflowReachable,
-    ragflowReady,
+    ...library,
   };
 
   if (!ready) {
@@ -124,7 +60,7 @@ export async function GET(): Promise<Response> {
       databaseReady: checks.databaseReady,
       databaseSchemaReady: checks.databaseSchemaReady,
       liveSearchReady: checks.liveSearchReady,
-      ragflowReady: checks.ragflowReady,
+      libraryConfigurationValid: checks.libraryConfigurationValid,
       version,
     });
   }

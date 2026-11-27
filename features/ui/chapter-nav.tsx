@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SectionLink } from "./section-link";
 import styles from "./chapter-nav.module.css";
 
 export type ChapterLink = {
@@ -13,10 +14,10 @@ export function ChapterNav({ label, chapters }: { label: string; chapters: Chapt
       <ol>
         {chapters.map((chapter) => (
           <li key={chapter.href}>
-            <a href={chapter.href}>
+            <SectionLink href={chapter.href}>
               <span aria-hidden="true">{chapter.number}</span>
               {chapter.label}
-            </a>
+            </SectionLink>
           </li>
         ))}
       </ol>

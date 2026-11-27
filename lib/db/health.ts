@@ -12,7 +12,7 @@ export async function databaseHealth(): Promise<{
       SELECT id
       FROM schema_migrations
       WHERE
-        id = '0001_secure_platform_kernel.sql'
+        id = '0008_team_practice.sql'
         AND checksum IS NOT NULL
       LIMIT 1
     `;

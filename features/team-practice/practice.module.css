@@ -1,0 +1,65 @@
+.page {
+  max-width: 52rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem var(--gutter) 5rem;
+  overflow-wrap: anywhere;
+}
+.page h1,
+.page h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.12;
+}
+.page h1 {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  margin: 1rem 0;
+}
+.page h2 {
+  margin: 0.5rem 0 1.2rem;
+  font-size: 2rem;
+}
+.page label {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0;
+  font-weight: 600;
+}
+.page select,
+.page textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-weight: 400;
+}
+.page textarea {
+  resize: vertical;
+}
+.page button {
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--green);
+  color: white;
+  padding: 0.6rem 1rem;
+}
+.controls {
+  margin: 1.5rem 0;
+}
+.panel {
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+}
+.history {
+  padding-left: 1.75rem;
+}
+.history li {
+  border-top: 1px solid var(--line-soft);
+  padding: 0.8rem 0.25rem;
+}
+.entry {
+  white-space: pre-wrap;
+}

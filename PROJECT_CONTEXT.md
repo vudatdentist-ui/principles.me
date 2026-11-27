@@ -1,5 +1,15 @@
 # PROJECT CONTEXT — Principles
 
+## Current product direction — Practice Studio
+
+The signed-in home opens a conversation rehearsal. A person can start with a situation, save a quick note, try a response, revisit a turn, and compare attempts. A simulated reply represents one possible reaction. Personal notes and rehearsals belong to the authenticated personal workspace.
+
+The library at `/knowledge` uses the shared AnythingLLM book collection. An unavailable library or an empty result must be visible. Personal practice material is not a shared library document.
+
+Team practice at `/team-practice` lets organization members rehearse a shared situation as two participants and switch roles. Personal material enters a shared exercise only through an explicit user action.
+
+Earlier Phase 6 records remain available under Me (`/me`), Organization and Learning. The following sections document those existing surfaces.
+
 **Status:** Phase 6 — Product Recenter / Evolution Engine — **in progress / production**  
 **Effective date:** 2026-09-14  
 **Completed major phases:** 0–5  

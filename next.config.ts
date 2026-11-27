@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   devIndicators: false,
   experimental: {
-    appNewScrollHandler: true,
     cachedNavigations: true,
     inlineCss: true,
     prefetchInlining: true,

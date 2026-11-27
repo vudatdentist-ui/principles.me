@@ -1,0 +1,81 @@
+.page {
+  max-width: 54rem;
+  margin: auto;
+  padding: clamp(1rem, 4vw, 3rem) var(--gutter) 5rem;
+  overflow-wrap: anywhere;
+}
+.page h1,
+.page h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.12;
+}
+.page h1 {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  margin: 0.3em 0 0.65em;
+}
+.page h2 {
+  margin: 1.5em 0 0.5em;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+.page fieldset {
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  border: 0;
+}
+.page label {
+  display: block;
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+}
+.page textarea,
+.page input {
+  display: block;
+  width: 100%;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: inherit;
+  border-radius: var(--radius);
+  margin: 0 0 0.75rem;
+}
+.page button {
+  border: 0;
+  padding: 0.65rem 1rem;
+  background: var(--green);
+  color: white;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.page button:disabled {
+  opacity: 0.55;
+}
+.page button.row {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0;
+}
+.actions,
+.compare {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.compare article {
+  flex: 1 1 14rem;
+}
+.page article {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.page blockquote {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--green);
+  white-space: pre-wrap;
+}

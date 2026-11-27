@@ -15,6 +15,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signup).status()).toBe(201);
+  await page.getByRole("link", { name: "Me", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
@@ -38,7 +39,7 @@ test("Knowledge preserves body text attached to a markdown heading", async ({
   page,
 }) => {
   await createAccount(page);
-  await page.goto("/knowledge");
+  await page.goto("/ask");
 
   await page.route("**/api/ask", async (route) => {
     const events = [

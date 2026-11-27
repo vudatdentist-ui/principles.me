@@ -60,6 +60,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
+  await page.getByRole("link", { name: "Me", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
@@ -147,13 +148,13 @@ test("authenticated shell uses Me and empty Learning waits for lived history", a
   expect(JSON.stringify(evolution.body)).not.toContain("workspaceId");
 
   for (const [path, active] of [
-    ["/", "Me"],
+    ["/me", "Me"],
     ["/organization", "Organization"],
-    ["/knowledge", "Knowledge"],
+    ["/ask", "Library"],
     ["/learning", "Learning"],
   ] as const) {
     await page.goto(path);
-    for (const tab of ["Me", "Organization", "Knowledge", "Learning"]) {
+    for (const tab of ["Me", "Organization", "Library", "Learning"]) {
       await expect(
         page.getByRole("link", { name: tab, exact: true }).first(),
       ).toBeVisible();
@@ -453,7 +454,7 @@ test("Knowledge uses shared evidence plus bounded personal context without durab
     return response.json();
   });
 
-  await page.goto("/knowledge");
+  await page.goto("/ask");
   await expect(
     page.getByRole("heading", { name: "Knowledge" }),
   ).toBeVisible();
@@ -507,7 +508,7 @@ test("long Knowledge answers keep normal document scrolling", async ({
   page,
 }) => {
   await createAccount(page);
-  await page.goto("/knowledge");
+  await page.goto("/ask");
   const longAnswer = Array.from(
     { length: 80 },
     (_, index) =>
@@ -542,7 +543,7 @@ test("Knowledge keeps a partial answer when the provider times out", async ({
   page,
 }) => {
   await createAccount(page);
-  await page.goto("/knowledge");
+  await page.goto("/ask");
   await page.route("**/api/ask", async (route) => {
     const body = [
       {

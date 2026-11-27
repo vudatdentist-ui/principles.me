@@ -1,13 +1,12 @@
 import { z } from "zod";
 import type { SessionContext } from "@/features/auth/contracts";
 import { assertTrustedOrigin, UntrustedOriginError } from "@/features/auth/origin";
-import { workspaceRagDatasetIds } from "@/features/auth/repository";
 import { requireSession, UnauthorizedError } from "@/features/auth/session";
 import { projectEvidenceForClient } from "@/features/evidence/client-reference";
 import type { EvidenceReference } from "@/features/evidence/contracts";
 import { liveSearchMode, shouldUseLiveSearch } from "@/features/evidence/live-search-policy";
 import { BraveSearchEvidenceProvider } from "@/features/evidence/providers/brave-search-provider";
-import { RagflowEvidenceProvider } from "@/features/evidence/providers/ragflow-provider";
+import { sharedLibrary } from "@/features/evidence/providers/anythingllm-library";
 import type { EvolutionState } from "@/features/evolution/contracts";
 import { loadEvolutionState } from "@/features/evolution/service";
 import { recordActivity } from "@/features/kernel/activity";
@@ -73,14 +72,14 @@ function formatEvolutionContext(state: EvolutionState): {
 
 function formatEvidence(references: readonly EvidenceReference[]): string {
   if (references.length === 0) {
-    return "NO PRIVATE OR LIVE EVIDENCE WAS RETRIEVED.";
+    return "NO SHARED OR LIVE EVIDENCE WAS RETRIEVED.";
   }
 
   return references
     .slice(0, 15)
     .map((reference) => {
       const provenance = [
-        `type=${reference.sourceType === "live_web" ? "live_web" : "private_rag"}`,
+        `type=${reference.sourceType}`,
         `provider=${reference.provider}`,
         reference.datasetId ? `dataset=${reference.datasetId}` : null,
         reference.documentId ? `document=${reference.documentId}` : null,
@@ -141,7 +140,6 @@ function createCitationGuard(allowedKeys: ReadonlySet<string>) {
 
 async function retrieveEvidence(
   question: string,
-  datasetIds: readonly string[],
   signal: AbortSignal
 ): Promise<RetrievalResult> {
   const mode = liveSearchMode(process.env.LIVE_SEARCH_MODE);
@@ -150,7 +148,7 @@ async function retrieveEvidence(
   const useLive = wantsLive && liveConfigured;
 
   const [ragResult, liveResult] = await Promise.allSettled([
-    new RagflowEvidenceProvider().retrieve({ datasetIds, question }, signal),
+    Promise.resolve().then(() => sharedLibrary()?.search(question, signal) ?? null),
     useLive
       ? new BraveSearchEvidenceProvider().retrieve({ question }, signal)
       : Promise.resolve(null),
@@ -159,12 +157,12 @@ async function retrieveEvidence(
   if (signal.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError");
 
   const references: EvidenceReference[] = [];
-  let privateState: RetrievalState = datasetIds.length === 0 ? "empty" : "unavailable";
+  let privateState: RetrievalState = "unavailable";
   if (ragResult.status === "fulfilled") {
-    references.push(...ragResult.value.references);
-    privateState = ragResult.value.references.length > 0 ? "ok" : "empty";
+    references.push(...(ragResult.value ?? []));
+    privateState = ragResult.value === null ? "disabled" : ragResult.value.length ? "ok" : "empty";
   } else {
-    console.error(JSON.stringify({ event: "ask_retrieval_failed", provider: "ragflow" }));
+    console.error(JSON.stringify({ event: "ask_retrieval_failed", provider: "anythingllm" }));
   }
 
   let live: RetrievalState = "disabled";
@@ -238,10 +236,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const [datasetIds, evolutionState] = await Promise.all([
-    workspaceRagDatasetIds(session.workspace.id),
-    loadEvolutionState(session.workspace.id),
-  ]);
+  const evolutionState = await loadEvolutionState(session.workspace.id);
   const personalContext = formatEvolutionContext(evolutionState);
   const { question } = parsed.data;
 
@@ -259,7 +254,7 @@ export async function POST(request: Request): Promise<Response> {
 
         // Only the user's question is sent to public live search. Personal context stays
         // inside the authenticated model prompt and is never appended to Brave queries.
-        const retrieval = await retrieveEvidence(question, datasetIds, request.signal);
+        const retrieval = await retrieveEvidence(question, request.signal);
         retrievalSummary = retrieval;
         const references = retrieval.references;
 

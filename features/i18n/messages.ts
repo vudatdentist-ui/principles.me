@@ -1,5 +1,9 @@
 export const viMessages: Record<string, string> = {
   // Global shell and authentication
+  Practice: "Phòng tập",
+  Library: "Thư viện",
+  "Team practice": "Tập theo cặp",
+  "Workspace records": "Hồ sơ",
   Language: "Ngôn ngữ",
   Me: "Tôi",
   Personal: "Cá nhân",

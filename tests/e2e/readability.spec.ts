@@ -14,6 +14,7 @@ async function createAccount(page: import("@playwright/test").Page) {
   );
   await page.getByRole("button", { name: "Create account" }).last().click();
   expect((await signupResponse).status()).toBe(201);
+  await page.getByRole("link", { name: "Me", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Me" }),
   ).toBeVisible();
@@ -129,7 +130,7 @@ test("current action stays readable and complete on tablet landscape", async ({ 
 
   const primaryNav = page.getByRole("navigation", { name: "Primary" });
   const navFontSize = await primaryNav
-    .getByRole("link", { name: "Me", exact: true })
+    .getByRole("link", { name: "Practice", exact: true })
     .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
   expect(navFontSize).toBeGreaterThanOrEqual(11);
 });
