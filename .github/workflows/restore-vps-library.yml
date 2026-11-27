@@ -1,0 +1,40 @@
+name: Restore indexed library on VPS
+on: workflow_dispatch
+permissions:
+  contents: read
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+jobs:
+  restore:
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and unpack precomputed data
+        env:
+          BOOK_RESTORE_PACKAGES: ${{ secrets.BOOK_RESTORE_PACKAGES }}
+        run: python3 scripts/restore-library/prepare.py "$RUNNER_TEMP/books"
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      - name: Install and test private library
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+        run: |
+          set -Eeuo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh_cmd=(ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST")
+          stage="$("${ssh_cmd[@]}" 'umask 077; mktemp -d /tmp/principles-books.XXXXXXXX')"
+          [[ "$stage" =~ ^/tmp/principles-books\.[a-zA-Z0-9]+$ ]]
+          trap '"${ssh_cmd[@]}" "rm -rf -- $stage"' EXIT
+          tar -czf - -C "$RUNNER_TEMP" books -C "$GITHUB_WORKSPACE/scripts/restore-library" import.cjs | "${ssh_cmd[@]}" "tar -xzf - -C '$stage'"
+          "${ssh_cmd[@]}" "APP_DIR='${APP_DIR:-/opt/principles-council}' STAGE='$stage' RELEASE='$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT' bash -s" < scripts/restore-library/start-vps.sh
