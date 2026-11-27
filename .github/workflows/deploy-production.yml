@@ -1,6 +1,7 @@
 name: Deploy production
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -58,7 +59,7 @@ jobs:
   deploy:
     name: Deploy to Hostinger VPS
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: production
@@ -86,6 +87,30 @@ jobs:
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Check VPS capacity and book service before release staging
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_SSH_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ vars.VPS_APP_DIR }}
+        run: |
+          set -Eeuo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "${VPS_PORT:-22}" "$VPS_USER@$VPS_HOST" \
+            "APP_DIR='${APP_DIR:-/opt/principles-council}' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          free -h
+          df -h / /var/lib/docker
+          docker version --format 'Docker {{.Server.Version}}'
+          for key in ANYTHINGLLM_BASE_URL ANYTHINGLLM_API_KEY ANYTHINGLLM_LIBRARY_WORKSPACE; do
+            if ! grep -Eq "^${key}=.+$" "$APP_DIR/.env.production"; then
+              echo "::error::Book service requires ${key} before staging the application release"
+              exit 1
+            fi
+          done
+          REMOTE
 
       - name: Recover server-owned production config
         shell: bash
